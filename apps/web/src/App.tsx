@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Browse } from "./pages/Browse";
 import { Category } from "./pages/Category";
+import { Store } from "./pages/Store";
 import { Product } from "./pages/Product";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
@@ -18,6 +19,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="browse" element={<Browse />} />
         <Route path="category/:slug" element={<Category />} />
+        <Route path="store/:id" element={<Store />} />
         <Route path="product/:id" element={<Product />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />

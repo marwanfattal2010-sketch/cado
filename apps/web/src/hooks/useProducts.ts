@@ -33,18 +33,22 @@ export function useFeaturedProducts() {
   });
 }
 
-export function useProductsByCategory(categorySlug: string | undefined) {
+export function useProductsByCategory(categorySlug: string | undefined, subcategorySlug?: string) {
   return useQuery({
-    queryKey: ["products", "category", categorySlug],
+    queryKey: ["products", "category", categorySlug, subcategorySlug],
     enabled: !!categorySlug,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
         .select(
-          "id, title, price, currency, category:categories!inner(slug), product_images(storage_path, is_primary)"
+          "id, title, price, currency, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(slug), product_images(storage_path, is_primary)"
         )
         .eq("is_active", true)
         .eq("categories.slug", categorySlug as string);
+      if (subcategorySlug) {
+        query = query.eq("subcategories.slug", subcategorySlug);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
