@@ -10,6 +10,7 @@ import {
   useRemoveCartItem,
   useUpdateCartQuantity,
 } from "../hooks/useCart";
+import { checkGiftCard } from "../hooks/useGiftCards";
 
 export function Cart() {
   const { session } = useAuth();
@@ -33,6 +34,10 @@ export function Cart() {
   const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
+  const [giftCardError, setGiftCardError] = useState<string | null>(null);
+  const [checkingGiftCard, setCheckingGiftCard] = useState(false);
 
   const groupedByPartner = useMemo(() => {
     if (!cart.data) return [];
@@ -92,12 +97,38 @@ export function Cart() {
     }
   };
 
+  const onApplyGiftCard = async () => {
+    setGiftCardError(null);
+    setGiftCardBalance(null);
+    if (!giftCardCode.trim()) return;
+    setCheckingGiftCard(true);
+    try {
+      const result = await checkGiftCard(giftCardCode);
+      if (!result?.valid) {
+        setGiftCardError("That code isn't valid or has no balance left");
+      } else {
+        setGiftCardBalance(result.remaining_balance);
+      }
+    } catch (e) {
+      setGiftCardError(e instanceof Error ? e.message : "Could not check gift card");
+    } finally {
+      setCheckingGiftCard(false);
+    }
+  };
+
+  const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal) : 0;
+  const total = Math.max(subtotal - discount, 0);
+
   const onPlaceOrder = async () => {
     if (!defaultAddress) return;
     setError(null);
     setPlacing(true);
     try {
-      const orderId = await placeOrder.mutateAsync({ deliveryAddressId: defaultAddress.id, notes: orderNotes });
+      const orderId = await placeOrder.mutateAsync({
+        deliveryAddressId: defaultAddress.id,
+        notes: orderNotes,
+        giftCardCode: giftCardBalance !== null ? giftCardCode.trim().toUpperCase() : undefined,
+      });
       setPlacedOrderId(orderId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not place order");
@@ -160,9 +191,50 @@ export function Cart() {
             ))}
           </div>
 
-          <div className="mt-10 flex items-center justify-between border-t border-ink/10 pt-6 text-lg">
-            <span>Subtotal</span>
-            <span>USD {subtotal.toFixed(2)}</span>
+          <div className="mt-10 border-t border-ink/10 pt-6">
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-ink/50">GIFT CARD</h2>
+            <div className="flex gap-3">
+              <input
+                className="flex-1 rounded-xl border border-ink/15 px-4 py-3 text-sm uppercase"
+                placeholder="CADO-XXXX-XXXX"
+                value={giftCardCode}
+                onChange={(e) => {
+                  setGiftCardCode(e.target.value);
+                  setGiftCardBalance(null);
+                  setGiftCardError(null);
+                }}
+              />
+              <button
+                onClick={onApplyGiftCard}
+                disabled={checkingGiftCard || !giftCardCode.trim()}
+                className="rounded-xl border border-ink/20 px-5 text-sm font-medium disabled:opacity-40"
+              >
+                {checkingGiftCard ? "Checking..." : "Apply"}
+              </button>
+            </div>
+            {giftCardError ? <p className="mt-2 text-sm text-red-600">{giftCardError}</p> : null}
+            {giftCardBalance !== null ? (
+              <p className="mt-2 text-sm text-emerald-700">
+                Applied — USD {giftCardBalance.toFixed(2)} available on this card
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mt-6 space-y-1 border-t border-ink/10 pt-6">
+            <div className="flex items-center justify-between text-ink/60">
+              <span>Subtotal</span>
+              <span>USD {subtotal.toFixed(2)}</span>
+            </div>
+            {discount > 0 ? (
+              <div className="flex items-center justify-between text-emerald-700">
+                <span>Gift card</span>
+                <span>-USD {discount.toFixed(2)}</span>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between text-lg font-medium">
+              <span>Total</span>
+              <span>USD {total.toFixed(2)}</span>
+            </div>
           </div>
 
           <div className="mt-10">
@@ -235,7 +307,11 @@ export function Cart() {
             disabled={!defaultAddress || placing}
             className="mt-6 w-full rounded-full bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-40"
           >
-            {placing ? "Placing order..." : "Place order — Cash on Delivery"}
+            {placing
+              ? "Placing order..."
+              : total <= 0
+                ? "Place order — fully covered by gift card"
+                : `Place order — USD ${total.toFixed(2)} on delivery`}
           </button>
         </>
       )}

@@ -22,6 +22,9 @@ export function Header() {
           <NavLink to="/gift-finder" className={navClass}>
             Gift Finder
           </NavLink>
+          <NavLink to="/gift-cards" className={navClass}>
+            Gift Cards
+          </NavLink>
         </nav>
 
         <div className="flex items-center gap-5">

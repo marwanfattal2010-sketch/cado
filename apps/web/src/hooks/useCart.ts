@@ -84,10 +84,11 @@ export function useCreateAddress() {
 export function usePlaceOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { deliveryAddressId: string; notes?: string }) => {
+    mutationFn: async (input: { deliveryAddressId: string; notes?: string; giftCardCode?: string }) => {
       const { data, error } = await supabase.rpc("place_order", {
         p_delivery_address_id: input.deliveryAddressId,
         p_notes: input.notes ?? null,
+        p_gift_card_code: input.giftCardCode ?? null,
       });
       if (error) throw error;
       return data as string;

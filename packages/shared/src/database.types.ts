@@ -212,6 +212,56 @@ export type Database = {
           },
         ]
       }
+      gift_cards: {
+        Row: {
+          code: string
+          created_at: string
+          currency: string
+          id: string
+          initial_amount: number
+          message: string | null
+          purchased_by: string | null
+          recipient_email: string | null
+          recipient_name: string
+          remaining_balance: number
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          currency?: string
+          id?: string
+          initial_amount: number
+          message?: string | null
+          purchased_by?: string | null
+          recipient_email?: string | null
+          recipient_name: string
+          remaining_balance: number
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          initial_amount?: number
+          message?: string | null
+          purchased_by?: string | null
+          recipient_email?: string | null
+          recipient_name?: string
+          remaining_balance?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_cards_purchased_by_fkey"
+            columns: ["purchased_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       occasion_events: {
         Row: {
           banner_image_url: string | null
@@ -367,6 +417,8 @@ export type Database = {
           customer_id: string
           delivery_address_id: string
           delivery_fee: number
+          discount_amount: number
+          gift_card_code: string | null
           id: string
           notes: string | null
           order_number: string
@@ -379,6 +431,8 @@ export type Database = {
           customer_id: string
           delivery_address_id: string
           delivery_fee?: number
+          discount_amount?: number
+          gift_card_code?: string | null
           id?: string
           notes?: string | null
           order_number: string
@@ -391,6 +445,8 @@ export type Database = {
           customer_id?: string
           delivery_address_id?: string
           delivery_fee?: number
+          discount_amount?: number
+          gift_card_code?: string | null
           id?: string
           notes?: string | null
           order_number?: string
@@ -412,6 +468,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "addresses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_gift_card_code_fkey"
+            columns: ["gift_card_code"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -749,6 +812,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_gift_card: {
+        Args: { p_code: string }
+        Returns: {
+          currency: string
+          remaining_balance: number
+          valid: boolean
+        }[]
+      }
+      generate_gift_card_code: { Args: never; Returns: string }
       get_gift_recommendations: {
         Args: {
           p_budget_max: number
@@ -794,9 +866,37 @@ export type Database = {
           p_delivery_address_id: string
           p_delivery_date?: string
           p_delivery_time_slot?: string
+          p_gift_card_code?: string
           p_notes?: string
         }
         Returns: string
+      }
+      purchase_gift_card: {
+        Args: {
+          p_amount: number
+          p_message?: string
+          p_recipient_email?: string
+          p_recipient_name: string
+        }
+        Returns: {
+          code: string
+          created_at: string
+          currency: string
+          id: string
+          initial_amount: number
+          message: string | null
+          purchased_by: string | null
+          recipient_email: string | null
+          recipient_name: string
+          remaining_balance: number
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "gift_cards"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
