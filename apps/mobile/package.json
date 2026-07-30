@@ -1,0 +1,51 @@
+{
+  "name": "@cado/mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@babel/runtime": "^7.26.0",
+    "@cado/shared": "workspace:*",
+    "@expo/metro-runtime": "~57.0.8",
+    "@expo/vector-icons": "^15.0.0",
+    "@hookform/resolvers": "^3.10.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.48.1",
+    "@tanstack/react-query": "^5.66.0",
+    "date-fns": "^4.1.0",
+    "expo": "~57.0.9",
+    "expo-constants": "~18.0.0",
+    "expo-image": "~3.0.0",
+    "expo-linking": "~8.0.0",
+    "expo-notifications": "~0.32.0",
+    "expo-router": "~57.0.9",
+    "expo-secure-store": "~15.0.0",
+    "expo-status-bar": "~57.0.1",
+    "nativewind": "^4.1.23",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "^7.54.2",
+    "react-native": "0.86.2",
+    "react-native-css-interop": "0.2.6",
+    "react-native-gesture-handler": "~2.30.0",
+    "react-native-reanimated": "~4.1.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-web": "^0.21.2",
+    "tailwindcss": "^3.4.17",
+    "zod": "^3.24.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "~14.0.0",
+    "typescript": "~5.6.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "private": true
+}

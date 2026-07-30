@@ -1,0 +1,14 @@
+{
+  "name": "cado-app",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "mobile": "pnpm --filter @cado/mobile start",
+    "admin": "pnpm --filter @cado/admin dev",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
