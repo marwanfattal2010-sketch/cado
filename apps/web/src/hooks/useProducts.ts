@@ -55,6 +55,26 @@ export function useProductsByCategory(categorySlug: string | undefined, subcateg
   });
 }
 
+export function useGiftFinderProducts(minPrice: number, maxPrice: number | null, recipient: string) {
+  return useQuery({
+    queryKey: ["products", "gift-finder", minPrice, maxPrice, recipient],
+    queryFn: async () => {
+      let query = supabase
+        .from("products")
+        .select("id, title, price, currency, product_images(storage_path, is_primary)")
+        .eq("is_active", true)
+        .contains("recipient_tags", [recipient])
+        .gte("price", minPrice);
+      if (maxPrice !== null) {
+        query = query.lte("price", maxPrice);
+      }
+      const { data, error } = await query.limit(24);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useSearchProducts(query: string) {
   return useQuery({
     queryKey: ["products", "search", query],
