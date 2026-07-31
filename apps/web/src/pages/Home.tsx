@@ -29,7 +29,7 @@ export function Home() {
       <section className="mx-auto max-w-6xl px-6 pt-12 pb-6 text-center">
         <h2 className="font-accent text-4xl italic text-ink sm:text-5xl">Find Something Beautiful</h2>
         <p className="mt-3 font-display text-sm text-ink/50">
-          Handpicked categories from Lebanon's best boutiques, delivered to your door.
+          Handpicked categories from Lebanon's best boutiques — same-day delivery, always.
         </p>
       </section>
 
