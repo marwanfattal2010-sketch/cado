@@ -10,7 +10,7 @@ export function GiftFinder() {
       <h1 className="text-center font-display text-4xl">What are you looking for?</h1>
       <p className="mt-3 text-center text-ink/50">Pick a category and see the best stores for it — that's it.</p>
 
-      <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="mt-10 flex flex-col gap-5">
         {categories.data?.map((cat) => (
           <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
         ))}

@@ -29,7 +29,7 @@ export function Browse() {
           {search.data?.length === 0 ? <p className="text-ink/50">No results for "{query}"</p> : null}
         </div>
       ) : (
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="mt-10 flex flex-col gap-5">
           {categories.data?.map((cat) => (
             <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
           ))}
