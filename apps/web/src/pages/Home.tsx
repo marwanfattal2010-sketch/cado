@@ -27,7 +27,10 @@ export function Home() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pt-12 pb-6 text-center">
-        <h2 className="font-display text-3xl text-ink sm:text-4xl">What are you searching for?</h2>
+        <h2 className="font-accent text-4xl italic text-ink sm:text-5xl">Find Something Beautiful</h2>
+        <p className="mt-3 font-display text-sm text-ink/50">
+          Handpicked categories from Lebanon's best boutiques, delivered to your door.
+        </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-6">

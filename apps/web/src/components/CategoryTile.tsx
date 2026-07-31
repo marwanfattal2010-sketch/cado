@@ -2,9 +2,6 @@ import { Link } from "react-router-dom";
 
 const FOCUS: Record<string, string> = {
   fashion: "object-top",
-  shoes: "object-top",
-  toys: "object-bottom",
-  chocolate: "object-bottom",
 };
 
 export function CategoryTile({ slug, name }: { slug: string; name: string }) {
