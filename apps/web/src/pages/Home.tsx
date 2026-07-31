@@ -3,6 +3,7 @@ import { useCategories } from "../hooks/useCategories";
 import { useFeaturedProducts, useTrendingProducts } from "../hooks/useProducts";
 import { ProductCard } from "../components/ProductCard";
 import { CategoryTile } from "../components/CategoryTile";
+import { GiftCardTile } from "../components/GiftCardTile";
 
 export function Home() {
   const categories = useCategories();
@@ -22,10 +23,11 @@ export function Home() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-6">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {categories.data?.map((cat) => (
             <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
           ))}
+          <GiftCardTile />
         </div>
       </section>
 

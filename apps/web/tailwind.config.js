@@ -9,7 +9,7 @@ export default {
         cream: "#F7F2E9",
       },
       fontFamily: {
-        display: ["Italiana", "serif"],
+        display: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
       },
     },
   },
