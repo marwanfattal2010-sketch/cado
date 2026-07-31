@@ -26,6 +26,10 @@ export function Home() {
         </Link>
       </section>
 
+      <section className="mx-auto max-w-6xl px-6 pt-12 pb-6 text-center">
+        <h2 className="font-display text-3xl text-ink sm:text-4xl">What are you searching for?</h2>
+      </section>
+
       <section className="mx-auto max-w-6xl px-6 py-6">
         <div className="flex flex-col gap-5">
           {categories.data?.map((cat) => (
