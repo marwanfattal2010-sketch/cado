@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { useSearchProducts } from "../hooks/useProducts";
 import { ProductCard } from "../components/ProductCard";
+import { CategoryTile } from "../components/CategoryTile";
 
 export function Browse() {
   const [query, setQuery] = useState("");
@@ -28,15 +28,9 @@ export function Browse() {
           {search.data?.length === 0 ? <p className="text-ink/50">No results for "{query}"</p> : null}
         </div>
       ) : (
-        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
+        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {categories.data?.map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/category/${cat.slug}`}
-              className="rounded-2xl border border-ink/10 px-4 py-6 text-center text-sm font-medium hover:border-ink/30"
-            >
-              {cat.name}
-            </Link>
+            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
           ))}
         </div>
       )}
