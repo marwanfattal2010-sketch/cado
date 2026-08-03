@@ -42,17 +42,25 @@ export function Category() {
       {stores.data && stores.data.length > 0 ? (
         <div className="mt-10">
           <h2 className="mb-4 text-sm font-semibold tracking-wide text-ink/50">STORES IN THIS CATEGORY</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div className="flex flex-col gap-5">
             {stores.data.map((store) => (
               <Link
                 key={store.id}
                 to={`/store/${store.id}`}
-                className="rounded-2xl border border-ink/10 p-5 text-center hover:border-gold/60"
+                className="group relative flex aspect-[16/9] flex-col justify-end overflow-hidden rounded-2xl bg-ink"
               >
-                <p className="font-display text-lg">{store.name}</p>
-                {store.description ? (
-                  <p className="mt-1 line-clamp-2 text-xs text-ink/50">{store.description}</p>
-                ) : null}
+                <img
+                  src={`/categories/${slug}.jpg`}
+                  alt={store.name}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+                <div className="relative p-5">
+                  <p className="font-display text-2xl font-semibold text-white sm:text-3xl">{store.name}</p>
+                  {store.description ? (
+                    <p className="mt-1 line-clamp-2 text-sm text-white/70">{store.description}</p>
+                  ) : null}
+                </div>
               </Link>
             ))}
           </div>
