@@ -88,12 +88,14 @@ export function usePlaceOrder() {
       deliveryAddressId: string;
       notes?: string;
       giftCardCode?: string;
+      giftCardPin?: string;
       paymentMethod: "cod" | "whish";
     }) => {
       const { data, error } = await supabase.rpc("place_order", {
         p_delivery_address_id: input.deliveryAddressId,
         p_notes: input.notes ?? null,
         p_gift_card_code: input.giftCardCode ?? null,
+        p_gift_card_pin: input.giftCardPin ?? null,
         p_payment_method: input.paymentMethod,
       });
       if (error) throw error;

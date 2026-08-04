@@ -1,6 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../lib/auth";
 
 export type DeliveryMethod = "digital" | "physical";
 
@@ -13,6 +12,8 @@ export function usePurchaseGiftCard() {
       recipientEmail?: string;
       message?: string;
       deliveryMethod: DeliveryMethod;
+      buyerName?: string;
+      buyerEmail?: string;
     }) => {
       const { data, error } = await supabase.rpc("purchase_gift_card", {
         p_amount: input.amount,
@@ -20,9 +21,12 @@ export function usePurchaseGiftCard() {
         p_recipient_email: input.recipientEmail || null,
         p_message: input.message || null,
         p_delivery_method: input.deliveryMethod,
+        p_buyer_name: input.buyerName || null,
+        p_buyer_email: input.buyerEmail || null,
       });
       if (error) throw error;
-      return data;
+      // The PIN is only ever returned here, once. There is no way to recover it later.
+      return data?.[0] as { code: string; pin: string; id: string; original_amount: number };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gift-cards", "mine"] });
@@ -30,34 +34,12 @@ export function usePurchaseGiftCard() {
   });
 }
 
-export function useMyGiftCards() {
-  const { session } = useAuth();
-  return useQuery({
-    queryKey: ["gift-cards", "mine"],
-    enabled: !!session,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("gift_cards")
-        .select("id, code, initial_amount, remaining_balance, currency, recipient_name, message, delivery_method, status, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+/** Checks a code + PIN together. Same generic failure for every rejection reason. */
+export async function checkGiftCardBalance(code: string, pin: string) {
+  const { data, error } = await supabase.rpc("check_gift_card_balance", {
+    p_code: code.trim(),
+    p_pin: pin.trim(),
   });
-}
-
-export async function checkGiftCard(code: string) {
-  const { data, error } = await supabase.rpc("check_gift_card", { p_code: code.trim() });
-  if (error) throw error;
-  return data?.[0] as { valid: boolean; remaining_balance: number; currency: string } | undefined;
-}
-
-/**
- * Claims a card for the signed-in account. The server throttles wrong guesses,
- * so surface its message rather than retrying.
- */
-export async function redeemGiftCard(code: string) {
-  const { data, error } = await supabase.rpc("redeem_gift_card", { p_code: code.trim() });
   if (error) throw error;
   return data?.[0] as { remaining_balance: number; currency: string } | undefined;
 }

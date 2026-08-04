@@ -17,7 +17,7 @@ export function GiftCardSend() {
   const [message, setMessage] = useState("");
   const [delivery, setDelivery] = useState<DeliveryMethod>("digital");
   const [error, setError] = useState<string | null>(null);
-  const [card, setCard] = useState<{ code: string; initial_amount: number } | null>(null);
+  const [card, setCard] = useState<{ code: string; pin: string; original_amount: number } | null>(null);
 
   const finalAmount = customAmount ? Number(customAmount) : amount;
 
@@ -34,6 +34,9 @@ export function GiftCardSend() {
   }
 
   if (card) {
+    // The QR only ever encodes the code — never the PIN. Whoever redeems it
+    // still has to be told the PIN separately, the same way a real gift
+    // card's scratch-off PIN is never printed as part of its barcode.
     const shareUrl = `${window.location.origin}/gift-cards/redeem?code=${card.code}`;
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`;
 
@@ -41,13 +44,21 @@ export function GiftCardSend() {
       <div className="mx-auto max-w-md px-5 py-10 text-center">
         <p className="text-sm text-ink/50">Gift card created</p>
         <p className="mt-1 font-display text-3xl font-semibold">
-          USD {Number(card.initial_amount).toFixed(2)}
+          USD {Number(card.original_amount).toFixed(2)}
         </p>
 
         <div className="mt-6 rounded-3xl bg-ink p-6 text-cream">
           <p className="text-[11px] tracking-[0.3em] text-gold">CADO GIFT CARD</p>
-          <p className="mt-4 font-display text-4xl font-semibold tracking-[0.25em]">{card.code}</p>
-          <p className="mt-3 text-xs text-cream/50">6-digit code</p>
+          <p className="mt-4 font-display text-2xl font-semibold tracking-[0.15em] break-all">{card.code}</p>
+          <div className="mt-4 border-t border-cream/15 pt-4">
+            <p className="text-[11px] tracking-[0.3em] text-gold">PIN</p>
+            <p className="mt-1 font-display text-4xl font-semibold tracking-[0.3em]">{card.pin}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl bg-gold/12 p-4 text-left text-sm text-ink/70">
+          Save this now — for their protection, the PIN is shown to you only this once and can't be
+          looked up again later.
         </div>
 
         {delivery === "digital" ? (
@@ -55,6 +66,10 @@ export function GiftCardSend() {
             <p className="text-sm font-medium">Send this to {recipientName || "them"}</p>
             <img src={qrSrc} alt="Gift card QR code" className="mx-auto mt-4 h-[220px] w-[220px]" />
             <p className="mt-3 break-all text-xs text-ink/40">{shareUrl}</p>
+            <p className="mt-3 text-xs text-ink/50">
+              Scanning gives them the code. Tell them the PIN yourself — by text, call, or in person —
+              so it never travels in the same link.
+            </p>
             <button
               onClick={() => navigator.clipboard?.writeText(shareUrl)}
               className="mt-4 w-full rounded-full bg-ink/5 py-3 text-sm font-medium"
@@ -64,8 +79,7 @@ export function GiftCardSend() {
           </div>
         ) : (
           <div className="mt-6 rounded-3xl bg-white p-6 text-sm text-ink/60 ring-1 ring-ink/8">
-            We'll deliver the physical card to your address. Keep this code safe — it's printed on
-            the card too.
+            We'll deliver the physical card to your address, code and PIN printed on it.
           </div>
         )}
 
@@ -91,7 +105,7 @@ export function GiftCardSend() {
         message: message.trim() || undefined,
         deliveryMethod: delivery,
       });
-      setCard(result as { code: string; initial_amount: number });
+      setCard(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     }

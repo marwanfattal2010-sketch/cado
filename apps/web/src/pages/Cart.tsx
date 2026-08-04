@@ -10,7 +10,7 @@ import {
   useRemoveCartItem,
   useUpdateCartQuantity,
 } from "../hooks/useCart";
-import { checkGiftCard } from "../hooks/useGiftCards";
+import { checkGiftCardBalance } from "../hooks/useGiftCards";
 
 const WHISH_NUMBER = "81 900 002";
 
@@ -40,6 +40,7 @@ export function Cart() {
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardPin, setGiftCardPin] = useState("");
   const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
   const [giftCardError, setGiftCardError] = useState<string | null>(null);
   const [checkingGiftCard, setCheckingGiftCard] = useState(false);
@@ -107,33 +108,40 @@ export function Cart() {
     }
   };
 
-  const applyGiftCard = async (code: string) => {
+  const applyGiftCard = async (code: string, pin: string) => {
     setGiftCardError(null);
     setGiftCardBalance(null);
-    if (!code.trim()) return;
+    if (!code.trim() || !pin.trim()) return;
     setCheckingGiftCard(true);
     try {
-      const result = await checkGiftCard(code);
-      if (!result?.valid) {
-        setGiftCardError("That code isn't valid or has no balance left");
+      const result = await checkGiftCardBalance(code, pin);
+      if (!result) {
+        setGiftCardError("That code or PIN isn't valid.");
       } else {
         setGiftCardBalance(result.remaining_balance);
       }
     } catch (e) {
-      setGiftCardError(e instanceof Error ? e.message : "Could not check gift card");
+      // The server returns the same generic message for every rejection reason.
+      setGiftCardError(e instanceof Error ? e.message : "That code or PIN isn't valid.");
     } finally {
       setCheckingGiftCard(false);
     }
   };
 
-  const onApplyGiftCard = () => applyGiftCard(giftCardCode);
+  const onApplyGiftCard = () => applyGiftCard(giftCardCode, giftCardPin);
 
   // A card redeemed on the Redeem screen is applied here automatically.
   useEffect(() => {
-    const saved = localStorage.getItem("cado-gift-card");
+    const saved = sessionStorage.getItem("cado-gift-card");
     if (saved && !giftCardCode) {
-      setGiftCardCode(saved);
-      void applyGiftCard(saved);
+      try {
+        const { code, pin } = JSON.parse(saved) as { code: string; pin: string };
+        setGiftCardCode(code);
+        setGiftCardPin(pin);
+        void applyGiftCard(code, pin);
+      } catch {
+        sessionStorage.removeItem("cado-gift-card");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -150,9 +158,10 @@ export function Cart() {
         deliveryAddressId: defaultAddress.id,
         notes: orderNotes,
         giftCardCode: giftCardBalance !== null ? giftCardCode.trim() : undefined,
+        giftCardPin: giftCardBalance !== null ? giftCardPin.trim() : undefined,
         paymentMethod: payment,
       });
-      localStorage.removeItem("cado-gift-card");
+      sessionStorage.removeItem("cado-gift-card");
       setPlacedOrderId(orderId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not place order");
@@ -223,22 +232,32 @@ export function Cart() {
 
           <div className="mt-10 border-t border-ink/10 pt-6">
             <h2 className="mb-3 text-sm font-semibold tracking-wide text-ink/50">GIFT CARD</h2>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <input
-                className="flex-1 rounded-xl border border-ink/15 px-4 py-3 text-center text-sm tracking-[0.3em]"
-                placeholder="000000"
-                inputMode="numeric"
+                className="flex-[2] rounded-xl border border-ink/15 px-4 py-3 text-sm uppercase tracking-wider"
+                placeholder="Gift card code"
                 value={giftCardCode}
                 onChange={(e) => {
-                  setGiftCardCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setGiftCardCode(e.target.value.trim().toUpperCase());
+                  setGiftCardBalance(null);
+                  setGiftCardError(null);
+                }}
+              />
+              <input
+                className="flex-1 rounded-xl border border-ink/15 px-4 py-3 text-center text-sm tracking-[0.3em]"
+                placeholder="PIN"
+                inputMode="numeric"
+                value={giftCardPin}
+                onChange={(e) => {
+                  setGiftCardPin(e.target.value.replace(/\D/g, "").slice(0, 6));
                   setGiftCardBalance(null);
                   setGiftCardError(null);
                 }}
               />
               <button
                 onClick={onApplyGiftCard}
-                disabled={checkingGiftCard || !giftCardCode.trim()}
-                className="rounded-xl border border-ink/20 px-5 text-sm font-medium disabled:opacity-40"
+                disabled={checkingGiftCard || !giftCardCode.trim() || !giftCardPin.trim()}
+                className="rounded-xl border border-ink/20 px-5 py-3 text-sm font-medium disabled:opacity-40 sm:py-0"
               >
                 {checkingGiftCard ? "Checking..." : "Apply"}
               </button>
