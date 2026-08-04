@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { AccountIcon, GiftIcon, OrdersIcon } from "../components/Icons";
+import { AccountIcon, GiftIcon, GlobeIcon, HeartIcon, HelpIcon, OrdersIcon, SettingsIcon } from "../components/Icons";
 
 export function Account() {
   const { session, profile, signOut } = useAuth();
@@ -17,6 +17,19 @@ export function Account() {
           </Link>
           <Link to="/signup" className="rounded-full bg-ink/5 py-3 text-sm text-ink">
             Create an account
+          </Link>
+        </div>
+
+        <div className="mt-10 overflow-hidden rounded-2xl bg-white text-left ring-1 ring-ink/5">
+          <Link to="/help" className="flex items-center gap-3 px-4 py-4 transition hover:bg-ink/[0.03]">
+            <HelpIcon className="h-5 w-5 text-ink/50" />
+            <span className="flex-1 text-sm">Help Center</span>
+            <span className="text-ink/25">›</span>
+          </Link>
+          <Link to="/language" className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]">
+            <GlobeIcon className="h-5 w-5 text-ink/50" />
+            <span className="flex-1 text-sm">Language</span>
+            <span className="text-ink/25">›</span>
           </Link>
         </div>
       </div>
@@ -44,11 +57,37 @@ export function Account() {
           <span className="text-ink/25">›</span>
         </Link>
         <Link
+          to="/wishlist"
+          className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]"
+        >
+          <HeartIcon className="h-5 w-5 text-ink/50" />
+          <span className="flex-1 text-sm">Wishlist</span>
+          <span className="text-ink/25">›</span>
+        </Link>
+        <Link
           to="/gift-cards"
           className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]"
         >
           <GiftIcon className="h-5 w-5 text-ink/50" />
           <span className="flex-1 text-sm">Gift cards</span>
+          <span className="text-ink/25">›</span>
+        </Link>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl bg-white ring-1 ring-ink/5">
+        <Link to="/settings" className="flex items-center gap-3 px-4 py-4 transition hover:bg-ink/[0.03]">
+          <SettingsIcon className="h-5 w-5 text-ink/50" />
+          <span className="flex-1 text-sm">Settings</span>
+          <span className="text-ink/25">›</span>
+        </Link>
+        <Link to="/language" className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]">
+          <GlobeIcon className="h-5 w-5 text-ink/50" />
+          <span className="flex-1 text-sm">Language</span>
+          <span className="text-ink/25">›</span>
+        </Link>
+        <Link to="/help" className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]">
+          <HelpIcon className="h-5 w-5 text-ink/50" />
+          <span className="flex-1 text-sm">Help Center</span>
           <span className="text-ink/25">›</span>
         </Link>
       </div>

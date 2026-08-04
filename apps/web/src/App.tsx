@@ -11,6 +11,10 @@ import { Cart } from "./pages/Cart";
 import { Search } from "./pages/Search";
 import { Orders } from "./pages/Orders";
 import { Account } from "./pages/Account";
+import { Wishlist } from "./pages/Wishlist";
+import { Settings } from "./pages/Settings";
+import { HelpCenter } from "./pages/HelpCenter";
+import { Language } from "./pages/Language";
 import { GiftFinder } from "./pages/GiftFinder";
 import { GiftCards } from "./pages/GiftCards";
 import { GiftCardSend } from "./pages/GiftCardSend";
@@ -24,6 +28,10 @@ export default function App() {
         <Route path="search" element={<Search />} />
         <Route path="orders" element={<Orders />} />
         <Route path="account" element={<Account />} />
+        <Route path="wishlist" element={<Wishlist />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="help" element={<HelpCenter />} />
+        <Route path="language" element={<Language />} />
         <Route path="browse" element={<Browse />} />
         <Route path="category/:slug" element={<Category />} />
         <Route path="store/:id" element={<Store />} />
