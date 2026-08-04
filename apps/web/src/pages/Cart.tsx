@@ -210,9 +210,13 @@ export function Cart() {
                         <input
                           type="number"
                           min={1}
+                          max={999}
                           value={item.quantity}
                           onChange={(e) =>
-                            updateQuantity.mutate({ id: item.id, quantity: Math.max(1, Number(e.target.value)) })
+                            updateQuantity.mutate({
+                              id: item.id,
+                              quantity: Math.min(999, Math.max(1, Number(e.target.value))),
+                            })
                           }
                           className="w-16 rounded-lg border border-ink/15 px-2 py-1 text-center text-sm"
                         />

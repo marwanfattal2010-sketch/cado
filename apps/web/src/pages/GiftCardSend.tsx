@@ -42,7 +42,7 @@ export function GiftCardSend() {
 
     return (
       <div className="mx-auto max-w-md px-5 py-10 text-center">
-        <p className="text-sm text-ink/50">Gift card created</p>
+        <p className="text-sm text-ink/50">Gift card reserved</p>
         <p className="mt-1 font-display text-3xl font-semibold">
           USD {Number(card.original_amount).toFixed(2)}
         </p>
@@ -59,6 +59,12 @@ export function GiftCardSend() {
         <div className="mt-4 rounded-2xl bg-gold/12 p-4 text-left text-sm text-ink/70">
           Save this now — for their protection, the PIN is shown to you only this once and can't be
           looked up again later.
+        </div>
+
+        <div className="mt-3 rounded-2xl bg-ink/5 p-4 text-left text-sm text-ink/70">
+          <span className="font-medium">Not active yet.</span> This card won't be spendable until we
+          confirm your payment (cash on delivery, or your Whish transfer to 81 900 002). Send the code
+          and PIN once we've confirmed.
         </div>
 
         {delivery === "digital" ? (
