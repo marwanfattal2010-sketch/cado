@@ -48,7 +48,11 @@ export function useAddresses() {
     queryKey: ["addresses"],
     enabled: !!session,
     queryFn: async () => {
-      const { data, error } = await supabase.from("addresses").select("*").order("is_default", { ascending: false });
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .order("is_default", { ascending: false })
+        .limit(50);
       if (error) throw error;
       return data;
     },

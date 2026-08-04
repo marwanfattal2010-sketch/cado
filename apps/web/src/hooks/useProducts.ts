@@ -48,7 +48,7 @@ export function useProductsByCategory(categorySlug: string | undefined, subcateg
       if (subcategorySlug) {
         query = query.eq("subcategories.slug", subcategorySlug);
       }
-      const { data, error } = await query;
+      const { data, error } = await query.limit(100);
       if (error) throw error;
       return data;
     },

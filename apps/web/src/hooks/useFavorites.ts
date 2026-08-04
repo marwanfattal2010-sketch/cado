@@ -11,7 +11,8 @@ export function useFavorites() {
       const { data, error } = await supabase
         .from("favorites")
         .select("id, product_id, product:products(id, title, price, currency, product_images(storage_path, is_primary))")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data;
     },

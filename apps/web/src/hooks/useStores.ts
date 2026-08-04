@@ -27,7 +27,8 @@ export function useStoresByCategory(categorySlug: string | undefined) {
         .from("partners")
         .select("id, name, slug, description, logo_url, cover_image_url, products!inner(category:categories!inner(slug))")
         .eq("status", "active")
-        .eq("products.categories.slug", categorySlug as string);
+        .eq("products.categories.slug", categorySlug as string)
+        .limit(100);
       if (error) throw error;
       // de-dupe (the join can repeat a partner once per matching product)
       const seen = new Set<string>();
@@ -74,7 +75,8 @@ export function useStoreProducts(storeId: string | undefined) {
         .from("products")
         .select("id, title, price, currency, product_images(storage_path, is_primary)")
         .eq("partner_id", storeId as string)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .limit(100);
       if (error) throw error;
       return data;
     },

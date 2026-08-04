@@ -13,7 +13,8 @@ export function useOrders() {
         .select(
           "id, order_number, total, created_at, sub_orders(id, status, total, partner:partners(id, name), order_items(id, product_title_snapshot, quantity, line_total))"
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
       if (error) throw error;
       return data;
     },
