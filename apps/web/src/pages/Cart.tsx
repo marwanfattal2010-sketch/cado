@@ -146,11 +146,11 @@ export function Cart() {
     setError(null);
     setPlacing(true);
     try {
-      const paymentNote = payment === "whish" ? "[Paying by Whish transfer] " : "";
       const orderId = await placeOrder.mutateAsync({
         deliveryAddressId: defaultAddress.id,
-        notes: paymentNote + orderNotes,
+        notes: orderNotes,
         giftCardCode: giftCardBalance !== null ? giftCardCode.trim() : undefined,
+        paymentMethod: payment,
       });
       localStorage.removeItem("cado-gift-card");
       setPlacedOrderId(orderId);

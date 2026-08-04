@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { checkGiftCard } from "../hooks/useGiftCards";
+import { useAuth } from "../lib/auth";
+import { redeemGiftCard } from "../hooks/useGiftCards";
 
 const STORAGE_KEY = "cado-gift-card";
 
 export function GiftCardRedeem() {
   const [params] = useSearchParams();
+  const { session } = useAuth();
   const [code, setCode] = useState(params.get("code") ?? "");
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,27 +21,42 @@ export function GiftCardRedeem() {
 
     setChecking(true);
     try {
-      const result = await checkGiftCard(clean);
-      if (!result?.valid) {
+      const result = await redeemGiftCard(clean);
+      if (!result) {
         setError("That code isn't valid, or the balance is used up.");
       } else {
         setBalance(Number(result.remaining_balance));
         // Applied automatically at checkout.
         localStorage.setItem(STORAGE_KEY, clean);
       }
-    } catch {
-      setError("Couldn't check that code. Try again.");
+    } catch (e) {
+      // The server rate-limits guesses; show its reason verbatim.
+      setError(e instanceof Error ? e.message : "Couldn't check that code. Try again.");
     } finally {
       setChecking(false);
     }
   };
 
-  // Auto-verify when arriving from a QR code / shared link.
+  // Auto-verify when arriving from a QR code / shared link, once signed in.
   useEffect(() => {
     const fromLink = params.get("code");
-    if (fromLink) void verify(fromLink);
+    if (fromLink && session) void verify(fromLink);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [session]);
+
+  if (!session) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-20 text-center">
+        <h1 className="font-display text-2xl font-semibold">Redeem a gift card</h1>
+        <p className="mt-2 text-sm text-ink/50">
+          Log in first so the balance is saved to your account.
+        </p>
+        <Link to="/login" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+          Log in
+        </Link>
+      </div>
+    );
+  }
 
   if (balance !== null) {
     return (

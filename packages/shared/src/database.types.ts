@@ -865,6 +865,13 @@ export type Database = {
           valid: boolean
         }[]
       }
+      redeem_gift_card: {
+        Args: { p_code: string }
+        Returns: {
+          currency: string
+          remaining_balance: number
+        }[]
+      }
       generate_gift_card_code: { Args: never; Returns: string }
       get_gift_recommendations: {
         Args: {
