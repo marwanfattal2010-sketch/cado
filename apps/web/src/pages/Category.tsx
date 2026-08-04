@@ -50,7 +50,7 @@ export function Category() {
                 className="group relative flex aspect-[16/9] flex-col justify-end overflow-hidden rounded-2xl bg-ink"
               >
                 <img
-                  src={`/categories/${slug}.jpg`}
+                  src={store.cover_image_url ?? `/categories/${slug}.jpg`}
                   alt={store.name}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />

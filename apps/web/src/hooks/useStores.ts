@@ -25,7 +25,7 @@ export function useStoresByCategory(categorySlug: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, name, slug, description, logo_url, products!inner(category:categories!inner(slug))")
+        .select("id, name, slug, description, logo_url, cover_image_url, products!inner(category:categories!inner(slug))")
         .eq("status", "active")
         .eq("products.categories.slug", categorySlug as string);
       if (error) throw error;
