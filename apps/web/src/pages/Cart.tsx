@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { primaryImage } from "../lib/images";
 import {
@@ -12,8 +12,13 @@ import {
 } from "../hooks/useCart";
 import { checkGiftCard } from "../hooks/useGiftCards";
 
+const WHISH_NUMBER = "81 900 002";
+
 export function Cart() {
   const { session } = useAuth();
+  const [params] = useSearchParams();
+  // Opening the cart from inside a store shows only that store's items.
+  const storeFilter = params.get("store");
   const cart = useCart();
   const addresses = useAddresses();
   const removeItem = useRemoveCartItem();
@@ -38,27 +43,32 @@ export function Cart() {
   const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
   const [giftCardError, setGiftCardError] = useState<string | null>(null);
   const [checkingGiftCard, setCheckingGiftCard] = useState(false);
+  const [payment, setPayment] = useState<"cod" | "whish">("cod");
+
+  const visibleItems = useMemo(() => {
+    if (!cart.data) return [];
+    if (!storeFilter) return cart.data;
+    return cart.data.filter((i) => i.product?.partner?.id === storeFilter);
+  }, [cart.data, storeFilter]);
 
   const groupedByPartner = useMemo(() => {
-    if (!cart.data) return [];
-    const groups = new Map<string, { partnerName: string; items: typeof cart.data }>();
-    for (const item of cart.data) {
+    const groups = new Map<string, { partnerName: string; items: typeof visibleItems }>();
+    for (const item of visibleItems) {
       const partnerId = item.product?.partner?.id ?? "unknown";
       const partnerName = item.product?.partner?.name ?? "Store";
       if (!groups.has(partnerId)) groups.set(partnerId, { partnerName, items: [] });
       groups.get(partnerId)!.items.push(item);
     }
     return Array.from(groups.values());
-  }, [cart.data]);
+  }, [visibleItems]);
 
   const subtotal = useMemo(() => {
-    if (!cart.data) return 0;
-    return cart.data.reduce((sum, item) => {
+    return visibleItems.reduce((sum, item) => {
       const customization = item.customization as { gift_wrap?: boolean } | null;
       const wrap = customization?.gift_wrap ? item.product?.gift_wrap_price ?? 0 : 0;
       return sum + ((item.product?.price ?? 0) + wrap) * item.quantity;
     }, 0);
-  }, [cart.data]);
+  }, [visibleItems]);
 
   if (!session) {
     return (
@@ -97,13 +107,13 @@ export function Cart() {
     }
   };
 
-  const onApplyGiftCard = async () => {
+  const applyGiftCard = async (code: string) => {
     setGiftCardError(null);
     setGiftCardBalance(null);
-    if (!giftCardCode.trim()) return;
+    if (!code.trim()) return;
     setCheckingGiftCard(true);
     try {
-      const result = await checkGiftCard(giftCardCode);
+      const result = await checkGiftCard(code);
       if (!result?.valid) {
         setGiftCardError("That code isn't valid or has no balance left");
       } else {
@@ -116,6 +126,18 @@ export function Cart() {
     }
   };
 
+  const onApplyGiftCard = () => applyGiftCard(giftCardCode);
+
+  // A card redeemed on the Redeem screen is applied here automatically.
+  useEffect(() => {
+    const saved = localStorage.getItem("cado-gift-card");
+    if (saved && !giftCardCode) {
+      setGiftCardCode(saved);
+      void applyGiftCard(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal) : 0;
   const total = Math.max(subtotal - discount, 0);
 
@@ -124,11 +146,13 @@ export function Cart() {
     setError(null);
     setPlacing(true);
     try {
+      const paymentNote = payment === "whish" ? "[Paying by Whish transfer] " : "";
       const orderId = await placeOrder.mutateAsync({
         deliveryAddressId: defaultAddress.id,
-        notes: orderNotes,
-        giftCardCode: giftCardBalance !== null ? giftCardCode.trim().toUpperCase() : undefined,
+        notes: paymentNote + orderNotes,
+        giftCardCode: giftCardBalance !== null ? giftCardCode.trim() : undefined,
       });
+      localStorage.removeItem("cado-gift-card");
       setPlacedOrderId(orderId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not place order");
@@ -141,11 +165,17 @@ export function Cart() {
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="font-display text-3xl">Your cart</h1>
 
-      {!cart.data || cart.data.length === 0 ? (
+      {storeFilter ? (
+        <Link to="/cart" className="mt-1 inline-block text-sm text-ink/50 underline">
+          See items from all stores
+        </Link>
+      ) : null}
+
+      {visibleItems.length === 0 ? (
         <p className="mt-8 text-ink/50">
-          Your cart is empty.{" "}
-          <Link to="/browse" className="font-medium text-ink">
-            Browse gifts
+          {storeFilter ? "Nothing from this store yet." : "Your cart is empty."}{" "}
+          <Link to="/" className="font-medium text-ink">
+            Find a gift
           </Link>
         </p>
       ) : (
@@ -195,11 +225,12 @@ export function Cart() {
             <h2 className="mb-3 text-sm font-semibold tracking-wide text-ink/50">GIFT CARD</h2>
             <div className="flex gap-3">
               <input
-                className="flex-1 rounded-xl border border-ink/15 px-4 py-3 text-sm uppercase"
-                placeholder="CADO-XXXX-XXXX"
+                className="flex-1 rounded-xl border border-ink/15 px-4 py-3 text-center text-sm tracking-[0.3em]"
+                placeholder="000000"
+                inputMode="numeric"
                 value={giftCardCode}
                 onChange={(e) => {
-                  setGiftCardCode(e.target.value);
+                  setGiftCardCode(e.target.value.replace(/\D/g, "").slice(0, 6));
                   setGiftCardBalance(null);
                   setGiftCardError(null);
                 }}
@@ -292,6 +323,43 @@ export function Cart() {
             )}
           </div>
 
+          <div className="mt-10">
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-ink/50">PAYMENT</h2>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setPayment("cod")}
+                className={`rounded-2xl p-4 text-left transition ${
+                  payment === "cod" ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
+                }`}
+              >
+                <p className="text-sm font-semibold">Cash on delivery</p>
+                <p className={`mt-0.5 text-xs ${payment === "cod" ? "text-cream/60" : "text-ink/50"}`}>
+                  Pay the driver when your gift arrives.
+                </p>
+              </button>
+              <button
+                onClick={() => setPayment("whish")}
+                className={`rounded-2xl p-4 text-left transition ${
+                  payment === "whish" ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
+                }`}
+              >
+                <p className="text-sm font-semibold">Whish transfer</p>
+                <p className={`mt-0.5 text-xs ${payment === "whish" ? "text-cream/60" : "text-ink/50"}`}>
+                  Send the amount to {WHISH_NUMBER} before delivery.
+                </p>
+              </button>
+            </div>
+            {payment === "whish" ? (
+              <div className="mt-3 rounded-2xl bg-gold/12 p-4 text-sm">
+                <p className="font-medium">Send USD {total.toFixed(2)} by Whish to:</p>
+                <p className="mt-1 font-display text-xl font-semibold tracking-wide">{WHISH_NUMBER}</p>
+                <p className="mt-2 text-xs text-ink/55">
+                  Place the order first, then send the transfer. We confirm before delivering.
+                </p>
+              </div>
+            ) : null}
+          </div>
+
           <textarea
             className="mt-6 w-full rounded-xl border border-ink/15 px-4 py-3 text-sm"
             placeholder="Order notes (optional)"
@@ -311,7 +379,9 @@ export function Cart() {
               ? "Placing order..."
               : total <= 0
                 ? "Place order — fully covered by gift card"
-                : `Place order — USD ${total.toFixed(2)} on delivery`}
+                : payment === "whish"
+                  ? `Place order — USD ${total.toFixed(2)} by Whish`
+                  : `Place order — USD ${total.toFixed(2)} on delivery`}
           </button>
         </>
       )}

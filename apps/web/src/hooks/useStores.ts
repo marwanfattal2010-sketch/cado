@@ -36,6 +36,23 @@ export function useStoresByCategory(categorySlug: string | undefined) {
   });
 }
 
+export function useSearchStores(query: string) {
+  return useQuery({
+    queryKey: ["stores", "search", query],
+    enabled: query.trim().length > 1,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("partners")
+        .select("id, name, slug, description, cover_image_url")
+        .eq("status", "active")
+        .ilike("name", `%${query.trim()}%`)
+        .limit(20);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useStore(storeId: string | undefined) {
   return useQuery({
     queryKey: ["store", storeId],

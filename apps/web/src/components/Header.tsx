@@ -1,49 +1,54 @@
-import { Link, NavLink } from "react-router-dom";
-import { useAuth } from "../lib/auth";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useCart } from "../hooks/useCart";
+import { BasketIcon, ChevronLeftIcon } from "./Icons";
 
 export function Header() {
-  const { session, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { id: storeId } = useParams<{ id: string }>();
+  const cart = useCart();
 
-  const navClass = ({ isActive }: { isActive: boolean }) =>
-    `text-sm tracking-wide ${isActive ? "text-ink" : "text-ink/50 hover:text-ink"}`;
+  const isHome = pathname === "/";
+  const onStorePage = pathname.startsWith("/store/");
+
+  // Inside a store, the basket only reflects that store's items.
+  const items = cart.data ?? [];
+  const relevant = onStorePage
+    ? items.filter((i) => i.product?.partner?.id === storeId)
+    : items;
+  const count = relevant.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-ink/10 bg-cream/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-3">
-          <img src="/brand/icon.png" alt="CADO" className="h-9 w-9 rounded-[10px]" />
-          <span className="font-display text-2xl tracking-[0.15em]">CADO</span>
-        </Link>
-
-        <nav className="hidden items-center gap-8 md:flex">
-          <NavLink to="/browse" className={navClass}>
-            Browse
-          </NavLink>
-          <NavLink to="/gift-finder" className={navClass}>
-            Gift Finder
-          </NavLink>
-          <NavLink to="/gift-cards" className={navClass}>
-            Gift Cards
-          </NavLink>
-        </nav>
-
-        <div className="flex items-center gap-5">
-          <Link to="/cart" className="text-sm text-ink/70 hover:text-ink">
-            Cart
+    <header className="sticky top-0 z-20 border-b border-ink/10 bg-cream/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {!isHome ? (
+            <button
+              onClick={() => navigate(-1)}
+              aria-label="Go back"
+              className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink/60 transition hover:bg-ink/5 hover:text-ink"
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </button>
+          ) : null}
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/brand/icon.png" alt="" className="h-8 w-8 rounded-[9px]" />
+            <span className="font-display text-xl font-semibold tracking-[0.14em]">CADO</span>
           </Link>
-          {session ? (
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-ink/50 sm:inline">{profile?.full_name}</span>
-              <button onClick={signOut} className="text-sm text-ink/70 hover:text-ink">
-                Log out
-              </button>
-            </div>
-          ) : (
-            <Link to="/login" className="rounded-full bg-ink px-4 py-2 text-sm text-cream">
-              Log in
-            </Link>
-          )}
         </div>
+
+        <Link
+          to={onStorePage ? `/cart?store=${storeId}` : "/cart"}
+          aria-label="Cart"
+          className="relative flex h-9 w-9 items-center justify-center rounded-full text-ink/70 transition hover:bg-ink/5 hover:text-ink"
+        >
+          <BasketIcon className="h-[22px] w-[22px]" />
+          {count > 0 ? (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-ink">
+              {count}
+            </span>
+          ) : null}
+        </Link>
       </div>
     </header>
   );
