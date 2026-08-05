@@ -101,7 +101,7 @@ export function GiftCardSend() {
     if (!finalAmount || finalAmount <= 0) return setError("Choose an amount.");
     if (!recipientName.trim()) return setError("Who is this gift for?");
     if (delivery === "digital" && !recipientEmail.trim()) {
-      return setError("Add the recipient's email so we can send the card.");
+      return setError("Add the recipient's email or phone number.");
     }
     try {
       const result = await purchase.mutateAsync({
@@ -213,12 +213,14 @@ export function GiftCardSend() {
 
       {delivery === "digital" ? (
         <section className="mt-7">
-          <p className="text-sm font-medium">Their email</p>
+          <p className="text-sm font-medium">Their email or phone number</p>
           <input
-            type="email"
+            type="text"
+            inputMode="email"
             value={recipientEmail}
             onChange={(e) => setRecipientEmail(e.target.value)}
-            placeholder="name@email.com"
+            onFocus={(e) => e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" })}
+            placeholder="name@email.com or 71 234 567"
             className="mt-3 w-full rounded-2xl border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
           />
         </section>
@@ -236,6 +238,7 @@ export function GiftCardSend() {
       <p className="mt-3 text-center text-xs text-ink/40">
         Pay cash on delivery or by Whish transfer. Gift cards are valid for 2 years from purchase.
       </p>
+      <div className="h-40" />
     </div>
   );
 }
