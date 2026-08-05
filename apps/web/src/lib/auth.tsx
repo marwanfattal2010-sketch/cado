@@ -15,7 +15,7 @@ type AuthContextValue = {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ needsEmailConfirm: boolean }>;
   signOut: () => Promise<void>;
 };
 
@@ -56,12 +56,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     });
     if (error) throw error;
+    // With email confirmation on, Supabase returns a user but no session.
+    // With it off (current setting), it returns a live session immediately.
+    if (data.session) {
+      setSession(data.session);
+      return { needsEmailConfirm: false };
+    }
+    return { needsEmailConfirm: true };
   };
 
   const signOut = async () => {

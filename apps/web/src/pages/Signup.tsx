@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
 export function Signup() {
   const { signUp } = useAuth();
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,8 +17,12 @@ export function Signup() {
     setError(null);
     setSubmitting(true);
     try {
-      await signUp(email.trim(), password, fullName.trim());
-      setConfirmSent(true);
+      const { needsEmailConfirm } = await signUp(email.trim(), password, fullName.trim());
+      if (needsEmailConfirm) {
+        setConfirmSent(true);
+      } else {
+        navigate("/account");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign up");
     } finally {
