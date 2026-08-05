@@ -234,7 +234,7 @@ export function GiftCardSend() {
         {purchase.isPending ? "Creating..." : `Pay USD ${finalAmount || 0}`}
       </button>
       <p className="mt-3 text-center text-xs text-ink/40">
-        Pay cash on delivery or by Whish transfer.
+        Pay cash on delivery or by Whish transfer. Gift cards are valid for 2 years from purchase.
       </p>
     </div>
   );

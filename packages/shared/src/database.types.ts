@@ -1040,6 +1040,34 @@ export type Database = {
       current_client_ip: { Args: never; Returns: string }
       generate_gift_card_code: { Args: never; Returns: string }
       generate_gift_card_pin: { Args: never; Returns: string }
+      confirm_gift_card_payment: { Args: { p_gift_card_id: string }; Returns: undefined }
+      cancel_unpaid_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
+      refund_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
+      reconcile_gift_cards: {
+        Args: never
+        Returns: {
+          gift_card_id: string
+          code: string
+          expected_spent: number
+          actual_spent: number
+          discrepancy: number
+        }[]
+      }
+      admin_money_summary: {
+        Args: never
+        Returns: {
+          gift_cards_outstanding_liability: number
+          gift_cards_pending_payment_total: number
+          gift_cards_active_count: number
+          store_id: string
+          store_name: string
+          store_gross_total: number
+          store_commission_total: number
+          store_net_owed_total: number
+          store_net_paid_total: number
+          store_net_unpaid_total: number
+        }[]
+      }
       get_gift_recommendations: {
         Args: {
           p_budget_max: number

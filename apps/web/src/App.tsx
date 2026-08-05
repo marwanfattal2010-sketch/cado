@@ -19,6 +19,7 @@ import { GiftFinder } from "./pages/GiftFinder";
 import { GiftCards } from "./pages/GiftCards";
 import { GiftCardSend } from "./pages/GiftCardSend";
 import { GiftCardRedeem } from "./pages/GiftCardRedeem";
+import { AdminMoney } from "./pages/AdminMoney";
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="gift-cards" element={<GiftCards />} />
         <Route path="gift-cards/send" element={<GiftCardSend />} />
         <Route path="gift-cards/redeem" element={<GiftCardRedeem />} />
+        <Route path="admin/money" element={<AdminMoney />} />
       </Route>
     </Routes>
   );
