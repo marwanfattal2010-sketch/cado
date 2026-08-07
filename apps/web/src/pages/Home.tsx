@@ -74,7 +74,6 @@ function placeholderRow(prices: number[]) {
 }
 const TRENDING_ROW = placeholderRow([42, 38, 65, 34, 78, 22, 19, 89]);
 const BIRTHDAY_GIFTED_ROW = placeholderRow([45, 40, 68, 30, 72, 25, 21, 95]);
-const UNDER_25_ROW = placeholderRow([18, 15, 22, 12, 20, 14, 10, 24]);
 const NEW_ROW = placeholderRow([40, 36, 60, 32, 75, 24, 18, 85]);
 
 const HOW_IT_WORKS = [
@@ -339,16 +338,6 @@ export function Home() {
               >
                 {b}
               </Link>
-            ))}
-          </section>
-
-          {/* 8. Under $25 (placeholder product row) — right under the budget pills */}
-          <div className="pt-6">
-            <RowHeader title="UNDER $25" to="/gift-finder" />
-          </div>
-          <section className="scroll-row gap-3 px-6 pb-1">
-            {UNDER_25_ROW.map((p, i) => (
-              <MiniProductCard key={i} {...p} />
             ))}
           </section>
 
