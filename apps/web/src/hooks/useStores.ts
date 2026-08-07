@@ -40,7 +40,7 @@ export function useStoresByCategory(categorySlug: string | undefined) {
 export function useSearchStores(query: string) {
   return useQuery({
     queryKey: ["stores", "search", query],
-    enabled: query.trim().length > 1,
+    enabled: query.trim().length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
@@ -48,6 +48,22 @@ export function useSearchStores(query: string) {
         .eq("status", "active")
         .ilike("name", `%${query.trim()}%`)
         .limit(20);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useTopStores() {
+  return useQuery({
+    queryKey: ["stores", "top"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("partners")
+        .select("id, name, slug, logo_url, cover_image_url")
+        .eq("status", "active")
+        .order("name")
+        .limit(8);
       if (error) throw error;
       return data;
     },

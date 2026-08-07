@@ -13,7 +13,7 @@ export function Search() {
 
   const stores = useSearchStores(query);
   const products = useSearchProducts(query);
-  const searching = query.trim().length > 1;
+  const searching = query.trim().length > 0;
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-6">

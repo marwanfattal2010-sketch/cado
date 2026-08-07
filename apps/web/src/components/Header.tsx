@@ -44,7 +44,10 @@ export function Header() {
         >
           <BasketIcon className="h-[22px] w-[22px]" />
           {count > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-ink">
+            <span
+              key={count}
+              className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-ink"
+            >
               {count}
             </span>
           ) : null}

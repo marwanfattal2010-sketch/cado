@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProduct } from "../hooks/useProducts";
 import { primaryImage } from "../lib/images";
@@ -15,6 +15,7 @@ export function Product() {
   const [giftWrap, setGiftWrap] = useState(false);
   const [message, setMessage] = useState("");
   const [adding, setAdding] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
   if (isLoading || !product) {
     return <div className="mx-auto max-w-6xl px-6 py-24 text-center text-ink/40">Loading...</div>;
@@ -37,7 +38,8 @@ export function Product() {
       });
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["cart"] });
-      navigate("/cart");
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 1800);
     } finally {
       setAdding(false);
     }
@@ -76,10 +78,23 @@ export function Product() {
           <button
             onClick={addToCart}
             disabled={adding || product.stock_quantity <= 0}
-            className="w-full rounded-full bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-40"
+            className={`w-full rounded-full py-3 text-sm tracking-wide transition-colors disabled:opacity-40 ${
+              justAdded ? "bg-emerald-600 text-white" : "bg-ink text-cream"
+            }`}
           >
-            {product.stock_quantity <= 0 ? "Out of stock" : adding ? "Adding..." : "Add to cart"}
+            {product.stock_quantity <= 0
+              ? "Out of stock"
+              : adding
+                ? "Adding..."
+                : justAdded
+                  ? "Added ✓"
+                  : "Add to cart"}
           </button>
+          {justAdded ? (
+            <Link to="/cart" className="block text-center text-sm text-ink/50 underline">
+              View cart
+            </Link>
+          ) : null}
         </div>
       </div>
     </div>

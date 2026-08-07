@@ -21,10 +21,16 @@ export default {
           "0%, 40%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        bump: {
+          "0%": { transform: "scale(1)" },
+          "40%": { transform: "scale(1.35)" },
+          "100%": { transform: "scale(1)" },
+        },
       },
       animation: {
         "splash-in": "splash-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both",
         "splash-fade": "splash-fade 1200ms ease-out both",
+        bump: "bump 350ms ease-out",
       },
     },
   },

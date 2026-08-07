@@ -78,7 +78,7 @@ export function useGiftFinderProducts(minPrice: number, maxPrice: number | null,
 export function useSearchProducts(query: string) {
   return useQuery({
     queryKey: ["products", "search", query],
-    enabled: query.trim().length > 1,
+    enabled: query.trim().length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")

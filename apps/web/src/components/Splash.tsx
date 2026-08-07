@@ -10,8 +10,8 @@ export function Splash() {
   useEffect(() => {
     if (!visible) return;
     sessionStorage.setItem(SEEN_KEY, "1");
-    const fade = setTimeout(() => setLeaving(true), 1500);
-    const hide = setTimeout(() => setVisible(false), 2100);
+    const fade = setTimeout(() => setLeaving(true), 4200);
+    const hide = setTimeout(() => setVisible(false), 4800);
     return () => {
       clearTimeout(fade);
       clearTimeout(hide);
