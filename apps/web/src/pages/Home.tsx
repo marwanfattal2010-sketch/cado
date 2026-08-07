@@ -41,10 +41,33 @@ export function Home() {
         <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY CATEGORY</h2>
       </section>
 
+      <section className="mx-auto max-w-6xl">
+        <div className="flex gap-4 overflow-x-auto px-6 pb-5">
+          {categories.data?.map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/category/${cat.slug}`}
+              className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
+            >
+              <div className="h-14 w-14 overflow-hidden rounded-full bg-ink/5 ring-1 ring-ink/8">
+                <img src={`/categories/${cat.slug}.jpg`} alt="" className="h-full w-full object-cover" />
+              </div>
+              <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
+            </Link>
+          ))}
+          <Link to="/gift-cards" className="flex w-16 shrink-0 flex-col items-center gap-2 text-center">
+            <div className="h-14 w-14 overflow-hidden rounded-full bg-ink/5 ring-1 ring-ink/8">
+              <img src="/categories/gift-card.jpg" alt="" className="h-full w-full object-cover" />
+            </div>
+            <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">Gift Cards</span>
+          </Link>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-6xl px-6 py-6">
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-          {categories.data?.map((cat, i) => (
-            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} size={i === 0 ? "featured" : "regular"} />
+          {categories.data?.map((cat) => (
+            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
           ))}
           <GiftCardTile />
         </div>
