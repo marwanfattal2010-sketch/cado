@@ -18,3 +18,21 @@ body {
   background-attachment: fixed;
   color: #17140f;
 }
+
+/* Horizontal scrolling rows (category/offer/product strips) — snap, no
+   visible scrollbar, and the container is expected to bleed to the screen
+   edge so the trailing card visibly peeks/cuts off. */
+.scroll-row {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-row::-webkit-scrollbar {
+  display: none;
+}
+.scroll-row > * {
+  scroll-snap-align: start;
+}

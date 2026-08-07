@@ -7,7 +7,9 @@ export function useTrendingProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, price, currency, is_featured, is_trending, product_images(storage_path, is_primary)")
+        .select(
+          "id, title, price, currency, is_featured, is_trending, product_images(storage_path, is_primary), partner:partners(name)"
+        )
         .eq("is_active", true)
         .eq("is_trending", true)
         .limit(10);

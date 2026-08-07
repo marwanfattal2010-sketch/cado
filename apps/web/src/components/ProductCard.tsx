@@ -10,9 +10,10 @@ type ProductCardProps = {
   price: number;
   currency: string;
   product_images?: { storage_path: string; is_primary: boolean }[] | null;
+  partner?: { name: string } | null;
 };
 
-export function ProductCard({ id, title, price, currency, product_images }: ProductCardProps) {
+export function ProductCard({ id, title, price, currency, product_images, partner }: ProductCardProps) {
   const uri = primaryImage(product_images);
   const { session } = useAuth();
   const favoriteIds = useFavoriteIds();
@@ -26,6 +27,7 @@ export function ProductCard({ id, title, price, currency, product_images }: Prod
           <img
             src={uri}
             alt={title}
+            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
@@ -45,6 +47,7 @@ export function ProductCard({ id, title, price, currency, product_images }: Prod
         ) : null}
       </div>
       <p className="mt-3 truncate text-sm font-medium">{title}</p>
+      {partner?.name ? <p className="truncate text-xs text-ink/40">{partner.name}</p> : null}
       <p className="text-sm text-ink/50">
         {currency} {price.toFixed(2)}
       </p>
