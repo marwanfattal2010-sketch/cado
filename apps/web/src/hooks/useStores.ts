@@ -60,7 +60,7 @@ export function useTopStores() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, name, slug, logo_url, cover_image_url")
+        .select("id, name, slug, logo_url, cover_image_url, description")
         .eq("status", "active")
         .order("name")
         .limit(8);

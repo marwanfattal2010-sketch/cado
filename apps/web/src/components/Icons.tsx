@@ -102,6 +102,90 @@ export function LightningIcon({ className = base, filled }: IconProps) {
   );
 }
 
+export function PlusIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function StarIcon({ className = base, filled }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8L6.7 20l1-6-4.3-4.2 6-.9 2.6-5.5Z" />
+    </svg>
+  );
+}
+
+export function WrapIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="8" width="16" height="12" rx="1.5" />
+      <path d="M4 13h16M12 8v12" />
+      <path d="M12 8S10.5 3 8 3a2 2 0 0 0 0 4h4ZM12 8s1.5-5 4-5a2 2 0 0 1 0 4h-4Z" />
+    </svg>
+  );
+}
+
+export function ShieldCheckIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3 4.5 5.5V11c0 5 3.2 8.4 7.5 10 4.3-1.6 7.5-5 7.5-10V5.5L12 3Z" />
+      <path d="M9 12l2 2 4-4.5" />
+    </svg>
+  );
+}
+
+export function WalletIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="6" width="18" height="13" rx="2" />
+      <path d="M3 10h18" />
+      <circle cx="16.5" cy="14" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function TruckIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="12" height="10" rx="1" />
+      <path d="M14 10.5h4.5L21 13.5V17h-7z" />
+      <circle cx="7" cy="18.5" r="1.6" />
+      <circle cx="17.5" cy="18.5" r="1.6" />
+    </svg>
+  );
+}
+
+export function InstagramIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function WhatsAppIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21c-1.6 0-3.1-.4-4.4-1.2L3 21l1.3-4.4A8.9 8.9 0 1 1 12 21Z" />
+      <path d="M8.5 8.8c.2-.5.4-.5.6-.5h.5c.2 0 .4 0 .5.4.2.5.6 1.6.6 1.7.1.1.1.3 0 .4-.1.2-.2.3-.3.4l-.4.4c-.1.1-.3.3-.1.6.2.4.8 1.3 1.8 2.1 1.2 1 2.2 1.3 2.6 1.5.3.1.5.1.6-.1l.6-.7c.2-.2.4-.2.6-.1l1.5.7c.2.1.4.2.4.3.1.2.1 1-.3 1.4-.4.5-1.3.9-2.3.8-1.9-.3-3.6-1.1-5-2.5-1.1-1.1-1.8-2.2-2.1-2.7-.3-.5-.9-1.6-.9-3 0-.4.1-.7.2-1Z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function TikTokIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 3v10.5a3 3 0 1 1-2.5-3" />
+      <path d="M14 3c.3 2.3 1.9 4 4.5 4.3" />
+    </svg>
+  );
+}
+
 export function ChevronLeftIcon({ className = "h-4 w-4" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
