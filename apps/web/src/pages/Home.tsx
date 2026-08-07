@@ -6,28 +6,22 @@ import { ProductCard } from "../components/ProductCard";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { SearchIcon, LightningIcon, GiftIcon } from "../components/Icons";
 
-// --- Placeholder content -----------------------------------------------
-// Everything below with a `from`/`to` gradient instead of an `img` is a
-// placeholder: there's no real photography for offers, occasions, or
-// recipients yet. Swap in real photos by replacing the gradient div with
-// an <img>, same as the category circles and store logos already do.
-
 const OFFERS = [
-  { title: "Free delivery", sub: "On your first order", from: "#E7A98F", to: "#C15E3F" },
-  { title: "Order by 4PM", sub: "Delivered today", from: "#A8C0D6", to: "#5C7D96" },
-  { title: "Send a gift card", sub: "No wrapping required", from: "#C9A24B", to: "#8F6E2E" },
+  { title: "Free delivery", sub: "On your first order", img: "/offers/free-delivery.jpg" },
+  { title: "Order by 4PM", sub: "Delivered today", img: "/offers/same-day.jpg" },
+  { title: "Send a gift card", sub: "No wrapping required", img: "/categories/gift-card.jpg" },
 ];
 
 const BUDGETS = ["Under $25", "$25 – $50", "$50 – $100", "$100+"];
 
 const RECIPIENTS = [
-  { name: "For Her", from: "#D69AA8", to: "#A85D6E" },
-  { name: "For Him", from: "#7C93A8", to: "#455A70" },
-  { name: "For Mom", from: "#E7A98F", to: "#C15E3F" },
-  { name: "For Dad", from: "#9FB0A0", to: "#5C7263" },
-  { name: "For Kids", from: "#E0C48A", to: "#B08F4E" },
-  { name: "For Couples", from: "#B7A0C9", to: "#7C5E98" },
-  { name: "For Your Best Friend", from: "#A8C0D6", to: "#5C7D96" },
+  { name: "For Her", img: "/recipients/for-her.jpg" },
+  { name: "For Him", img: "/recipients/for-him.jpg" },
+  { name: "For Mom", img: "/recipients/for-mom.jpg" },
+  { name: "For Dad", img: "/recipients/for-dad.jpg" },
+  { name: "For Kids", img: "/recipients/for-kids.jpg" },
+  { name: "For Couples", img: "/recipients/for-couples.jpg" },
+  { name: "For Your Best Friend", img: "/recipients/for-best-friend.jpg" },
 ];
 
 // Birthday quick chips -> real category slugs.
@@ -41,13 +35,13 @@ const BIRTHDAY_CHIPS = [
 ];
 
 const MORE_OCCASIONS = [
-  { name: "Anniversary", from: "#D69AA8", to: "#A85D6E" },
-  { name: "Graduation", from: "#9FB8A8", to: "#5F7D6B" },
-  { name: "New Baby", from: "#A8C0D6", to: "#5C7D96" },
-  { name: "Get Well Soon", from: "#E0C48A", to: "#B08F4E" },
-  { name: "Visiting Someone", from: "#B7A0C9", to: "#7C5E98" },
-  { name: "Wedding", from: "#E7B8A0", to: "#C08258" },
-  { name: "Engagement", from: "#C9A0AC", to: "#93586A" },
+  { name: "Anniversary", img: "/occasions/anniversary.jpg" },
+  { name: "Graduation", img: "/occasions/graduation.jpg" },
+  { name: "New Baby", img: "/occasions/new-baby.jpg" },
+  { name: "Get Well Soon", img: "/occasions/get-well-soon.jpg" },
+  { name: "Visiting Someone", img: "/occasions/visiting-someone.jpg" },
+  { name: "Wedding", img: "/occasions/wedding.jpg" },
+  { name: "Engagement", img: "/occasions/engagement.jpg" },
 ];
 
 export function Home() {
@@ -91,12 +85,11 @@ export function Home() {
             <div
               key={o.title}
               className="relative flex h-[120px] w-[83%] shrink-0 flex-col justify-center overflow-hidden rounded-2xl p-5 sm:w-[320px]"
-              style={{ background: `linear-gradient(120deg, ${o.from}, ${o.to})` }}
             >
-              <p className="font-display text-lg font-semibold text-white">{o.title}</p>
-              <p className="mt-1 text-sm text-white/80">{o.sub}</p>
-              {/* placeholder illustration mark — swap for real art/photo */}
-              <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/15" />
+              <img src={o.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" />
+              <p className="relative font-display text-lg font-semibold text-white drop-shadow">{o.title}</p>
+              <p className="relative mt-1 text-sm text-white/85 drop-shadow">{o.sub}</p>
             </div>
           ))}
         </div>
@@ -145,15 +138,18 @@ export function Home() {
 
       {/* 6. Birthday Gifts — the flagship path, most visual weight */}
       <section className="mx-auto max-w-6xl px-6 pt-8">
-        {/* placeholder banner (balloons/candles/wrapped gift) — swap the gradient below for a real photo */}
-        <div
-          className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-3xl p-6"
-          style={{ background: "linear-gradient(135deg, #E7A98F 0%, #C15E3F 55%, #8B3D26 100%)" }}
-        >
-          <p className="font-display text-2xl font-semibold text-white drop-shadow sm:text-3xl">
+        <div className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-3xl p-6">
+          <img
+            src="/occasions/birthday-banner.jpg"
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+          <p className="relative font-display text-2xl font-semibold text-white drop-shadow sm:text-3xl">
             Birthday coming up?
           </p>
-          <p className="mt-1 text-sm text-white/80">Same-day gifts, sorted by what always lands.</p>
+          <p className="relative mt-1 text-sm text-white/85 drop-shadow">Same-day gifts, sorted by what always lands.</p>
         </div>
         <div className="scroll-row -mx-6 mt-3 gap-2 px-6">
           {BIRTHDAY_CHIPS.map((c) => (
@@ -210,9 +206,9 @@ export function Home() {
             key={r.name}
             to="/gift-finder"
             className="relative flex h-[150px] w-[120px] shrink-0 items-end overflow-hidden rounded-2xl p-3"
-            style={{ background: `linear-gradient(160deg, ${r.from}, ${r.to})` }}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+            <img src={r.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             <span className="relative font-display text-sm font-semibold text-white drop-shadow">{r.name}</span>
           </Link>
         ))}
@@ -255,9 +251,9 @@ export function Home() {
             key={o.name}
             to="/gift-finder"
             className="relative flex h-[140px] w-[100px] shrink-0 items-end overflow-hidden rounded-xl p-2.5"
-            style={{ background: `linear-gradient(160deg, ${o.from}, ${o.to})` }}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            <img src={o.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             <span className="relative text-xs font-semibold text-white drop-shadow">{o.name}</span>
           </Link>
         ))}
