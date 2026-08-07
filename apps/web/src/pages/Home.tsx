@@ -1,11 +1,55 @@
+import type { ComponentType } from "react";
 import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { useTrendingProducts } from "../hooks/useProducts";
 import { ProductCard } from "../components/ProductCard";
-import { CategoryTile } from "../components/CategoryTile";
-import { GiftCardTile } from "../components/GiftCardTile";
 import { HeroCarousel } from "../components/HeroCarousel";
-import { SearchIcon } from "../components/Icons";
+import {
+  SearchIcon,
+  GiftIcon,
+  FlowerIcon,
+  JewelryIcon,
+  PerfumeIcon,
+  ChocolateIcon,
+  FashionIcon,
+  ShoeIcon,
+  ToyIcon,
+  HomeGiftIcon,
+  ElectronicsIcon,
+} from "../components/Icons";
+
+const CATEGORY_ICON: Record<string, ComponentType<{ className?: string }>> = {
+  fashion: FashionIcon,
+  shoes: ShoeIcon,
+  toys: ToyIcon,
+  perfumes: PerfumeIcon,
+  chocolate: ChocolateIcon,
+  "jewelry-accessories": JewelryIcon,
+  "home-gifts": HomeGiftIcon,
+  "flowers-gifts": FlowerIcon,
+  electronics: ElectronicsIcon,
+};
+
+const CATEGORY_BG: Record<string, string> = {
+  fashion: "bg-[#EDE6F5]",
+  shoes: "bg-[#F3E3D8]",
+  toys: "bg-[#FCEFD9]",
+  perfumes: "bg-[#FBE4E4]",
+  chocolate: "bg-[#F0E6DC]",
+  "jewelry-accessories": "bg-[#F6EBD9]",
+  "home-gifts": "bg-[#E8F0E7]",
+  "flowers-gifts": "bg-[#FBEAE0]",
+  electronics: "bg-[#E7ECF2]",
+};
+
+const OCCASIONS = [
+  { name: "Birthday", from: "#E7A98F", to: "#C15E3F" },
+  { name: "Visiting Someone", from: "#B7A0C9", to: "#7C5E98" },
+  { name: "Graduation", from: "#9FB8A8", to: "#5F7D6B" },
+  { name: "Anniversary", from: "#D69AA8", to: "#A85D6E" },
+  { name: "New Baby", from: "#A8C0D6", to: "#5C7D96" },
+  { name: "Get Well Soon", from: "#E0C48A", to: "#B08F4E" },
+];
 
 export function Home() {
   const categories = useCategories();
@@ -43,33 +87,47 @@ export function Home() {
 
       <section className="mx-auto max-w-6xl">
         <div className="flex gap-4 overflow-x-auto px-6 pb-5">
-          {categories.data?.map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/category/${cat.slug}`}
-              className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
-            >
-              <div className="h-14 w-14 overflow-hidden rounded-full bg-ink/5 ring-1 ring-ink/8">
-                <img src={`/categories/${cat.slug}.jpg`} alt="" className="h-full w-full object-cover" />
-              </div>
-              <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
-            </Link>
-          ))}
+          {categories.data?.map((cat) => {
+            const Icon = CATEGORY_ICON[cat.slug] ?? GiftIcon;
+            return (
+              <Link
+                key={cat.id}
+                to={`/category/${cat.slug}`}
+                className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
+              >
+                <div
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl text-ink/65 ${CATEGORY_BG[cat.slug] ?? "bg-ink/5"}`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
+                <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
+              </Link>
+            );
+          })}
           <Link to="/gift-cards" className="flex w-16 shrink-0 flex-col items-center gap-2 text-center">
-            <div className="h-14 w-14 overflow-hidden rounded-full bg-ink/5 ring-1 ring-ink/8">
-              <img src="/categories/gift-card.jpg" alt="" className="h-full w-full object-cover" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F9E3DE] text-ink/65">
+              <GiftIcon className="h-6 w-6" />
             </div>
             <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">Gift Cards</span>
           </Link>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-6">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-          {categories.data?.map((cat) => (
-            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
+      <section className="mx-auto max-w-6xl px-6 pt-4 pb-6">
+        <h2 className="mb-4 text-sm font-semibold tracking-widest text-ink/50">SHOP BY OCCASION</h2>
+        <div className="flex flex-col gap-3">
+          {OCCASIONS.map((o) => (
+            <Link
+              key={o.name}
+              to="/gift-finder"
+              className="relative flex aspect-[21/8] items-end overflow-hidden rounded-2xl p-5"
+              style={{ background: `linear-gradient(135deg, ${o.from}, ${o.to})` }}
+            >
+              <span className="font-display text-xl font-semibold text-white drop-shadow sm:text-2xl">
+                {o.name}
+              </span>
+            </Link>
           ))}
-          <GiftCardTile />
         </div>
       </section>
 
