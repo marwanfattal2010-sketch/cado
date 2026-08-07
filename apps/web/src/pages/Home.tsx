@@ -1,16 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
-import { useTrendingProducts } from "../hooks/useProducts";
-import { useTopStores } from "../hooks/useStores";
-import { ProductCard } from "../components/ProductCard";
+import { useSearchProducts } from "../hooks/useProducts";
+import { useSearchStores } from "../hooks/useStores";
 import { HeroCarousel } from "../components/HeroCarousel";
-import { SearchIcon, LightningIcon, GiftIcon } from "../components/Icons";
+import { ProductCard } from "../components/ProductCard";
+import { SearchIcon, GiftIcon } from "../components/Icons";
 
-const OFFERS = [
-  { title: "Free delivery", sub: "On your first order", img: "/offers/free-delivery.jpg" },
-  { title: "Order by 4PM", sub: "Delivered today", img: "/offers/same-day.jpg" },
-  { title: "Send a gift card", sub: "No wrapping required", img: "/categories/gift-card.jpg" },
-];
+const OFFERS = [{ title: "Send a gift card", sub: "No wrapping required", img: "/categories/gift-card.jpg" }];
 
 const BUDGETS = ["Under $25", "$25 – $50", "$50 – $100", "$100+"];
 
@@ -46,8 +43,10 @@ const MORE_OCCASIONS = [
 
 export function Home() {
   const categories = useCategories();
-  const trending = useTrendingProducts();
-  const stores = useTopStores();
+  const [query, setQuery] = useState("");
+  const searching = query.trim().length > 0;
+  const searchProducts = useSearchProducts(query);
+  const searchStores = useSearchStores(query);
 
   return (
     <div>
@@ -67,18 +66,60 @@ export function Home() {
         </Link>
       </section>
 
-      {/* 2. Search bar */}
+      {/* 2. Search bar — searches inline, no navigation */}
       <div className="mx-auto max-w-6xl px-6 pt-4">
-        <Link
-          to="/search"
-          className="flex items-center gap-3 rounded-full border border-ink/12 bg-white px-5 py-3.5 text-sm text-ink/40 shadow-sm"
-        >
-          <SearchIcon className="h-[18px] w-[18px] shrink-0" />
-          Search stores or gifts...
-        </Link>
+        <div className="flex items-center gap-3 rounded-full border border-ink/12 bg-white px-5 py-3.5 text-sm shadow-sm">
+          <SearchIcon className="h-[18px] w-[18px] shrink-0 text-ink/40" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search stores or gifts..."
+            className="w-full bg-transparent text-ink outline-none placeholder:text-ink/40"
+          />
+        </div>
       </div>
 
-      {/* 3. Offers strip — 1.2 cards visible, bleeds to the screen edge */}
+      {searching ? (
+        <div className="mx-auto max-w-6xl px-6 pt-6 pb-10">
+          {searchStores.data && searchStores.data.length > 0 ? (
+            <>
+              <h2 className="mb-3 text-sm font-semibold tracking-widest text-ink/50">STORES</h2>
+              <div className="flex flex-col gap-3">
+                {searchStores.data.map((s) => (
+                  <Link
+                    key={s.id}
+                    to={`/store/${s.id}`}
+                    className="flex items-center gap-4 rounded-2xl bg-white p-3 ring-1 ring-ink/5"
+                  >
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-ink/5">
+                      {s.cover_image_url ? (
+                        <img src={s.cover_image_url} alt="" className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{s.name}</p>
+                      {s.description ? <p className="truncate text-sm text-ink/50">{s.description}</p> : null}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          <h2 className="mb-3 mt-8 text-sm font-semibold tracking-widest text-ink/50">GIFTS</h2>
+          {searchProducts.data && searchProducts.data.length > 0 ? (
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+              {searchProducts.data.map((p) => (
+                <ProductCard key={p.id} {...p} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-ink/40">No gifts match "{query}".</p>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* 3. Offers strip — 1.2 cards visible, bleeds to the screen edge */}
       <section className="mt-6">
         <div className="scroll-row gap-3 pl-6 pr-6">
           {OFFERS.map((o) => (
@@ -95,21 +136,21 @@ export function Home() {
         </div>
       </section>
 
-      {/* 4. Need it Today */}
+      {/* 4. Gift Cards banner */}
       <section className="mx-auto max-w-6xl px-6 pt-5">
         <Link
-          to="/browse"
-          className="flex h-[100px] items-center gap-4 rounded-2xl bg-ink px-6 text-cream"
+          to="/gift-cards/send"
+          className="flex h-[100px] items-center justify-between gap-4 rounded-2xl bg-ink px-6 text-cream"
         >
-          <LightningIcon className="h-7 w-7 shrink-0 text-gold" filled />
           <div>
-            <p className="font-display text-base font-semibold sm:text-lg">Order before 4PM, get it today.</p>
-            <p className="text-xs text-cream/60">Same-day delivery across Lebanon</p>
+            <p className="font-display text-base font-semibold sm:text-lg">Not sure what to get?</p>
+            <p className="text-xs text-cream/60">Send a CADO gift card instead.</p>
           </div>
+          <GiftIcon className="h-8 w-8 shrink-0 text-gold" />
         </Link>
       </section>
 
-      {/* 5. Shop by Category — real photo circles */}
+      {/* 5. Shop by Category — real photo squares */}
       <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
         <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY CATEGORY</h2>
       </section>
@@ -121,14 +162,14 @@ export function Home() {
               to={`/category/${cat.slug}`}
               className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
             >
-              <div className="h-14 w-14 overflow-hidden rounded-full bg-ink/5 ring-1 ring-ink/8">
+              <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
                 <img src={`/categories/${cat.slug}.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />
               </div>
               <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
             </Link>
           ))}
           <Link to="/gift-cards" className="flex w-16 shrink-0 flex-col items-center gap-2 text-center">
-            <div className="h-14 w-14 overflow-hidden rounded-full bg-ink/5 ring-1 ring-ink/8">
+            <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
               <img src="/categories/gift-card.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
             </div>
             <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">Gift Cards</span>
@@ -164,23 +205,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* 7. Trending This Week — real inventory, horizontal row */}
-      {trending.data && trending.data.length > 0 ? (
-        <>
-          <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-            <h2 className="text-sm font-semibold tracking-widest text-ink/50">TRENDING THIS WEEK</h2>
-          </section>
-          <section className="scroll-row gap-4 px-6 pb-1">
-            {trending.data.map((p) => (
-              <div key={p.id} className="w-36 shrink-0">
-                <ProductCard {...p} />
-              </div>
-            ))}
-          </section>
-        </>
-      ) : null}
-
-      {/* 8. Shop by Budget — flat pills, no photos */}
+      {/* 7. Shop by Budget — flat pills, no photos */}
       <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
         <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY BUDGET</h2>
       </section>
@@ -196,7 +221,7 @@ export function Home() {
         ))}
       </section>
 
-      {/* 9. Shop by Recipient — photo cards */}
+      {/* 8. Shop by Recipient — photo cards */}
       <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
         <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY RECIPIENT</h2>
       </section>
@@ -214,34 +239,7 @@ export function Home() {
         ))}
       </section>
 
-      {/* 10. Our Partner Stores — trust signal for the Lebanese market */}
-      {stores.data && stores.data.length > 0 ? (
-        <>
-          <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-            <h2 className="text-sm font-semibold tracking-widest text-ink/50">OUR PARTNER STORES</h2>
-          </section>
-          <section className="scroll-row gap-4 px-6 pb-1">
-            {stores.data.map((store) => (
-              <Link
-                key={store.id}
-                to={`/store/${store.id}`}
-                className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
-              >
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-ink/10">
-                  {store.logo_url ? (
-                    <img src={store.logo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-base font-semibold text-ink/40">{store.name.charAt(0)}</span>
-                  )}
-                </div>
-                <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{store.name}</span>
-              </Link>
-            ))}
-          </section>
-        </>
-      ) : null}
-
-      {/* 11. More Occasions — deliberately small, secondary */}
+      {/* 9. More Occasions — deliberately small, secondary */}
       <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
         <h2 className="text-sm font-semibold tracking-widest text-ink/50">MORE OCCASIONS</h2>
       </section>
@@ -259,19 +257,9 @@ export function Home() {
         ))}
       </section>
 
-      {/* 12. Gift Cards — closing banner */}
-      <section className="mx-auto max-w-6xl px-6 pt-8 pb-10">
-        <Link
-          to="/gift-cards/send"
-          className="flex h-[110px] items-center justify-between gap-4 rounded-2xl bg-ink px-6 text-cream"
-        >
-          <div>
-            <p className="font-display text-base font-semibold sm:text-lg">Not sure what to get?</p>
-            <p className="text-xs text-cream/60">Send a CADO gift card instead.</p>
-          </div>
-          <GiftIcon className="h-8 w-8 shrink-0 text-gold" />
-        </Link>
-      </section>
+          <div className="pb-10" />
+        </>
+      )}
     </div>
   );
 }

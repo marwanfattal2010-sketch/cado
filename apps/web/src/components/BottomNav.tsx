@@ -1,9 +1,8 @@
 import { NavLink } from "react-router-dom";
-import { AccountIcon, GiftIcon, HomeIcon, OrdersIcon, SearchIcon } from "./Icons";
+import { AccountIcon, GiftIcon, HomeIcon, OrdersIcon } from "./Icons";
 
 const TABS = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
-  { to: "/search", label: "Search", Icon: SearchIcon, end: false },
   { to: "/gift-cards", label: "Gift Cards", Icon: GiftIcon, end: false },
   { to: "/orders", label: "Orders", Icon: OrdersIcon, end: false },
   { to: "/account", label: "Account", Icon: AccountIcon, end: false },
