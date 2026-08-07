@@ -15,9 +15,9 @@ export function Home() {
     <div>
       <section className="relative flex h-[60vh] min-h-[380px] flex-col items-center justify-center px-6 text-center">
         <HeroCarousel />
-        <p className="relative text-[11px] font-medium tracking-[0.35em] text-gold">GIFTS, DELIVERED</p>
-        <h1 className="relative mt-3 font-display text-5xl leading-tight tracking-wide text-white sm:text-6xl">
-          Give something beautiful.
+        <p className="relative text-[11px] font-medium tracking-[0.35em] text-gold">NEED A GIFT TODAY</p>
+        <h1 className="relative mt-3 max-w-md font-display text-3xl leading-tight tracking-wide text-white sm:max-w-xl sm:text-5xl">
+          Find the perfect gift and have it delivered the same day.
         </h1>
         <Link
           to="/gift-finder"
