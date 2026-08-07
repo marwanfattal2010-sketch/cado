@@ -112,10 +112,8 @@ const INSTAGRAM_IMAGES = [
   "/instagram/8.jpg",
 ];
 
-// Placeholders — replace with the real WhatsApp Business number and a
-// confirmed inbox before this goes live for real store owners.
-const PARTNER_WHATSAPP_NUMBER = "96170000000"; // TODO: real number
-const PARTNER_EMAIL = "partners@cadolebanon.com"; // TODO: confirm real inbox
+const PARTNER_WHATSAPP_NUMBER = "96181900002";
+const PARTNER_EMAIL = "fattalmarwan33@gmail.com";
 // Stays hidden until there's a real count worth showing.
 const PARTNER_STORE_COUNT = 0;
 
