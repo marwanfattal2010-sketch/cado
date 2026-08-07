@@ -5,6 +5,7 @@ import { ProductCard } from "../components/ProductCard";
 import { CategoryTile } from "../components/CategoryTile";
 import { GiftCardTile } from "../components/GiftCardTile";
 import { HeroCarousel } from "../components/HeroCarousel";
+import { SearchIcon } from "../components/Icons";
 
 export function Home() {
   const categories = useCategories();
@@ -12,35 +13,38 @@ export function Home() {
 
   return (
     <div>
-      <section className="relative flex h-[70vh] min-h-[420px] flex-col items-center justify-center px-6 text-center">
+      <div className="mx-auto max-w-6xl px-6 pt-4">
+        <Link
+          to="/search"
+          className="flex items-center gap-3 rounded-full border border-ink/12 bg-white px-5 py-3.5 text-sm text-ink/40 shadow-sm"
+        >
+          <SearchIcon className="h-[18px] w-[18px] shrink-0" />
+          Search stores or gifts...
+        </Link>
+      </div>
+
+      <section className="relative mt-4 flex h-[60vh] min-h-[380px] flex-col items-center justify-center px-6 text-center">
         <HeroCarousel />
-        <p className="relative text-[11px] font-medium tracking-[0.35em] text-gold">LEBANON'S GIFT MARKETPLACE</p>
+        <p className="relative text-[11px] font-medium tracking-[0.35em] text-gold">GIFTS, DELIVERED</p>
         <h1 className="relative mt-3 font-display text-5xl leading-tight tracking-wide text-white sm:text-6xl">
           Never show up empty-handed.
         </h1>
-        <p className="relative mt-4 max-w-md text-sm text-white/70 sm:text-base">
-          Flowers, jewelry, chocolate, beauty and more from Lebanon's best boutiques — picked, wrapped, and
-          delivered the same day.
-        </p>
         <Link
           to="/gift-finder"
           className="relative mt-8 inline-block rounded-full bg-cream px-10 py-4 text-sm font-medium tracking-wide text-ink"
         >
-          Find a gift now
+          Find a gift
         </Link>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 pt-12 pb-6 text-center">
-        <h2 className="font-accent text-4xl italic text-ink sm:text-5xl">Find Something Beautiful</h2>
-        <p className="mt-3 font-display text-sm text-ink/50">
-          Handpicked categories from Lebanon's best boutiques — same-day delivery, always.
-        </p>
+      <section className="mx-auto max-w-6xl px-6 pt-10 pb-6">
+        <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY CATEGORY</h2>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-6">
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3">
-          {categories.data?.map((cat) => (
-            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+          {categories.data?.map((cat, i) => (
+            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} wide={i === 0} />
           ))}
           <GiftCardTile />
         </div>

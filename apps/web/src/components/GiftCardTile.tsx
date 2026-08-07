@@ -2,21 +2,16 @@ import { Link } from "react-router-dom";
 
 export function GiftCardTile() {
   return (
-    <Link
-      to="/gift-cards"
-      className="group block overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5 transition-shadow duration-300 hover:shadow-xl"
-    >
-      <div className="aspect-[4/5] overflow-hidden">
-        <img
-          src="/categories/gift-card.jpg"
-          alt="Gift Cards"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-      </div>
-      <div className="flex items-center justify-between px-5 py-4">
-        <span className="font-display text-lg font-semibold text-ink sm:text-xl">Gift Cards</span>
-        <span className="text-ink/30 transition-transform duration-300 group-hover:translate-x-1">→</span>
-      </div>
+    <Link to="/gift-cards" className="group relative block aspect-square overflow-hidden rounded-2xl">
+      <img
+        src="/categories/gift-card.jpg"
+        alt=""
+        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+      <span className="absolute bottom-3 left-4 font-display text-base font-semibold text-white drop-shadow sm:text-lg">
+        Gift Cards
+      </span>
     </Link>
   );
 }
