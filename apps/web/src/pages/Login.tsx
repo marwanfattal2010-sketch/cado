@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { GoogleIcon } from "../components/Icons";
 
 export function Login() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,10 +26,38 @@ export function Login() {
     }
   };
 
+  const onGoogle = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not sign in with Google");
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="mx-auto flex max-w-md flex-col px-6 py-24">
       <h1 className="font-display text-3xl">Log in</h1>
-      <form onSubmit={onSubmit} className="mt-8 space-y-3">
+
+      <button
+        type="button"
+        onClick={onGoogle}
+        disabled={googleLoading}
+        className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-ink/15 py-3 text-sm font-medium disabled:opacity-50"
+      >
+        <GoogleIcon className="h-5 w-5" />
+        {googleLoading ? "Redirecting..." : "Continue with Google"}
+      </button>
+
+      <div className="my-6 flex items-center gap-3 text-xs text-ink/40">
+        <div className="h-px flex-1 bg-ink/10" />
+        or
+        <div className="h-px flex-1 bg-ink/10" />
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-3">
         <input
           className="w-full rounded-xl border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
           type="email"
