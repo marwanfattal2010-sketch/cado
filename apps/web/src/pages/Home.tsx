@@ -13,6 +13,20 @@ export function Home() {
 
   return (
     <div>
+      <section className="relative flex h-[60vh] min-h-[380px] flex-col items-center justify-center px-6 text-center">
+        <HeroCarousel />
+        <p className="relative text-[11px] font-medium tracking-[0.35em] text-gold">GIFTS, DELIVERED</p>
+        <h1 className="relative mt-3 font-display text-5xl leading-tight tracking-wide text-white sm:text-6xl">
+          Give something beautiful.
+        </h1>
+        <Link
+          to="/gift-finder"
+          className="relative mt-8 inline-block rounded-full bg-cream px-10 py-4 text-sm font-medium tracking-wide text-ink"
+        >
+          Find a gift
+        </Link>
+      </section>
+
       <div className="mx-auto max-w-6xl px-6 pt-4">
         <Link
           to="/search"
@@ -22,20 +36,6 @@ export function Home() {
           Search stores or gifts...
         </Link>
       </div>
-
-      <section className="relative mt-4 flex h-[60vh] min-h-[380px] flex-col items-center justify-center px-6 text-center">
-        <HeroCarousel />
-        <p className="relative text-[11px] font-medium tracking-[0.35em] text-gold">GIFTS, DELIVERED</p>
-        <h1 className="relative mt-3 font-display text-5xl leading-tight tracking-wide text-white sm:text-6xl">
-          Never show up empty-handed.
-        </h1>
-        <Link
-          to="/gift-finder"
-          className="relative mt-8 inline-block rounded-full bg-cream px-10 py-4 text-sm font-medium tracking-wide text-ink"
-        >
-          Find a gift
-        </Link>
-      </section>
 
       <section className="mx-auto max-w-6xl px-6 pt-10 pb-6">
         <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY CATEGORY</h2>
