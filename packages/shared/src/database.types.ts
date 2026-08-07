@@ -1027,10 +1027,12 @@ export type Database = {
     }
     Functions: {
       check_gift_card_balance: {
-        Args: { p_code: string; p_pin: string }
+        Args: { p_code: string }
         Returns: {
           currency: string
           remaining_balance: number
+          from_name: string | null
+          card_message: string | null
         }[]
       }
       check_rate_limit: {
@@ -1115,7 +1117,6 @@ export type Database = {
           p_delivery_date?: string
           p_delivery_time_slot?: string
           p_gift_card_code?: string
-          p_gift_card_pin?: string
           p_notes?: string
           p_payment_method?: string
         }
@@ -1129,13 +1130,12 @@ export type Database = {
           p_delivery_method?: string
           p_message?: string
           p_recipient_email?: string
-          p_recipient_name: string
+          p_recipient_name?: string
         }
         Returns: {
           code: string
           id: string
           original_amount: number
-          pin: string
         }[]
       }
       show_limit: { Args: never; Returns: number }

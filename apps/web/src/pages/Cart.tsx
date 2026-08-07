@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
 import { primaryImage } from "../lib/images";
 import {
   useAddresses,
@@ -36,15 +37,15 @@ export function Cart() {
     building: "",
   });
   const [orderNotes, setOrderNotes] = useState("");
-  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
+  const [placedOrder, setPlacedOrder] = useState<{ id: string; number: string } | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [giftCardCode, setGiftCardCode] = useState("");
-  const [giftCardPin, setGiftCardPin] = useState("");
   const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
   const [giftCardError, setGiftCardError] = useState<string | null>(null);
   const [checkingGiftCard, setCheckingGiftCard] = useState(false);
   const [payment, setPayment] = useState<"cod" | "whish">("cod");
+  const DELIVERY_FEE = 5;
 
   const visibleItems = useMemo(() => {
     if (!cart.data) return [];
@@ -71,6 +72,44 @@ export function Cart() {
     }, 0);
   }, [visibleItems]);
 
+  const applyGiftCard = async (code: string) => {
+    setGiftCardError(null);
+    setGiftCardBalance(null);
+    if (!code.trim()) return;
+    setCheckingGiftCard(true);
+    try {
+      const result = await checkGiftCardBalance(code);
+      if (!result) {
+        setGiftCardError("That code isn't valid.");
+      } else {
+        setGiftCardBalance(result.remaining_balance);
+      }
+    } catch (e) {
+      // The server returns the same generic message for every rejection reason.
+      setGiftCardError(e instanceof Error ? e.message : "That code isn't valid.");
+    } finally {
+      setCheckingGiftCard(false);
+    }
+  };
+
+  // A card redeemed on the Redeem screen is applied here automatically. This
+  // (and every other hook) must stay above the early returns below — hooks
+  // that only run on some renders violate React's Rules of Hooks and can
+  // crash the whole page once the session finishes loading.
+  useEffect(() => {
+    const saved = sessionStorage.getItem("cado-gift-card");
+    if (saved && !giftCardCode) {
+      try {
+        const { code } = JSON.parse(saved) as { code: string };
+        setGiftCardCode(code);
+        void applyGiftCard(code);
+      } catch {
+        sessionStorage.removeItem("cado-gift-card");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!session) {
     return (
       <div className="mx-auto max-w-md px-6 py-24 text-center">
@@ -83,14 +122,37 @@ export function Cart() {
     );
   }
 
-  if (placedOrderId) {
+  if (placedOrder) {
+    const steps = ["Order placed", "Store is preparing it", "Out for delivery", "Delivered"];
     return (
-      <div className="mx-auto max-w-md px-6 py-24 text-center">
-        <h1 className="font-display text-3xl">Order placed</h1>
-        <p className="mt-4 text-ink/60">
-          Your order has been placed for Cash on Delivery. We'll notify you as each store confirms.
+      <div className="mx-auto max-w-md px-6 py-16 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-ink text-cream">
+          <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
+            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <h1 className="mt-5 font-display text-2xl font-semibold">Order placed</h1>
+        <p className="mt-1 text-sm text-ink/50">#{placedOrder.number}</p>
+
+        <div className="mt-8 rounded-3xl bg-white p-6 text-left ring-1 ring-ink/8">
+          {steps.map((step, i) => (
+            <div key={step} className="flex items-center gap-3 py-2">
+              <div className={`h-2.5 w-2.5 rounded-full ${i === 0 ? "bg-ink" : "bg-ink/15"}`} />
+              <span className={`text-sm ${i === 0 ? "font-medium text-ink" : "text-ink/40"}`}>{step}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-6 text-sm text-ink/60">
+          {payment === "whish"
+            ? `We'll confirm as soon as your Whish transfer arrives, then get it moving.`
+            : "Pay the driver when your gift arrives. We'll text you as each store confirms."}
         </p>
-        <Link to="/" className="mt-8 inline-block rounded-full bg-ink px-6 py-3 text-sm text-cream">
+
+        <Link to="/orders" className="mt-8 inline-block w-full rounded-full bg-ink px-6 py-3 text-sm text-cream">
+          Track this order
+        </Link>
+        <Link to="/" className="mt-3 inline-block text-sm text-ink/50 underline">
           Continue shopping
         </Link>
       </div>
@@ -108,46 +170,10 @@ export function Cart() {
     }
   };
 
-  const applyGiftCard = async (code: string, pin: string) => {
-    setGiftCardError(null);
-    setGiftCardBalance(null);
-    if (!code.trim() || !pin.trim()) return;
-    setCheckingGiftCard(true);
-    try {
-      const result = await checkGiftCardBalance(code, pin);
-      if (!result) {
-        setGiftCardError("That code or PIN isn't valid.");
-      } else {
-        setGiftCardBalance(result.remaining_balance);
-      }
-    } catch (e) {
-      // The server returns the same generic message for every rejection reason.
-      setGiftCardError(e instanceof Error ? e.message : "That code or PIN isn't valid.");
-    } finally {
-      setCheckingGiftCard(false);
-    }
-  };
+  const onApplyGiftCard = () => applyGiftCard(giftCardCode);
 
-  const onApplyGiftCard = () => applyGiftCard(giftCardCode, giftCardPin);
-
-  // A card redeemed on the Redeem screen is applied here automatically.
-  useEffect(() => {
-    const saved = sessionStorage.getItem("cado-gift-card");
-    if (saved && !giftCardCode) {
-      try {
-        const { code, pin } = JSON.parse(saved) as { code: string; pin: string };
-        setGiftCardCode(code);
-        setGiftCardPin(pin);
-        void applyGiftCard(code, pin);
-      } catch {
-        sessionStorage.removeItem("cado-gift-card");
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal) : 0;
-  const total = Math.max(subtotal - discount, 0);
+  const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal + DELIVERY_FEE) : 0;
+  const total = Math.max(subtotal + DELIVERY_FEE - discount, 0);
 
   const onPlaceOrder = async () => {
     if (!defaultAddress) return;
@@ -158,11 +184,11 @@ export function Cart() {
         deliveryAddressId: defaultAddress.id,
         notes: orderNotes,
         giftCardCode: giftCardBalance !== null ? giftCardCode.trim() : undefined,
-        giftCardPin: giftCardBalance !== null ? giftCardPin.trim() : undefined,
         paymentMethod: payment,
       });
       sessionStorage.removeItem("cado-gift-card");
-      setPlacedOrderId(orderId);
+      const { data } = await supabase.from("orders").select("order_number").eq("id", orderId).single();
+      setPlacedOrder({ id: orderId, number: data?.order_number ?? orderId.slice(0, 8).toUpperCase() });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not place order");
     } finally {
@@ -247,20 +273,9 @@ export function Cart() {
                   setGiftCardError(null);
                 }}
               />
-              <input
-                className="flex-1 rounded-xl border border-ink/15 px-4 py-3 text-center text-sm tracking-[0.3em]"
-                placeholder="PIN"
-                inputMode="numeric"
-                value={giftCardPin}
-                onChange={(e) => {
-                  setGiftCardPin(e.target.value.replace(/\D/g, "").slice(0, 6));
-                  setGiftCardBalance(null);
-                  setGiftCardError(null);
-                }}
-              />
               <button
                 onClick={onApplyGiftCard}
-                disabled={checkingGiftCard || !giftCardCode.trim() || !giftCardPin.trim()}
+                disabled={checkingGiftCard || !giftCardCode.trim()}
                 className="rounded-xl border border-ink/20 px-5 py-3 text-sm font-medium disabled:opacity-40 sm:py-0"
               >
                 {checkingGiftCard ? "Checking..." : "Apply"}
@@ -278,6 +293,10 @@ export function Cart() {
             <div className="flex items-center justify-between text-ink/60">
               <span>Subtotal</span>
               <span>USD {subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-ink/60">
+              <span>Delivery</span>
+              <span>USD {DELIVERY_FEE.toFixed(2)}</span>
             </div>
             {discount > 0 ? (
               <div className="flex items-center justify-between text-emerald-700">

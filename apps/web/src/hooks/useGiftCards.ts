@@ -8,25 +8,20 @@ export function usePurchaseGiftCard() {
   return useMutation({
     mutationFn: async (input: {
       amount: number;
-      recipientName: string;
-      recipientEmail?: string;
+      recipientName?: string;
       message?: string;
       deliveryMethod: DeliveryMethod;
       buyerName?: string;
-      buyerEmail?: string;
     }) => {
       const { data, error } = await supabase.rpc("purchase_gift_card", {
         p_amount: input.amount,
-        p_recipient_name: input.recipientName,
-        p_recipient_email: input.recipientEmail || null,
+        p_recipient_name: input.recipientName || null,
         p_message: input.message || null,
         p_delivery_method: input.deliveryMethod,
         p_buyer_name: input.buyerName || null,
-        p_buyer_email: input.buyerEmail || null,
       });
       if (error) throw error;
-      // The PIN is only ever returned here, once. There is no way to recover it later.
-      return data?.[0] as { code: string; pin: string; id: string; original_amount: number };
+      return data?.[0] as { code: string; id: string; original_amount: number };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gift-cards", "mine"] });
@@ -34,12 +29,13 @@ export function usePurchaseGiftCard() {
   });
 }
 
-/** Checks a code + PIN together. Same generic failure for every rejection reason. */
-export async function checkGiftCardBalance(code: string, pin: string) {
+/** Checks a code. Same generic failure for every rejection reason. */
+export async function checkGiftCardBalance(code: string) {
   const { data, error } = await supabase.rpc("check_gift_card_balance", {
     p_code: code.trim(),
-    p_pin: pin.trim(),
   });
   if (error) throw error;
-  return data?.[0] as { remaining_balance: number; currency: string } | undefined;
+  return data?.[0] as
+    | { remaining_balance: number; currency: string; from_name: string | null; card_message: string | null }
+    | undefined;
 }
