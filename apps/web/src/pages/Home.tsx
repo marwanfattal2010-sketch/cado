@@ -2,14 +2,10 @@ import { Link } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { useTrendingProducts } from "../hooks/useProducts";
 import { ProductCard } from "../components/ProductCard";
-import { CategoryTile, type TileSize } from "../components/CategoryTile";
+import { CategoryTile } from "../components/CategoryTile";
 import { GiftCardTile } from "../components/GiftCardTile";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { SearchIcon } from "../components/Icons";
-
-// Deliberate bento pattern, not a repeating formula — the featured category
-// leads big, then sizes vary so the grid doesn't read as a wall of squares.
-const CATEGORY_SIZES: TileSize[] = ["big", "tall", "square", "square", "wide", "square", "tall", "square", "square"];
 
 export function Home() {
   const categories = useCategories();
@@ -46,9 +42,9 @@ export function Home() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-6">
-        <div className="grid grid-flow-row-dense grid-cols-2 auto-rows-[92px] gap-3 sm:auto-rows-[110px] sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
           {categories.data?.map((cat, i) => (
-            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} size={CATEGORY_SIZES[i] ?? "square"} />
+            <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} size={i === 0 ? "featured" : "regular"} />
           ))}
           <GiftCardTile />
         </div>
