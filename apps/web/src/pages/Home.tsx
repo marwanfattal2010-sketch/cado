@@ -7,8 +7,6 @@ import { HeroCarousel } from "../components/HeroCarousel";
 import { ProductCard } from "../components/ProductCard";
 import { SearchIcon, GiftIcon } from "../components/Icons";
 
-const OFFERS = [{ title: "Send a gift card", sub: "No wrapping required", img: "/categories/gift-card.jpg" }];
-
 const BUDGETS = ["Under $25", "$25 – $50", "$50 – $100", "$100+"];
 
 const RECIPIENTS = [
@@ -119,25 +117,8 @@ export function Home() {
         </div>
       ) : (
         <>
-          {/* 3. Offers strip — 1.2 cards visible, bleeds to the screen edge */}
-      <section className="mt-6">
-        <div className="scroll-row gap-3 pl-6 pr-6">
-          {OFFERS.map((o) => (
-            <div
-              key={o.title}
-              className="relative flex h-[120px] w-[83%] shrink-0 flex-col justify-center overflow-hidden rounded-2xl p-5 sm:w-[320px]"
-            >
-              <img src={o.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" />
-              <p className="relative font-display text-lg font-semibold text-white drop-shadow">{o.title}</p>
-              <p className="relative mt-1 text-sm text-white/85 drop-shadow">{o.sub}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. Gift Cards banner */}
-      <section className="mx-auto max-w-6xl px-6 pt-5">
+          {/* 4. Gift Cards banner */}
+      <section className="mx-auto max-w-6xl px-6 pt-6">
         <Link
           to="/gift-cards/send"
           className="flex h-[100px] items-center justify-between gap-4 rounded-2xl bg-ink px-6 text-cream"
@@ -150,25 +131,21 @@ export function Home() {
         </Link>
       </section>
 
-      {/* 5. Shop by Category — real photo squares */}
+      {/* 5. Shop by Category — real photo squares, 5-and-5 grid, no swiping */}
       <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
         <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY CATEGORY</h2>
       </section>
-      <section>
-        <div className="scroll-row gap-4 px-6 pb-2">
+      <section className="mx-auto max-w-6xl px-6 pb-2">
+        <div className="grid grid-cols-5 gap-x-2 gap-y-4">
           {categories.data?.map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/category/${cat.slug}`}
-              className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
-            >
+            <Link key={cat.id} to={`/category/${cat.slug}`} className="flex flex-col items-center gap-2 text-center">
               <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
                 <img src={`/categories/${cat.slug}.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />
               </div>
               <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
             </Link>
           ))}
-          <Link to="/gift-cards" className="flex w-16 shrink-0 flex-col items-center gap-2 text-center">
+          <Link to="/gift-cards" className="flex flex-col items-center gap-2 text-center">
             <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
               <img src="/categories/gift-card.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
             </div>
