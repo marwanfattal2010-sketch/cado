@@ -6,6 +6,7 @@ import { primaryImage } from "../lib/images";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { Skeleton } from "../components/Skeleton";
+import { useToast } from "../components/ui";
 
 const NOTE_SUGGESTIONS = [
   "Happy birthday!",
@@ -22,6 +23,7 @@ export function Product() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [message, setMessage] = useState("");
   const [noteFrom, setNoteFrom] = useState("");
   const [noteTo, setNoteTo] = useState("");
@@ -67,6 +69,7 @@ export function Product() {
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["cart"] });
       setJustAdded(true);
+      toast("Added to cart");
       setTimeout(() => setJustAdded(false), 1800);
     } finally {
       setAdding(false);
