@@ -2,15 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategories } from "../hooks/useCategories";
-import { useSearchProducts, categoryProductsQuery } from "../hooks/useProducts";
+import { useSearchProducts, categoryProductsQuery, useProductsByTag } from "../hooks/useProducts";
 import { useSearchStores, useTopStores, useStoreProducts } from "../hooks/useStores";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { ProductCard } from "../components/ProductCard";
-import { ProductGridSkeleton } from "../components/Skeleton";
+import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
 import {
   SearchIcon,
   GiftIcon,
-  PlusIcon,
   StarIcon,
   WrapIcon,
   ShieldCheckIcon,
@@ -45,33 +44,9 @@ const MORE_OCCASIONS = [
   { name: "Engagement", img: "/occasions/engagement.jpg" },
 ];
 
-// ---------------------------------------------------------------------
-// PLACEHOLDER product data. None of these are real rows in the database —
-// there's no "trending", "most gifted", "under $25", or "new" query built
-// yet. This is realistic-looking filler so the rows aren't empty; swap
-// each row for a real query (useTrendingProducts, an order-count-by-
-// occasion aggregate, a price-range filter, a created_at sort) once
-// there's real inventory/order history to power it.
-// ---------------------------------------------------------------------
-const PLACEHOLDER_CATALOG = [
-  { name: "Bouquet of Red Roses", store: "Beirut Blooms", img: "/products/roses.jpg" },
-  { name: "Chocolate Gift Box", store: "Cocoa & Co.", img: "/products/chocolate-box.jpg" },
-  { name: "Silver Charm Bracelet", store: "Maison Zahra Jewellers", img: "/products/bracelet.jpg" },
-  { name: "Scented Candle Set", store: "Beirut Beauty Bar", img: "/products/candle-set.jpg" },
-  { name: "Signature Perfume", store: "Essence House", img: "/products/perfume.jpg" },
-  { name: "Plush Teddy Bear", store: "Playground Co.", img: "/products/teddy-bear.jpg" },
-  { name: "Coffee Mug Duo", store: "Cedar Street Fashion", img: "/products/mug-set.jpg" },
-  { name: "Wireless Earbuds", store: "Anchor & Oak", img: "/products/earbuds.jpg" },
-];
-function placeholderRow(prices: number[]) {
-  return PLACEHOLDER_CATALOG.map((item, i) => ({ ...item, price: prices[i] }));
-}
-const TRENDING_ROW = placeholderRow([42, 38, 65, 34, 78, 22, 19, 89]);
-const BIRTHDAY_GIFTED_ROW = placeholderRow([45, 40, 68, 30, 72, 25, 21, 95]);
-const NEW_ROW = placeholderRow([40, 36, 60, 32, 75, 24, 18, 85]);
-
 const HOW_IT_WORKS = [
-  { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "Browse real stock from stores across Lebanon." },
+  // "real stock" isn't true until inventory is live — don't claim it yet.
+  { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "Browse gifts from stores across Lebanon." },
   { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Every order comes gift-wrapped, with your note inside." },
   { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order before 4PM and it arrives the same day." },
 ];
@@ -117,39 +92,6 @@ function currentWeekNumber() {
   return Math.floor(days / 7);
 }
 
-function MiniProductCard({
-  name,
-  store,
-  img,
-  price,
-}: {
-  name: string;
-  store: string;
-  img: string;
-  price: number;
-}) {
-  return (
-    <div className="w-[150px] shrink-0">
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-ink/5">
-        <img src={img} alt="" loading="lazy" className="h-full w-full object-cover" />
-        {/* Placeholder items have no real product id yet, so this button is
-            inert — wire it to the real add-to-cart mutation once these rows
-            read from the database. */}
-        <button
-          type="button"
-          aria-label="Add to cart"
-          className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink shadow-md"
-        >
-          <PlusIcon className="h-4 w-4" />
-        </button>
-      </div>
-      <p className="mt-2 truncate text-sm font-medium">{name}</p>
-      <p className="truncate text-xs text-ink/40">{store}</p>
-      <p className="mt-0.5 text-sm font-bold">USD {price}</p>
-    </div>
-  );
-}
-
 function RowHeader({ title, to }: { title: string; to: string }) {
   return (
     <div className="mx-auto flex max-w-6xl items-center justify-between px-6 pb-3">
@@ -161,11 +103,54 @@ function RowHeader({ title, to }: { title: string; to: string }) {
   );
 }
 
+/**
+ * One row = one filter over the product table. Rows share ProductCard, so a
+ * product renders identically (and at the same price) wherever it appears.
+ * Card width lets the next card peek, which is what signals "swipe me".
+ */
+function ProductRow({
+  title,
+  to,
+  query,
+}: {
+  title: string;
+  to: string;
+  query: { data?: Parameters<typeof ProductCard>[0][]; isLoading: boolean };
+}) {
+  if (!query.isLoading && !query.data?.length) return null;
+  return (
+    <>
+      <div className="pt-8">
+        <RowHeader title={title} to={to} />
+      </div>
+      <section className="scroll-row gap-3 px-6 pb-1">
+        {query.isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="w-[44vw] shrink-0 sm:w-[180px]">
+                <Skeleton className="aspect-square w-full rounded-2xl" />
+                <Skeleton className="mt-2 h-3 w-2/5" />
+                <Skeleton className="mt-2 h-4 w-4/5" />
+                <Skeleton className="mt-2 h-4 w-1/3" />
+              </div>
+            ))
+          : query.data?.map((p) => (
+              <div key={p.id} className="w-[44vw] shrink-0 sm:w-[180px]">
+                <ProductCard {...p} />
+              </div>
+            ))}
+      </section>
+    </>
+  );
+}
+
 export function Home() {
   const queryClient = useQueryClient();
   const prefetchCategory = (slug: string) => queryClient.prefetchQuery(categoryProductsQuery(slug));
   const categories = useCategories();
   const stores = useTopStores();
+  const trending = useProductsByTag("trending");
+  const mostGifted = useProductsByTag("most-gifted");
+  const newOnCado = useProductsByTag("new");
   const [query, setQuery] = useState("");
   const searching = query.trim().length > 0;
   const searchProducts = useSearchProducts(query);
@@ -324,15 +309,8 @@ export function Home() {
             </div>
           </section>
 
-          {/* 6. Trending this week (placeholder product row) */}
-          <div className="pt-8">
-            <RowHeader title="TRENDING THIS WEEK" to="/browse" />
-          </div>
-          <section className="scroll-row gap-3 px-6 pb-1">
-            {TRENDING_ROW.map((p, i) => (
-              <MiniProductCard key={i} {...p} />
-            ))}
-          </section>
+          {/* 6. Trending this week */}
+          <ProductRow title="TRENDING THIS WEEK" to="/browse" query={trending} />
 
           {/* 7. Shop by Budget — flat pills, no photos */}
           <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
@@ -368,15 +346,12 @@ export function Home() {
             ))}
           </section>
 
-          {/* 10. Most gifted for birthdays (placeholder product row) */}
-          <div className="pt-8">
-            <RowHeader title="MOST GIFTED FOR BIRTHDAYS" to="/gift-finder" />
-          </div>
-          <section className="scroll-row gap-3 px-6 pb-1">
-            {BIRTHDAY_GIFTED_ROW.map((p, i) => (
-              <MiniProductCard key={i} {...p} />
-            ))}
-          </section>
+          {/* 10. Most gifted for birthdays */}
+          <ProductRow
+            title="MOST GIFTED FOR BIRTHDAYS"
+            to="/gift-finder?occasion=birthday"
+            query={mostGifted}
+          />
 
           {/* 11. More Occasions — deliberately small, secondary */}
           <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
@@ -396,15 +371,8 @@ export function Home() {
             ))}
           </section>
 
-          {/* 12. New on CADO (placeholder product row) */}
-          <div className="pt-8">
-            <RowHeader title="NEW ON CADO" to="/browse" />
-          </div>
-          <section className="scroll-row gap-3 px-6 pb-1">
-            {NEW_ROW.map((p, i) => (
-              <MiniProductCard key={i} {...p} />
-            ))}
-          </section>
+          {/* 12. New on CADO */}
+          <ProductRow title="NEW ON CADO" to="/browse" query={newOnCado} />
 
           {/* 13. Store spotlight — rotates weekly (currentWeekNumber() indexes into
               the top-stores list, so a new store surfaces each week automatically) */}

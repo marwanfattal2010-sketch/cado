@@ -9,18 +9,37 @@ type ProductCardProps = {
   id: string;
   title: string;
   price: number;
-  currency: string;
+  compare_at_price?: number | null;
+  currency?: string;
+  same_day?: boolean | null;
+  stock_quantity?: number | null;
   product_images?: { storage_path: string; is_primary: boolean }[] | null;
   partner?: { name: string } | null;
 };
 
-export function ProductCard({ id, title, price, currency, product_images, partner }: ProductCardProps) {
+export function ProductCard({
+  id,
+  title,
+  price,
+  compare_at_price,
+  same_day,
+  stock_quantity,
+  product_images,
+  partner,
+}: ProductCardProps) {
   const uri = primaryImage(product_images);
   const { session } = useAuth();
   const favoriteIds = useFavoriteIds();
   const toggleFavorite = useToggleFavorite();
   const isFavorite = favoriteIds.has(id);
   const [loaded, setLoaded] = useState(false);
+
+  const inStock = stock_quantity == null || stock_quantity > 0;
+  // Only promise same-day when it's genuinely deliverable — a badge the
+  // business can't honour is worse than no badge at all.
+  const arrivesToday = same_day === true && inStock;
+  const lowStock = inStock && stock_quantity != null && stock_quantity <= 3;
+  const onSale = compare_at_price != null && Number(compare_at_price) > Number(price);
 
   return (
     <Link
@@ -56,12 +75,30 @@ export function ProductCard({ id, title, price, currency, product_images, partne
             <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
           </button>
         ) : null}
+        {!inStock ? (
+          <span className="absolute bottom-2 left-2 rounded-full bg-ink/80 px-2 py-1 text-[10px] font-semibold text-cream">
+            Out of stock
+          </span>
+        ) : lowStock ? (
+          <span className="absolute bottom-2 left-2 rounded-full bg-[#C2410C] px-2 py-1 text-[10px] font-semibold text-white">
+            Only {stock_quantity} left
+          </span>
+        ) : null}
       </div>
-      <p className="mt-3 truncate text-sm font-medium">{title}</p>
-      {partner?.name ? <p className="truncate text-xs text-ink/40">{partner.name}</p> : null}
-      <p className="text-sm text-ink/50">
-        {currency} {price.toFixed(2)}
-      </p>
+
+      {/* Store first — it's the trust signal, and it lets the product name
+          take two lines without the card growing unpredictably. */}
+      {partner?.name ? <p className="mt-2.5 truncate text-xs text-ink/45">{partner.name}</p> : null}
+      <p className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug">{title}</p>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-base font-bold">${Number(price).toFixed(0)}</span>
+        {onSale ? (
+          <span className="text-xs text-ink/35 line-through">${Number(compare_at_price).toFixed(0)}</span>
+        ) : null}
+        {arrivesToday ? (
+          <span className="ml-auto shrink-0 text-[11px] font-semibold text-[#1F6B4A]">Today</span>
+        ) : null}
+      </div>
     </Link>
   );
 }

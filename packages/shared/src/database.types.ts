@@ -753,6 +753,8 @@ export type Database = {
           partner_id: string
           price: number
           recipient_tags: string[]
+          same_day: boolean
+          tags: string[]
           sku: string | null
           slug: string
           stock_quantity: number
@@ -778,6 +780,8 @@ export type Database = {
           partner_id: string
           price: number
           recipient_tags?: string[]
+          same_day?: boolean
+          tags?: string[]
           sku?: string | null
           slug: string
           stock_quantity?: number
@@ -803,6 +807,8 @@ export type Database = {
           partner_id?: string
           price?: number
           recipient_tags?: string[]
+          same_day?: boolean
+          tags?: string[]
           sku?: string | null
           slug?: string
           stock_quantity?: number
@@ -1095,6 +1101,8 @@ export type Database = {
           partner_id: string
           price: number
           recipient_tags: string[]
+          same_day: boolean
+          tags: string[]
           sku: string | null
           slug: string
           stock_quantity: number
