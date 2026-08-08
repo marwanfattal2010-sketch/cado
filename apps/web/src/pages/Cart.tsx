@@ -232,6 +232,20 @@ export function Cart() {
                           <p className="text-sm text-ink/50">
                             {item.product?.currency} {item.product?.price.toFixed(2)}
                           </p>
+                          {(() => {
+                            // Confirm any note back to the buyer, so they can
+                            // see what will actually be written on the card.
+                            const c = item.customization as
+                              | { message?: string; note_to?: string; note_from?: string }
+                              | null;
+                            if (!c?.message && !c?.note_to && !c?.note_from) return null;
+                            const parts = [
+                              c.note_to ? `To ${c.note_to}` : null,
+                              c.message ? `"${c.message}"` : null,
+                              c.note_from ? `— ${c.note_from}` : null,
+                            ].filter(Boolean);
+                            return <p className="mt-1 line-clamp-2 text-xs text-ink/45">{parts.join(" ")}</p>;
+                          })()}
                         </div>
                         <input
                           type="number"

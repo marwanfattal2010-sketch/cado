@@ -5,6 +5,7 @@ import { useStoresByCategory, useSubcategories } from "../hooks/useStores";
 import { useCategories } from "../hooks/useCategories";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
+import { BUDGETS } from "../lib/filters";
 
 type Sort = "popular" | "newest" | "price_asc" | "price_desc";
 
@@ -15,15 +16,9 @@ const SORT_LABELS: Record<Sort, string> = {
   price_desc: "Price: high to low",
 };
 
-// Same ranges as the gift finder and the homepage budget pills.
-const PRICE_RANGES = [
-  { label: "Any price", min: 0, max: null as number | null },
-  { label: "Under $20", min: 0, max: 20 },
-  { label: "$20 – $50", min: 20, max: 50 },
-  { label: "$50 – $100", min: 50, max: 100 },
-  { label: "$100 – $200", min: 100, max: 200 },
-  { label: "$200+", min: 200, max: null },
-];
+// Reuses the shared bands so this filter can't drift from the gift finder
+// or the homepage budget pills.
+const PRICE_RANGES = [{ label: "Any price", min: 0, max: null as number | null }, ...BUDGETS];
 
 export function Category() {
   const { slug } = useParams<{ slug: string }>();

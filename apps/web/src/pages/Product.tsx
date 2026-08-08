@@ -7,14 +7,24 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { Skeleton } from "../components/Skeleton";
 
+const NOTE_SUGGESTIONS = [
+  "Happy birthday!",
+  "Congratulations!",
+  "Thinking of you",
+  "Get well soon",
+  "Thank you",
+  "With love",
+];
+
 export function Product() {
   const { id } = useParams<{ id: string }>();
   const { data: product, isLoading } = useProduct(id);
   const { session } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [giftWrap, setGiftWrap] = useState(false);
   const [message, setMessage] = useState("");
+  const [noteFrom, setNoteFrom] = useState("");
+  const [noteTo, setNoteTo] = useState("");
   const [adding, setAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
@@ -48,7 +58,11 @@ export function Product() {
         profile_id: session.user.id,
         product_id: product.id,
         quantity: 1,
-        customization: { gift_wrap: giftWrap, message: message || undefined },
+        customization: {
+          message: message.trim() || undefined,
+          note_from: noteFrom.trim() || undefined,
+          note_to: noteTo.trim() || undefined,
+        },
       });
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -74,20 +88,53 @@ export function Product() {
         {product.description ? <p className="mt-6 text-ink/70">{product.description}</p> : null}
 
         <div className="mt-8 space-y-4">
-          <textarea
-            className="w-full rounded-xl border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
-            placeholder="Add a personal message (optional)"
-            rows={2}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
+          {/* Every order is gift-wrapped as standard, so there's nothing to
+              opt into — the note is the only thing left to personalise. */}
+          <div className="rounded-2xl bg-white p-4 ring-1 ring-ink/8">
+            <div className="flex items-baseline justify-between">
+              <p className="text-sm font-medium">Add a note</p>
+              <span className="text-xs text-ink/40">Optional · free</span>
+            </div>
+            <p className="mt-1 text-xs text-ink/50">We'll write it on a card and tuck it in with the gift.</p>
 
-          {product.gift_wrap_available ? (
-            <label className="flex items-center gap-3 text-sm">
-              <input type="checkbox" checked={giftWrap} onChange={(e) => setGiftWrap(e.target.checked)} />
-              Add gift wrap (+{product.currency} {product.gift_wrap_price.toFixed(2)})
-            </label>
-          ) : null}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {NOTE_SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setMessage(s)}
+                  className={`rounded-full px-3 py-1.5 text-xs transition-all duration-150 active:scale-95 ${
+                    message === s ? "bg-ink text-cream" : "bg-ink/5 text-ink/60 hover:bg-ink/10"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              className="mt-3 w-full resize-none rounded-xl border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
+              placeholder="Or write your own..."
+              rows={2}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <input
+                className="rounded-xl border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
+                placeholder="To (optional)"
+                value={noteTo}
+                onChange={(e) => setNoteTo(e.target.value)}
+              />
+              <input
+                className="rounded-xl border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
+                placeholder="From (optional)"
+                value={noteFrom}
+                onChange={(e) => setNoteFrom(e.target.value)}
+              />
+            </div>
+          </div>
 
           <button
             onClick={addToCart}

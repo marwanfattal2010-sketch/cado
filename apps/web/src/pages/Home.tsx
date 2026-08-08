@@ -20,19 +20,10 @@ import {
   WhatsAppIcon,
   TikTokIcon,
 } from "../components/Icons";
+import { BUDGETS, RECIPIENTS } from "../lib/filters";
 
-// Kept in step with the gift finder's ranges so the two never disagree.
-const BUDGETS = ["Under $20", "$20 – $50", "$50 – $100", "$100 – $200", "$200+"];
-
-const RECIPIENTS = [
-  { name: "For Her", img: "/recipients/for-her.jpg" },
-  { name: "For Him", img: "/recipients/for-him.jpg" },
-  { name: "For Mom", img: "/recipients/for-mom.jpg" },
-  { name: "For Dad", img: "/recipients/for-dad.jpg" },
-  { name: "For Kids", img: "/recipients/for-kids.jpg" },
-  { name: "For Couples", img: "/recipients/for-couples.jpg" },
-  { name: "For Your Best Friend", img: "/recipients/for-best-friend.jpg" },
-];
+// Budgets and recipients both come from src/lib/filters.ts so these
+// shortcuts always match what the gift finder actually filters by.
 
 // Birthday quick chips -> real category slugs.
 const BIRTHDAY_CHIPS = [
@@ -350,11 +341,11 @@ export function Home() {
           <section className="scroll-row gap-2 px-6 pb-1">
             {BUDGETS.map((b) => (
               <Link
-                key={b}
-                to="/gift-finder"
-                className="shrink-0 rounded-full bg-ink/5 px-5 py-2.5 text-sm font-semibold text-ink"
+                key={b.slug}
+                to={`/gift-finder?budget=${b.slug}`}
+                className="shrink-0 rounded-full bg-ink/5 px-5 py-2.5 text-sm font-semibold text-ink transition-transform duration-150 active:scale-95"
               >
-                {b}
+                {b.label}
               </Link>
             ))}
           </section>
@@ -366,13 +357,13 @@ export function Home() {
           <section className="scroll-row gap-3 px-6 pb-1">
             {RECIPIENTS.map((r) => (
               <Link
-                key={r.name}
-                to="/gift-finder"
-                className="relative flex h-[150px] w-[120px] shrink-0 items-end overflow-hidden rounded-2xl p-3"
+                key={r.value}
+                to={`/gift-finder?recipient=${r.value}`}
+                className="relative flex h-[150px] w-[120px] shrink-0 items-end overflow-hidden rounded-2xl p-3 transition-transform duration-150 active:scale-[0.97]"
               >
                 <img src={r.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                <span className="relative font-display text-sm font-semibold text-white drop-shadow">{r.name}</span>
+                <span className="relative font-display text-sm font-semibold text-white drop-shadow">{r.label}</span>
               </Link>
             ))}
           </section>

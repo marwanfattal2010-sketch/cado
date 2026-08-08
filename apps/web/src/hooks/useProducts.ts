@@ -84,20 +84,31 @@ export function useProductsByCategory(
   });
 }
 
-export function useGiftFinderProducts(minPrice: number, maxPrice: number | null, recipient: string) {
+/**
+ * Both filters are optional and applied independently, so this backs three
+ * entry points: budget only (homepage budget pills), recipient only
+ * (homepage recipient cards), and both (the full two-step gift finder).
+ */
+export function useGiftFinderProducts(opts: {
+  recipient?: string | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+}) {
+  const { recipient, minPrice, maxPrice } = opts;
+  const hasFilter = !!recipient || minPrice != null || maxPrice != null;
+
   return useQuery({
-    queryKey: ["products", "gift-finder", minPrice, maxPrice, recipient],
+    queryKey: ["products", "gift-finder", recipient ?? null, minPrice ?? null, maxPrice ?? null],
+    enabled: hasFilter,
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("id, title, price, currency, product_images(storage_path, is_primary)")
-        .eq("is_active", true)
-        .contains("recipient_tags", [recipient])
-        .gte("price", minPrice);
-      if (maxPrice !== null) {
-        query = query.lte("price", maxPrice);
-      }
-      const { data, error } = await query.limit(24);
+        .select("id, title, price, currency, partner:partners(name), product_images(storage_path, is_primary)")
+        .eq("is_active", true);
+      if (recipient) query = query.contains("recipient_tags", [recipient]);
+      if (minPrice != null) query = query.gte("price", minPrice);
+      if (maxPrice != null) query = query.lte("price", maxPrice);
+      const { data, error } = await query.order("price", { ascending: true }).limit(60);
       if (error) throw error;
       return data;
     },
