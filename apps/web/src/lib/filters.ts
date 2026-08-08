@@ -49,3 +49,24 @@ export function recipientByValue(value: string | null): Recipient | null {
   if (!value) return null;
   return RECIPIENTS.find((r) => r.value === value) ?? null;
 }
+
+export type Occasion = {
+  /** Matches products.occasion_tags where one exists; "just-because" and
+   *  "sorry" have no tag yet and fall through to recipient+budget only. */
+  value: string;
+  label: string;
+};
+
+export const OCCASIONS: Occasion[] = [
+  { value: "birthday", label: "Birthday" },
+  { value: "graduation", label: "Congratulations" },
+  { value: "housewarming", label: "Visiting them" },
+  { value: "anniversary", label: "Anniversary" },
+  { value: "newborn", label: "New baby" },
+  { value: "just-because", label: "Just because" },
+];
+
+export function occasionByValue(value: string | null): Occasion | null {
+  if (!value) return null;
+  return OCCASIONS.find((o) => o.value === value) ?? null;
+}

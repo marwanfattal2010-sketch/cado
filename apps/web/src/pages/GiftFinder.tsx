@@ -1,223 +1,216 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { useGiftFinderProducts } from "../hooks/useProducts";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeleton";
 import { ChevronLeftIcon } from "../components/Icons";
-import { BUDGETS, RECIPIENTS, budgetBySlug, recipientByValue } from "../lib/filters";
+import { RibbonEmpty } from "../components/ui";
+import { BUDGETS, RECIPIENTS, OCCASIONS, budgetBySlug, recipientByValue, occasionByValue } from "../lib/filters";
+import { useGiftFinderResults } from "../hooks/useGiftFinder";
 
 /**
- * Filters live in the URL, so arriving from a homepage shortcut with one
- * already chosen (?budget= or ?recipient=) drops you straight into results
- * instead of asking again. Landing here with nothing set starts the
- * two-step flow.
+ * Three questions, no more — each extra one loses people. Answers live in
+ * the URL so back/forward preserves them and a homepage shortcut can jump
+ * straight past a step it already knows.
  */
-function StepHeader({
+function Progress({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <div className="mt-3 flex gap-1.5">
+      {[1, 2, 3].map((i) => (
+        <span key={i} className={`h-[3px] flex-1 rounded-pill ${i <= step ? "bg-ribbon" : "bg-surface-sunk"}`} />
+      ))}
+    </div>
+  );
+}
+
+function StepShell({
   step,
   title,
   subtitle,
   onBack,
+  children,
 }: {
-  step: 1 | 2;
+  step: 1 | 2 | 3;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   onBack?: () => void;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="mb-8">
+    <div className="mx-auto max-w-lg px-4 py-6">
       <div className="flex items-center gap-3">
         {onBack ? (
           <button
             onClick={onBack}
             aria-label="Back"
-            className="-ml-1 flex h-8 w-8 items-center justify-center rounded-pill text-ink/50 transition-all duration-150 hover:bg-ink/5 hover:text-ink active:scale-90"
+            className="-ml-1 flex h-8 w-8 items-center justify-center rounded-pill text-muted transition hover:bg-surface-sunk hover:text-ink"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
         ) : null}
-        <span className="text-[11px] font-semibold tracking-[0.18em] text-ink/35">STEP {step} OF 2</span>
+        <span className="text-eyebrow uppercase text-muted">Step {step} of 3</span>
       </div>
-
-      <div className="mt-3 flex gap-1.5">
-        <span className="h-[3px] flex-1 rounded-pill bg-ink" />
-        <span className={`h-[3px] flex-1 rounded-pill ${step === 2 ? "bg-ink" : "bg-ink/12"}`} />
-      </div>
-
-      <h1 className="mt-6 font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-      <p className="mt-1.5 text-sm text-ink/50">{subtitle}</p>
+      <Progress step={step} />
+      <h1 className="mt-5 font-display text-h1">{title}</h1>
+      {subtitle ? <p className="mt-1.5 text-body text-muted">{subtitle}</p> : null}
+      <div className="mt-5 grid grid-cols-2 gap-2.5">{children}</div>
     </div>
   );
 }
 
-const optionClass =
-  "rounded-card bg-white px-4 py-4 text-sm font-medium text-ink ring-1 ring-ink/8 shadow-[0_1px_2px_rgba(23,20,15,0.04)] transition-all duration-150 hover:ring-ink/25 hover:shadow-[0_2px_8px_rgba(23,20,15,0.07)] active:scale-[0.97]";
-
-function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <button
-      onClick={onRemove}
-      className="rounded-pill bg-white px-3.5 py-1.5 text-xs font-medium text-ink/70 ring-1 ring-ink/10 transition-all duration-150 hover:ring-ink/25 active:scale-95"
-    >
-      {label} <span className="ml-0.5 text-ink/30">✕</span>
-    </button>
-  );
-}
+const OPTION =
+  "rounded-card bg-surface px-4 py-4 text-body font-medium text-ink shadow-rest transition-all duration-fast hover:shadow-lift active:scale-[0.97]";
 
 export function GiftFinder() {
   const [params, setParams] = useSearchParams();
 
-  const budget = budgetBySlug(params.get("budget"));
   const recipient = recipientByValue(params.get("recipient"));
-  const hasAnyFilter = !!budget || !!recipient;
+  const occasion = occasionByValue(params.get("occasion"));
+  const budget = budgetBySlug(params.get("budget"));
 
-  const setFilter = (key: "budget" | "recipient", value: string | null) => {
+  const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
     else next.delete(key);
-    // Choosing a value answers the question, so clear the picker flag.
-    if (key === "recipient" && value) next.delete("pick");
-    setParams(next, { replace: true });
+    setParams(next, { replace: false });
   };
 
-  const openRecipientPicker = () => {
-    const next = new URLSearchParams(params);
-    next.set("pick", "recipient");
-    setParams(next, { replace: true });
-  };
-
-  const results = useGiftFinderProducts({
+  const results = useGiftFinderResults({
     recipient: recipient?.value,
-    minPrice: budget?.min,
-    maxPrice: budget?.max,
+    occasion: occasion?.value,
+    budget: budget?.slug,
   });
 
-  const pickingRecipient = params.get("pick") === "recipient" && !recipient;
-
-  // Step 1 — nothing chosen yet.
-  if (!hasAnyFilter && !pickingRecipient) {
+  // Step 1 — who
+  if (!recipient) {
     return (
-      <div className="mx-auto max-w-lg px-6 py-10">
-        <StepHeader step={1} title="What's your budget?" subtitle="We'll only show gifts in this range." />
-        <div className="grid grid-cols-2 gap-2.5">
-          {BUDGETS.map((b) => (
-            <button key={b.slug} onClick={() => setFilter("budget", b.slug)} className={optionClass}>
-              {b.label}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={openRecipientPicker}
-          className="mt-5 w-full text-center text-sm text-ink/45 underline underline-offset-2"
-        >
-          Skip — any budget
-        </button>
-      </div>
+      <StepShell step={1} title="Who's it for?" subtitle="We'll narrow it down from here.">
+        {RECIPIENTS.map((r) => (
+          <button key={r.value} onClick={() => set("recipient", r.value)} className={OPTION}>
+            {r.label}
+          </button>
+        ))}
+      </StepShell>
     );
   }
 
-  // Step 2 — recipient picker. Only reached deliberately (through step 1, or
-  // the "Who's it for?" button on the results page); arriving from a homepage
-  // shortcut skips straight past this to results.
-  if (pickingRecipient) {
+  // Step 2 — occasion
+  if (!occasion) {
     return (
-      <div className="mx-auto max-w-lg px-6 py-10">
-        <StepHeader
-          step={2}
-          title="Who's it for?"
-          subtitle={budget ? `Budget: ${budget.label}` : "Any budget"}
-          onBack={() => {
-            const next = new URLSearchParams(params);
-            next.delete("pick");
-            next.delete("budget");
-            setParams(next, { replace: true });
-          }}
-        />
-        <div className="grid grid-cols-2 gap-2.5">
-          {RECIPIENTS.map((r) => (
-            <button key={r.value} onClick={() => setFilter("recipient", r.value)} className={optionClass}>
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <StepShell
+        step={2}
+        title="What's the occasion?"
+        subtitle={recipient.label}
+        onBack={() => set("recipient", null)}
+      >
+        {OCCASIONS.map((o) => (
+          <button key={o.value} onClick={() => set("occasion", o.value)} className={OPTION}>
+            {o.label}
+          </button>
+        ))}
+      </StepShell>
     );
   }
 
-  const title = recipient ? `Gifts ${recipient.label.toLowerCase()}` : "Gifts for them";
+  // Step 3 — budget
+  if (!budget) {
+    return (
+      <StepShell
+        step={3}
+        title="What's your budget?"
+        subtitle={`${recipient.label} · ${occasion.label}`}
+        onBack={() => set("occasion", null)}
+      >
+        {BUDGETS.map((b) => (
+          <button key={b.slug} onClick={() => set("budget", b.slug)} className={OPTION}>
+            {b.label}
+          </button>
+        ))}
+      </StepShell>
+    );
+  }
+
+  const items = results.data?.items ?? [];
+  const relaxed = results.data?.relaxed ?? null;
+
+  // Repeat their answers back — it makes the result feel deliberate. But
+  // only claim the budget when the results actually honour it; asserting
+  // "$20-$50" above a row of $65 items reads as broken.
+  const who = recipient.label.replace(/^For (a |your )?/i, "").toLowerCase();
+  const count = `${items.length} ${items.length === 1 ? "gift" : "gifts"}`;
+  const headline =
+    relaxed === "budget" || relaxed === "staff-picks"
+      ? `${count} for ${who}`
+      : `${count} for ${who}, ${budget.label.toLowerCase()}`;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+    <div className="mx-auto max-w-6xl px-4 py-6">
+      <h1 className="font-display text-h1">{results.isLoading ? "Finding gifts…" : headline}</h1>
 
-      {/* Whatever is set shows as a removable chip; whatever isn't offers a
-          one-tap way to narrow further. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {budget ? <Chip label={budget.label} onRemove={() => setFilter("budget", null)} /> : null}
-        {recipient ? <Chip label={recipient.label} onRemove={() => setFilter("recipient", null)} /> : null}
-
-        {!recipient ? (
+        {[
+          { label: recipient.label, key: "recipient" },
+          { label: occasion.label, key: "occasion" },
+          { label: budget.label, key: "budget" },
+        ].map((c) => (
           <button
-            onClick={openRecipientPicker}
-            className="rounded-pill bg-ink/5 px-3.5 py-1.5 text-xs font-medium text-ink/60 transition-all duration-150 hover:bg-ink/10 active:scale-95"
+            key={c.key}
+            onClick={() => set(c.key, null)}
+            className="inline-flex h-8 items-center rounded-pill bg-surface px-3.5 text-caption font-medium text-ink/70 shadow-rest transition active:scale-95"
           >
-            + Who's it for?
+            {c.label} <span className="ml-1 text-muted">✕</span>
           </button>
-        ) : null}
-
-        {!results.isLoading ? (
-          <span className="text-xs text-ink/35">
-            {results.data?.length ?? 0} {results.data?.length === 1 ? "gift" : "gifts"}
-          </span>
-        ) : null}
+        ))}
       </div>
 
-      {/* Budget refine row, shown when browsing by recipient only. */}
-      {!budget ? (
-        <div className="scroll-row -mx-6 mt-4 gap-2 px-6">
-          {BUDGETS.map((b) => (
-            <button
-              key={b.slug}
-              onClick={() => setFilter("budget", b.slug)}
-              className="shrink-0 rounded-pill bg-white px-4 py-2 text-xs font-medium text-ink/70 ring-1 ring-ink/10 transition-all duration-150 hover:ring-ink/25 active:scale-95"
-            >
-              {b.label}
-            </button>
-          ))}
-        </div>
+      {/* Say so when the search was widened, rather than quietly showing
+          something that doesn't match what was asked for. */}
+      {relaxed === "budget" ? (
+        <p className="mt-3 text-caption text-muted">
+          Nothing in that exact range — showing the closest matches instead.
+        </p>
+      ) : relaxed === "occasion" ? (
+        <p className="mt-3 text-caption text-muted">
+          Few {occasion.label.toLowerCase()} gifts for {who} yet — showing what else suits them.
+        </p>
+      ) : relaxed === "staff-picks" ? (
+        <p className="mt-3 text-caption text-muted">Nothing matched exactly, so here are our staff picks.</p>
       ) : null}
 
-      <div className="mt-7">
+      <div className="mt-6">
         {results.isLoading ? (
           <ProductGridSkeleton count={8} />
-        ) : results.data && results.data.length > 0 ? (
-          <div className="grid animate-fade-in grid-cols-2 gap-5 md:grid-cols-4">
-            {results.data.map((p) => (
-              <ProductCard key={p.id} {...p} />
+        ) : items.length > 0 ? (
+          <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
+            {items.map((p) => (
+              <ProductCard key={p.id} {...(p as Parameters<typeof ProductCard>[0])} />
             ))}
           </div>
         ) : (
-          <div className="py-14 text-center">
-            <p className="font-display text-lg font-semibold">No matches yet</p>
-            <p className="mx-auto mt-2 max-w-xs text-sm text-ink/50">
-              Nothing here just yet. Try a wider budget, or browse by category.
+          <div className="py-12 text-center">
+            <RibbonEmpty className="mx-auto h-14 w-14" />
+            <p className="mt-3 font-display text-h2">Nothing here yet</p>
+            <p className="mx-auto mt-2 max-w-xs text-body text-muted">
+              Try a wider budget, or browse by category.
             </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              {budget ? (
-                <button
-                  onClick={() => setFilter("budget", null)}
-                  className="rounded-pill bg-ink px-7 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
-                >
-                  Clear budget
-                </button>
-              ) : null}
-              <Link
-                to="/browse"
-                className="rounded-pill bg-white px-7 py-3 text-sm font-medium text-ink ring-1 ring-ink/12 transition-transform duration-150 active:scale-95"
-              >
-                Browse categories
-              </Link>
-            </div>
+            <Link
+              to="/browse"
+              className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
+            >
+              Browse categories
+            </Link>
           </div>
         )}
+      </div>
+
+      {/* The gift card belongs here, at the end — not as the first thing
+          offered to someone who said they don't know what to get. */}
+      <div className="mt-8 flex items-center justify-between gap-4 rounded-card bg-ink px-5 py-4 text-inverse">
+        <p className="text-body">Still stuck? Send a gift card.</p>
+        <Link
+          to="/gift-cards/send"
+          className="shrink-0 rounded-pill bg-canvas px-5 py-2.5 text-caption font-medium text-ink"
+        >
+          Send one
+        </Link>
       </div>
     </div>
   );
