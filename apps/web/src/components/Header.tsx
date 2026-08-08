@@ -40,7 +40,7 @@ export function Header() {
         <Link
           to={onStorePage ? `/cart?store=${storeId}` : "/cart"}
           aria-label="Cart"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full text-ink/70 transition hover:bg-ink/5 hover:text-ink"
+          className="relative flex h-9 w-9 items-center justify-center rounded-full text-ink/70 transition-all duration-150 hover:bg-ink/5 hover:text-ink active:scale-90"
         >
           <BasketIcon className="h-[22px] w-[22px]" />
           {count > 0 ? (

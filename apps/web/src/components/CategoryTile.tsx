@@ -1,12 +1,25 @@
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { categoryProductsQuery } from "../hooks/useProducts";
 
 const FOCUS: Record<string, string> = {
   fashion: "object-top",
 };
 
 export function CategoryTile({ slug, name }: { slug: string; name: string }) {
+  const queryClient = useQueryClient();
+
+  const prefetch = () => {
+    queryClient.prefetchQuery(categoryProductsQuery(slug));
+  };
+
   return (
-    <Link to={`/category/${slug}`} className="group relative block aspect-[4/5] overflow-hidden rounded-2xl">
+    <Link
+      to={`/category/${slug}`}
+      onMouseEnter={prefetch}
+      onTouchStart={prefetch}
+      className="group relative block aspect-[4/5] overflow-hidden rounded-2xl transition-transform duration-150 active:scale-[0.97]"
+    >
       <img
         src={`/categories/${slug}.jpg`}
         alt=""

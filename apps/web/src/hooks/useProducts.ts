@@ -35,25 +35,52 @@ export function useFeaturedProducts() {
   });
 }
 
-export function useProductsByCategory(categorySlug: string | undefined, subcategorySlug?: string) {
-  return useQuery({
-    queryKey: ["products", "category", categorySlug, subcategorySlug],
-    enabled: !!categorySlug,
+/** Shared with the hook below and with hover-prefetching, so both always
+ * agree on exactly what a "category products" query means. */
+export function categoryProductsQuery(
+  categorySlug: string,
+  opts?: { subcategorySlug?: string; sort?: "price_asc" | "price_desc" | "newest" | "popular" }
+) {
+  return {
+    queryKey: ["products", "category", categorySlug, opts?.subcategorySlug, opts?.sort],
     queryFn: async () => {
       let query = supabase
         .from("products")
         .select(
-          "id, title, price, currency, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(slug), product_images(storage_path, is_primary)"
+          "id, title, price, currency, created_at, is_trending, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(slug), product_images(storage_path, is_primary)"
         )
         .eq("is_active", true)
-        .eq("categories.slug", categorySlug as string);
-      if (subcategorySlug) {
-        query = query.eq("subcategories.slug", subcategorySlug);
+        .eq("categories.slug", categorySlug);
+      if (opts?.subcategorySlug) {
+        query = query.eq("subcategories.slug", opts.subcategorySlug);
+      }
+      switch (opts?.sort) {
+        case "price_asc":
+          query = query.order("price", { ascending: true });
+          break;
+        case "price_desc":
+          query = query.order("price", { ascending: false });
+          break;
+        case "popular":
+          query = query.order("is_trending", { ascending: false }).order("created_at", { ascending: false });
+          break;
+        default:
+          query = query.order("created_at", { ascending: false });
       }
       const { data, error } = await query.limit(100);
       if (error) throw error;
       return data;
     },
+  };
+}
+
+export function useProductsByCategory(
+  categorySlug: string | undefined,
+  opts?: { subcategorySlug?: string; sort?: "price_asc" | "price_desc" | "newest" | "popular" }
+) {
+  return useQuery({
+    ...categoryProductsQuery(categorySlug ?? "", opts),
+    enabled: !!categorySlug,
   });
 }
 

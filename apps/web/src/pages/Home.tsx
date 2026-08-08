@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCategories } from "../hooks/useCategories";
-import { useSearchProducts } from "../hooks/useProducts";
+import { useSearchProducts, categoryProductsQuery } from "../hooks/useProducts";
 import { useSearchStores, useTopStores, useStoreProducts } from "../hooks/useStores";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { ProductCard } from "../components/ProductCard";
+import { ProductGridSkeleton } from "../components/Skeleton";
 import {
   SearchIcon,
   GiftIcon,
@@ -168,6 +170,8 @@ function RowHeader({ title, to }: { title: string; to: string }) {
 }
 
 export function Home() {
+  const queryClient = useQueryClient();
+  const prefetchCategory = (slug: string) => queryClient.prefetchQuery(categoryProductsQuery(slug));
   const categories = useCategories();
   const stores = useTopStores();
   const [query, setQuery] = useState("");
@@ -238,8 +242,10 @@ export function Home() {
           ) : null}
 
           <h2 className="mb-3 mt-8 text-sm font-semibold tracking-widest text-ink/50">GIFTS</h2>
-          {searchProducts.data && searchProducts.data.length > 0 ? (
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+          {searchProducts.isLoading ? (
+            <ProductGridSkeleton count={6} />
+          ) : searchProducts.data && searchProducts.data.length > 0 ? (
+            <div className="grid animate-fade-in grid-cols-2 gap-5 sm:grid-cols-3">
               {searchProducts.data.map((p) => (
                 <ProductCard key={p.id} {...p} />
               ))}
@@ -271,14 +277,23 @@ export function Home() {
           <section className="mx-auto max-w-6xl px-6 pb-2">
             <div className="grid grid-cols-5 gap-x-2 gap-y-4">
               {categories.data?.map((cat) => (
-                <Link key={cat.id} to={`/category/${cat.slug}`} className="flex flex-col items-center gap-2 text-center">
+                <Link
+                  key={cat.id}
+                  to={`/category/${cat.slug}`}
+                  onMouseEnter={() => prefetchCategory(cat.slug)}
+                  onTouchStart={() => prefetchCategory(cat.slug)}
+                  className="flex flex-col items-center gap-2 text-center transition-transform duration-150 active:scale-95"
+                >
                   <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
                     <img src={`/categories/${cat.slug}.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />
                   </div>
                   <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
                 </Link>
               ))}
-              <Link to="/gift-cards" className="flex flex-col items-center gap-2 text-center">
+              <Link
+                to="/gift-cards"
+                className="flex flex-col items-center gap-2 text-center transition-transform duration-150 active:scale-95"
+              >
                 <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
                   <img src="/categories/gift-card.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
                 </div>
@@ -307,7 +322,9 @@ export function Home() {
                 <Link
                   key={c.slug}
                   to={`/category/${c.slug}`}
-                  className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink ring-1 ring-ink/10"
+                  onMouseEnter={() => prefetchCategory(c.slug)}
+                  onTouchStart={() => prefetchCategory(c.slug)}
+                  className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink ring-1 ring-ink/10 transition-transform duration-150 active:scale-95"
                 >
                   {c.name}
                 </Link>

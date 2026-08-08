@@ -5,6 +5,7 @@ import { useProduct } from "../hooks/useProducts";
 import { primaryImage } from "../lib/images";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
+import { Skeleton } from "../components/Skeleton";
 
 export function Product() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +19,20 @@ export function Product() {
   const [justAdded, setJustAdded] = useState(false);
 
   if (isLoading || !product) {
-    return <div className="mx-auto max-w-6xl px-6 py-24 text-center text-ink/40">Loading...</div>;
+    return (
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-2">
+        <Skeleton className="aspect-square w-full rounded-3xl" />
+        <div>
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="mt-3 h-8 w-3/4" />
+          <Skeleton className="mt-4 h-5 w-24" />
+          <Skeleton className="mt-6 h-3 w-full" />
+          <Skeleton className="mt-2 h-3 w-5/6" />
+          <Skeleton className="mt-8 h-20 w-full rounded-xl" />
+          <Skeleton className="mt-4 h-12 w-full rounded-full" />
+        </div>
+      </div>
+    );
   }
 
   const uri = primaryImage(product.product_images);

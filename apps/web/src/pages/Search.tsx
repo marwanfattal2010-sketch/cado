@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useSearchProducts } from "../hooks/useProducts";
 import { useSearchStores } from "../hooks/useStores";
 import { ProductCard } from "../components/ProductCard";
+import { ProductGridSkeleton } from "../components/Skeleton";
 import { SearchIcon } from "../components/Icons";
 
 type Tab = "stores" | "items";
@@ -71,8 +72,12 @@ export function Search() {
             <p className="mt-8 text-center text-sm text-ink/40">No stores match "{query}".</p>
           ) : null}
         </div>
+      ) : products.isLoading ? (
+        <div className="mt-6">
+          <ProductGridSkeleton count={6} />
+        </div>
       ) : (
-        <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-3">
+        <div className="mt-6 grid animate-fade-in grid-cols-2 gap-5 sm:grid-cols-3">
           {products.data?.map((p) => (
             <ProductCard key={p.id} {...p} />
           ))}
