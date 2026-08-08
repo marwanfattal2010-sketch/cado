@@ -115,7 +115,7 @@ export function Cart() {
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <h1 className="font-display text-3xl">Your cart</h1>
         <p className="mt-4 text-ink/60">Log in to see your cart.</p>
-        <Link to="/login" className="mt-8 inline-block rounded-full bg-ink px-6 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-8 inline-block rounded-pill bg-ink px-6 py-3 text-sm text-cream">
           Log in
         </Link>
       </div>
@@ -126,7 +126,7 @@ export function Cart() {
     const steps = ["Order placed", "Store is preparing it", "Out for delivery", "Delivered"];
     return (
       <div className="mx-auto max-w-md px-6 py-16 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-ink text-cream">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-pill bg-ink text-cream">
           <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
             <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -134,10 +134,10 @@ export function Cart() {
         <h1 className="mt-5 font-display text-2xl font-semibold">Order placed</h1>
         <p className="mt-1 text-sm text-ink/50">#{placedOrder.number}</p>
 
-        <div className="mt-8 rounded-3xl bg-white p-6 text-left ring-1 ring-ink/8">
+        <div className="mt-8 rounded-sheet bg-white p-6 text-left ring-1 ring-ink/8">
           {steps.map((step, i) => (
             <div key={step} className="flex items-center gap-3 py-2">
-              <div className={`h-2.5 w-2.5 rounded-full ${i === 0 ? "bg-ink" : "bg-ink/15"}`} />
+              <div className={`h-2.5 w-2.5 rounded-pill ${i === 0 ? "bg-ink" : "bg-ink/15"}`} />
               <span className={`text-sm ${i === 0 ? "font-medium text-ink" : "text-ink/40"}`}>{step}</span>
             </div>
           ))}
@@ -149,7 +149,7 @@ export function Cart() {
             : "Pay the driver when your gift arrives. We'll text you as each store confirms."}
         </p>
 
-        <Link to="/orders" className="mt-8 inline-block w-full rounded-full bg-ink px-6 py-3 text-sm text-cream">
+        <Link to="/orders" className="mt-8 inline-block w-full rounded-pill bg-ink px-6 py-3 text-sm text-cream">
           Track this order
         </Link>
         <Link to="/" className="mt-3 inline-block text-sm text-ink/50 underline">
@@ -223,8 +223,8 @@ export function Cart() {
                   {group.items.map((item) => {
                     const uri = primaryImage(item.product?.product_images);
                     return (
-                      <div key={item.id} className="flex items-center gap-4 rounded-2xl border border-ink/10 p-4">
-                        <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-ink/5">
+                      <div key={item.id} className="flex items-center gap-4 rounded-card border border-ink/10 p-4">
+                        <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-card bg-ink/5">
                           {uri ? <img src={uri} alt="" className="h-full w-full object-cover" /> : null}
                         </div>
                         <div className="flex-1">
@@ -258,7 +258,7 @@ export function Cart() {
                               quantity: Math.min(999, Math.max(1, Number(e.target.value))),
                             })
                           }
-                          className="w-16 rounded-lg border border-ink/15 px-2 py-1 text-center text-sm"
+                          className="w-16 rounded-card border border-ink/15 px-2 py-1 text-center text-sm"
                         />
                         <button
                           onClick={() => removeItem.mutate(item.id)}
@@ -278,7 +278,7 @@ export function Cart() {
             <h2 className="mb-3 text-sm font-semibold tracking-wide text-ink/50">GIFT CARD</h2>
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
-                className="flex-[2] rounded-xl border border-ink/15 px-4 py-3 text-sm uppercase tracking-wider"
+                className="flex-[2] rounded-card border border-ink/15 px-4 py-3 text-sm uppercase tracking-wider"
                 placeholder="Gift card code"
                 value={giftCardCode}
                 onChange={(e) => {
@@ -290,7 +290,7 @@ export function Cart() {
               <button
                 onClick={onApplyGiftCard}
                 disabled={checkingGiftCard || !giftCardCode.trim()}
-                className="rounded-xl border border-ink/20 px-5 py-3 text-sm font-medium disabled:opacity-40 sm:py-0"
+                className="rounded-card border border-ink/20 px-5 py-3 text-sm font-medium disabled:opacity-40 sm:py-0"
               >
                 {checkingGiftCard ? "Checking..." : "Apply"}
               </button>
@@ -327,7 +327,7 @@ export function Cart() {
           <div className="mt-10">
             <h2 className="mb-3 text-sm font-semibold tracking-wide text-ink/50">DELIVERY ADDRESS</h2>
             {defaultAddress ? (
-              <div className="rounded-2xl border border-ink/10 p-4 text-sm">
+              <div className="rounded-card border border-ink/10 p-4 text-sm">
                 <p className="font-medium">{defaultAddress.recipient_name}</p>
                 <p className="text-ink/60">
                   {defaultAddress.street}, {defaultAddress.area}, {defaultAddress.city}
@@ -338,31 +338,31 @@ export function Cart() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <input
-                    className="rounded-xl border border-ink/15 px-4 py-3 text-sm"
+                    className="rounded-card border border-ink/15 px-4 py-3 text-sm"
                     placeholder="Recipient name"
                     value={addressForm.recipient_name}
                     onChange={(e) => setAddressForm({ ...addressForm, recipient_name: e.target.value })}
                   />
                   <input
-                    className="rounded-xl border border-ink/15 px-4 py-3 text-sm"
+                    className="rounded-card border border-ink/15 px-4 py-3 text-sm"
                     placeholder="Phone"
                     value={addressForm.phone}
                     onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
                   />
                   <input
-                    className="rounded-xl border border-ink/15 px-4 py-3 text-sm"
+                    className="rounded-card border border-ink/15 px-4 py-3 text-sm"
                     placeholder="City"
                     value={addressForm.city}
                     onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
                   />
                   <input
-                    className="rounded-xl border border-ink/15 px-4 py-3 text-sm"
+                    className="rounded-card border border-ink/15 px-4 py-3 text-sm"
                     placeholder="Area"
                     value={addressForm.area}
                     onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
                   />
                   <input
-                    className="col-span-2 rounded-xl border border-ink/15 px-4 py-3 text-sm"
+                    className="col-span-2 rounded-card border border-ink/15 px-4 py-3 text-sm"
                     placeholder="Street / building"
                     value={addressForm.street}
                     onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
@@ -371,7 +371,7 @@ export function Cart() {
                 <button
                   onClick={onCreateAddress}
                   disabled={createAddress.isPending}
-                  className="rounded-full border border-ink/20 px-5 py-2 text-sm"
+                  className="rounded-pill border border-ink/20 px-5 py-2 text-sm"
                 >
                   {createAddress.isPending ? "Saving..." : "Save address"}
                 </button>
@@ -384,7 +384,7 @@ export function Cart() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => setPayment("cod")}
-                className={`rounded-2xl p-4 text-left transition ${
+                className={`rounded-card p-4 text-left transition ${
                   payment === "cod" ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
                 }`}
               >
@@ -395,7 +395,7 @@ export function Cart() {
               </button>
               <button
                 onClick={() => setPayment("whish")}
-                className={`rounded-2xl p-4 text-left transition ${
+                className={`rounded-card p-4 text-left transition ${
                   payment === "whish" ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
                 }`}
               >
@@ -406,7 +406,7 @@ export function Cart() {
               </button>
             </div>
             {payment === "whish" ? (
-              <div className="mt-3 rounded-2xl bg-gold/12 p-4 text-sm">
+              <div className="mt-3 rounded-card bg-gold/12 p-4 text-sm">
                 <p className="font-medium">Send USD {total.toFixed(2)} by Whish to:</p>
                 <p className="mt-1 font-display text-xl font-semibold tracking-wide">{WHISH_NUMBER}</p>
                 <p className="mt-2 text-xs text-ink/55">
@@ -417,7 +417,7 @@ export function Cart() {
           </div>
 
           <textarea
-            className="mt-6 w-full rounded-xl border border-ink/15 px-4 py-3 text-sm"
+            className="mt-6 w-full rounded-card border border-ink/15 px-4 py-3 text-sm"
             placeholder="Order notes (optional)"
             rows={2}
             value={orderNotes}
@@ -429,7 +429,7 @@ export function Cart() {
           <button
             onClick={onPlaceOrder}
             disabled={!defaultAddress || placing}
-            className="mt-6 w-full rounded-full bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-40"
+            className="mt-6 w-full rounded-pill bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-40"
           >
             {placing
               ? "Placing order..."

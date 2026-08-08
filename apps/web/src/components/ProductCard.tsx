@@ -48,7 +48,7 @@ export function ProductCard({
     >
       {/* Fixed aspect ratio + a tinted placeholder underneath means the card
           never changes height when the photo arrives (no layout shift). */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-ink/5">
+      <div className="relative aspect-square w-full overflow-hidden rounded-card bg-ink/5">
         {uri ? (
           <img
             src={uri}
@@ -70,17 +70,17 @@ export function ProductCard({
               toggleFavorite.mutate({ productId: id, isFavorite });
             }}
             aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
-            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink/60 shadow-sm transition hover:text-ink active:scale-90"
+            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-pill bg-white/90 text-ink/60 shadow-sm transition hover:text-ink active:scale-90"
           >
             <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
           </button>
         ) : null}
         {!inStock ? (
-          <span className="absolute bottom-2 left-2 rounded-full bg-ink/80 px-2 py-1 text-[10px] font-semibold text-cream">
+          <span className="absolute bottom-2 left-2 rounded-pill bg-ink/80 px-2 py-1 text-[10px] font-semibold text-cream">
             Out of stock
           </span>
         ) : lowStock ? (
-          <span className="absolute bottom-2 left-2 rounded-full bg-[#C2410C] px-2 py-1 text-[10px] font-semibold text-white">
+          <span className="absolute bottom-2 left-2 rounded-pill bg-alert px-2 py-1 text-[10px] font-semibold text-white">
             Only {stock_quantity} left
           </span>
         ) : null}
@@ -96,7 +96,7 @@ export function ProductCard({
           <span className="text-xs text-ink/35 line-through">${Number(compare_at_price).toFixed(0)}</span>
         ) : null}
         {arrivesToday ? (
-          <span className="ml-auto shrink-0 text-[11px] font-semibold text-[#1F6B4A]">Today</span>
+          <span className="ml-auto shrink-0 text-[11px] font-semibold text-today">Today</span>
         ) : null}
       </div>
     </Link>

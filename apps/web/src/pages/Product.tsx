@@ -31,15 +31,15 @@ export function Product() {
   if (isLoading || !product) {
     return (
       <div className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-2">
-        <Skeleton className="aspect-square w-full rounded-3xl" />
+        <Skeleton className="aspect-square w-full rounded-sheet" />
         <div>
           <Skeleton className="h-3 w-28" />
           <Skeleton className="mt-3 h-8 w-3/4" />
           <Skeleton className="mt-4 h-5 w-24" />
           <Skeleton className="mt-6 h-3 w-full" />
           <Skeleton className="mt-2 h-3 w-5/6" />
-          <Skeleton className="mt-8 h-20 w-full rounded-xl" />
-          <Skeleton className="mt-4 h-12 w-full rounded-full" />
+          <Skeleton className="mt-8 h-20 w-full rounded-card" />
+          <Skeleton className="mt-4 h-12 w-full rounded-pill" />
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ export function Product() {
 
   return (
     <div className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-2">
-      <div className="aspect-square overflow-hidden rounded-3xl bg-ink/5">
+      <div className="aspect-square overflow-hidden rounded-sheet bg-ink/5">
         {uri ? <img src={uri} alt={product.title} className="h-full w-full object-cover" /> : null}
       </div>
 
@@ -90,7 +90,7 @@ export function Product() {
         <div className="mt-8 space-y-4">
           {/* Every order is gift-wrapped as standard, so there's nothing to
               opt into — the note is the only thing left to personalise. */}
-          <div className="rounded-2xl bg-white p-4 ring-1 ring-ink/8">
+          <div className="rounded-card bg-white p-4 ring-1 ring-ink/8">
             <div className="flex items-baseline justify-between">
               <p className="text-sm font-medium">Add a note</p>
               <span className="text-xs text-ink/40">Optional · free</span>
@@ -103,7 +103,7 @@ export function Product() {
                   key={s}
                   type="button"
                   onClick={() => setMessage(s)}
-                  className={`rounded-full px-3 py-1.5 text-xs transition-all duration-150 active:scale-95 ${
+                  className={`rounded-pill px-3 py-1.5 text-xs transition-all duration-150 active:scale-95 ${
                     message === s ? "bg-ink text-cream" : "bg-ink/5 text-ink/60 hover:bg-ink/10"
                   }`}
                 >
@@ -113,7 +113,7 @@ export function Product() {
             </div>
 
             <textarea
-              className="mt-3 w-full resize-none rounded-xl border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
+              className="mt-3 w-full resize-none rounded-card border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
               placeholder="Or write your own..."
               rows={2}
               value={message}
@@ -122,13 +122,13 @@ export function Product() {
 
             <div className="mt-2 grid grid-cols-2 gap-2">
               <input
-                className="rounded-xl border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
+                className="rounded-card border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
                 placeholder="To (optional)"
                 value={noteTo}
                 onChange={(e) => setNoteTo(e.target.value)}
               />
               <input
-                className="rounded-xl border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
+                className="rounded-card border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
                 placeholder="From (optional)"
                 value={noteFrom}
                 onChange={(e) => setNoteFrom(e.target.value)}
@@ -139,7 +139,7 @@ export function Product() {
           <button
             onClick={addToCart}
             disabled={adding || product.stock_quantity <= 0}
-            className={`w-full rounded-full py-3 text-sm tracking-wide transition-colors disabled:opacity-40 ${
+            className={`w-full rounded-pill py-3 text-sm tracking-wide transition-colors disabled:opacity-40 ${
               justAdded ? "bg-emerald-600 text-white" : "bg-ink text-cream"
             }`}
           >

@@ -29,7 +29,7 @@ export function HelpCenter() {
 
       <div className="mt-7 flex flex-col gap-3">
         {FAQS.map((f) => (
-          <details key={f.q} className="group rounded-2xl bg-white p-4 ring-1 ring-ink/5">
+          <details key={f.q} className="group rounded-card bg-white p-4 ring-1 ring-ink/5">
             <summary className="cursor-pointer list-none text-sm font-medium">
               {f.q}
             </summary>
@@ -38,7 +38,7 @@ export function HelpCenter() {
         ))}
       </div>
 
-      <div className="mt-8 rounded-2xl bg-ink/5 p-5 text-center">
+      <div className="mt-8 rounded-card bg-ink/5 p-5 text-center">
         <p className="text-sm font-medium">Still need help?</p>
         <p className="mt-1 text-sm text-ink/60">Message us on Whish at 81 900 002.</p>
       </div>

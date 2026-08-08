@@ -15,7 +15,7 @@ export function AdminMoney() {
     return (
       <div className="mx-auto max-w-md px-6 py-20 text-center">
         <p className="text-sm text-ink/50">Log in as an admin to view this page.</p>
-        <Link to="/login" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
           Log in
         </Link>
       </div>
@@ -42,17 +42,17 @@ export function AdminMoney() {
       <p className="mt-1 text-sm text-ink/50">Admin only — not linked from anywhere in the app.</p>
 
       <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-ink p-5 text-cream">
+        <div className="rounded-card bg-ink p-5 text-cream">
           <p className="text-xs text-cream/60">Outstanding gift card liability</p>
           <p className="mt-2 font-display text-2xl font-semibold">USD {Number(liability).toFixed(2)}</p>
           <p className="mt-1 text-xs text-cream/50">{activeCount} active cards — money customers can still spend</p>
         </div>
-        <div className="rounded-2xl bg-white p-5 ring-1 ring-ink/8">
+        <div className="rounded-card bg-white p-5 ring-1 ring-ink/8">
           <p className="text-xs text-ink/50">Awaiting payment confirmation</p>
           <p className="mt-2 font-display text-2xl font-semibold">USD {Number(pending).toFixed(2)}</p>
           <p className="mt-1 text-xs text-ink/40">Not spendable yet, not counted as liability yet</p>
         </div>
-        <div className={`rounded-2xl p-5 ring-1 ${mismatches.length ? "bg-red-50 ring-red-200" : "bg-emerald-50 ring-emerald-200"}`}>
+        <div className={`rounded-card p-5 ring-1 ${mismatches.length ? "bg-red-50 ring-red-200" : "bg-emerald-50 ring-emerald-200"}`}>
           <p className="text-xs text-ink/50">Reconciliation</p>
           <p className="mt-2 font-display text-2xl font-semibold">
             {mismatches.length === 0 ? "Balanced" : `${mismatches.length} mismatch${mismatches.length > 1 ? "es" : ""}`}
@@ -62,7 +62,7 @@ export function AdminMoney() {
       </div>
 
       {mismatches.length > 0 ? (
-        <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
+        <div className="mt-4 rounded-card bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
           <p className="font-medium">These cards don't add up — look at them first:</p>
           <ul className="mt-2 space-y-1">
             {mismatches.map((m) => (
@@ -75,7 +75,7 @@ export function AdminMoney() {
       ) : null}
 
       <h2 className="mt-10 text-sm font-semibold tracking-wide text-ink/50">WHAT YOU OWE EACH STORE</h2>
-      <div className="mt-3 overflow-hidden rounded-2xl bg-white ring-1 ring-ink/5">
+      <div className="mt-3 overflow-hidden rounded-card bg-white ring-1 ring-ink/5">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-ink/8 text-left text-xs text-ink/40">

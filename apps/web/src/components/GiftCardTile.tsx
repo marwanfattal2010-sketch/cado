@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export function GiftCardTile() {
   return (
-    <Link to="/gift-cards" className="group relative block aspect-[4/5] overflow-hidden rounded-2xl">
+    <Link to="/gift-cards" className="group relative block aspect-[4/5] overflow-hidden rounded-card">
       <img
         src="/categories/gift-card.jpg"
         alt=""

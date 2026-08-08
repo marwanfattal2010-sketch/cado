@@ -18,7 +18,7 @@ export function Settings() {
       <div className="mx-auto max-w-md px-6 py-20 text-center">
         <h1 className="font-display text-2xl font-semibold">Settings</h1>
         <p className="mt-2 text-sm text-ink/50">Log in to manage your account.</p>
-        <Link to="/login" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
           Log in
         </Link>
       </div>
@@ -55,7 +55,7 @@ export function Settings() {
           onChange={(e) => setFullName(e.target.value)}
           placeholder="Your name"
           maxLength={100}
-          className="mt-3 w-full rounded-2xl border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
+          className="mt-3 w-full rounded-card border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
         />
       </section>
 
@@ -66,13 +66,13 @@ export function Settings() {
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Your phone number"
           maxLength={30}
-          className="mt-3 w-full rounded-2xl border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
+          className="mt-3 w-full rounded-card border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
         />
       </section>
 
       <section className="mt-5">
         <p className="text-sm font-medium">Email</p>
-        <p className="mt-3 rounded-2xl bg-ink/5 px-4 py-3 text-sm text-ink/50">{session.user.email}</p>
+        <p className="mt-3 rounded-card bg-ink/5 px-4 py-3 text-sm text-ink/50">{session.user.email}</p>
       </section>
 
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
@@ -81,7 +81,7 @@ export function Settings() {
       <button
         onClick={save}
         disabled={saving}
-        className="mt-7 w-full rounded-full bg-ink py-3.5 text-sm font-medium text-cream disabled:opacity-50"
+        className="mt-7 w-full rounded-pill bg-ink py-3.5 text-sm font-medium text-cream disabled:opacity-50"
       >
         {saving ? "Saving..." : "Save changes"}
       </button>

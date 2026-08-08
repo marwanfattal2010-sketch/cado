@@ -29,7 +29,7 @@ function StepHeader({
           <button
             onClick={onBack}
             aria-label="Back"
-            className="-ml-1 flex h-8 w-8 items-center justify-center rounded-full text-ink/50 transition-all duration-150 hover:bg-ink/5 hover:text-ink active:scale-90"
+            className="-ml-1 flex h-8 w-8 items-center justify-center rounded-pill text-ink/50 transition-all duration-150 hover:bg-ink/5 hover:text-ink active:scale-90"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
@@ -38,8 +38,8 @@ function StepHeader({
       </div>
 
       <div className="mt-3 flex gap-1.5">
-        <span className="h-[3px] flex-1 rounded-full bg-ink" />
-        <span className={`h-[3px] flex-1 rounded-full ${step === 2 ? "bg-ink" : "bg-ink/12"}`} />
+        <span className="h-[3px] flex-1 rounded-pill bg-ink" />
+        <span className={`h-[3px] flex-1 rounded-pill ${step === 2 ? "bg-ink" : "bg-ink/12"}`} />
       </div>
 
       <h1 className="mt-6 font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
@@ -49,13 +49,13 @@ function StepHeader({
 }
 
 const optionClass =
-  "rounded-2xl bg-white px-4 py-4 text-sm font-medium text-ink ring-1 ring-ink/8 shadow-[0_1px_2px_rgba(23,20,15,0.04)] transition-all duration-150 hover:ring-ink/25 hover:shadow-[0_2px_8px_rgba(23,20,15,0.07)] active:scale-[0.97]";
+  "rounded-card bg-white px-4 py-4 text-sm font-medium text-ink ring-1 ring-ink/8 shadow-[0_1px_2px_rgba(23,20,15,0.04)] transition-all duration-150 hover:ring-ink/25 hover:shadow-[0_2px_8px_rgba(23,20,15,0.07)] active:scale-[0.97]";
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <button
       onClick={onRemove}
-      className="rounded-full bg-white px-3.5 py-1.5 text-xs font-medium text-ink/70 ring-1 ring-ink/10 transition-all duration-150 hover:ring-ink/25 active:scale-95"
+      className="rounded-pill bg-white px-3.5 py-1.5 text-xs font-medium text-ink/70 ring-1 ring-ink/10 transition-all duration-150 hover:ring-ink/25 active:scale-95"
     >
       {label} <span className="ml-0.5 text-ink/30">✕</span>
     </button>
@@ -157,7 +157,7 @@ export function GiftFinder() {
         {!recipient ? (
           <button
             onClick={openRecipientPicker}
-            className="rounded-full bg-ink/5 px-3.5 py-1.5 text-xs font-medium text-ink/60 transition-all duration-150 hover:bg-ink/10 active:scale-95"
+            className="rounded-pill bg-ink/5 px-3.5 py-1.5 text-xs font-medium text-ink/60 transition-all duration-150 hover:bg-ink/10 active:scale-95"
           >
             + Who's it for?
           </button>
@@ -177,7 +177,7 @@ export function GiftFinder() {
             <button
               key={b.slug}
               onClick={() => setFilter("budget", b.slug)}
-              className="shrink-0 rounded-full bg-white px-4 py-2 text-xs font-medium text-ink/70 ring-1 ring-ink/10 transition-all duration-150 hover:ring-ink/25 active:scale-95"
+              className="shrink-0 rounded-pill bg-white px-4 py-2 text-xs font-medium text-ink/70 ring-1 ring-ink/10 transition-all duration-150 hover:ring-ink/25 active:scale-95"
             >
               {b.label}
             </button>
@@ -204,14 +204,14 @@ export function GiftFinder() {
               {budget ? (
                 <button
                   onClick={() => setFilter("budget", null)}
-                  className="rounded-full bg-ink px-7 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
+                  className="rounded-pill bg-ink px-7 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
                 >
                   Clear budget
                 </button>
               ) : null}
               <Link
                 to="/browse"
-                className="rounded-full bg-white px-7 py-3 text-sm font-medium text-ink ring-1 ring-ink/12 transition-transform duration-150 active:scale-95"
+                className="rounded-pill bg-white px-7 py-3 text-sm font-medium text-ink ring-1 ring-ink/12 transition-transform duration-150 active:scale-95"
               >
                 Browse categories
               </Link>

@@ -15,7 +15,7 @@ export function GiftCards() {
       <div className="mt-8 flex flex-col gap-4">
         <Link
           to="/gift-cards/send"
-          className="group overflow-hidden rounded-3xl bg-ink p-6 text-cream transition hover:opacity-95"
+          className="group overflow-hidden rounded-sheet bg-ink p-6 text-cream transition hover:opacity-95"
         >
           <p className="font-display text-xl font-semibold">Send a gift card</p>
           <p className="mt-1 text-sm text-cream/60">
@@ -26,7 +26,7 @@ export function GiftCards() {
 
         <Link
           to="/gift-cards/redeem"
-          className="group overflow-hidden rounded-3xl bg-white p-6 ring-1 ring-ink/8 transition hover:ring-ink/25"
+          className="group overflow-hidden rounded-sheet bg-white p-6 ring-1 ring-ink/8 transition hover:ring-ink/25"
         >
           <p className="font-display text-xl font-semibold">Redeem a gift card</p>
           <p className="mt-1 text-sm text-ink/50">

@@ -14,7 +14,7 @@ export function Wishlist() {
         <HeartIcon className="mx-auto h-10 w-10 text-ink/20" />
         <h1 className="mt-4 font-display text-2xl font-semibold">Your wishlist</h1>
         <p className="mt-2 text-sm text-ink/50">Log in to save gifts for later.</p>
-        <Link to="/login" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
           Log in
         </Link>
       </div>
@@ -35,7 +35,7 @@ export function Wishlist() {
           <p className="mt-4 text-sm text-ink/50">
             Nothing saved yet — tap the heart on anything you like.
           </p>
-          <Link to="/" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+          <Link to="/" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
             Find a gift
           </Link>
         </div>

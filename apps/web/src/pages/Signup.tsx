@@ -48,7 +48,7 @@ export function Signup() {
       <div className="mx-auto max-w-md px-6 py-24 text-center">
         <h1 className="font-display text-3xl">Check your email</h1>
         <p className="mt-4 text-ink/60">We sent a confirmation link to {email}. Confirm it, then log in.</p>
-        <Link to="/login" className="mt-8 inline-block rounded-full bg-ink px-6 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-8 inline-block rounded-pill bg-ink px-6 py-3 text-sm text-cream">
           Back to login
         </Link>
       </div>
@@ -63,7 +63,7 @@ export function Signup() {
         type="button"
         onClick={onGoogle}
         disabled={googleLoading}
-        className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-ink/15 py-3 text-sm font-medium disabled:opacity-50"
+        className="mt-8 flex w-full items-center justify-center gap-3 rounded-pill border border-ink/15 py-3 text-sm font-medium disabled:opacity-50"
       >
         <GoogleIcon className="h-5 w-5" />
         {googleLoading ? "Redirecting..." : "Continue with Google"}
@@ -77,20 +77,20 @@ export function Signup() {
 
       <form onSubmit={onSubmit} className="space-y-3">
         <input
-          className="w-full rounded-xl border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
           placeholder="Full name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
         />
         <input
-          className="w-full rounded-xl border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
-          className="w-full rounded-xl border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
           type="password"
           placeholder="Password"
           value={password}
@@ -100,7 +100,7 @@ export function Signup() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-full bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-50"
+          className="w-full rounded-pill bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-50"
         >
           {submitting ? "Signing up..." : "Sign up"}
         </button>

@@ -18,7 +18,7 @@ export function CategoryTile({ slug, name }: { slug: string; name: string }) {
       to={`/category/${slug}`}
       onMouseEnter={prefetch}
       onTouchStart={prefetch}
-      className="group relative block aspect-[4/5] overflow-hidden rounded-2xl transition-transform duration-150 active:scale-[0.97]"
+      className="group relative block aspect-[4/5] overflow-hidden rounded-card transition-transform duration-150 active:scale-[0.97]"
     >
       <img
         src={`/categories/${slug}.jpg`}

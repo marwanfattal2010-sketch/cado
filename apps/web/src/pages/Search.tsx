@@ -25,7 +25,7 @@ export function Search() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search stores or gifts..."
-          className="w-full rounded-full border border-ink/12 bg-white py-3.5 pl-12 pr-5 text-[15px] outline-none transition focus:border-ink/35"
+          className="w-full rounded-pill border border-ink/12 bg-white py-3.5 pl-12 pr-5 text-[15px] outline-none transition focus:border-ink/35"
         />
       </div>
 
@@ -34,7 +34,7 @@ export function Search() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-full px-5 py-2 text-sm font-medium capitalize transition ${
+            className={`rounded-pill px-5 py-2 text-sm font-medium capitalize transition ${
               tab === t ? "bg-ink text-cream" : "bg-ink/5 text-ink/60"
             }`}
           >
@@ -53,9 +53,9 @@ export function Search() {
             <Link
               key={s.id}
               to={`/store/${s.id}`}
-              className="flex items-center gap-4 rounded-2xl bg-white p-3 ring-1 ring-ink/5 transition hover:ring-ink/20"
+              className="flex items-center gap-4 rounded-card bg-white p-3 ring-1 ring-ink/5 transition hover:ring-ink/20"
             >
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-ink/5">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-ink/5">
                 {s.cover_image_url ? (
                   <img src={s.cover_image_url} alt="" className="h-full w-full object-cover" />
                 ) : null}

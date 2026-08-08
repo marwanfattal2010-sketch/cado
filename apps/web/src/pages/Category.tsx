@@ -81,7 +81,7 @@ export function Category() {
         <div className="scroll-row mt-5 gap-2 px-6">
           <button
             onClick={() => setSubcategory(undefined)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-transform duration-150 active:scale-95 ${
+            className={`shrink-0 rounded-pill px-4 py-2 text-sm font-medium transition-transform duration-150 active:scale-95 ${
               !subcategory ? "bg-ink text-cream" : "bg-white text-ink/70 ring-1 ring-ink/10"
             }`}
           >
@@ -91,7 +91,7 @@ export function Category() {
             <button
               key={sub.id}
               onClick={() => setSubcategory(sub.slug)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-transform duration-150 active:scale-95 ${
+              className={`shrink-0 rounded-pill px-4 py-2 text-sm font-medium transition-transform duration-150 active:scale-95 ${
                 subcategory === sub.slug ? "bg-ink text-cream" : "bg-white text-ink/70 ring-1 ring-ink/10"
               }`}
             >
@@ -108,7 +108,7 @@ export function Category() {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as Sort)}
-            className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
+            className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
           >
             {(Object.keys(SORT_LABELS) as Sort[]).map((s) => (
               <option key={s} value={s}>
@@ -120,7 +120,7 @@ export function Category() {
           <select
             value={priceIndex}
             onChange={(e) => setPriceIndex(Number(e.target.value))}
-            className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
+            className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
           >
             {PRICE_RANGES.map((r, i) => (
               <option key={r.label} value={i}>
@@ -133,7 +133,7 @@ export function Category() {
             <select
               value={storeId}
               onChange={(e) => setStoreId(e.target.value)}
-              className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
+              className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
             >
               <option value="">All stores</option>
               {stores.data.map((s) => (
@@ -147,7 +147,7 @@ export function Category() {
           {filtersActive ? (
             <button
               onClick={resetFilters}
-              className="shrink-0 rounded-full px-3 py-2 text-sm font-medium text-ink/50 underline"
+              className="shrink-0 rounded-pill px-3 py-2 text-sm font-medium text-ink/50 underline"
             >
               Clear
             </button>
@@ -176,14 +176,14 @@ export function Category() {
             {filtersActive ? (
               <button
                 onClick={resetFilters}
-                className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
+                className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
               >
                 Clear filters
               </button>
             ) : (
               <Link
                 to="/browse"
-                className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
+                className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
               >
                 Browse all categories
               </Link>
@@ -201,7 +201,7 @@ export function Category() {
               <Link
                 key={store.id}
                 to={`/store/${store.id}`}
-                className="group relative flex aspect-[16/9] flex-col justify-end overflow-hidden rounded-2xl bg-ink transition-transform duration-150 active:scale-[0.98]"
+                className="group relative flex aspect-[16/9] flex-col justify-end overflow-hidden rounded-card bg-ink transition-transform duration-150 active:scale-[0.98]"
               >
                 <img
                   src={store.cover_image_url ?? `/categories/${slug}.jpg`}

@@ -25,7 +25,7 @@ export function Language() {
             key={lang.code}
             onClick={() => select(lang.code, lang.ready)}
             disabled={!lang.ready}
-            className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-left text-sm transition ${
+            className={`flex items-center justify-between rounded-card px-4 py-3.5 text-left text-sm transition ${
               selected === lang.code ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
             } ${!lang.ready ? "opacity-40" : ""}`}
           >

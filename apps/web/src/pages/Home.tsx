@@ -127,7 +127,7 @@ function ProductRow({
         {query.isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="w-[44vw] shrink-0 sm:w-[180px]">
-                <Skeleton className="aspect-square w-full rounded-2xl" />
+                <Skeleton className="aspect-square w-full rounded-card" />
                 <Skeleton className="mt-2 h-3 w-2/5" />
                 <Skeleton className="mt-2 h-4 w-4/5" />
                 <Skeleton className="mt-2 h-4 w-1/3" />
@@ -172,7 +172,7 @@ export function Home() {
         </h1>
         <Link
           to="/gift-finder"
-          className="relative mt-6 inline-block rounded-full bg-cream px-8 py-3 text-sm font-medium tracking-wide text-ink"
+          className="relative mt-6 inline-block rounded-pill bg-cream px-8 py-3 text-sm font-medium tracking-wide text-ink"
         >
           Find a gift
         </Link>
@@ -180,7 +180,7 @@ export function Home() {
 
       {/* 2. Search bar — searches inline, no navigation */}
       <div className="mx-auto max-w-6xl px-6 pt-4">
-        <div className="flex items-center gap-3 rounded-full border border-ink/12 bg-white px-5 py-3.5 text-sm shadow-sm">
+        <div className="flex items-center gap-3 rounded-pill border border-ink/12 bg-white px-5 py-3.5 text-sm shadow-sm">
           <SearchIcon className="h-[18px] w-[18px] shrink-0 text-ink/40" />
           <input
             value={query}
@@ -201,9 +201,9 @@ export function Home() {
                   <Link
                     key={s.id}
                     to={`/store/${s.id}`}
-                    className="flex items-center gap-4 rounded-2xl bg-white p-3 ring-1 ring-ink/5"
+                    className="flex items-center gap-4 rounded-card bg-white p-3 ring-1 ring-ink/5"
                   >
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-ink/5">
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-ink/5">
                       {s.cover_image_url ? (
                         <img src={s.cover_image_url} alt="" className="h-full w-full object-cover" />
                       ) : null}
@@ -237,7 +237,7 @@ export function Home() {
           <section className="mx-auto max-w-6xl px-6 pt-6">
             <Link
               to="/gift-cards/send"
-              className="flex h-[100px] items-center justify-between gap-4 rounded-2xl bg-ink px-6 text-cream"
+              className="flex h-[100px] items-center justify-between gap-4 rounded-card bg-ink px-6 text-cream"
             >
               <div>
                 <p className="font-display text-base font-semibold sm:text-lg">Not sure what to get?</p>
@@ -261,7 +261,7 @@ export function Home() {
                   onTouchStart={() => prefetchCategory(cat.slug)}
                   className="flex flex-col items-center gap-2 text-center transition-transform duration-150 active:scale-95"
                 >
-                  <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
+                  <div className="h-14 w-14 overflow-hidden rounded-card bg-ink/5 ring-1 ring-ink/8">
                     <img src={`/categories/${cat.slug}.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />
                   </div>
                   <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
@@ -271,7 +271,7 @@ export function Home() {
                 to="/gift-cards"
                 className="flex flex-col items-center gap-2 text-center transition-transform duration-150 active:scale-95"
               >
-                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-ink/5 ring-1 ring-ink/8">
+                <div className="h-14 w-14 overflow-hidden rounded-card bg-ink/5 ring-1 ring-ink/8">
                   <img src="/categories/gift-card.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
                 </div>
                 <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">Gift Cards</span>
@@ -281,7 +281,7 @@ export function Home() {
 
           {/* 5. Birthday Gifts — the flagship path, most visual weight */}
           <section className="mx-auto max-w-6xl px-6 pt-8">
-            <div className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-3xl p-6">
+            <div className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-sheet p-6">
               <img
                 src="/occasions/birthday-banner.jpg"
                 alt=""
@@ -301,7 +301,7 @@ export function Home() {
                   to={`/category/${c.slug}`}
                   onMouseEnter={() => prefetchCategory(c.slug)}
                   onTouchStart={() => prefetchCategory(c.slug)}
-                  className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink ring-1 ring-ink/10 transition-transform duration-150 active:scale-95"
+                  className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink ring-1 ring-ink/10 transition-transform duration-150 active:scale-95"
                 >
                   {c.name}
                 </Link>
@@ -321,7 +321,7 @@ export function Home() {
               <Link
                 key={b.slug}
                 to={`/gift-finder?budget=${b.slug}`}
-                className="shrink-0 rounded-full bg-ink/5 px-5 py-2.5 text-sm font-semibold text-ink transition-transform duration-150 active:scale-95"
+                className="shrink-0 rounded-pill bg-ink/5 px-5 py-2.5 text-sm font-semibold text-ink transition-transform duration-150 active:scale-95"
               >
                 {b.label}
               </Link>
@@ -337,7 +337,7 @@ export function Home() {
               <Link
                 key={r.value}
                 to={`/gift-finder?recipient=${r.value}`}
-                className="relative flex h-[150px] w-[120px] shrink-0 items-end overflow-hidden rounded-2xl p-3 transition-transform duration-150 active:scale-[0.97]"
+                className="relative flex h-[150px] w-[120px] shrink-0 items-end overflow-hidden rounded-card p-3 transition-transform duration-150 active:scale-[0.97]"
               >
                 <img src={r.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -362,7 +362,7 @@ export function Home() {
               <Link
                 key={o.name}
                 to="/gift-finder"
-                className="relative flex h-[140px] w-[100px] shrink-0 items-end overflow-hidden rounded-xl p-2.5"
+                className="relative flex h-[140px] w-[100px] shrink-0 items-end overflow-hidden rounded-card p-2.5"
               >
                 <img src={o.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -388,7 +388,7 @@ export function Home() {
                     to={`/store/${store.id}`}
                     className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
                   >
-                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-ink/10">
+                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill bg-white ring-1 ring-ink/10">
                       {store.logo_url ? (
                         <img src={store.logo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
                       ) : (
@@ -403,7 +403,7 @@ export function Home() {
                 <section className="mx-auto max-w-6xl px-6">
                   <Link
                     to={`/store/${spotlightStore.id}`}
-                    className="block overflow-hidden rounded-3xl bg-white ring-1 ring-ink/5"
+                    className="block overflow-hidden rounded-sheet bg-white ring-1 ring-ink/5"
                   >
                     <div className="relative h-[140px]">
                       {spotlightStore.cover_image_url ? (
@@ -446,7 +446,7 @@ export function Home() {
               {HOW_IT_WORKS.map((s) => (
                 <div
                   key={s.n}
-                  className="w-[220px] shrink-0 rounded-2xl bg-white p-6 text-center ring-1 ring-ink/5 sm:w-auto"
+                  className="w-[220px] shrink-0 rounded-card bg-white p-6 text-center ring-1 ring-ink/5 sm:w-auto"
                 >
                   <p className="font-display text-3xl font-semibold text-ink/15">{s.n}</p>
                   <s.Icon className="mx-auto mt-1 h-7 w-7 text-ink/70" />
@@ -466,7 +466,7 @@ export function Home() {
               {WHY_CADO.map((w) => (
                 <div
                   key={w.label}
-                  className="flex flex-col items-center gap-2 rounded-2xl bg-white py-5 text-center ring-1 ring-ink/5"
+                  className="flex flex-col items-center gap-2 rounded-card bg-white py-5 text-center ring-1 ring-ink/5"
                 >
                   <w.Icon className="h-6 w-6 text-ink/70" />
                   <span className="text-xs font-medium text-ink/70">{w.label}</span>
@@ -477,7 +477,7 @@ export function Home() {
 
           {/* 16. Add a note — the emotional beat, warmer and softer than the other banners */}
           <section className="mx-auto max-w-6xl px-6 pt-8">
-            <div className="flex flex-col overflow-hidden rounded-3xl bg-[#FBF3EC] sm:flex-row sm:items-center">
+            <div className="flex flex-col overflow-hidden rounded-sheet bg-ribbon-tint sm:flex-row sm:items-center">
               <div className="px-6 py-7 sm:flex-1">
                 <p className="font-display text-xl font-semibold text-ink sm:text-2xl">Say something with it</p>
                 <p className="mt-2 text-sm text-ink/60">Add a handwritten note to any gift, free.</p>
@@ -501,7 +501,7 @@ export function Home() {
               </section>
               <section className="scroll-row gap-3 px-6 pb-1">
                 {REVIEWS.map((r, i) => (
-                  <div key={i} className="w-[240px] shrink-0 rounded-2xl bg-white p-4 ring-1 ring-ink/5">
+                  <div key={i} className="w-[240px] shrink-0 rounded-card bg-white p-4 ring-1 ring-ink/5">
                     <div className="flex gap-0.5 text-gold">
                       {Array.from({ length: 5 }).map((_, s) => (
                         <StarIcon key={s} className="h-4 w-4" filled />
@@ -537,7 +537,7 @@ export function Home() {
                     href="https://instagram.com/cado.lb"
                     target="_blank"
                     rel="noreferrer"
-                    className="block h-28 w-28 shrink-0 overflow-hidden rounded-xl"
+                    className="block h-28 w-28 shrink-0 overflow-hidden rounded-card"
                   >
                     <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
                   </a>
@@ -546,7 +546,7 @@ export function Home() {
                   href="https://instagram.com/cado.lb"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl bg-ink/5 text-center"
+                  className="flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1.5 rounded-card bg-ink/5 text-center"
                 >
                   <InstagramIcon className="h-5 w-5" />
                   <span className="text-[11px] font-medium">Follow us</span>
@@ -595,7 +595,7 @@ export function Home() {
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
                   href={`mailto:${PARTNER_EMAIL}`}
-                  className="rounded-full bg-cream px-6 py-3 text-sm font-medium text-ink"
+                  className="rounded-pill bg-cream px-6 py-3 text-sm font-medium text-ink"
                 >
                   Become a partner
                 </a>
@@ -603,7 +603,7 @@ export function Home() {
                   href={`https://wa.me/${PARTNER_WHATSAPP_NUMBER}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-full border border-cream/30 px-6 py-3 text-sm font-medium text-cream"
+                  className="rounded-pill border border-cream/30 px-6 py-3 text-sm font-medium text-cream"
                 >
                   Talk to us on WhatsApp
                 </a>
@@ -616,11 +616,11 @@ export function Home() {
           </section>
 
           {/* 20. Footer */}
-          <footer className="bg-[#0F0D0A] px-6 py-10 text-cream/60">
+          <footer className="bg-ink px-6 py-10 text-cream/60">
             <div className="mx-auto grid max-w-6xl gap-8 sm:grid-cols-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <img src="/brand/icon.png" alt="" className="h-7 w-7 rounded-[7px]" />
+                  <img src="/brand/icon.png" alt="" className="h-7 w-7 rounded-card" />
                   <span className="font-display text-lg font-semibold tracking-[0.14em] text-cream">CADO</span>
                 </div>
                 <p className="mt-3 text-xs">Gifts, delivered the same day, across Lebanon.</p>

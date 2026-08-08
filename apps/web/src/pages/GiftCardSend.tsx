@@ -28,7 +28,7 @@ export function GiftCardSend() {
       <div className="mx-auto max-w-md px-6 py-20 text-center">
         <h1 className="font-display text-2xl font-semibold">Send a gift card</h1>
         <p className="mt-2 text-sm text-ink/50">Log in to buy a gift card.</p>
-        <Link to="/login" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
           Log in
         </Link>
       </div>
@@ -56,7 +56,7 @@ export function GiftCardSend() {
 
     return (
       <div className="mx-auto max-w-md px-5 py-6 text-center">
-        <div className="rounded-3xl bg-ink p-6 text-cream">
+        <div className="rounded-sheet bg-ink p-6 text-cream">
           <p className="text-[11px] tracking-[0.3em] text-gold">CADO GIFT CARD</p>
           <p className="mt-4 font-display text-3xl font-semibold">USD {Number(card.original_amount).toFixed(2)}</p>
           <p className="mt-4 font-display text-xl font-semibold tracking-[0.15em] break-all">{card.code}</p>
@@ -64,13 +64,13 @@ export function GiftCardSend() {
 
         <p className="mt-5 text-sm text-ink/50">Gift card reserved</p>
 
-        <div className="mt-3 rounded-2xl bg-ink/5 p-4 text-left text-sm text-ink/70">
+        <div className="mt-3 rounded-card bg-ink/5 p-4 text-left text-sm text-ink/70">
           <span className="font-medium">Not active yet.</span> It becomes spendable once we confirm your
           Whish transfer to <span className="font-medium">{WHISH_NUMBER}</span>.
         </div>
 
         {delivery === "digital" ? (
-          <div className="mt-6 rounded-3xl bg-white p-6 ring-1 ring-ink/8">
+          <div className="mt-6 rounded-sheet bg-white p-6 ring-1 ring-ink/8">
             <p className="text-sm font-medium">Share it{recipientName ? ` with ${recipientName}` : ""}</p>
             <img src={qrSrc} alt="Gift card QR code" className="mx-auto mt-4 h-[220px] w-[220px]" />
             <p className="mt-3 text-xs text-ink/50">
@@ -78,13 +78,13 @@ export function GiftCardSend() {
             </p>
             <button
               onClick={onShare}
-              className="mt-4 w-full rounded-full bg-ink py-3 text-sm font-medium text-cream"
+              className="mt-4 w-full rounded-pill bg-ink py-3 text-sm font-medium text-cream"
             >
               {copied ? "Copied!" : "Share"}
             </button>
           </div>
         ) : (
-          <div className="mt-6 rounded-3xl bg-white p-6 text-sm text-ink/60 ring-1 ring-ink/8">
+          <div className="mt-6 rounded-sheet bg-white p-6 text-sm text-ink/60 ring-1 ring-ink/8">
             We'll deliver the physical card to your address, with the code printed on it.
           </div>
         )}
@@ -127,7 +127,7 @@ export function GiftCardSend() {
                 setAmount(a);
                 setCustomAmount("");
               }}
-              className={`rounded-2xl py-3.5 text-sm font-semibold transition ${
+              className={`rounded-card py-3.5 text-sm font-semibold transition ${
                 !customAmount && amount === a ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
               }`}
             >
@@ -141,7 +141,7 @@ export function GiftCardSend() {
           value={customAmount}
           onChange={(e) => setCustomAmount(e.target.value)}
           placeholder="Or enter another amount"
-          className="mt-3 w-full rounded-2xl border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
+          className="mt-3 w-full rounded-card border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
         />
       </section>
 
@@ -152,7 +152,7 @@ export function GiftCardSend() {
             <button
               key={s}
               onClick={() => setMessage(s)}
-              className={`rounded-full px-3.5 py-1.5 text-xs transition ${
+              className={`rounded-pill px-3.5 py-1.5 text-xs transition ${
                 message === s ? "bg-ink text-cream" : "bg-ink/5 text-ink/60"
               }`}
             >
@@ -165,7 +165,7 @@ export function GiftCardSend() {
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
           placeholder="Write your own message..."
-          className="mt-3 w-full resize-none rounded-2xl border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
+          className="mt-3 w-full resize-none rounded-card border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
         />
       </section>
 
@@ -174,7 +174,7 @@ export function GiftCardSend() {
         <div className="mt-3 flex flex-col gap-3">
           <button
             onClick={() => setDelivery("digital")}
-            className={`rounded-2xl p-4 text-left transition ${
+            className={`rounded-card p-4 text-left transition ${
               delivery === "digital" ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
             }`}
           >
@@ -185,7 +185,7 @@ export function GiftCardSend() {
           </button>
           <button
             onClick={() => setDelivery("physical")}
-            className={`rounded-2xl p-4 text-left transition ${
+            className={`rounded-card p-4 text-left transition ${
               delivery === "physical" ? "bg-ink text-cream" : "bg-white ring-1 ring-ink/8"
             }`}
           >
@@ -203,7 +203,7 @@ export function GiftCardSend() {
           value={fromName}
           onChange={(e) => setFromName(e.target.value)}
           placeholder="Your name"
-          className="mt-3 w-full rounded-2xl border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
+          className="mt-3 w-full rounded-card border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
         />
         <p className="mt-1.5 text-xs text-ink/40">Shown to whoever opens the card: "You've received a gift from ___".</p>
       </section>
@@ -214,7 +214,7 @@ export function GiftCardSend() {
           value={recipientName}
           onChange={(e) => setRecipientName(e.target.value)}
           placeholder="Their name"
-          className="mt-3 w-full rounded-2xl border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
+          className="mt-3 w-full rounded-card border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
         />
       </section>
 
@@ -223,7 +223,7 @@ export function GiftCardSend() {
       <button
         onClick={submit}
         disabled={purchase.isPending}
-        className="mt-8 w-full rounded-full bg-ink py-4 text-sm font-medium text-cream disabled:opacity-50"
+        className="mt-8 w-full rounded-pill bg-ink py-4 text-sm font-medium text-cream disabled:opacity-50"
       >
         {purchase.isPending ? "Creating..." : `Pay USD ${finalAmount || 0}`}
       </button>

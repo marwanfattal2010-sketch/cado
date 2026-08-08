@@ -14,15 +14,15 @@ export function Account() {
         <h1 className="mt-4 font-display text-2xl font-semibold">Your account</h1>
         <p className="mt-2 text-sm text-ink/50">Log in to manage your orders and details.</p>
         <div className="mt-6 flex flex-col gap-3">
-          <Link to="/login" className="rounded-full bg-ink py-3 text-sm text-cream">
+          <Link to="/login" className="rounded-pill bg-ink py-3 text-sm text-cream">
             Log in
           </Link>
-          <Link to="/signup" className="rounded-full bg-ink/5 py-3 text-sm text-ink">
+          <Link to="/signup" className="rounded-pill bg-ink/5 py-3 text-sm text-ink">
             Create an account
           </Link>
         </div>
 
-        <div className="mt-10 overflow-hidden rounded-2xl bg-white text-left ring-1 ring-ink/5">
+        <div className="mt-10 overflow-hidden rounded-card bg-white text-left ring-1 ring-ink/5">
           <Link to="/help" className="flex items-center gap-3 px-4 py-4 transition hover:bg-ink/[0.03]">
             <HelpIcon className="h-5 w-5 text-ink/50" />
             <span className="flex-1 text-sm">Help Center</span>
@@ -42,8 +42,8 @@ export function Account() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-6">
-      <div className="flex items-center gap-4 rounded-3xl bg-ink px-6 py-7 text-cream">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gold text-2xl font-semibold text-ink">
+      <div className="flex items-center gap-4 rounded-sheet bg-ink px-6 py-7 text-cream">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-gold text-2xl font-semibold text-ink">
           {(name ?? "?").charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0">
@@ -65,9 +65,9 @@ export function Account() {
               <Link
                 key={store.id}
                 to={`/store/${store.id}`}
-                className="flex w-28 shrink-0 flex-col items-center gap-2 rounded-2xl bg-white p-3 text-center ring-1 ring-ink/5 transition hover:ring-ink/15"
+                className="flex w-28 shrink-0 flex-col items-center gap-2 rounded-card bg-white p-3 text-center ring-1 ring-ink/5 transition hover:ring-ink/15"
               >
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-ink/5">
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill bg-ink/5">
                   {store.logo_url ? (
                     <img src={store.logo_url} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -81,7 +81,7 @@ export function Account() {
         </div>
       ) : null}
 
-      <div className="mt-6 overflow-hidden rounded-2xl bg-white ring-1 ring-ink/5">
+      <div className="mt-6 overflow-hidden rounded-card bg-white ring-1 ring-ink/5">
         <Link to="/settings" className="flex items-center gap-3 px-4 py-4 transition hover:bg-ink/[0.03]">
           <SettingsIcon className="h-5 w-5 text-ink/50" />
           <span className="flex-1 text-sm">Settings</span>
@@ -107,14 +107,14 @@ export function Account() {
       <div className="mt-4 flex gap-3">
         <Link
           to="/orders"
-          className="flex flex-1 items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm text-ink/60 ring-1 ring-ink/5 transition hover:ring-ink/15"
+          className="flex flex-1 items-center gap-2 rounded-card bg-white px-4 py-3 text-sm text-ink/60 ring-1 ring-ink/5 transition hover:ring-ink/15"
         >
           <OrdersIcon className="h-4 w-4 text-ink/40" />
           My orders
         </Link>
         <Link
           to="/gift-cards"
-          className="flex flex-1 items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm text-ink/60 ring-1 ring-ink/5 transition hover:ring-ink/15"
+          className="flex flex-1 items-center gap-2 rounded-card bg-white px-4 py-3 text-sm text-ink/60 ring-1 ring-ink/5 transition hover:ring-ink/15"
         >
           <GiftIcon className="h-4 w-4 text-ink/40" />
           Gift cards
@@ -123,7 +123,7 @@ export function Account() {
 
       <button
         onClick={signOut}
-        className="mt-6 w-full rounded-full bg-ink/5 py-3.5 text-sm font-medium text-ink/70 transition hover:bg-ink/10"
+        className="mt-6 w-full rounded-pill bg-ink/5 py-3.5 text-sm font-medium text-ink/70 transition hover:bg-ink/10"
       >
         Log out
       </button>

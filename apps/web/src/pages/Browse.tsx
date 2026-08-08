@@ -15,7 +15,7 @@ export function Browse() {
     <div className="mx-auto max-w-6xl px-6 py-12">
       <h1 className="font-display text-3xl">Browse</h1>
       <input
-        className="mt-6 w-full max-w-md rounded-full border border-ink/15 px-5 py-3 text-sm outline-none focus:border-ink/40"
+        className="mt-6 w-full max-w-md rounded-pill border border-ink/15 px-5 py-3 text-sm outline-none focus:border-ink/40"
         placeholder="Search for gifts..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}

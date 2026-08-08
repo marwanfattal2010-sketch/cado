@@ -55,7 +55,7 @@ export function GiftCardRedeem() {
         <p className="mt-2 text-sm text-ink/50">
           Log in first so the balance is saved to your account.
         </p>
-        <Link to="/login" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
           Log in
         </Link>
       </div>
@@ -65,7 +65,7 @@ export function GiftCardRedeem() {
   if (result !== null) {
     return (
       <div className="mx-auto max-w-md px-5 py-16 text-center">
-        <div className="rounded-3xl bg-ink p-8 text-cream">
+        <div className="rounded-sheet bg-ink p-8 text-cream">
           <p className="text-[11px] tracking-[0.3em] text-gold">
             {result.fromName ? `YOU'VE RECEIVED A GIFT FROM ${result.fromName.toUpperCase()}` : "GIFT CARD ADDED"}
           </p>
@@ -76,7 +76,7 @@ export function GiftCardRedeem() {
           This will be applied automatically at checkout. If your order costs more, you only pay the
           difference.
         </p>
-        <Link to="/" className="mt-8 inline-block rounded-full bg-ink px-8 py-3.5 text-sm text-cream">
+        <Link to="/" className="mt-8 inline-block rounded-pill bg-ink px-8 py-3.5 text-sm text-cream">
           Start shopping
         </Link>
       </div>
@@ -92,7 +92,7 @@ export function GiftCardRedeem() {
         value={code}
         onChange={(e) => setCode(e.target.value.trim().toUpperCase())}
         placeholder="Gift card code"
-        className="mt-8 w-full rounded-2xl border border-ink/12 bg-white px-5 py-4 text-center font-display text-lg font-semibold tracking-wider outline-none focus:border-ink/35"
+        className="mt-8 w-full rounded-card border border-ink/12 bg-white px-5 py-4 text-center font-display text-lg font-semibold tracking-wider outline-none focus:border-ink/35"
       />
 
       {checking ? <p className="mt-4 text-center text-sm text-ink/40">Checking...</p> : null}
@@ -101,7 +101,7 @@ export function GiftCardRedeem() {
       <button
         onClick={() => verify(code)}
         disabled={checking || !code.trim()}
-        className="mt-6 w-full rounded-full bg-ink py-4 text-sm font-medium text-cream disabled:opacity-40"
+        className="mt-6 w-full rounded-pill bg-ink py-4 text-sm font-medium text-cream disabled:opacity-40"
       >
         {checking ? "Checking..." : "Redeem"}
       </button>

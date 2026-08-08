@@ -29,7 +29,7 @@ export function Orders() {
         <OrdersIcon className="mx-auto h-10 w-10 text-ink/20" />
         <h1 className="mt-4 font-display text-2xl font-semibold">Your orders</h1>
         <p className="mt-2 text-sm text-ink/50">Log in to see your past orders.</p>
-        <Link to="/login" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+        <Link to="/login" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
           Log in
         </Link>
       </div>
@@ -48,14 +48,14 @@ export function Orders() {
         <div className="mt-16 text-center">
           <OrdersIcon className="mx-auto h-10 w-10 text-ink/20" />
           <p className="mt-4 text-sm text-ink/50">You haven't ordered anything yet.</p>
-          <Link to="/" className="mt-6 inline-block rounded-full bg-ink px-8 py-3 text-sm text-cream">
+          <Link to="/" className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream">
             Find a gift
           </Link>
         </div>
       ) : (
         <div className="mt-5 flex flex-col gap-4">
           {list.map((order) => (
-            <div key={order.id} className="rounded-2xl bg-white p-4 ring-1 ring-ink/5">
+            <div key={order.id} className="rounded-card bg-white p-4 ring-1 ring-ink/5">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-sm font-medium">#{order.order_number}</span>
                 <span className="text-xs text-ink/40">
@@ -68,7 +68,7 @@ export function Orders() {
                   <div className="flex items-center justify-between gap-3">
                     <span className="truncate text-sm font-medium">{sub.partner?.name}</span>
                     <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                      className={`shrink-0 rounded-pill px-2.5 py-1 text-[11px] font-medium ${
                         STATUS_STYLE[sub.status] ?? "bg-ink/8 text-ink/60"
                       }`}
                     >

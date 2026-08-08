@@ -26,13 +26,13 @@ export function Header() {
             <button
               onClick={() => navigate(-1)}
               aria-label="Go back"
-              className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink/60 transition hover:bg-ink/5 hover:text-ink"
+              className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-ink/60 transition hover:bg-ink/5 hover:text-ink"
             >
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
           ) : null}
           <Link to="/" className="flex items-center gap-2">
-            <img src="/brand/icon.png" alt="" className="h-8 w-8 rounded-[9px]" />
+            <img src="/brand/icon.png" alt="" className="h-8 w-8 rounded-card" />
             <span className="font-display text-xl font-semibold tracking-[0.14em]">CADO</span>
           </Link>
         </div>
@@ -40,13 +40,13 @@ export function Header() {
         <Link
           to={onStorePage ? `/cart?store=${storeId}` : "/cart"}
           aria-label="Cart"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full text-ink/70 transition-all duration-150 hover:bg-ink/5 hover:text-ink active:scale-90"
+          className="relative flex h-9 w-9 items-center justify-center rounded-pill text-ink/70 transition-all duration-150 hover:bg-ink/5 hover:text-ink active:scale-90"
         >
           <BasketIcon className="h-[22px] w-[22px]" />
           {count > 0 ? (
             <span
               key={count}
-              className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-ink"
+              className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-gold px-1 text-[10px] font-semibold text-ink"
             >
               {count}
             </span>
