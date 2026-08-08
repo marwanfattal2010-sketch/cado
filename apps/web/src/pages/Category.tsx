@@ -15,12 +15,14 @@ const SORT_LABELS: Record<Sort, string> = {
   price_desc: "Price: high to low",
 };
 
+// Same ranges as the gift finder and the homepage budget pills.
 const PRICE_RANGES = [
   { label: "Any price", min: 0, max: null as number | null },
-  { label: "Under $25", min: 0, max: 25 },
-  { label: "$25 – $50", min: 25, max: 50 },
+  { label: "Under $20", min: 0, max: 20 },
+  { label: "$20 – $50", min: 20, max: 50 },
   { label: "$50 – $100", min: 50, max: 100 },
-  { label: "$100+", min: 100, max: null },
+  { label: "$100 – $200", min: 100, max: 200 },
+  { label: "$200+", min: 200, max: null },
 ];
 
 export function Category() {

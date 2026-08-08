@@ -21,7 +21,8 @@ import {
   TikTokIcon,
 } from "../components/Icons";
 
-const BUDGETS = ["Under $25", "$25 – $50", "$50 – $100", "$100+"];
+// Kept in step with the gift finder's ranges so the two never disagree.
+const BUDGETS = ["Under $20", "$20 – $50", "$50 – $100", "$100 – $200", "$200+"];
 
 const RECIPIENTS = [
   { name: "For Her", img: "/recipients/for-her.jpg" },

@@ -6,12 +6,11 @@ import { ProductGridSkeleton } from "../components/Skeleton";
 import { ChevronLeftIcon } from "../components/Icons";
 
 const BUDGETS = [
-  { label: "Under $30", min: 0, max: 30 },
-  { label: "$30 – $50", min: 30, max: 50 },
-  { label: "$50 – $70", min: 50, max: 70 },
-  { label: "$70 – $100", min: 70, max: 100 },
-  { label: "$100 – $150", min: 100, max: 150 },
-  { label: "$150+", min: 150, max: null as number | null },
+  { label: "Under $20", min: 0, max: 20 },
+  { label: "$20 – $50", min: 20, max: 50 },
+  { label: "$50 – $100", min: 50, max: 100 },
+  { label: "$100 – $200", min: 100, max: 200 },
+  { label: "$200+", min: 200, max: null as number | null },
 ];
 
 const RECIPIENTS = [
