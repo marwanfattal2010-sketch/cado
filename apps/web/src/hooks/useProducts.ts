@@ -166,6 +166,49 @@ export function useSearchProducts(query: string) {
   });
 }
 
+/**
+ * "You might also like" — same category, excluding the product itself.
+ * A product page should never dead-end.
+ */
+export function useRelatedProducts(categoryId: string | undefined, excludeId: string | undefined, limit = 8) {
+  return useQuery({
+    queryKey: ["products", "related", categoryId, excludeId, limit],
+    enabled: !!categoryId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(CARD_FIELDS)
+        .eq("is_active", true)
+        .eq("category_id", categoryId as string)
+        .neq("id", excludeId ?? "")
+        .limit(limit);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** "Often sent together" — a different category, so the pairing is a real
+ *  suggestion (flowers + chocolate) rather than more of the same. */
+export function useOftenTogether(categoryId: string | undefined, excludeId: string | undefined, limit = 8) {
+  return useQuery({
+    queryKey: ["products", "together", categoryId, excludeId, limit],
+    enabled: !!categoryId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(CARD_FIELDS)
+        .eq("is_active", true)
+        .neq("category_id", categoryId as string)
+        .neq("id", excludeId ?? "")
+        .contains("tags", ["most-gifted"])
+        .limit(limit);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useProduct(id: string | undefined) {
   return useQuery({
     queryKey: ["products", id],

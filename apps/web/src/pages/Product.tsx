@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProduct } from "../hooks/useProducts";
-import { primaryImage } from "../lib/images";
+import { useProduct, useRelatedProducts, useOftenTogether } from "../hooks/useProducts";
+import { productImageUrl } from "../lib/images";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { Skeleton } from "../components/Skeleton";
-import { useToast } from "../components/ui";
+import { ProductCard } from "../components/ProductCard";
+import { useToast, Chip, RibbonDivider } from "../components/ui";
+import { HeartIcon, ChevronLeftIcon } from "../components/Icons";
+import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
+import { timeUntilCutoff } from "../lib/area";
 
 const NOTE_SUGGESTIONS = [
   "Happy birthday!",
@@ -17,6 +21,28 @@ const NOTE_SUGGESTIONS = [
   "With love",
 ];
 
+function Row({
+  title,
+  items,
+}: {
+  title: string;
+  items?: Parameters<typeof ProductCard>[0][];
+}) {
+  if (!items?.length) return null;
+  return (
+    <section className="pt-7">
+      <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">{title}</h2>
+      <div className="scroll-row gap-3 px-4">
+        {items.map((p) => (
+          <div key={p.id} className="w-[44vw] shrink-0 sm:w-[190px]">
+            <ProductCard {...p} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function Product() {
   const { id } = useParams<{ id: string }>();
   const { data: product, isLoading } = useProduct(id);
@@ -24,30 +50,47 @@ export function Product() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const favoriteIds = useFavoriteIds();
+  const toggleFavorite = useToggleFavorite();
+
+  const [imgIndex, setImgIndex] = useState(0);
   const [message, setMessage] = useState("");
   const [noteFrom, setNoteFrom] = useState("");
   const [noteTo, setNoteTo] = useState("");
+  const [wantsNote, setWantsNote] = useState(false);
+  const [hidePrice, setHidePrice] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [justAdded, setJustAdded] = useState(false);
+
+  const [cutoff, setCutoff] = useState(() => timeUntilCutoff());
+  useEffect(() => {
+    const t = setInterval(() => setCutoff(timeUntilCutoff()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const related = useRelatedProducts(product?.category_id, product?.id);
+  const together = useOftenTogether(product?.category_id, product?.id);
 
   if (isLoading || !product) {
     return (
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-2">
-        <Skeleton className="aspect-square w-full rounded-sheet" />
-        <div>
+      <div className="mx-auto max-w-6xl px-4 py-6 md:grid md:grid-cols-2 md:gap-8">
+        <Skeleton className="aspect-square w-full" />
+        <div className="mt-4 md:mt-0">
           <Skeleton className="h-3 w-28" />
-          <Skeleton className="mt-3 h-8 w-3/4" />
-          <Skeleton className="mt-4 h-5 w-24" />
-          <Skeleton className="mt-6 h-3 w-full" />
-          <Skeleton className="mt-2 h-3 w-5/6" />
-          <Skeleton className="mt-8 h-20 w-full rounded-card" />
-          <Skeleton className="mt-4 h-12 w-full rounded-pill" />
+          <Skeleton className="mt-3 h-7 w-3/4" />
+          <Skeleton className="mt-4 h-6 w-24" />
+          <Skeleton className="mt-6 h-24 w-full" />
+          <Skeleton className="mt-4 h-[52px] w-full rounded-pill" />
         </div>
       </div>
     );
   }
 
-  const uri = primaryImage(product.product_images);
+  const images = (product.product_images ?? [])
+    .slice()
+    .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const isFavorite = favoriteIds.has(product.id);
+  const inStock = product.stock_quantity == null || product.stock_quantity > 0;
+  const arrivesToday = product.same_day === true && inStock;
 
   const addToCart = async () => {
     if (!session) {
@@ -61,104 +104,219 @@ export function Product() {
         product_id: product.id,
         quantity: 1,
         customization: {
-          message: message.trim() || undefined,
-          note_from: noteFrom.trim() || undefined,
-          note_to: noteTo.trim() || undefined,
+          message: wantsNote ? message.trim() || undefined : undefined,
+          note_from: wantsNote ? noteFrom.trim() || undefined : undefined,
+          note_to: wantsNote ? noteTo.trim() || undefined : undefined,
+          hide_price: hidePrice || undefined,
         },
       });
       if (error) throw error;
       await queryClient.invalidateQueries({ queryKey: ["cart"] });
-      setJustAdded(true);
       toast("Added to cart");
-      setTimeout(() => setJustAdded(false), 1800);
+    } catch {
+      toast("Couldn't add that — try again");
     } finally {
       setAdding(false);
     }
   };
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-2">
-      <div className="aspect-square overflow-hidden rounded-sheet bg-ink/5">
-        {uri ? <img src={uri} alt={product.title} className="h-full w-full object-cover" /> : null}
-      </div>
-
-      <div>
-        {product.partner ? <p className="text-sm text-ink/50">{product.partner.name}</p> : null}
-        <h1 className="mt-1 font-display text-4xl">{product.title}</h1>
-        <p className="mt-3 text-xl">
-          {product.currency} {product.price.toFixed(2)}
-        </p>
-        {product.description ? <p className="mt-6 text-ink/70">{product.description}</p> : null}
-
-        <div className="mt-8 space-y-4">
-          {/* Every order is gift-wrapped as standard, so there's nothing to
-              opt into — the note is the only thing left to personalise. */}
-          <div className="rounded-card bg-white p-4 ring-1 ring-ink/8">
-            <div className="flex items-baseline justify-between">
-              <p className="text-sm font-medium">Add a note</p>
-              <span className="text-xs text-ink/40">Optional · free</span>
-            </div>
-            <p className="mt-1 text-xs text-ink/50">We'll write it on a card and tuck it in with the gift.</p>
-
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {NOTE_SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setMessage(s)}
-                  className={`rounded-pill px-3 py-1.5 text-xs transition-all duration-150 active:scale-95 ${
-                    message === s ? "bg-ink text-cream" : "bg-ink/5 text-ink/60 hover:bg-ink/10"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-
-            <textarea
-              className="mt-3 w-full resize-none rounded-card border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
-              placeholder="Or write your own..."
-              rows={2}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <input
-                className="rounded-card border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
-                placeholder="To (optional)"
-                value={noteTo}
-                onChange={(e) => setNoteTo(e.target.value)}
-              />
-              <input
-                className="rounded-card border border-ink/12 bg-cream/40 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-ink/35"
-                placeholder="From (optional)"
-                value={noteFrom}
-                onChange={(e) => setNoteFrom(e.target.value)}
-              />
-            </div>
+    // Bottom padding clears the sticky bar so nothing is trapped underneath.
+    <div className="pb-28">
+      <div className="mx-auto max-w-6xl md:grid md:grid-cols-2 md:gap-8 md:px-4 md:pt-4">
+        {/* Gallery */}
+        <div className="relative">
+          <div className="scroll-row md:rounded-card md:overflow-hidden">
+            {images.length > 0 ? (
+              images.map((img, i) => (
+                <img
+                  key={img.id ?? i}
+                  src={productImageUrl(img.storage_path)}
+                  alt={product.title}
+                  className="aspect-square w-full shrink-0 snap-start object-cover"
+                  onLoad={() => i === 0 && setImgIndex(0)}
+                />
+              ))
+            ) : (
+              <div className="flex aspect-square w-full items-center justify-center bg-surface-sunk text-muted">
+                No image
+              </div>
+            )}
           </div>
 
           <button
-            onClick={addToCart}
-            disabled={adding || product.stock_quantity <= 0}
-            className={`w-full rounded-pill py-3 text-sm tracking-wide transition-colors disabled:opacity-40 ${
-              justAdded ? "bg-emerald-600 text-white" : "bg-ink text-cream"
-            }`}
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
           >
-            {product.stock_quantity <= 0
-              ? "Out of stock"
-              : adding
-                ? "Adding..."
-                : justAdded
-                  ? "Added ✓"
-                  : "Add to cart"}
+            <ChevronLeftIcon className="h-4 w-4" />
           </button>
-          {justAdded ? (
-            <Link to="/cart" className="block text-center text-sm text-ink/50 underline">
-              View cart
+
+          {session ? (
+            <button
+              onClick={() => toggleFavorite.mutate({ productId: product.id, isFavorite })}
+              aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
+            >
+              <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
+            </button>
+          ) : null}
+
+          {images.length > 1 ? (
+            <div className="mt-3 flex justify-center gap-1.5">
+              {images.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-pill transition-all ${i === imgIndex ? "w-5 bg-ink" : "w-1.5 bg-line"}`}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Details */}
+        <div className="px-4 pt-5 md:px-0 md:pt-0">
+          {product.partner ? (
+            <Link to={`/store/${product.partner.id}`} className="text-store text-muted underline-offset-2 hover:underline">
+              {product.partner.name}
             </Link>
           ) : null}
+          <h1 className="mt-1 font-display text-h1">{product.title}</h1>
+          <p className="mt-2 text-[22px] font-bold">${Number(product.price).toFixed(0)}</p>
+
+          {arrivesToday && !cutoff.passed ? (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-pill bg-today-tint px-3 py-1.5 text-caption font-medium text-today">
+              Arrives today if you order within {cutoff.label.replace(" left for same-day delivery", "")}
+            </p>
+          ) : arrivesToday ? (
+            <p className="mt-3 inline-flex rounded-pill bg-surface-sunk px-3 py-1.5 text-caption font-medium text-muted">
+              Order now for delivery tomorrow morning
+            </p>
+          ) : !inStock ? (
+            <p className="mt-3 inline-flex rounded-pill bg-surface-sunk px-3 py-1.5 text-caption font-medium text-muted">
+              Out of stock
+            </p>
+          ) : null}
+
+          {inStock && product.stock_quantity != null && product.stock_quantity <= 3 ? (
+            <p className="mt-2 text-caption font-medium text-alert">Only {product.stock_quantity} left</p>
+          ) : null}
+
+          {/* Gift options. Wrapping is standard and free, so it's stated, not
+              offered as a choice the person has to make. */}
+          <div className="mt-6 rounded-card bg-surface p-4 shadow-rest">
+            <p className="font-display text-h2">Gift options</p>
+
+            <p className="mt-3 flex items-center gap-2 text-body">
+              <span className="text-today">✓</span> Gift wrap — free, on every order
+            </p>
+
+            <label className="mt-3 flex cursor-pointer items-center gap-2.5 text-body">
+              <input
+                type="checkbox"
+                checked={wantsNote}
+                onChange={(e) => setWantsNote(e.target.checked)}
+                className="h-4 w-4 accent-[color:var(--ribbon)]"
+              />
+              Add a handwritten note
+            </label>
+
+            {wantsNote ? (
+              <div className="mt-3 border-l-2 border-line pl-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {NOTE_SUGGESTIONS.map((s) => (
+                    <Chip key={s} active={message === s} onClick={() => setMessage(s)} className="!h-8 !px-3 !text-caption">
+                      {s}
+                    </Chip>
+                  ))}
+                </div>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={2}
+                  placeholder="Or write your own..."
+                  className="mt-2.5 w-full resize-none rounded-card border border-line bg-canvas px-3.5 py-2.5 text-body outline-none focus:border-ink/35"
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <input
+                    value={noteTo}
+                    onChange={(e) => setNoteTo(e.target.value)}
+                    placeholder="To"
+                    className="rounded-card border border-line bg-canvas px-3.5 py-2.5 text-body outline-none focus:border-ink/35"
+                  />
+                  <input
+                    value={noteFrom}
+                    onChange={(e) => setNoteFrom(e.target.value)}
+                    placeholder="From"
+                    className="rounded-card border border-line bg-canvas px-3.5 py-2.5 text-body outline-none focus:border-ink/35"
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            <label className="mt-3 flex cursor-pointer items-center gap-2.5 text-body">
+              <input
+                type="checkbox"
+                checked={hidePrice}
+                onChange={(e) => setHidePrice(e.target.checked)}
+                className="h-4 w-4 accent-[color:var(--ribbon)]"
+              />
+              Hide the price from them
+            </label>
+          </div>
+
+          {product.description ? (
+            <div className="mt-6">
+              <h2 className="font-display text-h2">About this gift</h2>
+              <p className="mt-2 text-body text-ink/70">{product.description}</p>
+            </div>
+          ) : null}
+
+          <div className="mt-5 divide-y divide-line border-y border-line">
+            <details className="group py-3">
+              <summary className="cursor-pointer list-none text-body font-medium">Delivery &amp; returns</summary>
+              <p className="mt-2 text-body text-muted">
+                Order before 4PM for same-day delivery across Lebanon. If something isn't right, contact us
+                with your order number and we'll sort it with the store.
+              </p>
+            </details>
+            {product.partner ? (
+              <details className="group py-3">
+                <summary className="cursor-pointer list-none text-body font-medium">
+                  About {product.partner.name}
+                </summary>
+                <p className="mt-2 text-body text-muted">
+                  A verified CADO partner store.{" "}
+                  <Link to={`/store/${product.partner.id}`} className="font-medium text-ribbon underline">
+                    See everything they sell
+                  </Link>
+                </p>
+              </details>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 pt-8">
+        <RibbonDivider />
+      </div>
+
+      {/* Never dead-end the page. */}
+      <Row title="You might also like" items={related.data} />
+      <Row title="Often sent together" items={together.data} />
+
+      {/* Sticky buy bar. On mobile, a buy button that scrolls away costs
+          conversion, so it stays put. */}
+      <div className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] z-30 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-4">
+          <span className="text-price shrink-0">${Number(product.price).toFixed(0)}</span>
+          <button
+            onClick={addToCart}
+            disabled={adding || !inStock}
+            className="inline-flex h-[52px] flex-1 items-center justify-center rounded-pill bg-ribbon text-body font-medium text-inverse transition-all duration-fast active:scale-[0.97] disabled:opacity-40"
+          >
+            {!inStock ? "Out of stock" : adding ? "Adding..." : "Add to cart"}
+          </button>
         </div>
       </div>
     </div>
