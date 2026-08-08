@@ -4,10 +4,12 @@ import { BottomNav } from "./BottomNav";
 import { Splash } from "./Splash";
 import { TopProgressBar } from "./TopProgressBar";
 import { PageTransition } from "./PageTransition";
+import { ScrollToTop } from "./ScrollToTop";
 
 export function Layout() {
   return (
     <div className="min-h-screen bg-cream text-ink">
+      <ScrollToTop />
       <Splash />
       <TopProgressBar />
       <Header />
