@@ -24,6 +24,7 @@ import { About } from "./pages/About";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { TermsOfService } from "./pages/TermsOfService";
 import { DeliveryReturns } from "./pages/DeliveryReturns";
+import { Partners } from "./pages/Partners";
 
 export default function App() {
   return (
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="privacy" element={<PrivacyPolicy />} />
         <Route path="terms" element={<TermsOfService />} />
         <Route path="delivery-returns" element={<DeliveryReturns />} />
+        <Route path="partners" element={<Partners />} />
       </Route>
     </Routes>
   );

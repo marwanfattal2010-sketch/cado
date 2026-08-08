@@ -1,38 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategories } from "../hooks/useCategories";
-import { useSearchProducts, categoryProductsQuery, useProductsByTag } from "../hooks/useProducts";
-import { useSearchStores, useTopStores, useStoreProducts } from "../hooks/useStores";
+import {
+  useSearchProducts,
+  categoryProductsQuery,
+  useProductsByTag,
+  useNeedItToday,
+} from "../hooks/useProducts";
+import { useSearchStores, useTopStores } from "../hooks/useStores";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { ProductCard } from "../components/ProductCard";
-import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
-import {
-  SearchIcon,
-  GiftIcon,
-  StarIcon,
-  WrapIcon,
-  ShieldCheckIcon,
-  WalletIcon,
-  TruckIcon,
-  InstagramIcon,
-  WhatsAppIcon,
-  TikTokIcon,
-} from "../components/Icons";
+import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
+import { SearchIcon, GiftIcon, WrapIcon, ShieldCheckIcon, WalletIcon, TruckIcon } from "../components/Icons";
+import { RibbonDivider } from "../components/ui";
 import { BUDGETS, RECIPIENTS } from "../lib/filters";
+import { timeUntilCutoff } from "../lib/area";
 
-// Budgets and recipients both come from src/lib/filters.ts so these
-// shortcuts always match what the gift finder actually filters by.
-
-// Birthday quick chips -> real category slugs.
-const BIRTHDAY_CHIPS = [
-  { name: "Flowers", slug: "flowers-gifts" },
-  { name: "Chocolate", slug: "chocolate" },
-  { name: "Jewelry", slug: "jewelry-accessories" },
-  { name: "Perfume", slug: "perfumes" },
-  { name: "Shoes", slug: "shoes" },
-  { name: "Toys", slug: "toys" },
-];
+/** Everything here is a gift — "& Gifts" in a category label says nothing. */
+function tidyCategory(name: string) {
+  return name.replace(/\s*&\s*Gifts$/i, "").trim();
+}
 
 const MORE_OCCASIONS = [
   { name: "Anniversary", img: "/occasions/anniversary.jpg" },
@@ -45,7 +33,6 @@ const MORE_OCCASIONS = [
 ];
 
 const HOW_IT_WORKS = [
-  // "real stock" isn't true until inventory is live — don't claim it yet.
   { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "Browse gifts from stores across Lebanon." },
   { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Every order comes gift-wrapped, with your note inside." },
   { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order before 4PM and it arrives the same day." },
@@ -58,56 +45,29 @@ const WHY_CADO = [
   { Icon: WalletIcon, label: "Pay on delivery" },
 ];
 
-// No real reviews exist yet on a brand-new marketplace — inventing
-// testimonials is easy to spot and would cost trust before it's earned.
-// This section is fully built but renders nothing until REVIEWS has real
-// entries in it.
+/** Built, but renders nothing until there are real ones. A fabricated
+ *  testimonial on a new marketplace is easy to spot and costs more trust
+ *  than it buys. */
 const REVIEWS: { name: string; city: string; quote: string }[] = [];
 
-// The @cado.lb account doesn't exist yet. These are placeholder images,
-// hardcoded here so they're easy to find and swap for a real Instagram
-// feed (or remove) once the account is live. No Instagram API/embed is
-// used — just static images and a profile link.
-const SHOW_INSTAGRAM = true;
-const INSTAGRAM_IMAGES = [
-  "/instagram/1.jpg",
-  "/instagram/2.jpg",
-  "/instagram/3.jpg",
-  "/instagram/4.jpg",
-  "/instagram/5.jpg",
-  "/instagram/6.jpg",
-  "/instagram/7.jpg",
-  "/instagram/8.jpg",
-];
-
-const PARTNER_WHATSAPP_NUMBER = "96181900002";
-const PARTNER_EMAIL = "fattalmarwan33@gmail.com";
-// Stays hidden until there's a real count worth showing.
-const PARTNER_STORE_COUNT = 0;
-
-function currentWeekNumber() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  const days = Math.floor((now.getTime() - start.getTime()) / 86400000);
-  return Math.floor(days / 7);
-}
-
-function RowHeader({ title, to }: { title: string; to: string }) {
+function SectionHead({ title, to, eyebrow }: { title: string; to?: string; eyebrow?: string }) {
   return (
-    <div className="mx-auto flex max-w-6xl items-center justify-between px-6 pb-3">
-      <h2 className="text-sm font-semibold tracking-widest text-ink/50">{title}</h2>
-      <Link to={to} className="text-xs font-medium text-ink/50">
-        See all →
-      </Link>
+    <div className="mx-auto flex max-w-6xl items-end justify-between gap-3 px-4 pb-3">
+      <div>
+        {eyebrow ? <p className="text-eyebrow uppercase text-gold">{eyebrow}</p> : null}
+        <h2 className="font-display text-h2">{title}</h2>
+      </div>
+      {to ? (
+        <Link to={to} className="shrink-0 pb-0.5 text-caption font-medium text-ribbon">
+          See all →
+        </Link>
+      ) : null}
     </div>
   );
 }
 
-/**
- * One row = one filter over the product table. Rows share ProductCard, so a
- * product renders identically (and at the same price) wherever it appears.
- * Card width lets the next card peek, which is what signals "swipe me".
- */
+/** One row = one filter over the product table, so a product always shows
+ *  the same price wherever it appears. */
 function ProductRow({
   title,
   to,
@@ -119,98 +79,100 @@ function ProductRow({
 }) {
   if (!query.isLoading && !query.data?.length) return null;
   return (
-    <>
-      <div className="pt-8">
-        <RowHeader title={title} to={to} />
-      </div>
-      <section className="scroll-row gap-3 px-6 pb-1">
-        {query.isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="w-[44vw] shrink-0 sm:w-[180px]">
-                <Skeleton className="aspect-square w-full rounded-card" />
-                <Skeleton className="mt-2 h-3 w-2/5" />
-                <Skeleton className="mt-2 h-4 w-4/5" />
-                <Skeleton className="mt-2 h-4 w-1/3" />
-              </div>
-            ))
-          : query.data?.map((p) => (
-              <div key={p.id} className="w-[44vw] shrink-0 sm:w-[180px]">
-                <ProductCard {...p} />
-              </div>
-            ))}
-      </section>
-    </>
+    <section className="pt-7">
+      <SectionHead title={title} to={to} />
+      {query.isLoading ? (
+        <ProductRowSkeleton />
+      ) : (
+        <div className="scroll-row gap-3 px-4">
+          {query.data?.map((p) => (
+            <div key={p.id} className="w-[44vw] shrink-0 sm:w-[190px]">
+              <ProductCard {...p} />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
 export function Home() {
   const queryClient = useQueryClient();
   const prefetchCategory = (slug: string) => queryClient.prefetchQuery(categoryProductsQuery(slug));
+
   const categories = useCategories();
   const stores = useTopStores();
   const trending = useProductsByTag("trending");
   const mostGifted = useProductsByTag("most-gifted");
   const newOnCado = useProductsByTag("new");
+  const needToday = useNeedItToday();
+
   const [query, setQuery] = useState("");
   const searching = query.trim().length > 0;
   const searchProducts = useSearchProducts(query);
   const searchStores = useSearchStores(query);
 
-  const spotlightStore =
-    stores.data && stores.data.length > 0 ? stores.data[currentWeekNumber() % stores.data.length] : null;
-  const spotlightProducts = useStoreProducts(spotlightStore?.id);
+  // Live cut-off. Honest information rather than manufactured urgency, so it
+  // has to keep ticking and has to admit when it's passed.
+  const [cutoff, setCutoff] = useState(() => timeUntilCutoff());
+  useEffect(() => {
+    const t = setInterval(() => setCutoff(timeUntilCutoff()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <div>
-      {/* 1. Hero — ~40vh, in normal flow below the sticky header so the
-          headline is never covered by it. */}
-      <section className="relative flex h-[40vh] min-h-[280px] flex-col items-center justify-center px-6 text-center">
+      {/* 1 — HERO. Not a ring: an engagement ring is the least universal gift
+          there is. The product is the arrival, not the object. */}
+      <section className="relative mx-4 mt-3 flex aspect-[4/5] max-h-[62vh] flex-col justify-end overflow-hidden rounded-card px-6 pb-8 sm:aspect-[16/7]">
         <HeroCarousel />
-        <p className="relative text-[11px] font-medium tracking-[0.35em] text-gold">NEED A GIFT TODAY</p>
-        <h1 className="relative mt-2 max-w-md font-display text-2xl leading-tight tracking-wide text-white sm:max-w-xl sm:text-4xl">
-          Find the perfect gift and have it delivered the same day.
+        <h1 className="relative max-w-sm font-display text-display text-inverse drop-shadow sm:max-w-lg">
+          Wrapped, and at their door by tonight.
         </h1>
         <Link
           to="/gift-finder"
-          className="relative mt-6 inline-block rounded-pill bg-cream px-8 py-3 text-sm font-medium tracking-wide text-ink"
+          className="relative mt-5 inline-flex h-[52px] w-fit items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse transition-all duration-fast active:scale-[0.97]"
         >
           Find a gift
         </Link>
       </section>
 
-      {/* 2. Search bar — searches inline, no navigation */}
-      <div className="mx-auto max-w-6xl px-6 pt-4">
-        <div className="flex items-center gap-3 rounded-pill border border-ink/12 bg-white px-5 py-3.5 text-sm shadow-sm">
-          <SearchIcon className="h-[18px] w-[18px] shrink-0 text-ink/40" />
+      {/* 2 — SEARCH. Searches inline; no navigation away. */}
+      <div className="mx-auto max-w-6xl px-4 pt-4">
+        <div className="flex items-center gap-3 rounded-pill border border-line bg-surface px-5 py-3.5 shadow-rest">
+          <SearchIcon className="h-[18px] w-[18px] shrink-0 text-muted" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search stores or gifts..."
-            className="w-full bg-transparent text-ink outline-none placeholder:text-ink/40"
+            placeholder="Search gifts or stores..."
+            aria-label="Search gifts or stores"
+            className="w-full bg-transparent text-body text-ink outline-none placeholder:text-muted"
           />
         </div>
       </div>
 
       {searching ? (
-        <div className="mx-auto max-w-6xl px-6 pt-6 pb-10">
+        <div className="mx-auto max-w-6xl px-4 pb-10 pt-6">
           {searchStores.data && searchStores.data.length > 0 ? (
             <>
-              <h2 className="mb-3 text-sm font-semibold tracking-widest text-ink/50">STORES</h2>
+              <h2 className="mb-3 font-display text-h2">Stores</h2>
               <div className="flex flex-col gap-3">
                 {searchStores.data.map((s) => (
                   <Link
                     key={s.id}
                     to={`/store/${s.id}`}
-                    className="flex items-center gap-4 rounded-card bg-white p-3 ring-1 ring-ink/5"
+                    className="flex items-center gap-4 rounded-card bg-surface p-3 shadow-rest"
                   >
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-ink/5">
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">
                       {s.cover_image_url ? (
                         <img src={s.cover_image_url} alt="" className="h-full w-full object-cover" />
                       ) : null}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">{s.name}</p>
-                      {s.description ? <p className="truncate text-sm text-ink/50">{s.description}</p> : null}
+                      {s.description ? (
+                        <p className="truncate text-store text-muted">{s.description}</p>
+                      ) : null}
                     </div>
                   </Link>
                 ))}
@@ -218,447 +180,294 @@ export function Home() {
             </>
           ) : null}
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold tracking-widest text-ink/50">GIFTS</h2>
+          <h2 className="mb-3 mt-7 font-display text-h2">Gifts</h2>
           {searchProducts.isLoading ? (
             <ProductGridSkeleton count={6} />
           ) : searchProducts.data && searchProducts.data.length > 0 ? (
-            <div className="grid animate-fade-in grid-cols-2 gap-5 sm:grid-cols-3">
+            <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
               {searchProducts.data.map((p) => (
                 <ProductCard key={p.id} {...p} />
               ))}
             </div>
           ) : (
-            <p className="text-sm text-ink/40">No gifts match "{query}".</p>
+            <p className="text-body text-muted">
+              Nothing matches “{query}” yet — try a category, or let the{" "}
+              <Link to="/gift-finder" className="font-medium text-ribbon underline">
+                gift finder
+              </Link>{" "}
+              pick for you.
+            </p>
           )}
         </div>
       ) : (
         <>
-          {/* 3. Gift Cards banner */}
-          <section className="mx-auto max-w-6xl px-6 pt-6">
+          {/* 3 — GIFT FINDER. Replaces the old gift-card block: whoever taps
+              "not sure what to get" is exactly who CADO exists for, so send
+              them to the finder, not to the lowest-emotion product. */}
+          <section className="mx-auto max-w-6xl px-4 pt-6">
             <Link
-              to="/gift-cards/send"
-              className="flex h-[100px] items-center justify-between gap-4 rounded-card bg-ink px-6 text-cream"
+              to="/gift-finder"
+              className="flex items-center justify-between gap-4 rounded-card bg-ink px-6 py-5 text-inverse transition-transform duration-fast active:scale-[0.99]"
             >
               <div>
-                <p className="font-display text-base font-semibold sm:text-lg">Not sure what to get?</p>
-                <p className="text-xs text-cream/60">Send a CADO gift card instead.</p>
+                <p className="font-display text-h2">Not sure what to get?</p>
+                <p className="mt-1 text-body text-inverse/70">Three questions. We’ll find it.</p>
               </div>
-              <GiftIcon className="h-8 w-8 shrink-0 text-gold" />
+              <span className="shrink-0 text-3xl text-gold" aria-hidden>
+                🎀
+              </span>
             </Link>
           </section>
 
-          {/* 4. Shop by Category — real photo squares, 5-and-5 grid, no swiping */}
-          <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-            <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY CATEGORY</h2>
+          {/* 4 — SHOP BY RECIPIENT. Above category on purpose: people think
+              "something for my sister" before "I need shoes". */}
+          <section className="pt-7">
+            <SectionHead title="Shop by recipient" />
+            <div className="scroll-row gap-3 px-4">
+              {RECIPIENTS.map((r) => (
+                <Link
+                  key={r.value}
+                  to={`/gift-finder?recipient=${r.value}`}
+                  className="relative flex h-[180px] w-[140px] shrink-0 items-end overflow-hidden rounded-card p-3 transition-transform duration-fast active:scale-[0.97]"
+                >
+                  <img src={r.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                  <span className="relative font-display text-[15px] font-semibold text-inverse drop-shadow">
+                    {r.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
           </section>
-          <section className="mx-auto max-w-6xl px-6 pb-2">
-            <div className="grid grid-cols-5 gap-x-2 gap-y-4">
+
+          {/* 5 — SHOP BY CATEGORY. Three per row, not five. */}
+          <section className="pt-7">
+            <SectionHead title="Shop by category" to="/browse" />
+            <div className="mx-auto grid max-w-6xl grid-cols-3 gap-3 px-4 sm:grid-cols-5">
               {categories.data?.map((cat) => (
                 <Link
                   key={cat.id}
                   to={`/category/${cat.slug}`}
                   onMouseEnter={() => prefetchCategory(cat.slug)}
                   onTouchStart={() => prefetchCategory(cat.slug)}
-                  className="flex flex-col items-center gap-2 text-center transition-transform duration-150 active:scale-95"
+                  className="flex flex-col items-center gap-2 text-center transition-transform duration-fast active:scale-[0.96]"
                 >
-                  <div className="h-14 w-14 overflow-hidden rounded-card bg-ink/5 ring-1 ring-ink/8">
-                    <img src={`/categories/${cat.slug}.jpg`} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <div className="aspect-square w-full overflow-hidden rounded-card bg-surface-sunk">
+                    <img
+                      src={`/categories/${cat.slug}.jpg`}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{cat.name}</span>
+                  <span className="text-[13px] font-medium leading-tight">{tidyCategory(cat.name)}</span>
                 </Link>
               ))}
               <Link
                 to="/gift-cards"
-                className="flex flex-col items-center gap-2 text-center transition-transform duration-150 active:scale-95"
+                className="flex flex-col items-center gap-2 text-center transition-transform duration-fast active:scale-[0.96]"
               >
-                <div className="h-14 w-14 overflow-hidden rounded-card bg-ink/5 ring-1 ring-ink/8">
+                <div className="aspect-square w-full overflow-hidden rounded-card bg-surface-sunk">
                   <img src="/categories/gift-card.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
                 </div>
-                <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">Gift Cards</span>
+                <span className="text-[13px] font-medium leading-tight">Gift Cards</span>
               </Link>
             </div>
           </section>
 
-          {/* 5. Birthday Gifts — the flagship path, most visual weight */}
-          <section className="mx-auto max-w-6xl px-6 pt-8">
-            <div className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-sheet p-6">
-              <img
-                src="/occasions/birthday-banner.jpg"
-                alt=""
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
-              <p className="relative font-display text-2xl font-semibold text-white drop-shadow sm:text-3xl">
-                Birthday coming up?
-              </p>
-              <p className="relative mt-1 text-sm text-white/85 drop-shadow">Same-day gifts, sorted by what always lands.</p>
-            </div>
-            <div className="scroll-row -mx-6 mt-3 gap-2 px-6">
-              {BIRTHDAY_CHIPS.map((c) => (
+          {/* 6 — NEED IT TODAY, with the real cut-off. */}
+          {needToday.data && needToday.data.length > 0 ? (
+            <section className="pt-7">
+              <div className="mx-auto flex max-w-6xl items-end justify-between gap-3 px-4 pb-3">
+                <div>
+                  <h2 className="font-display text-h2">Need it today</h2>
+                  <p className={`mt-0.5 text-caption font-medium ${cutoff.passed ? "text-muted" : "text-today"}`}>
+                    {cutoff.label}
+                  </p>
+                </div>
+              </div>
+              <div className="scroll-row gap-3 px-4">
+                {needToday.data.map((p) => (
+                  <div key={p.id} className="w-[44vw] shrink-0 sm:w-[190px]">
+                    <ProductCard {...p} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* 7 — TRENDING */}
+          <ProductRow title="Trending this week" to="/browse" query={trending} />
+
+          {/* 8 — SHOP BY BUDGET */}
+          <section className="pt-7">
+            <SectionHead title="Shop by budget" />
+            <div className="scroll-row gap-2 px-4">
+              {BUDGETS.map((b) => (
                 <Link
-                  key={c.slug}
-                  to={`/category/${c.slug}`}
-                  onMouseEnter={() => prefetchCategory(c.slug)}
-                  onTouchStart={() => prefetchCategory(c.slug)}
-                  className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink ring-1 ring-ink/10 transition-transform duration-150 active:scale-95"
+                  key={b.slug}
+                  to={`/gift-finder?budget=${b.slug}`}
+                  className="inline-flex h-10 shrink-0 items-center rounded-pill bg-surface-sunk px-4 text-body font-medium text-ink transition-all duration-fast active:scale-[0.96]"
                 >
-                  {c.name}
+                  {b.label}
                 </Link>
               ))}
             </div>
           </section>
 
-          {/* 6. Trending this week */}
-          <ProductRow title="TRENDING THIS WEEK" to="/browse" query={trending} />
-
-          {/* 7. Shop by Budget — flat pills, no photos */}
-          <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-            <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY BUDGET</h2>
-          </section>
-          <section className="scroll-row gap-2 px-6 pb-1">
-            {BUDGETS.map((b) => (
-              <Link
-                key={b.slug}
-                to={`/gift-finder?budget=${b.slug}`}
-                className="shrink-0 rounded-pill bg-ink/5 px-5 py-2.5 text-sm font-semibold text-ink transition-transform duration-150 active:scale-95"
-              >
-                {b.label}
-              </Link>
-            ))}
-          </section>
-
-          {/* 9. Shop by Recipient — photo cards */}
-          <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-            <h2 className="text-sm font-semibold tracking-widest text-ink/50">SHOP BY RECIPIENT</h2>
-          </section>
-          <section className="scroll-row gap-3 px-6 pb-1">
-            {RECIPIENTS.map((r) => (
-              <Link
-                key={r.value}
-                to={`/gift-finder?recipient=${r.value}`}
-                className="relative flex h-[150px] w-[120px] shrink-0 items-end overflow-hidden rounded-card p-3 transition-transform duration-150 active:scale-[0.97]"
-              >
-                <img src={r.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                <span className="relative font-display text-sm font-semibold text-white drop-shadow">{r.label}</span>
-              </Link>
-            ))}
-          </section>
-
-          {/* 10. Most gifted for birthdays */}
+          {/* 9 — MOST GIFTED FOR BIRTHDAYS */}
           <ProductRow
-            title="MOST GIFTED FOR BIRTHDAYS"
+            title="Most gifted for birthdays"
             to="/gift-finder?occasion=birthday"
             query={mostGifted}
           />
 
-          {/* 11. More Occasions — deliberately small, secondary */}
-          <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-            <h2 className="text-sm font-semibold tracking-widest text-ink/50">MORE OCCASIONS</h2>
-          </section>
-          <section className="scroll-row gap-2.5 px-6 pb-1">
-            {MORE_OCCASIONS.map((o) => (
-              <Link
-                key={o.name}
-                to="/gift-finder"
-                className="relative flex h-[140px] w-[100px] shrink-0 items-end overflow-hidden rounded-card p-2.5"
-              >
-                <img src={o.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                <span className="relative text-xs font-semibold text-white drop-shadow">{o.name}</span>
-              </Link>
-            ))}
+          {/* 10 — MORE OCCASIONS. Deliberately small; birthdays are the path. */}
+          <section className="pt-7">
+            <SectionHead title="More occasions" />
+            <div className="scroll-row gap-2.5 px-4">
+              {MORE_OCCASIONS.map((o) => (
+                <Link
+                  key={o.name}
+                  to="/gift-finder"
+                  className="relative flex h-[140px] w-[100px] shrink-0 items-end overflow-hidden rounded-card p-2.5 transition-transform duration-fast active:scale-[0.96]"
+                >
+                  <img src={o.img} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  <span className="relative text-caption font-semibold text-inverse drop-shadow">{o.name}</span>
+                </Link>
+              ))}
+            </div>
           </section>
 
-          {/* 12. New on CADO */}
-          <ProductRow title="NEW ON CADO" to="/browse" query={newOnCado} />
+          {/* 11 — NEW ON CADO */}
+          <ProductRow title="New on CADO" to="/browse" query={newOnCado} />
 
-          {/* 13. Store spotlight — rotates weekly (currentWeekNumber() indexes into
-              the top-stores list, so a new store surfaces each week automatically) */}
+          {/* 12 — STORE SPOTLIGHT. Logo cards, not letter avatars. */}
           {stores.data && stores.data.length > 0 ? (
-            <>
-              <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-                <h2 className="text-sm font-semibold tracking-widest text-ink/50">STORE SPOTLIGHT</h2>
-              </section>
-              <section className="scroll-row gap-4 px-6 pb-4">
+            <section className="pt-7">
+              <SectionHead title="Stores on CADO" to="/browse" />
+              <div className="scroll-row gap-3 px-4">
                 {stores.data.map((store) => (
                   <Link
                     key={store.id}
                     to={`/store/${store.id}`}
-                    className="flex w-16 shrink-0 flex-col items-center gap-2 text-center"
+                    className="w-[120px] shrink-0 rounded-card bg-surface p-3 text-center shadow-rest transition-transform duration-fast active:scale-[0.97]"
                   >
-                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill bg-white ring-1 ring-ink/10">
-                      {store.logo_url ? (
-                        <img src={store.logo_url} alt="" loading="lazy" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="text-base font-semibold text-ink/40">{store.name.charAt(0)}</span>
-                      )}
+                    <div className="mx-auto flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-card bg-surface">
+                      <img
+                        src={store.logo_url || store.cover_image_url || "/categories/gift-card.jpg"}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
                     </div>
-                    <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink/70">{store.name}</span>
+                    <p className="mt-2 line-clamp-2 text-[13px] font-medium leading-tight">{store.name}</p>
                   </Link>
                 ))}
-              </section>
-              {spotlightStore ? (
-                <section className="mx-auto max-w-6xl px-6">
-                  <Link
-                    to={`/store/${spotlightStore.id}`}
-                    className="block overflow-hidden rounded-sheet bg-white ring-1 ring-ink/5"
-                  >
-                    <div className="relative h-[140px]">
-                      {spotlightStore.cover_image_url ? (
-                        <img
-                          src={spotlightStore.cover_image_url}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <p className="absolute bottom-3 left-4 font-display text-lg font-semibold text-white drop-shadow">
-                        {spotlightStore.name}
-                      </p>
-                    </div>
-                    {spotlightStore.description ? (
-                      <p className="px-4 pt-3 text-sm text-ink/60">{spotlightStore.description}</p>
-                    ) : null}
-                  </Link>
-                  {spotlightProducts.data && spotlightProducts.data.length > 0 ? (
-                    <div className="scroll-row -mx-6 mt-3 gap-3 px-6 pb-2">
-                      {spotlightProducts.data.slice(0, 4).map((p) => (
-                        <div key={p.id} className="w-32 shrink-0">
-                          <ProductCard {...p} />
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </section>
-              ) : null}
-            </>
+              </div>
+            </section>
           ) : null}
 
-          {/* 14. How CADO works — calm, typographic break between busy sections */}
-          <section className="mx-auto max-w-6xl px-6 pt-10 pb-3">
-            <h2 className="text-center text-sm font-semibold tracking-widest text-ink/50">HOW CADO WORKS</h2>
-          </section>
-          <section className="mx-auto max-w-6xl px-6 pb-2">
-            <div className="flex gap-4 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible">
+          {/* 13 — HOW CADO WORKS. A quiet, typographic break. */}
+          <section className="mx-auto max-w-6xl px-4 pt-8">
+            <RibbonDivider className="mb-5" />
+            <h2 className="text-center font-display text-h2">How CADO works</h2>
+            <div className="mt-5 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
               {HOW_IT_WORKS.map((s) => (
                 <div
                   key={s.n}
-                  className="w-[220px] shrink-0 rounded-card bg-white p-6 text-center ring-1 ring-ink/5 sm:w-auto"
+                  className="w-[220px] shrink-0 rounded-card bg-surface p-5 text-center shadow-rest sm:w-auto"
                 >
-                  <p className="font-display text-3xl font-semibold text-ink/15">{s.n}</p>
+                  <p className="font-display text-h1 text-ink/15">{s.n}</p>
                   <s.Icon className="mx-auto mt-1 h-7 w-7 text-ink/70" />
-                  <p className="mt-3 text-sm font-bold">{s.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-ink/50">{s.desc}</p>
+                  <p className="mt-3 text-body font-semibold">{s.title}</p>
+                  <p className="mt-1 text-caption leading-relaxed text-muted">{s.desc}</p>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* 15. Why CADO — icon strip, 2x2 on mobile */}
-          <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-            <h2 className="text-center text-sm font-semibold tracking-widest text-ink/50">WHY CADO</h2>
-          </section>
-          <section className="mx-auto max-w-6xl px-6 pb-2">
+          {/* 14 — WHY CADO. 2x2 on mobile. */}
+          <section className="mx-auto max-w-6xl px-4 pt-7">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {WHY_CADO.map((w) => (
                 <div
                   key={w.label}
-                  className="flex flex-col items-center gap-2 rounded-card bg-white py-5 text-center ring-1 ring-ink/5"
+                  className="flex flex-col items-center gap-2 rounded-card bg-surface py-5 text-center shadow-rest"
                 >
                   <w.Icon className="h-6 w-6 text-ink/70" />
-                  <span className="text-xs font-medium text-ink/70">{w.label}</span>
+                  <span className="text-caption font-medium text-ink/70">{w.label}</span>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* 16. Add a note — the emotional beat, warmer and softer than the other banners */}
-          <section className="mx-auto max-w-6xl px-6 pt-8">
-            <div className="flex flex-col overflow-hidden rounded-sheet bg-ribbon-tint sm:flex-row sm:items-center">
-              <div className="px-6 py-7 sm:flex-1">
-                <p className="font-display text-xl font-semibold text-ink sm:text-2xl">Say something with it</p>
-                <p className="mt-2 text-sm text-ink/60">Add a handwritten note to any gift, free.</p>
+          {/* 15 — SAY SOMETHING WITH IT. The emotional beat. */}
+          <section className="mx-auto max-w-6xl px-4 pt-7">
+            <div className="flex flex-col overflow-hidden rounded-card bg-ribbon-tint sm:flex-row sm:items-center">
+              <div className="px-6 py-6 sm:flex-1">
+                <p className="font-display text-h2">Say something with it</p>
+                <p className="mt-2 text-body text-muted">Add a handwritten note to any gift, free.</p>
               </div>
-              <div className="h-40 sm:h-44 sm:w-56 sm:shrink-0">
-                <img
-                  src="/misc/handwritten-note.jpg"
-                  alt=""
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
+              <div className="h-36 sm:h-40 sm:w-56 sm:shrink-0">
+                <img src="/misc/handwritten-note.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
               </div>
             </div>
           </section>
 
-          {/* 17. Reviews — hidden until REVIEWS has real entries (see comment above) */}
+          {/* Reviews — hidden until real ones exist. */}
           {REVIEWS.length > 0 ? (
-            <>
-              <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-                <h2 className="text-sm font-semibold tracking-widest text-ink/50">WHAT PEOPLE ARE SAYING</h2>
-              </section>
-              <section className="scroll-row gap-3 px-6 pb-1">
+            <section className="pt-7">
+              <SectionHead title="What people are saying" />
+              <div className="scroll-row gap-3 px-4">
                 {REVIEWS.map((r, i) => (
-                  <div key={i} className="w-[240px] shrink-0 rounded-card bg-white p-4 ring-1 ring-ink/5">
-                    <div className="flex gap-0.5 text-gold">
-                      {Array.from({ length: 5 }).map((_, s) => (
-                        <StarIcon key={s} className="h-4 w-4" filled />
-                      ))}
-                    </div>
-                    <p className="mt-2 line-clamp-2 text-sm text-ink/70">"{r.quote}"</p>
-                    <p className="mt-2 text-xs font-medium text-ink/50">
+                  <div key={i} className="w-[240px] shrink-0 rounded-card bg-surface p-4 shadow-rest">
+                    <p className="mt-2 line-clamp-2 text-body text-ink/70">“{r.quote}”</p>
+                    <p className="mt-2 text-caption font-medium text-muted">
                       {r.name}, {r.city}
                     </p>
                   </div>
                 ))}
-              </section>
-            </>
+              </div>
+            </section>
           ) : null}
 
-          {/* 18. Instagram strip — placeholder images, static link only, see comment above */}
-          {SHOW_INSTAGRAM ? (
-            <>
-              <section className="mx-auto max-w-6xl px-6 pt-8 pb-3">
-                <a
-                  href="https://instagram.com/cado.lb"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm font-semibold tracking-widest text-ink/50"
-                >
-                  @CADO.LB ON INSTAGRAM
-                </a>
-              </section>
-              <section className="scroll-row gap-2 px-6 pb-1">
-                {INSTAGRAM_IMAGES.map((src, i) => (
-                  <a
-                    key={i}
-                    href="https://instagram.com/cado.lb"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block h-28 w-28 shrink-0 overflow-hidden rounded-card"
-                  >
-                    <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  </a>
-                ))}
-                <a
-                  href="https://instagram.com/cado.lb"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1.5 rounded-card bg-ink/5 text-center"
-                >
-                  <InstagramIcon className="h-5 w-5" />
-                  <span className="text-[11px] font-medium">Follow us</span>
-                </a>
-              </section>
-            </>
-          ) : null}
-
-          {/* 19. Partner With CADO — full-width dark section, second most valuable
-              thing on the page after the product rows */}
-          <section id="partner" className="mt-10 bg-ink px-6 py-12 text-cream">
-            <div className="mx-auto max-w-6xl">
-              <p className="text-[11px] font-semibold tracking-[0.3em] text-gold">FOR STORE OWNERS</p>
-              <h2 className="mt-3 font-display text-2xl font-semibold sm:text-3xl">Own a store? Sell on CADO.</h2>
-              <p className="mt-3 max-w-lg text-sm text-cream/70">
-                Reach customers across Lebanon who are looking for a gift right now. You keep doing what you
-                do — we handle the storefront, the orders, and the delivery.
-              </p>
-
-              <div className="mt-8 grid gap-5 sm:grid-cols-3">
-                <div className="flex items-start gap-3">
-                  <WalletIcon className="h-6 w-6 shrink-0 text-gold" />
-                  <div>
-                    <p className="text-sm font-semibold">No upfront cost</p>
-                    <p className="mt-0.5 text-xs text-cream/60">You only pay when you sell.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <TruckIcon className="h-6 w-6 shrink-0 text-gold" />
-                  <div>
-                    <p className="text-sm font-semibold">We deliver</p>
-                    <p className="mt-0.5 text-xs text-cream/60">Same-day delivery across Lebanon, handled by us.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <ShieldCheckIcon className="h-6 w-6 shrink-0 text-gold" />
-                  <div>
-                    <p className="text-sm font-semibold">New customers</p>
-                    <p className="mt-0.5 text-xs text-cream/60">
-                      Get discovered by people who weren't looking for your store, just the right gift.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                  href={`mailto:${PARTNER_EMAIL}`}
-                  className="rounded-pill bg-cream px-6 py-3 text-sm font-medium text-ink"
-                >
-                  Become a partner
-                </a>
-                <a
-                  href={`https://wa.me/${PARTNER_WHATSAPP_NUMBER}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-pill border border-cream/30 px-6 py-3 text-sm font-medium text-cream"
-                >
-                  Talk to us on WhatsApp
-                </a>
-              </div>
-
-              {PARTNER_STORE_COUNT > 0 ? (
-                <p className="mt-5 text-xs text-cream/50">Already trusted by {PARTNER_STORE_COUNT}+ stores in Lebanon.</p>
-              ) : null}
-            </div>
-          </section>
-
-          {/* 20. Footer */}
-          <footer className="bg-ink px-6 py-10 text-cream/60">
-            <div className="mx-auto grid max-w-6xl gap-8 sm:grid-cols-4">
+          {/* 16 — FOOTER */}
+          <footer className="mt-8 bg-ink px-4 py-8 text-inverse/60">
+            <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <img src="/brand/icon.png" alt="" className="h-7 w-7 rounded-card" />
-                  <span className="font-display text-lg font-semibold tracking-[0.14em] text-cream">CADO</span>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-card bg-gold font-display text-[13px] font-semibold text-ink">
+                    C
+                  </span>
+                  <span className="font-display text-lg font-semibold tracking-[0.14em] text-inverse">CADO</span>
                 </div>
-                <p className="mt-3 text-xs">Gifts, delivered the same day, across Lebanon.</p>
-                <div className="mt-4 flex gap-3 text-cream/70">
-                  <a href="https://instagram.com/cado.lb" target="_blank" rel="noreferrer" aria-label="Instagram">
-                    <InstagramIcon className="h-5 w-5" />
-                  </a>
-                  <a href={`https://wa.me/${PARTNER_WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" aria-label="WhatsApp">
-                    <WhatsAppIcon className="h-5 w-5" />
-                  </a>
-                  <a href="https://tiktok.com" target="_blank" rel="noreferrer" aria-label="TikTok">
-                    <TikTokIcon className="h-5 w-5" />
-                  </a>
-                </div>
+                <p className="mt-3 text-caption">Gifts, delivered the same day, across Lebanon.</p>
               </div>
 
               <div>
-                <p className="text-xs font-semibold tracking-widest text-cream/30">SHOP</p>
-                <div className="mt-3 flex flex-col gap-2 text-sm">
+                <p className="text-eyebrow uppercase text-inverse/30">Shop</p>
+                <div className="mt-3 flex flex-col gap-2 text-body">
                   <Link to="/browse">Categories</Link>
                   <Link to="/gift-finder">Occasions</Link>
                   <Link to="/gift-cards">Gift Cards</Link>
-                  <Link to="/gift-finder">Under $25</Link>
+                  <Link to="/gift-finder?budget=under-20">Under $20</Link>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-semibold tracking-widest text-cream/30">COMPANY</p>
-                <div className="mt-3 flex flex-col gap-2 text-sm">
+                <p className="text-eyebrow uppercase text-inverse/30">Company</p>
+                <div className="mt-3 flex flex-col gap-2 text-body">
                   <Link to="/about">About CADO</Link>
-                  <a href="#partner">Partner with CADO</a>
-                  <a href={`mailto:${PARTNER_EMAIL}`}>Contact</a>
+                  <Link to="/partners">Partner with CADO</Link>
+                  <Link to="/help">Contact</Link>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-semibold tracking-widest text-cream/30">HELP</p>
-                <div className="mt-3 flex flex-col gap-2 text-sm">
+                <p className="text-eyebrow uppercase text-inverse/30">Help</p>
+                <div className="mt-3 flex flex-col gap-2 text-body">
                   <Link to="/delivery-returns">Delivery &amp; Returns</Link>
                   <Link to="/orders">Track your order</Link>
                   <Link to="/privacy">Privacy Policy</Link>
@@ -668,7 +477,7 @@ export function Home() {
               </div>
             </div>
 
-            <div className="mx-auto mt-10 max-w-6xl border-t border-cream/10 pt-6 text-xs">
+            <div className="mx-auto mt-8 max-w-6xl border-t border-inverse/10 pt-5 text-caption">
               © 2026 CADO. Made in Lebanon.
             </div>
           </footer>
