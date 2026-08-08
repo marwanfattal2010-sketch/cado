@@ -36,13 +36,13 @@ export type Recipient = {
  * a card that leads to a guaranteed-empty result is worse than no card.
  */
 export const RECIPIENTS: Recipient[] = [
+  { value: "her", label: "For Her", img: "/recipients/for-her.jpg" },
+  { value: "him", label: "For Him", img: "/recipients/for-him.jpg" },
   { value: "mother", label: "For Mom", img: "/recipients/for-mom.jpg" },
   { value: "father", label: "For Dad", img: "/recipients/for-dad.jpg" },
   { value: "partner", label: "For Your Partner", img: "/recipients/for-couples.jpg" },
   { value: "friend", label: "For a Friend", img: "/recipients/for-best-friend.jpg" },
   { value: "child", label: "For Kids", img: "/recipients/for-kids.jpg" },
-  { value: "sibling", label: "For a Sibling", img: "/recipients/for-her.jpg" },
-  { value: "colleague", label: "For a Colleague", img: "/recipients/for-him.jpg" },
 ];
 
 export function recipientByValue(value: string | null): Recipient | null {
