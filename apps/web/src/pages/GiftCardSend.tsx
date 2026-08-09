@@ -99,6 +99,11 @@ export function GiftCardSend() {
   const submit = async () => {
     setError(null);
     if (!finalAmount || finalAmount <= 0) return setError("Choose an amount.");
+    // Match the server's limits (purchase_gift_card, migration 0021) so a
+    // custom amount fails here with a friendly line instead of a raw error.
+    if (finalAmount < 10 || finalAmount > 500) {
+      return setError("Gift cards can be $10 to $500.");
+    }
     try {
       const result = await purchase.mutateAsync({
         amount: finalAmount,
@@ -137,10 +142,11 @@ export function GiftCardSend() {
         </div>
         <input
           type="number"
-          min={1}
+          min={10}
+          max={500}
           value={customAmount}
           onChange={(e) => setCustomAmount(e.target.value)}
-          placeholder="Or enter another amount"
+          placeholder="Or enter another amount ($10–$500)"
           className="mt-3 w-full rounded-card border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink/35"
         />
       </section>

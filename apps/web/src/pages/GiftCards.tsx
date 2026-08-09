@@ -6,33 +6,33 @@ export function GiftCards() {
     <div className="mx-auto max-w-2xl px-5 py-8">
       <div className="text-center">
         <GiftIcon className="mx-auto h-9 w-9 text-gold" />
-        <h1 className="mt-3 font-display text-2xl font-semibold">Gift Cards</h1>
-        <p className="mt-2 text-sm text-ink/50">
-          Let them choose exactly what they want, from any store on CADO.
+        <h1 className="mt-3 font-display text-h1">Gift cards</h1>
+        <p className="mx-auto mt-2 max-w-sm text-body text-muted">
+          Not sure what to pick? Let them choose — a CADO gift card works at every store on the app.
         </p>
       </div>
 
       <div className="mt-8 flex flex-col gap-4">
         <Link
           to="/gift-cards/send"
-          className="group overflow-hidden rounded-sheet bg-ink p-6 text-cream transition hover:opacity-95"
+          className="group overflow-hidden rounded-sheet bg-ink p-6 text-inverse shadow-rest transition active:scale-[0.99]"
         >
-          <p className="font-display text-xl font-semibold">Send a gift card</p>
-          <p className="mt-1 text-sm text-cream/60">
-            Pick an amount, add a message, and choose how it arrives.
+          <p className="font-display text-h2">Send a gift card</p>
+          <p className="mt-1 text-body text-inverse/70">
+            Pick an amount, add a note, and share it as a QR or a printed card.
           </p>
-          <span className="mt-4 inline-block text-sm text-gold">Get started →</span>
+          <span className="mt-4 inline-block text-body font-medium text-gold">Get started →</span>
         </Link>
 
         <Link
           to="/gift-cards/redeem"
-          className="group overflow-hidden rounded-sheet bg-white p-6 ring-1 ring-ink/8 transition hover:ring-ink/25"
+          className="group overflow-hidden rounded-sheet border border-line bg-surface p-6 shadow-rest transition active:scale-[0.99]"
         >
-          <p className="font-display text-xl font-semibold">Redeem a gift card</p>
-          <p className="mt-1 text-sm text-ink/50">
-            Got a card or a link? Enter your 6-digit code to add the balance.
+          <p className="font-display text-h2">Redeem a gift card</p>
+          <p className="mt-1 text-body text-muted">
+            Got a card or a link? Enter the code — it looks like XXXX-XXXX-XXXX — to add the balance.
           </p>
-          <span className="mt-4 inline-block text-sm text-ink/70">Enter code →</span>
+          <span className="mt-4 inline-block text-body font-medium text-ribbon">Enter code →</span>
         </Link>
       </div>
     </div>

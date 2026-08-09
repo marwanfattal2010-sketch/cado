@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, type PaymentMethod } from "../hooks/useCart";
-import { checkGiftCardBalance } from "../hooks/useGiftCards";
+import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
 import { Chip } from "../components/ui";
 
 const MESSAGES = ["Happy birthday!", "Congratulations!", "Thank you", "Get well soon"];
@@ -354,10 +354,10 @@ export function Checkout() {
         <div className="flex gap-2">
           <input
             className={`${FIELD} uppercase tracking-wider`}
-            placeholder="Gift card code"
+            placeholder="XXXX-XXXX-XXXX"
             value={giftCardCode}
             onChange={(e) => {
-              setGiftCardCode(e.target.value.trim().toUpperCase());
+              setGiftCardCode(normalizeGiftCardCode(e.target.value));
               setGiftCardBalance(null);
               setGiftCardError(null);
             }}
