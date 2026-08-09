@@ -67,7 +67,21 @@ because CLI login was lost.
   simultaneous redemptions can't double-spend, and that a $150 order against a
   $100 card can't go negative. Run them after touching gift card logic
   (needs `SUPABASE_SERVICE_ROLE_KEY` in env — never hardcode it).
+  **That script calls `place_order` by parameter name.** PostgREST resolves
+  overloads by name, so a stale parameter doesn't get ignored — the call 404s
+  with PGRST202 and every assertion silently fails. It went stale once already
+  when 0021 dropped the PIN. Update it in the same commit as any signature
+  change.
 - Every balance change writes to `audit_log`.
+
+**Privilege columns are assigned, never chosen** (0026):
+- `profiles.role` and `profiles.partner_id` cannot be set by the account that
+  owns the row — a trigger pins them. Before that, any customer could PATCH a
+  store's id onto their own profile and inherit that store's partner powers.
+- `partners.commission_rate`, `.status` and `.slug` are CADO's, not the
+  store's; the same pattern guards them.
+- Both allow the change when `auth.uid()` is null (service role / psql), which
+  is how you legitimately assign a partner to an account.
 
 **Never invent content that implies real activity.** Reviews are built but
 render only when `REVIEWS.length > 0` — fake testimonials on a new marketplace

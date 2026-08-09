@@ -16,6 +16,10 @@
  *   deduct exactly $100 (never more), the balance must land at exactly
  *   $0 (never negative), and the customer owes the $50 remainder.
  *
+ *   Test 3 — Privilege escalation: a plain customer must not be able to give
+ *   themselves a partner_id or an admin role by PATCHing their own profile,
+ *   and a partner must not be able to rewrite their own commission rate.
+ *
  * Every user, card, and order this script creates is deleted at the end,
  * pass or fail (see the `finally` block), so it's safe to run against the
  * live project.
@@ -127,15 +131,19 @@ async function seedCartAndAddress(user, targetSubtotal) {
   return { product, qty, subtotal: qty * product.price, addressId: addr.id };
 }
 
-async function placeOrder(user, address, card, pin) {
+async function placeOrder(user, address, card) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/place_order`, {
     method: "POST",
     headers: { apikey: ANON_KEY, Authorization: `Bearer ${user.token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
+      // Must match place_order's current signature exactly (0024). PostgREST
+      // resolves overloads by argument *name*, so a parameter that no longer
+      // exists is not ignored — the whole call 404s with PGRST202. That is
+      // what happened to this file when 0021 removed p_gift_card_pin.
       p_delivery_address_id: address,
-      p_gift_card_code: card?.code,
-      p_gift_card_pin: card?.pin,
+      p_gift_card_code: card?.code ?? null,
       p_payment_method: "cod",
+      p_address_source: "buyer",
     }),
   });
   const raw = await res.text();
@@ -164,8 +172,8 @@ async function testConcurrentRedemption() {
   const cartB = await seedCartAndAddress(userB, 55);
 
   const [resA, resB] = await Promise.all([
-    placeOrder(userA, cartA.addressId, card, card.pin),
-    placeOrder(userB, cartB.addressId, card, card.pin),
+    placeOrder(userA, cartA.addressId, card),
+    placeOrder(userB, cartB.addressId, card),
   ]);
 
   const succeeded = [resA, resB].filter((r) => r.status === 200 || r.status === 201);
@@ -219,7 +227,7 @@ async function testOverdraft() {
   const user = await makeUser("overdraft");
   const cart = await seedCartAndAddress(user, 150);
 
-  const result = await placeOrder(user, cart.addressId, card, card.pin);
+  const result = await placeOrder(user, cart.addressId, card);
   assert(result.status === 200 || result.status === 201, `order was placed successfully (status ${result.status})`);
 
   const finalCard = await getCard(card.id);
@@ -258,9 +266,88 @@ async function testOverdraft() {
   }
 }
 
+async function testPrivilegeEscalation() {
+  console.log("\nTest 3: a customer cannot promote themselves");
+  const user = await makeUser("escalate");
+  const asUser = {
+    apikey: ANON_KEY,
+    Authorization: `Bearer ${user.token}`,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+
+  // A real, publicly-visible store id — exactly what an attacker would read
+  // off the storefront before trying this.
+  const [store] = await fetch(`${SUPABASE_URL}/rest/v1/partners?select=id,commission_rate&limit=1`, {
+    headers: svc,
+  }).then((r) => r.json());
+
+  if (!store) {
+    console.log("  ! skipped: no partners in the database to attempt this against");
+    return;
+  }
+
+  // 1. Grant myself a store.
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+    method: "PATCH",
+    headers: asUser,
+    body: JSON.stringify({ partner_id: store.id }),
+  });
+  const [afterPartner] = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=partner_id,role`,
+    { headers: svc }
+  ).then((r) => r.json());
+  assert(afterPartner.partner_id === null, `partner_id is still null after self-assignment (got ${afterPartner.partner_id})`);
+
+  // 2. Make myself an admin.
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+    method: "PATCH",
+    headers: asUser,
+    body: JSON.stringify({ role: "admin" }),
+  });
+  const [afterRole] = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=role`, {
+    headers: svc,
+  }).then((r) => r.json());
+  assert(afterRole.role === "customer", `role is still 'customer' after self-promotion (got '${afterRole.role}')`);
+
+  // 3. As an actual partner, zero out my own commission.
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+    method: "PATCH",
+    headers: svc,
+    body: JSON.stringify({ partner_id: store.id }), // service role: the legitimate way in
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/partners?id=eq.${store.id}`, {
+    method: "PATCH",
+    headers: asUser,
+    body: JSON.stringify({ commission_rate: 0 }),
+  });
+  const [afterRate] = await fetch(
+    `${SUPABASE_URL}/rest/v1/partners?id=eq.${store.id}&select=commission_rate,status`,
+    { headers: svc }
+  ).then((r) => r.json());
+  assert(
+    Number(afterRate.commission_rate) === Number(store.commission_rate),
+    `commission rate is unchanged (expected ${store.commission_rate}, got ${afterRate.commission_rate})`
+  );
+
+  // Undo the service-role grant regardless of outcome; the user row itself is
+  // deleted by the shared cleanup.
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+    method: "PATCH",
+    headers: svc,
+    body: JSON.stringify({ partner_id: null }),
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/partners?id=eq.${store.id}`, {
+    method: "PATCH",
+    headers: svc,
+    body: JSON.stringify({ commission_rate: store.commission_rate }),
+  });
+}
+
 try {
   await testConcurrentRedemption();
   await testOverdraft();
+  await testPrivilegeEscalation();
 } finally {
   console.log("\nCleaning up test users...");
   for (const fn of cleanup) {
