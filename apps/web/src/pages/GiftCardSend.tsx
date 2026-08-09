@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { usePurchaseGiftCard, type DeliveryMethod } from "../hooks/useGiftCards";
+import { QrCode } from "../components/QrCode";
 
 const AMOUNTS = [25, 50, 100, 150];
 const SUGGESTED = ["Happy birthday!", "Congratulations!", "Best wishes", "Thinking of you"];
@@ -37,7 +38,6 @@ export function GiftCardSend() {
 
   if (card) {
     const shareUrl = `${window.location.origin}/gift-cards/redeem?code=${encodeURIComponent(card.code)}`;
-    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`;
     const shareText = `You've got a CADO gift card${fromName ? ` from ${fromName}` : ""}! Open this to redeem it: ${shareUrl}`;
 
     const onShare = async () => {
@@ -72,7 +72,7 @@ export function GiftCardSend() {
         {delivery === "digital" ? (
           <div className="mt-6 rounded-sheet bg-white p-6 ring-1 ring-ink/8">
             <p className="text-sm font-medium">Share it{recipientName ? ` with ${recipientName}` : ""}</p>
-            <img src={qrSrc} alt="Gift card QR code" className="mx-auto mt-4 h-[220px] w-[220px]" />
+            <QrCode value={shareUrl} alt="Gift card QR code" className="mx-auto mt-4 h-[220px] w-[220px]" />
             <p className="mt-3 text-xs text-ink/50">
               Whoever opens the link goes straight to CADO and sees they've received this card.
             </p>
