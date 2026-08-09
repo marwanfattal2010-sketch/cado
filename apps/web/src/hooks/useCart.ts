@@ -85,20 +85,37 @@ export function useCreateAddress() {
   });
 }
 
+export type PaymentMethod = "cod" | "whish" | "omt" | "card";
+
 export function usePlaceOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      deliveryAddressId: string;
+      deliveryAddressId?: string | null;
       notes?: string;
       giftCardCode?: string;
-      paymentMethod: "cod" | "whish";
+      paymentMethod: PaymentMethod;
+      isGift?: boolean;
+      recipientName?: string;
+      recipientPhone?: string;
+      /** 'recipient_whatsapp' means we'll ask them for the address. */
+      addressSource?: "buyer" | "recipient_whatsapp";
+      hidePrice?: boolean;
+      giftMessage?: string;
+      deliverySlot?: string;
     }) => {
       const { data, error } = await supabase.rpc("place_order", {
-        p_delivery_address_id: input.deliveryAddressId,
+        p_delivery_address_id: input.deliveryAddressId ?? null,
         p_notes: input.notes ?? null,
         p_gift_card_code: input.giftCardCode ?? null,
         p_payment_method: input.paymentMethod,
+        p_is_gift: input.isGift ?? true,
+        p_recipient_name: input.recipientName ?? null,
+        p_recipient_phone: input.recipientPhone ?? null,
+        p_address_source: input.addressSource ?? "buyer",
+        p_hide_price: input.hidePrice ?? false,
+        p_gift_message: input.giftMessage ?? null,
+        p_delivery_time_slot: input.deliverySlot ?? null,
       });
       if (error) throw error;
       return data as string;

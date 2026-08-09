@@ -576,47 +576,68 @@ export type Database = {
       }
       orders: {
         Row: {
+          address_source: string
           created_at: string
           customer_id: string
-          delivery_address_id: string
+          delivery_address_id: string | null
           delivery_fee: number
+          delivery_slot: string | null
           discount_amount: number
           gift_card_code: string | null
+          gift_message: string | null
+          hide_price: boolean
           id: string
+          is_gift: boolean
           notes: string | null
           order_number: string
           payment_method: string
           payment_status: string
+          recipient_name: string | null
+          recipient_phone: string | null
           subtotal: number
           total: number
         }
         Insert: {
+          address_source?: string
           created_at?: string
           customer_id: string
-          delivery_address_id: string
+          delivery_address_id?: string | null
           delivery_fee?: number
+          delivery_slot?: string | null
           discount_amount?: number
           gift_card_code?: string | null
+          gift_message?: string | null
+          hide_price?: boolean
           id?: string
+          is_gift?: boolean
           notes?: string | null
           order_number: string
           payment_method?: string
           payment_status?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           subtotal: number
           total: number
         }
         Update: {
+          address_source?: string
           created_at?: string
           customer_id?: string
-          delivery_address_id?: string
+          delivery_address_id?: string | null
           delivery_fee?: number
+          delivery_slot?: string | null
           discount_amount?: number
           gift_card_code?: string | null
+          gift_message?: string | null
+          hide_price?: boolean
           id?: string
+          is_gift?: boolean
           notes?: string | null
           order_number?: string
           payment_method?: string
           payment_status?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           subtotal?: number
           total?: number
         }
@@ -1121,12 +1142,18 @@ export type Database = {
       my_partner_id: { Args: never; Returns: string }
       place_order: {
         Args: {
-          p_delivery_address_id: string
-          p_delivery_date?: string
-          p_delivery_time_slot?: string
-          p_gift_card_code?: string
-          p_notes?: string
+          p_address_source?: string
+          p_delivery_address_id?: string | null
+          p_delivery_date?: string | null
+          p_delivery_time_slot?: string | null
+          p_gift_card_code?: string | null
+          p_gift_message?: string | null
+          p_hide_price?: boolean
+          p_is_gift?: boolean
+          p_notes?: string | null
           p_payment_method?: string
+          p_recipient_name?: string | null
+          p_recipient_phone?: string | null
         }
         Returns: string
       }
