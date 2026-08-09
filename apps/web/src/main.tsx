@@ -7,7 +7,27 @@ import App from "./App.tsx";
 import { AuthProvider } from "./lib/auth";
 import { ToastProvider } from "./components/ui";
 
-const queryClient = new QueryClient();
+// There is no server in front of Supabase, so every uncached query is a
+// PostgREST round trip that a real visitor pays for and the database serves.
+// React Query's defaults are staleTime 0 and three retries, which means the
+// catalogue is refetched on every route mount and every window focus, and a
+// struggling database gets four times the traffic instead of less.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Products, categories and stores change a few times a day at most.
+      // Anything that must be fresh after a write (cart, orders, gift cards)
+      // is already invalidated explicitly in its mutation's onSuccess, and
+      // invalidation ignores staleTime.
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
+      // Still refetches on focus, but only once the 60s above has elapsed.
+      refetchOnWindowFocus: true,
+      // Back off instead of piling on when the database is already unhappy.
+      retry: 1,
+    },
+  },
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
