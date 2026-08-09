@@ -1,8 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { AccountIcon, GiftIcon, HomeIcon, OrdersIcon } from "./Icons";
+import { AccountIcon, CalendarIcon, GiftIcon, HomeIcon, OrdersIcon } from "./Icons";
 
+// No Search tab — search lives inline on the homepage, where people already
+// look for it, and a fifth destination here would crowd the row.
 const TABS = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
+  { to: "/occasions", label: "Occasions", Icon: CalendarIcon, end: false },
   { to: "/gift-cards", label: "Gift Cards", Icon: GiftIcon, end: false },
   { to: "/orders", label: "Orders", Icon: OrdersIcon, end: false },
   { to: "/account", label: "Account", Icon: AccountIcon, end: false },

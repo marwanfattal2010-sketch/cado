@@ -18,6 +18,7 @@ import { Settings } from "./pages/Settings";
 import { HelpCenter } from "./pages/HelpCenter";
 import { Language } from "./pages/Language";
 import { GiftFinder } from "./pages/GiftFinder";
+import { Occasions } from "./pages/Occasions";
 import { GiftCards } from "./pages/GiftCards";
 import { GiftCardSend } from "./pages/GiftCardSend";
 import { GiftCardRedeem } from "./pages/GiftCardRedeem";
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="checkout" element={<Checkout />} />
         <Route path="order-confirmed/:id" element={<OrderConfirmed />} />
         <Route path="gift-finder" element={<GiftFinder />} />
+        <Route path="occasions" element={<Occasions />} />
         <Route path="gift-cards" element={<GiftCards />} />
         <Route path="gift-cards/send" element={<GiftCardSend />} />
         <Route path="gift-cards/redeem" element={<GiftCardRedeem />} />

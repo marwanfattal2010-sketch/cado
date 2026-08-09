@@ -460,6 +460,59 @@ export type Database = {
           },
         ]
       }
+      occasion_reminders: {
+        Row: {
+          created_at: string
+          event_date: string
+          id: string
+          label: string | null
+          last_reminded_on: string | null
+          note: string | null
+          occasion_type: string
+          person_name: string
+          phone: string | null
+          profile_id: string
+          relationship: string | null
+          remind_days_before: number
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          id?: string
+          label?: string | null
+          last_reminded_on?: string | null
+          note?: string | null
+          occasion_type?: string
+          person_name: string
+          phone?: string | null
+          profile_id: string
+          relationship?: string | null
+          remind_days_before?: number
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          id?: string
+          label?: string | null
+          last_reminded_on?: string | null
+          note?: string | null
+          occasion_type?: string
+          person_name?: string
+          phone?: string | null
+          profile_id?: string
+          relationship?: string | null
+          remind_days_before?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "occasion_reminders_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       occasions: {
         Row: {
           icon: string | null
