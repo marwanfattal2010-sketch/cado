@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { curatedTitles } from "../lib/curation";
-import { BUDGETS } from "../lib/filters";
+import { BUDGETS, inBudgetRange } from "../lib/filters";
 
 const FIELDS =
   "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, product_images(storage_path, is_primary), partner:partners(id, name)";
@@ -31,7 +31,8 @@ async function fetchByTitles(titles: string[]) {
 function inBudget(items: Row[], budgetSlug?: string | null) {
   const b = BUDGETS.find((x) => x.slug === budgetSlug);
   if (!b) return items;
-  return items.filter((p) => Number(p.price) >= b.min && (b.max == null || Number(p.price) <= b.max));
+  // Shared helper: upper bound exclusive, so a $50 gift is in one band only.
+  return items.filter((p) => inBudgetRange(Number(p.price), b));
 }
 
 async function fetchByTags(recipient?: string | null, occasion?: string | null) {

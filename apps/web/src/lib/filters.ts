@@ -24,6 +24,21 @@ export function budgetBySlug(slug: string | null): Budget | null {
   return BUDGETS.find((b) => b.slug === slug) ?? null;
 }
 
+/**
+ * The upper bound is EXCLUSIVE. The bands share their edges — 50 is both the
+ * top of "$20 – $50" and the bottom of "$50 – $100" — so an inclusive test
+ * put every boundary-priced item in two bands at once. That was visible as
+ * filter counts summing to more than the number of products.
+ *
+ * Every price filter must go through here so the bands can't drift apart
+ * again between the homepage, the category page and the gift finder.
+ */
+export function inBudgetRange(price: number, budget: Budget | null | undefined): boolean {
+  if (!budget) return true;
+  if (price < budget.min) return false;
+  return budget.max == null || price < budget.max;
+}
+
 export type Recipient = {
   /** Must match a value in products.recipient_tags. */
   value: string;

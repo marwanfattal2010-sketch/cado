@@ -141,7 +141,9 @@ export function useGiftFinderProducts(opts: {
         .eq("is_active", true);
       if (recipient) query = query.contains("recipient_tags", [recipient]);
       if (minPrice != null) query = query.gte("price", minPrice);
-      if (maxPrice != null) query = query.lte("price", maxPrice);
+      // Exclusive upper bound — the bands share edges, so `lte` put a $50
+      // gift in both "$20 – $50" and "$50 – $100". See inBudgetRange().
+      if (maxPrice != null) query = query.lt("price", maxPrice);
       const { data, error } = await query.order("price", { ascending: true }).limit(60);
       if (error) throw error;
       return data;

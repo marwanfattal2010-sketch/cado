@@ -1,24 +1,27 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useProductsByCategory } from "../hooks/useProducts";
 import { useStoresByCategory, useSubcategories } from "../hooks/useStores";
 import { useCategories } from "../hooks/useCategories";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
-import { BUDGETS } from "../lib/filters";
+import { Chip, RibbonEmpty } from "../components/ui";
+import { BUDGETS, inBudgetRange } from "../lib/filters";
 
 type Sort = "popular" | "newest" | "price_asc" | "price_desc";
 
-const SORT_LABELS: Record<Sort, string> = {
-  popular: "Popular",
-  newest: "Newest",
-  price_asc: "Price: low to high",
-  price_desc: "Price: high to low",
-};
+const SORTS: { value: Sort; label: string }[] = [
+  { value: "popular", label: "Popular" },
+  { value: "newest", label: "Newest" },
+  { value: "price_asc", label: "Price ↑" },
+  { value: "price_desc", label: "Price ↓" },
+];
 
 // Reuses the shared bands so this filter can't drift from the gift finder
 // or the homepage budget pills.
-const PRICE_RANGES = [{ label: "Any price", min: 0, max: null as number | null }, ...BUDGETS];
+const PRICE_RANGES = [{ slug: "any", label: "Any price", min: 0, max: null as number | null }, ...BUDGETS];
+
+const PAGE = 12;
 
 export function Category() {
   const { slug } = useParams<{ slug: string }>();
@@ -26,6 +29,7 @@ export function Category() {
   const [sort, setSort] = useState<Sort>("popular");
   const [priceIndex, setPriceIndex] = useState(0);
   const [storeId, setStoreId] = useState<string>("");
+  const [shown, setShown] = useState(PAGE);
 
   const categories = useCategories();
   const subcategories = useSubcategories(slug);
@@ -35,17 +39,45 @@ export function Category() {
   const categoryName =
     categories.data?.find((c) => c.slug === slug)?.name ?? slug?.replace(/-/g, " ") ?? "";
 
-  // Price and store are filtered client-side: the row set is already capped
-  // at 100 by the query, so this avoids a refetch on every filter tweak.
-  const visible = useMemo(() => {
-    const range = PRICE_RANGES[priceIndex];
-    return (products.data ?? []).filter((p) => {
-      if (p.price < range.min) return false;
-      if (range.max !== null && p.price > range.max) return false;
-      if (storeId && p.partner?.id !== storeId) return false;
-      return true;
-    });
-  }, [products.data, priceIndex, storeId]);
+  const rows = useMemo(() => products.data ?? [], [products.data]);
+
+  const matches = (p: (typeof rows)[number], opts: { price?: number; store?: string }) => {
+    const i = opts.price ?? priceIndex;
+    if (i !== 0 && !inBudgetRange(p.price, PRICE_RANGES[i])) return false;
+    const s = opts.store ?? storeId;
+    if (s && p.partner?.id !== s) return false;
+    return true;
+  };
+
+  // Price and store filter client-side: the query already caps the row set,
+  // so this avoids a refetch on every tweak and lets the counts below be
+  // exact rather than estimated.
+  const visible = useMemo(
+    () => rows.filter((p) => matches(p, {})),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, priceIndex, storeId]
+  );
+
+  /**
+   * Counts are computed with the *other* filters still applied, so each
+   * number is what you'd actually get by tapping it. A count that ignores
+   * your current filters sends people into empty screens.
+   */
+  const priceCounts = useMemo(
+    () => PRICE_RANGES.map((_, i) => rows.filter((p) => matches(p, { price: i })).length),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, storeId]
+  );
+  const storeCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of rows) {
+      if (!matches(p, { store: "" })) continue;
+      const id = p.partner?.id;
+      if (id) map.set(id, (map.get(id) ?? 0) + 1);
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, priceIndex]);
 
   const filtersActive = priceIndex !== 0 || storeId !== "" || subcategory !== undefined;
 
@@ -55,99 +87,108 @@ export function Category() {
     setSubcategory(undefined);
   };
 
+  // Reveal more as you reach the bottom, rather than making anyone hunt for
+  // a "load more" button with a thumb.
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => setShown(PAGE), [slug, subcategory, sort, priceIndex, storeId]);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setShown((n) => (n >= visible.length ? n : n + PAGE));
+      },
+      { rootMargin: "400px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible.length]);
+
   return (
     <div className="mx-auto max-w-6xl pb-12">
-      <div className="px-6 pt-6">
-        <nav className="flex items-center gap-1.5 text-xs text-ink/40">
-          <Link to="/" className="hover:text-ink/70">
+      <div className="px-4 pt-6">
+        <nav className="flex items-center gap-1.5 text-caption text-muted">
+          <Link to="/" className="hover:text-ink">
             Home
           </Link>
           <span>›</span>
-          <span className="capitalize text-ink/60">{categoryName}</span>
+          <span className="capitalize">{categoryName}</span>
         </nav>
 
-        <h1 className="mt-2 font-display text-2xl font-semibold capitalize sm:text-3xl">{categoryName}</h1>
+        <h1 className="mt-2 font-display text-h1 capitalize">{categoryName}</h1>
         {products.isLoading ? (
           <Skeleton className="mt-1.5 h-3 w-20" />
         ) : (
-          <p className="mt-1 text-sm text-ink/40">
-            {visible.length} {visible.length === 1 ? "item" : "items"}
+          <p className="mt-1 text-caption text-muted">
+            {visible.length} {visible.length === 1 ? "gift" : "gifts"}
           </p>
         )}
       </div>
 
-      {/* Subcategory chips */}
       {subcategories.data && subcategories.data.length > 0 ? (
-        <div className="scroll-row mt-5 gap-2 px-6">
-          <button
-            onClick={() => setSubcategory(undefined)}
-            className={`shrink-0 rounded-pill px-4 py-2 text-sm font-medium transition-transform duration-150 active:scale-95 ${
-              !subcategory ? "bg-ink text-cream" : "bg-white text-ink/70 ring-1 ring-ink/10"
-            }`}
-          >
+        <div className="scroll-row mt-4 gap-2 px-4">
+          <Chip active={!subcategory} onClick={() => setSubcategory(undefined)}>
             All
-          </button>
+          </Chip>
           {subcategories.data.map((sub) => (
-            <button
-              key={sub.id}
-              onClick={() => setSubcategory(sub.slug)}
-              className={`shrink-0 rounded-pill px-4 py-2 text-sm font-medium transition-transform duration-150 active:scale-95 ${
-                subcategory === sub.slug ? "bg-ink text-cream" : "bg-white text-ink/70 ring-1 ring-ink/10"
-              }`}
-            >
+            <Chip key={sub.id} active={subcategory === sub.slug} onClick={() => setSubcategory(sub.slug)}>
               {sub.name}
-            </button>
+            </Chip>
           ))}
         </div>
       ) : null}
 
-      {/* Sticky filter + sort bar. top-[57px] clears the sticky header so the
-          two never overlap or double-stack. */}
-      <div className="sticky top-[57px] z-10 mt-5 border-y border-ink/8 bg-cream/95 backdrop-blur">
-        <div className="scroll-row gap-2 px-6 py-3">
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
-          >
-            {(Object.keys(SORT_LABELS) as Sort[]).map((s) => (
-              <option key={s} value={s}>
-                {SORT_LABELS[s]}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={priceIndex}
-            onChange={(e) => setPriceIndex(Number(e.target.value))}
-            className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
-          >
-            {PRICE_RANGES.map((r, i) => (
-              <option key={r.label} value={i}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-
-          {stores.data && stores.data.length > 0 ? (
-            <select
-              value={storeId}
-              onChange={(e) => setStoreId(e.target.value)}
-              className="shrink-0 rounded-pill bg-white px-4 py-2 text-sm font-medium text-ink/70 outline-none ring-1 ring-ink/10"
+      {/* Sticky filter bar. top-[57px] clears the sticky header so the two
+          never double-stack. Chips apply instantly — no Apply button. */}
+      <div className="sticky top-[57px] z-10 mt-4 border-y border-line bg-canvas/95 backdrop-blur">
+        <div className="scroll-row gap-2 px-4 py-3">
+          {SORTS.map((s) => (
+            <Chip
+              key={s.value}
+              active={sort === s.value}
+              onClick={() => setSort(s.value)}
+              className="!h-9 !px-3.5 !text-caption"
             >
-              <option value="">All stores</option>
-              {stores.data.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              {s.label}
+            </Chip>
+          ))}
+          <span className="w-px shrink-0 self-stretch bg-line" />
+          {PRICE_RANGES.map((r, i) =>
+            // Hide bands that would land on an empty screen.
+            i === 0 || priceCounts[i] > 0 ? (
+              <Chip
+                key={r.slug}
+                active={priceIndex === i}
+                onClick={() => setPriceIndex(i)}
+                className="!h-9 !px-3.5 !text-caption"
+              >
+                {r.label}
+                {i > 0 ? <span className="opacity-60"> {priceCounts[i]}</span> : null}
+              </Chip>
+            ) : null
+          )}
+          {stores.data && stores.data.length > 1 ? (
+            <>
+              <span className="w-px shrink-0 self-stretch bg-line" />
+              {stores.data
+                .filter((s) => (storeCounts.get(s.id) ?? 0) > 0)
+                .map((s) => (
+                  <Chip
+                    key={s.id}
+                    active={storeId === s.id}
+                    onClick={() => setStoreId(storeId === s.id ? "" : s.id)}
+                    className="!h-9 !px-3.5 !text-caption"
+                  >
+                    {s.name}
+                    <span className="opacity-60"> {storeCounts.get(s.id)}</span>
+                  </Chip>
+                ))}
+            </>
           ) : null}
-
           {filtersActive ? (
             <button
               onClick={resetFilters}
-              className="shrink-0 rounded-pill px-3 py-2 text-sm font-medium text-ink/50 underline"
+              className="shrink-0 px-2 text-caption font-medium text-muted underline"
             >
               Clear
             </button>
@@ -155,35 +196,38 @@ export function Category() {
         </div>
       </div>
 
-      {/* Product grid */}
-      <div className="px-6 pt-6">
+      <div className="px-4 pt-5">
         {products.isLoading ? (
           <ProductGridSkeleton count={8} />
         ) : visible.length > 0 ? (
-          <div className="grid animate-fade-in grid-cols-2 gap-5 md:grid-cols-4">
-            {visible.map((p) => (
-              <ProductCard key={p.id} {...p} />
-            ))}
-          </div>
+          <>
+            <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
+              {visible.slice(0, shown).map((p) => (
+                <ProductCard key={p.id} {...p} />
+              ))}
+            </div>
+            <div ref={sentinel} className="h-8" />
+          </>
         ) : (
-          <div className="py-16 text-center">
-            <p className="font-display text-lg font-semibold">Nothing here yet</p>
-            <p className="mx-auto mt-2 max-w-xs text-sm text-ink/50">
+          <div className="py-14 text-center">
+            <RibbonEmpty className="mx-auto h-14 w-14" />
+            <p className="mt-3 font-display text-h2">Nothing here yet</p>
+            <p className="mx-auto mt-2 max-w-xs text-body text-muted">
               {filtersActive
-                ? "No gifts match these filters. Try widening them, or browse everything in this category."
-                : "We're still adding gifts to this category. Have a look at what else is on CADO."}
+                ? "No gifts match these filters. Try widening them."
+                : "We're still adding gifts to this category."}
             </p>
             {filtersActive ? (
               <button
                 onClick={resetFilters}
-                className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
+                className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
               >
                 Clear filters
               </button>
             ) : (
               <Link
                 to="/browse"
-                className="mt-6 inline-block rounded-pill bg-ink px-8 py-3 text-sm text-cream transition-transform duration-150 active:scale-95"
+                className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
               >
                 Browse all categories
               </Link>
@@ -192,16 +236,15 @@ export function Category() {
         )}
       </div>
 
-      {/* Stores in this category */}
       {stores.data && stores.data.length > 0 ? (
-        <div className="mt-12 px-6">
-          <h2 className="mb-4 text-sm font-semibold tracking-widest text-ink/50">STORES IN THIS CATEGORY</h2>
-          <div className="flex flex-col gap-4">
+        <div className="mt-10 px-4">
+          <h2 className="mb-3 text-eyebrow uppercase text-muted">Stores in this category</h2>
+          <div className="flex flex-col gap-3">
             {stores.data.map((store) => (
               <Link
                 key={store.id}
                 to={`/store/${store.id}`}
-                className="group relative flex aspect-[16/9] flex-col justify-end overflow-hidden rounded-card bg-ink transition-transform duration-150 active:scale-[0.98]"
+                className="group relative flex aspect-[16/9] flex-col justify-end overflow-hidden rounded-card bg-ink transition-transform duration-fast active:scale-[0.98]"
               >
                 <img
                   src={store.cover_image_url ?? `/categories/${slug}.jpg`}
@@ -211,9 +254,9 @@ export function Category() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 <div className="relative p-5">
-                  <p className="font-display text-xl font-semibold text-white sm:text-2xl">{store.name}</p>
+                  <p className="font-display text-h2 text-white">{store.name}</p>
                   {store.description ? (
-                    <p className="mt-1 line-clamp-2 text-sm text-white/70">{store.description}</p>
+                    <p className="mt-1 line-clamp-2 text-caption text-white/70">{store.description}</p>
                   ) : null}
                 </div>
               </Link>
