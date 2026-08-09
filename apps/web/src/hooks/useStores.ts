@@ -38,15 +38,18 @@ export function useStoresByCategory(categorySlug: string | undefined) {
 }
 
 export function useSearchStores(query: string) {
+  // Same sanitising as product search: strip PostgREST filter characters so
+  // the term is safe to embed in `.or(...)`.
+  const term = query.trim().replace(/[,()*]/g, " ").replace(/\s+/g, " ").trim();
   return useQuery({
-    queryKey: ["stores", "search", query],
-    enabled: query.trim().length > 0,
+    queryKey: ["stores", "search", term],
+    enabled: term.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
         .select("id, name, slug, description, cover_image_url")
         .eq("status", "active")
-        .ilike("name", `%${query.trim()}%`)
+        .or(`name.ilike.%${term}%,description.ilike.%${term}%`)
         .limit(20);
       if (error) throw error;
       return data;

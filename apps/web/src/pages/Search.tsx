@@ -1,93 +1,216 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSearchProducts } from "../hooks/useProducts";
 import { useSearchStores } from "../hooks/useStores";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeleton";
 import { SearchIcon } from "../components/Icons";
+import { RibbonEmpty } from "../components/ui";
 
-type Tab = "stores" | "items";
+type Tab = "items" | "stores";
+
+const RECENTS_KEY = "cado-recent-searches";
+const PAGE = 12;
+
+function readRecents(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? "[]");
+    return Array.isArray(v) ? v.slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function Search() {
+  const [raw, setRaw] = useState("");
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<Tab>("stores");
+  const [tab, setTab] = useState<Tab>("items");
+  const [recents, setRecents] = useState<string[]>(readRecents);
+  const [shown, setShown] = useState(PAGE);
+
+  // Debounce so results settle as you pause typing rather than firing a
+  // request per keystroke. 200ms is below the threshold most people notice.
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(raw), 200);
+    return () => clearTimeout(t);
+  }, [raw]);
 
   const stores = useSearchStores(query);
   const products = useSearchProducts(query);
   const searching = query.trim().length > 0;
 
+  const productList = useMemo(() => products.data ?? [], [products.data]);
+  const storeList = useMemo(() => stores.data ?? [], [stores.data]);
+
+  useEffect(() => setShown(PAGE), [query, tab]);
+
+  // Remember a term only once it has clearly settled and returned something,
+  // so half-typed fragments don't fill the recent list.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    if (products.isLoading || stores.isLoading) return;
+    if (productList.length === 0 && storeList.length === 0) return;
+    setRecents((prev) => {
+      const next = [q, ...prev.filter((r) => r.toLowerCase() !== q.toLowerCase())].slice(0, 6);
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [query, products.isLoading, stores.isLoading, productList.length, storeList.length]);
+
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (e) => {
+        if (e[0].isIntersecting) setShown((n) => (n >= productList.length ? n : n + PAGE));
+      },
+      { rootMargin: "400px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [productList.length]);
+
+  const clearRecents = () => {
+    localStorage.removeItem(RECENTS_KEY);
+    setRecents([]);
+  };
+
+  const TabButton = ({ value, label, count }: { value: Tab; label: string; count: number }) => (
+    <button
+      onClick={() => setTab(value)}
+      className={`inline-flex h-9 items-center gap-1.5 rounded-pill px-4 text-caption font-medium transition-all duration-fast active:scale-[0.96] ${
+        tab === value ? "bg-ribbon text-inverse" : "bg-surface-sunk text-ink"
+      }`}
+    >
+      {label}
+      {searching ? <span className={tab === value ? "opacity-80" : "text-muted"}>{count}</span> : null}
+    </button>
+  );
+
   return (
-    <div className="mx-auto max-w-4xl px-5 py-6">
+    <div className="mx-auto max-w-4xl px-4 py-6">
       <div className="relative">
-        <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/30" />
+        <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
         <input
           autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search stores or gifts..."
-          className="w-full rounded-pill border border-ink/12 bg-white py-3.5 pl-12 pr-5 text-[15px] outline-none transition focus:border-ink/35"
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          placeholder="Search gifts or stores…"
+          className="w-full rounded-pill border border-line bg-surface py-3.5 pl-12 pr-11 text-body outline-none transition focus:border-ink/35"
         />
+        {raw ? (
+          <button
+            onClick={() => setRaw("")}
+            aria-label="Clear search"
+            className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-pill text-muted hover:bg-surface-sunk"
+          >
+            ✕
+          </button>
+        ) : null}
       </div>
 
-      <div className="mt-5 flex gap-2">
-        {(["stores", "items"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-pill px-5 py-2 text-sm font-medium capitalize transition ${
-              tab === t ? "bg-ink text-cream" : "bg-ink/5 text-ink/60"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      {searching ? (
+        <div className="mt-4 flex gap-2">
+          <TabButton value="items" label="Gifts" count={productList.length} />
+          <TabButton value="stores" label="Stores" count={storeList.length} />
+        </div>
+      ) : null}
 
       {!searching ? (
-        <p className="mt-12 text-center text-sm text-ink/40">
-          Start typing to find a store or a gift.
-        </p>
-      ) : tab === "stores" ? (
-        <div className="mt-6 flex flex-col gap-3">
-          {stores.data?.map((s) => (
+        recents.length > 0 ? (
+          <div className="mt-6">
+            <div className="flex items-center justify-between">
+              <p className="text-eyebrow uppercase text-muted">Recent</p>
+              <button onClick={clearRecents} className="text-caption text-muted underline">
+                Clear
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {recents.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRaw(r)}
+                  className="inline-flex h-9 items-center rounded-pill bg-surface-sunk px-4 text-caption font-medium"
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="py-16 text-center">
+            <RibbonEmpty className="mx-auto h-14 w-14" />
+            <p className="mt-3 text-body text-muted">Start typing to find a gift or a store.</p>
+          </div>
+        )
+      ) : tab === "items" ? (
+        products.isLoading ? (
+          <div className="mt-6">
+            <ProductGridSkeleton count={6} />
+          </div>
+        ) : productList.length > 0 ? (
+          <>
+            <div className="mt-6 grid animate-fade-in grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {productList.slice(0, shown).map((p) => (
+                <ProductCard key={p.id} {...(p as Parameters<typeof ProductCard>[0])} />
+              ))}
+            </div>
+            <div ref={sentinel} className="h-8" />
+          </>
+        ) : (
+          <EmptyResult query={query} kind="gifts" />
+        )
+      ) : stores.isLoading ? (
+        <div className="mt-6 space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="skeleton h-20 rounded-card" />
+          ))}
+        </div>
+      ) : storeList.length > 0 ? (
+        <div className="mt-6 flex animate-fade-in flex-col gap-2">
+          {storeList.map((s) => (
             <Link
               key={s.id}
               to={`/store/${s.id}`}
-              className="flex items-center gap-4 rounded-card bg-white p-3 ring-1 ring-ink/5 transition hover:ring-ink/20"
+              className="flex items-center gap-3 rounded-card bg-surface p-3 shadow-rest transition active:scale-[0.99]"
             >
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-ink/5">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">
                 {s.cover_image_url ? (
                   <img src={s.cover_image_url} alt="" className="h-full w-full object-cover" />
                 ) : null}
               </div>
               <div className="min-w-0">
-                <p className="truncate font-medium">{s.name}</p>
+                <p className="truncate text-product-name">{s.name}</p>
                 {s.description ? (
-                  <p className="truncate text-sm text-ink/50">{s.description}</p>
+                  <p className="truncate text-caption text-muted">{s.description}</p>
                 ) : null}
               </div>
             </Link>
           ))}
-          {stores.data?.length === 0 ? (
-            <p className="mt-8 text-center text-sm text-ink/40">No stores match "{query}".</p>
-          ) : null}
-        </div>
-      ) : products.isLoading ? (
-        <div className="mt-6">
-          <ProductGridSkeleton count={6} />
         </div>
       ) : (
-        <div className="mt-6 grid animate-fade-in grid-cols-2 gap-5 sm:grid-cols-3">
-          {products.data?.map((p) => (
-            <ProductCard key={p.id} {...p} />
-          ))}
-          {products.data?.length === 0 ? (
-            <p className="col-span-full mt-8 text-center text-sm text-ink/40">
-              No gifts match "{query}".
-            </p>
-          ) : null}
-        </div>
+        <EmptyResult query={query} kind="stores" />
       )}
+    </div>
+  );
+}
+
+function EmptyResult({ query, kind }: { query: string; kind: "gifts" | "stores" }) {
+  return (
+    <div className="py-14 text-center">
+      <RibbonEmpty className="mx-auto h-14 w-14" />
+      <p className="mt-3 font-display text-h2">No {kind} for "{query}"</p>
+      <p className="mx-auto mt-2 max-w-xs text-body text-muted">
+        Try a shorter word, or let us narrow it down for you.
+      </p>
+      <Link
+        to="/gift-finder"
+        className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
+      >
+        Find a gift
+      </Link>
     </div>
   );
 }

@@ -151,17 +151,32 @@ export function useGiftFinderProducts(opts: {
   });
 }
 
+/**
+ * PostgREST reads commas and parentheses as filter syntax, so a raw user
+ * string inside `.or(...)` is an injection vector. Stripping those characters
+ * (plus the `*` wildcard) makes the value safe to embed while leaving normal
+ * words — "rose", "eau de parfum" — untouched.
+ */
+function safeIlikeTerm(query: string) {
+  return query.trim().replace(/[,()*]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export function useSearchProducts(query: string) {
+  const term = safeIlikeTerm(query);
   return useQuery({
-    queryKey: ["products", "search", query],
-    enabled: query.trim().length > 0,
+    queryKey: ["products", "search", term],
+    enabled: term.length > 0,
     queryFn: async () => {
+      // Match the typed fragment anywhere in the title OR any tag, so "ros"
+      // finds "Signature Rose Bouquet" and "birthday" finds tagged gifts.
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, price, currency, product_images(storage_path, is_primary)")
+        .select(
+          "id, title, price, currency, same_day, stock_quantity, tags, product_images(storage_path, is_primary), partner:partners(id, name)"
+        )
         .eq("is_active", true)
-        .ilike("title", `%${query.trim()}%`)
-        .limit(30);
+        .or(`title.ilike.%${term}%,tags.cs.{${term}}`)
+        .limit(40);
       if (error) throw error;
       return data;
     },
