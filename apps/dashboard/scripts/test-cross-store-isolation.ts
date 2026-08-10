@@ -80,17 +80,42 @@ async function main() {
   log("");
 
   // ---- products ----
+  //
+  // Read the scope of this one carefully, because it is easy to over-claim.
+  //
+  // The product CATALOG is deliberately public: "public reads active products"
+  // has qual (is_active OR partner_id = my_partner_id() OR is_admin()), and it
+  // has to, because cado-web serves anonymous shoppers straight from this table.
+  // So "store A cannot see store B's products" is NOT true in general and must
+  // never be asserted — any active product is readable by anyone, logged in or
+  // not. That is the storefront working as designed, not a leak.
+  //
+  // What is genuinely private, and what is therefore tested here:
+  //   1. UNPUBLISHED products (is_active = false) — a store's unreleased or
+  //      withdrawn catalogue must not leak to a competitor. Every seeded test
+  //      product is inactive, so store B's rows are exactly this case.
+  //   2. WRITE access — store A must not be able to edit or delete store B's
+  //      products. This holds regardless of is_active and is the stronger claim.
   log("products:");
   {
     const all = await sb.from("products").select("id, partner_id");
     const rows = all.data ?? [];
     const a = rows.filter((r) => r.partner_id === STORE_A).length;
     const b = rows.filter((r) => r.partner_id === STORE_B).length;
-    // Direct attempt to read store B by filtering for it:
     const targeted = await sb.from("products").select("id").eq("partner_id", STORE_B);
-    assert(a > 0, `sees its own products (${a} rows)`);
-    assert(b === 0, `sees ZERO of store B's products via broad select`);
+    assert(a > 0, `sees its own (unpublished) products (${a} rows)`);
+    assert(b === 0, `sees ZERO of store B's unpublished products via broad select`);
     assert((targeted.data ?? []).length === 0, `sees ZERO when explicitly querying partner_id = B`);
+
+    // Write isolation — the claim that holds even for a published product.
+    const victim = uid("product-b-0");
+    const upd = await sb.from("products").update({ title: "PWNED BY STORE A" }).eq("id", victim).select();
+    const updBlocked = !!upd.error || (upd.data ?? []).length === 0;
+    assert(updBlocked, `cannot UPDATE store B's product (${upd.error ? upd.error.message.slice(0, 50) : "0 rows affected"})`);
+
+    const del = await sb.from("products").delete().eq("id", victim).select();
+    const delBlocked = !!del.error || (del.data ?? []).length === 0;
+    assert(delBlocked, `cannot DELETE store B's product (${del.error ? del.error.message.slice(0, 50) : "0 rows affected"})`);
   }
   log("");
 
@@ -100,9 +125,15 @@ async function main() {
     const all = await sb
       .from("order_items")
       .select("id, sub_order_id, sub_orders!inner(partner_id)");
-    const rows = (all.data ?? []) as Array<{ sub_orders: { partner_id: string } }>;
-    const a = rows.filter((r) => r.sub_orders?.partner_id === STORE_A).length;
-    const b = rows.filter((r) => r.sub_orders?.partner_id === STORE_B).length;
+    // PostgREST returns the embedded row as an object here, but the generated
+    // types model it as an array. Normalise instead of asserting a shape.
+    const rows = (all.data ?? []) as unknown as Array<{
+      sub_orders: { partner_id: string } | { partner_id: string }[] | null;
+    }>;
+    const partnerOf = (r: (typeof rows)[number]) =>
+      Array.isArray(r.sub_orders) ? r.sub_orders[0]?.partner_id : r.sub_orders?.partner_id;
+    const a = rows.filter((r) => partnerOf(r) === STORE_A).length;
+    const b = rows.filter((r) => partnerOf(r) === STORE_B).length;
     assert(a > 0, `sees its own order items (${a} rows)`);
     assert(b === 0, `sees ZERO of store B's order items`);
   }

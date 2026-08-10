@@ -60,6 +60,43 @@ function track(table_name: string, record_id: string) {
   registry.push({ table_name, record_id });
 }
 
+/**
+ * Throw on any write error.
+ *
+ * The first version of this script ignored the `error` field on most upserts.
+ * It then hit the live rate limiter (see THROTTLE below), silently wrote only
+ * 5 of 28 orders, and still printed "Seed complete". A seed that lies is worse
+ * than a seed that fails, so every write now goes through here.
+ */
+function must<T extends { error: { message: string } | null }>(res: T, what: string): T {
+  if (res.error) throw new Error(`${what}: ${res.error.message}`);
+  return res;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Migration 0027 put a BEFORE INSERT trigger on `orders` (rate_limit_new_order)
+ * that allows 5 inserts per minute per subject. The service role has a null
+ * auth.uid(), so every seeded order shares one subject and trips it.
+ *
+ * We deliberately do NOT delete rows from gift_card_rate_limit to get around
+ * this — that table is live anti-abuse state and the seed has no business
+ * mutating it. Instead we throttle below the limit. It makes seeding slow
+ * (~4 minutes) and that is the correct trade.
+ */
+const ORDERS_PER_WINDOW = 4;
+const WINDOW_MS = 62_000;
+let ordersThisWindow = 0;
+async function orderBudget() {
+  if (ordersThisWindow >= ORDERS_PER_WINDOW) {
+    console.log(`  … rate limit: waiting ${WINDOW_MS / 1000}s (0027 allows 5 orders/min)`);
+    await sleep(WINDOW_MS);
+    ordersThisWindow = 0;
+  }
+  ordersThisWindow++;
+}
+
 const STORES = [
   { key: "a", name: "[TEST] Aurora Atelier", commission: 0.15 },
   { key: "b", name: "[TEST] Brass & Bloom", commission: 0.2 },
@@ -196,7 +233,11 @@ async function seed() {
         id,
         name: s.name,
         slug,
-        status: "active",
+        // 'pending', NOT 'active'. useStores.ts filters the storefront's store
+        // list on status = 'active', so a pending test store never appears next
+        // to the real ones. my_partner_id() reads profiles.partner_id and does
+        // not look at status, so the dashboard and isolation test are unaffected.
+        status: "pending",
         commission_rate: s.commission,
         country: "LB",
         city: "Beirut",
@@ -226,7 +267,7 @@ async function seed() {
   track("profiles", customerId);
 
   const addrId = uid("addr-customer");
-  await db.from("addresses").upsert(
+  must(await db.from("addresses").upsert(
     {
       id: addrId,
       profile_id: customerId,
@@ -239,7 +280,7 @@ async function seed() {
       street: "Test Street 1",
     },
     { onConflict: "id" }
-  );
+  ), "upsert addresses");
   track("addresses", addrId);
 
   // --- products + variants (10 per store = 40) -------------------------------
@@ -256,7 +297,14 @@ async function seed() {
           price: 20 + i * 5,
           currency: "USD",
           stock_quantity: 25,
-          is_active: i !== 9, // one hidden product per store to exercise that state
+          // ALWAYS false. cado-web.vercel.app reads this same database and
+          // filters products on is_active only — it does NOT filter by partner
+          // status. An active "[TEST] …" product would therefore appear in the
+          // live category, search and homepage listings for real customers.
+          // Everything the dashboard needs still works: the store owner reads
+          // its own products through "public reads active products", whose
+          // qual is (is_active OR partner_id = my_partner_id() OR is_admin()).
+          is_active: false,
         },
         { onConflict: "id" }
       );
@@ -267,7 +315,7 @@ async function seed() {
       if (i < 3) {
         for (const [vi, vname] of ["Small", "Large"].entries()) {
           const vid = uid(`variant-${s.key}-${i}-${vi}`);
-          await db.from("product_variants").upsert(
+          must(await db.from("product_variants").upsert(
             {
               id: vid,
               product_id: pid,
@@ -277,22 +325,61 @@ async function seed() {
               sort_order: vi,
             },
             { onConflict: "id" }
-          );
+          ), `upsert product_variants ${s.key}-${i}-${vi}`);
           track("product_variants", vid);
         }
       }
     }
   }
 
-  // --- orders covering every status, per store -------------------------------
+  // --- orders covering every status ------------------------------------------
+  //
+  // Stores A and B get all seven statuses (so cross-store isolation has real
+  // rows on BOTH sides, including a payable each). C and D get a short set —
+  // enough to be visibly non-empty without paying another four minutes to the
+  // rate limiter.
+  //
+  // This runs in three phases on purpose. order_items carries a BEFORE INSERT
+  // trigger, reject_inactive_product_at_checkout, that refuses any line whose
+  // product has is_active = false — and every seeded product is deliberately
+  // inactive so it never appears on the live storefront. The orders themselves
+  // have no product dependency, but they DO trip the 0027 rate limiter and take
+  // several minutes to insert.
+  //
+  // So: insert all orders and sub_orders first (slow, no products involved),
+  // then flip only the handful of products the lines reference to active,
+  // insert every order_item in one fast burst, and flip them straight back. A
+  // "[TEST]" product is visible to a real shopper for a couple of seconds
+  // instead of five minutes.
   let orderSeq = 0;
+  const STATUSES_FOR: Record<string, readonly string[]> = {
+    a: SUB_ORDER_STATUSES,
+    b: SUB_ORDER_STATUSES,
+    c: ["pending", "preparing", "delivered"],
+    d: ["pending", "out_for_delivery", "delivered"],
+  };
+
+  type Plan = {
+    storeKey: string;
+    status: string;
+    oid: string;
+    soid: string;
+    p0: string;
+    p1: string;
+    unit0: number;
+    qty0: number;
+    line0: number;
+    unit1: number;
+    qty1: number;
+    line1: number;
+    subtotal: number;
+    deliveryFee: number;
+    total: number;
+  };
+
+  const plans: Plan[] = [];
   for (const s of STORES) {
-    for (const status of SUB_ORDER_STATUSES) {
-      orderSeq++;
-      const oid = uid(`order-${s.key}-${status}`);
-      const soid = uid(`suborder-${s.key}-${status}`);
-      const p0 = uid(`product-${s.key}-0`);
-      const p1 = uid(`product-${s.key}-1`);
+    for (const status of STATUSES_FOR[s.key]) {
       const unit0 = 20,
         qty0 = 2,
         line0 = unit0 * qty0;
@@ -301,98 +388,144 @@ async function seed() {
         line1 = unit1 * qty1;
       const subtotal = line0 + line1;
       const deliveryFee = 5;
-      const total = subtotal + deliveryFee;
+      plans.push({
+        storeKey: s.key,
+        status,
+        oid: uid(`order-${s.key}-${status}`),
+        soid: uid(`suborder-${s.key}-${status}`),
+        p0: uid(`product-${s.key}-0`),
+        p1: uid(`product-${s.key}-1`),
+        unit0,
+        qty0,
+        line0,
+        unit1,
+        qty1,
+        line1,
+        subtotal,
+        deliveryFee,
+        total: subtotal + deliveryFee,
+      });
+    }
+  }
 
-      await db.from("orders").upsert(
-        {
-          id: oid,
-          order_number: `TEST-${String(orderSeq).padStart(4, "0")}`,
-          customer_id: customerId,
-          delivery_address_id: addrId,
-          subtotal,
-          delivery_fee: deliveryFee,
-          total,
-          payment_method: "cod",
-          payment_status: status === "delivered" ? "paid" : "unpaid",
-          is_gift: true,
-          recipient_name: "[TEST] Recipient",
-          recipient_phone: "+9611234567",
-        },
-        { onConflict: "id" }
-      );
-      track("orders", oid);
+  // Phase 1 — orders + sub_orders. Rate limited by 0027; this is the slow part.
+  console.log(`Inserting ${plans.length} orders (the 0027 rate limiter makes this take a few minutes)…`);
+  for (const pl of plans) {
+    orderSeq++;
+    await orderBudget();
 
-      await db.from("sub_orders").upsert(
-        {
-          id: soid,
-          order_id: oid,
-          partner_id: storeIds[s.key],
-          status,
-          subtotal,
-          delivery_fee: deliveryFee,
-          total,
-        },
-        { onConflict: "id" }
-      );
-      track("sub_orders", soid);
+    must(await db.from("orders").upsert(
+      {
+        id: pl.oid,
+        order_number: `TEST-${String(orderSeq).padStart(4, "0")}`,
+        customer_id: customerId,
+        delivery_address_id: addrId,
+        subtotal: pl.subtotal,
+        delivery_fee: pl.deliveryFee,
+        total: pl.total,
+        payment_method: "cod",
+        payment_status: pl.status === "delivered" ? "paid" : "unpaid",
+        is_gift: true,
+        recipient_name: "[TEST] Recipient",
+        recipient_phone: "+9611234567",
+      },
+      { onConflict: "id" }
+    ), `upsert orders ${pl.storeKey}-${pl.status}`);
+    track("orders", pl.oid);
 
-      // two line items; vary confirmation status a little
-      const it0 = uid(`item-${s.key}-${status}-0`);
-      const it1 = uid(`item-${s.key}-${status}-1`);
-      const confirmed = ["accepted", "preparing", "ready", "out_for_delivery", "delivered"].includes(status);
-      await db.from("order_items").upsert(
+    must(await db.from("sub_orders").upsert(
+      {
+        id: pl.soid,
+        order_id: pl.oid,
+        partner_id: storeIds[pl.storeKey],
+        status: pl.status,
+        subtotal: pl.subtotal,
+        delivery_fee: pl.deliveryFee,
+        total: pl.total,
+      },
+      { onConflict: "id" }
+    ), `upsert sub_orders ${pl.storeKey}-${pl.status}`);
+    track("sub_orders", pl.soid);
+  }
+
+  // Phase 2 — order lines, with the referenced products briefly active.
+  const lineProductIds = Array.from(new Set(plans.flatMap((p) => [p.p0, p.p1])));
+  console.log(`Activating ${lineProductIds.length} test products for a few seconds to insert order lines…`);
+  must(
+    await db.from("products").update({ is_active: true }).in("id", lineProductIds),
+    "temporarily activate line products"
+  );
+  try {
+    for (const pl of plans) {
+      const s = STORES.find((x) => x.key === pl.storeKey)!;
+      const it0 = uid(`item-${pl.storeKey}-${pl.status}-0`);
+      const it1 = uid(`item-${pl.storeKey}-${pl.status}-1`);
+      const confirmed = ["accepted", "preparing", "ready", "out_for_delivery", "delivered"].includes(pl.status);
+
+      must(await db.from("order_items").upsert(
         {
           id: it0,
-          sub_order_id: soid,
-          product_id: p0,
+          sub_order_id: pl.soid,
+          product_id: pl.p0,
           product_title_snapshot: `[TEST] ${s.name} Item 1`,
-          unit_price_snapshot: unit0,
-          quantity: qty0,
-          line_total: line0,
-          confirmation_status: confirmed ? "confirmed" : status === "cancelled" ? "rejected" : "pending",
+          unit_price_snapshot: pl.unit0,
+          quantity: pl.qty0,
+          line_total: pl.line0,
+          confirmation_status: confirmed ? "confirmed" : pl.status === "cancelled" ? "rejected" : "pending",
           confirmed_at: confirmed ? new Date().toISOString() : null,
         },
         { onConflict: "id" }
-      );
+      ), `upsert order_items ${pl.storeKey}-${pl.status}-0`);
       track("order_items", it0);
-      await db.from("order_items").upsert(
+
+      must(await db.from("order_items").upsert(
         {
           id: it1,
-          sub_order_id: soid,
-          product_id: p1,
+          sub_order_id: pl.soid,
+          product_id: pl.p1,
           product_title_snapshot: `[TEST] ${s.name} Item 2`,
-          unit_price_snapshot: unit1,
-          quantity: qty1,
-          line_total: line1,
+          unit_price_snapshot: pl.unit1,
+          quantity: pl.qty1,
+          line_total: pl.line1,
           confirmation_status: confirmed ? "confirmed" : "pending",
           confirmed_at: confirmed ? new Date().toISOString() : null,
         },
         { onConflict: "id" }
-      );
+      ), `upsert order_items ${pl.storeKey}-${pl.status}-1`);
       track("order_items", it1);
-
-      // a payable for delivered orders (mirrors what place_order would accrue)
-      if (status === "delivered") {
-        const payId = uid(`payable-${s.key}-${status}`);
-        const commissionRate = s.commission;
-        const gross = subtotal;
-        const commission = Math.round(gross * commissionRate * 100) / 100;
-        await db.from("store_payables").upsert(
-          {
-            id: payId,
-            store_id: storeIds[s.key],
-            order_id: oid,
-            gross_amount: gross,
-            commission_rate: commissionRate,
-            commission_amount: commission,
-            net_owed: Math.round((gross - commission) * 100) / 100,
-            status: "pending",
-          },
-          { onConflict: "id" }
-        );
-        track("store_payables", payId);
-      }
     }
+  } finally {
+    // Always put them back, even if a line insert threw.
+    const back = await db.from("products").update({ is_active: false }).in("id", lineProductIds);
+    if (back.error) {
+      console.error("!! COULD NOT DEACTIVATE TEST PRODUCTS — do this by hand:", back.error.message);
+      console.error("   ids:", lineProductIds.join(", "));
+    } else {
+      console.log("Test products set back to inactive.");
+    }
+  }
+
+  // Phase 3 — a payable for each delivered order (mirrors what place_order accrues).
+  for (const pl of plans) {
+    if (pl.status !== "delivered") continue;
+    const s = STORES.find((x) => x.key === pl.storeKey)!;
+    const payId = uid(`payable-${pl.storeKey}-${pl.status}`);
+    const gross = pl.subtotal;
+    const commission = Math.round(gross * s.commission * 100) / 100;
+    must(await db.from("store_payables").upsert(
+      {
+        id: payId,
+        store_id: storeIds[pl.storeKey],
+        order_id: pl.oid,
+        gross_amount: gross,
+        commission_rate: s.commission,
+        commission_amount: commission,
+        net_owed: Math.round((gross - commission) * 100) / 100,
+        status: "pending",
+      },
+      { onConflict: "id" }
+    ), `upsert store_payables ${pl.storeKey}-${pl.status}`);
+    track("store_payables", payId);
   }
 
   // Register everything, then rebuild metrics for each test store.

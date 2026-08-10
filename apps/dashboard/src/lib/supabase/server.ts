@@ -17,11 +17,26 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient as createSSRClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { publicEnv, serverEnv } from "@/lib/env";
 import type { Database } from "@/types/database.types";
 
-export async function createServerClient() {
+/**
+ * The explicit `Promise<SupabaseClient<Database>>` is load-bearing, not decoration.
+ *
+ * @supabase/ssr@0.5.2 declares createServerClient's return type against an older
+ * supabase-js generic arity than the 2.111 it actually resolves to here. TS fills
+ * the missing generics with defaults, which silently degrades inference the moment
+ * a builder is chained: `.from(t).select(c)` types correctly, but
+ * `.from(t).select(c).order(...)` or `.eq(...).single()` collapses the row type to
+ * `never`. That produced ~35 "Property 'x' does not exist on type 'never'" errors
+ * across the app and made the type layer useless exactly where it mattered.
+ *
+ * The runtime object genuinely is a supabase-js 2.111 SupabaseClient (pnpm resolves
+ * ssr's peer to 2.111.0), so this annotation states the truth rather than papering
+ * over it. Remove it once @supabase/ssr is upgraded to a version built against 2.111.
+ */
+export async function createServerClient(): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies();
   return createSSRClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,

@@ -95,7 +95,15 @@ export interface Database {
           name: string;
         };
         Update: Partial<Database["public"]["Tables"]["product_variants"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       orders: {
         Row: {
@@ -170,7 +178,22 @@ export interface Database {
             "confirmation_status" | "confirmed_at" | "rejection_reason"
           >
         >;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "order_items_sub_order_id_fkey";
+            columns: ["sub_order_id"];
+            isOneToOne: false;
+            referencedRelation: "sub_orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       store_payables: {
         Row: {
@@ -291,9 +314,26 @@ export interface Database {
           partner_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["store_owner_invites"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "store_owner_invites_partner_id_fkey";
+            columns: ["partner_id"];
+            isOneToOne: false;
+            referencedRelation: "partners";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
+    // supabase-js constrains the schema to GenericSchema, which requires all of
+    // Tables, Views, Functions, Enums and CompositeTypes to be present. Omitting
+    // the three empty ones does not fail loudly — the constraint just stops
+    // matching and every .from(...).select() silently resolves to `never`, which
+    // is what produced ~35 "Property 'x' does not exist on type 'never'" errors
+    // across the app. They are declared empty rather than dropped.
+    Views: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean };
       is_store_owner: { Args: Record<string, never>; Returns: boolean };
