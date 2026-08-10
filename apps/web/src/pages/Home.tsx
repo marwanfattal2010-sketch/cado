@@ -416,6 +416,28 @@ export function Home() {
             </div>
           </section>
 
+          {/* 15b — PARTNER WITH CADO. A short band, not the full pitch: the
+              detail lives on /partners. It sits down here on purpose, past the
+              shopping, because a shopper buying a birthday present is not the
+              audience — but a store owner who scrolls this far is. No store
+              count and no logos: there is nothing real to show yet. */}
+          <section className="mx-auto max-w-6xl px-4 pt-7">
+            <div className="overflow-hidden rounded-card bg-ink px-6 py-7 text-inverse">
+              <p className="text-eyebrow uppercase text-gold">For store owners</p>
+              <p className="mt-2 font-display text-h2">Own a store? Sell on CADO.</p>
+              <p className="mt-2 max-w-md text-body text-inverse/70">
+                No upfront cost, we handle delivery, and you get found by people looking for a gift
+                rather than for you.
+              </p>
+              <Link
+                to="/partners"
+                className="mt-5 inline-flex min-h-[52px] items-center rounded-pill bg-canvas px-6 font-medium text-ink transition-transform duration-fast active:scale-[0.98]"
+              >
+                Partner with CADO
+              </Link>
+            </div>
+          </section>
+
           {/* Reviews — hidden until real ones exist. */}
           {REVIEWS.length > 0 ? (
             <section className="pt-7">
