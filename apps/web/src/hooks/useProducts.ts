@@ -81,7 +81,10 @@ export function categoryProductsQuery(
       let query = supabase
         .from("products")
         .select(
-          "id, title, price, currency, created_at, is_trending, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(slug), product_images(storage_path, is_primary)"
+          // same_day + stock_quantity ride along so the card's delivery and
+          // stock badges work here too. Without them the same product showed
+          // "Today" on the homepage and nothing on the category page.
+          "id, title, price, compare_at_price, currency, created_at, is_trending, same_day, stock_quantity, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(slug), product_images(storage_path, is_primary)"
         )
         .eq("is_active", true)
         .eq("categories.slug", categorySlug);

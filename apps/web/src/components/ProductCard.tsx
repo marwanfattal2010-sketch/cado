@@ -36,8 +36,9 @@ export function ProductCard({
 
   const inStock = stock_quantity == null || stock_quantity > 0;
   // Only promise same-day when it's genuinely deliverable — a badge the
-  // business can't honour is worse than no badge at all.
-  const arrivesToday = same_day === true && inStock;
+  // business can't honour is worse than no badge at all. Requires a real
+  // positive count, so an unknown (null) stock never earns the promise.
+  const arrivesToday = same_day === true && stock_quantity != null && stock_quantity > 0;
   const lowStock = inStock && stock_quantity != null && stock_quantity <= 3;
   const onSale = compare_at_price != null && Number(compare_at_price) > Number(price);
 
@@ -48,7 +49,7 @@ export function ProductCard({
     >
       {/* Fixed aspect ratio + a tinted placeholder underneath means the card
           never changes height when the photo arrives (no layout shift). */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-card bg-ink/5">
+      <div className="relative aspect-square w-full overflow-hidden rounded-card bg-surface-sunk">
         {uri ? (
           <img
             src={uri}
@@ -61,7 +62,7 @@ export function ProductCard({
             }`}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-ink/20">No image</div>
+          <div className="flex h-full w-full items-center justify-center text-caption text-muted">No image</div>
         )}
         {session ? (
           <button
@@ -70,17 +71,21 @@ export function ProductCard({
               toggleFavorite.mutate({ productId: id, isFavorite });
             }}
             aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
-            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-pill bg-white/90 text-ink/60 shadow-sm transition hover:text-ink active:scale-90"
+            /* 44px hit area (the visible circle stays 32px) — a 32px target
+               is under the minimum and this sits next to a whole-card link. */
+            className="absolute right-[2px] top-[2px] flex h-11 w-11 items-center justify-center transition active:scale-90"
           >
-            <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
+            <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-surface/90 text-muted shadow-rest transition hover:text-ink">
+              <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
+            </span>
           </button>
         ) : null}
         {!inStock ? (
-          <span className="absolute bottom-2 left-2 rounded-pill bg-ink/80 px-2 py-1 text-[10px] font-semibold text-cream">
+          <span className="absolute bottom-2 left-2 rounded-pill bg-ink/80 px-2 py-1 text-caption font-semibold text-inverse">
             Out of stock
           </span>
         ) : lowStock ? (
-          <span className="absolute bottom-2 left-2 rounded-pill bg-alert px-2 py-1 text-[10px] font-semibold text-white">
+          <span className="absolute bottom-2 left-2 rounded-pill bg-alert px-2 py-1 text-caption font-semibold text-inverse">
             Only {stock_quantity} left
           </span>
         ) : null}
@@ -88,15 +93,15 @@ export function ProductCard({
 
       {/* Store first — it's the trust signal, and it lets the product name
           take two lines without the card growing unpredictably. */}
-      {partner?.name ? <p className="mt-2.5 truncate text-xs text-ink/45">{partner.name}</p> : null}
-      <p className="mt-0.5 line-clamp-2 text-sm font-medium leading-snug">{title}</p>
+      {partner?.name ? <p className="mt-2.5 truncate text-store text-muted">{partner.name}</p> : null}
+      <p className="mt-0.5 line-clamp-2 text-product-name leading-snug">{title}</p>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-base font-bold">${Number(price).toFixed(0)}</span>
+        <span className="text-price">${Number(price).toFixed(0)}</span>
         {onSale ? (
-          <span className="text-xs text-ink/35 line-through">${Number(compare_at_price).toFixed(0)}</span>
+          <span className="text-caption text-muted line-through">${Number(compare_at_price).toFixed(0)}</span>
         ) : null}
         {arrivesToday ? (
-          <span className="ml-auto shrink-0 text-[11px] font-semibold text-today">Today</span>
+          <span className="ml-auto shrink-0 text-caption font-semibold text-today">Today</span>
         ) : null}
       </div>
     </Link>
