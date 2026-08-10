@@ -3,6 +3,7 @@ packages:
   - "packages/*"
 allowBuilds:
   esbuild: true
+  sharp: set this to true or false
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.11'
   - '@expo/inline-modules@0.1.4'

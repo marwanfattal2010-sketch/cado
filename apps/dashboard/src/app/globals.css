@@ -1,0 +1,73 @@
+/* Design tokens lifted from apps/web/src/index.css so the dashboard is visibly
+   the same brand. Values are duplicated, not imported, because the storefront
+   is a separate Vite app and must not be coupled to this one. Keep in sync by
+   hand if the storefront's palette ever moves. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas: #f7f3ed;
+  --surface: #ffffff;
+  --surface-sunk: #efe9e0;
+  --ink: #17130f;
+  --text: #17130f;
+  --text-muted: #6b625a;
+  --text-inverse: #f7f3ed;
+  --ribbon: #a6192e;
+  --ribbon-deep: #7e1222;
+  --ribbon-tint: #f6e7e9;
+  --gold: #c9a227;
+  --today: #1f6b4a;
+  --today-tint: #e4f0ea;
+  --alert: #c2410c;
+  --border: #e2d9cd;
+
+  /* Status palette (spec): amber awaiting, green confirmed, blue in progress,
+     grey completed, red rejected/cancelled. */
+  --status-amber: #b45309;
+  --status-amber-tint: #fdf0dd;
+  --status-green: #1f6b4a;
+  --status-green-tint: #e4f0ea;
+  --status-blue: #1e5f8f;
+  --status-blue-tint: #e3eef6;
+  --status-grey: #6b625a;
+  --status-grey-tint: #efe9e0;
+  --status-red: #a6192e;
+  --status-red-tint: #f6e7e9;
+
+  --radius-card: 14px;
+  --radius-pill: 999px;
+  --radius-sheet: 22px;
+  --shadow-rest: 0 1px 3px rgba(23, 19, 15, 0.06);
+  --shadow-lift: 0 6px 20px rgba(23, 19, 15, 0.1);
+}
+
+html, body {
+  background: var(--canvas);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Skeleton shimmer — the spec wants skeletons, not spinners. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunk) 25%,
+    #f3ece2 37%,
+    var(--surface-sunk) 63%
+  );
+  background-size: 800px 100%;
+  border-radius: 8px;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+:focus-visible {
+  outline: 2px solid var(--ribbon);
+  outline-offset: 2px;
+}

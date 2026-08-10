@@ -1,0 +1,34 @@
+{
+  "name": "@cado/dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "lint": "next lint",
+    "seed": "tsx scripts/seed-dashboard.ts",
+    "seed:teardown": "tsx scripts/seed-dashboard.ts --teardown",
+    "test:isolation": "tsx scripts/test-cross-store-isolation.ts"
+  },
+  "dependencies": {
+    "@cado/shared": "workspace:*",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.48.1",
+    "next": "^15.1.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.20",
+    "dotenv": "^16.4.7",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "~5.9.3"
+  }
+}
