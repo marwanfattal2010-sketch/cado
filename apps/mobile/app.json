@@ -7,13 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "backgroundColor": "#F7F2E9",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F7F2E9"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cado.app"
@@ -35,6 +29,18 @@
         "projectId": "328d466f-b354-458e-a309-ff245a0735b8"
       }
     },
-    "plugins": ["expo-router", "./plugins/withAndroidKeyboardResize.js"]
+    "plugins": [
+      "expo-router",
+      "./plugins/withAndroidKeyboardResize.js",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F7F2E9"
+        }
+      ]
+    ]
   }
 }
