@@ -30,7 +30,7 @@ export function Header() {
               <button
                 onClick={() => navigate(-1)}
                 aria-label="Go back"
-                className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-muted transition hover:bg-surface-sunk hover:text-ink"
+                className="tap-44 -ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-muted transition hover:bg-surface-sunk hover:text-ink"
               >
                 <ChevronLeftIcon className="h-5 w-5" />
               </button>
@@ -53,7 +53,7 @@ export function Header() {
                 where the customer is. */}
             <button
               onClick={() => setAreaOpen(true)}
-              className="flex min-w-0 items-center gap-1 rounded-pill px-2 py-1.5 text-caption text-muted transition hover:bg-surface-sunk hover:text-ink"
+              className="tap-44 flex min-w-0 items-center gap-1 rounded-pill px-2 py-1.5 text-caption text-muted transition hover:bg-surface-sunk hover:text-ink"
             >
               <span className="truncate">
                 Deliver to <span className="font-medium text-ink">{area}</span>
@@ -64,7 +64,7 @@ export function Header() {
             <Link
               to={onStorePage ? `/cart?store=${storeId}` : "/cart"}
               aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted transition-all duration-fast hover:bg-surface-sunk hover:text-ink active:scale-90"
+              className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted transition-all duration-fast hover:bg-surface-sunk hover:text-ink active:scale-90"
             >
               <BasketIcon className="h-[22px] w-[22px]" />
               {count > 0 ? (

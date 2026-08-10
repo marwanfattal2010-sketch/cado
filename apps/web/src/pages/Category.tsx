@@ -108,7 +108,7 @@ export function Category() {
     <div className="mx-auto max-w-6xl pb-12">
       <div className="px-4 pt-6">
         <nav className="flex items-center gap-1.5 text-caption text-muted">
-          <Link to="/" className="hover:text-ink">
+          <Link to="/" className="tap-44 hover:text-ink">
             Home
           </Link>
           <span>›</span>
@@ -147,7 +147,7 @@ export function Category() {
               key={s.value}
               active={sort === s.value}
               onClick={() => setSort(s.value)}
-              className="!h-9 !px-3.5 !text-caption"
+              className="tap-44 !h-9 !px-3.5 !text-caption"
             >
               {s.label}
             </Chip>
@@ -160,7 +160,7 @@ export function Category() {
                 key={r.slug}
                 active={priceIndex === i}
                 onClick={() => setPriceIndex(i)}
-                className="!h-9 !px-3.5 !text-caption"
+                className="tap-44 !h-9 !px-3.5 !text-caption"
               >
                 {r.label}
                 {i > 0 ? <span className="opacity-60"> {priceCounts[i]}</span> : null}
@@ -177,7 +177,7 @@ export function Category() {
                     key={s.id}
                     active={storeId === s.id}
                     onClick={() => setStoreId(storeId === s.id ? "" : s.id)}
-                    className="!h-9 !px-3.5 !text-caption"
+                    className="tap-44 !h-9 !px-3.5 !text-caption"
                   >
                     {s.name}
                     <span className="opacity-60"> {storeCounts.get(s.id)}</span>

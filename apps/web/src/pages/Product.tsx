@@ -147,7 +147,7 @@ export function Product() {
           <button
             onClick={() => navigate(-1)}
             aria-label="Go back"
-            className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
+            className="tap-44 absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
@@ -156,7 +156,7 @@ export function Product() {
             <button
               onClick={() => toggleFavorite.mutate({ productId: product.id, isFavorite })}
               aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
-              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
+              className="tap-44 absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
             >
               <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
             </button>
@@ -177,11 +177,17 @@ export function Product() {
         {/* Details */}
         <div className="px-4 pt-5 md:px-0 md:pt-0">
           {product.partner ? (
-            <Link to={`/store/${product.partner.id}`} className="text-store text-muted underline-offset-2 hover:underline">
+            /* Given real height rather than a .tap-44 overlay: an overlay
+               centred on 15px of text would reach down over the title, so
+               tapping the product name would open the store instead. */
+            <Link
+              to={`/store/${product.partner.id}`}
+              className="inline-flex min-h-[44px] items-center text-store text-muted underline-offset-2 hover:underline"
+            >
               {product.partner.name}
             </Link>
           ) : null}
-          <h1 className="mt-1 font-display text-h1">{product.title}</h1>
+          <h1 className="font-display text-h1">{product.title}</h1>
           <p className="mt-2 text-[22px] font-bold">${Number(product.price).toFixed(0)}</p>
 
           {arrivesToday && !cutoff.passed ? (
@@ -287,7 +293,7 @@ export function Product() {
                 </summary>
                 <p className="mt-2 text-body text-muted">
                   A verified CADO partner store.{" "}
-                  <Link to={`/store/${product.partner.id}`} className="font-medium text-ribbon underline">
+                  <Link to={`/store/${product.partner.id}`} className="tap-44 font-medium text-ribbon underline">
                     See everything they sell
                   </Link>
                 </p>

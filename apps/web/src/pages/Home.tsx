@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategories } from "../hooks/useCategories";
@@ -58,11 +58,22 @@ function SectionHead({ title, to, eyebrow }: { title: string; to?: string; eyebr
         <h2 className="font-display text-h2">{title}</h2>
       </div>
       {to ? (
-        <Link to={to} className="shrink-0 pb-0.5 text-caption font-medium text-ribbon">
+        <Link to={to} className="tap-44 shrink-0 pb-0.5 text-caption font-medium text-ribbon">
           See all →
         </Link>
       ) : null}
     </div>
+  );
+}
+
+/** A 44px footer row. These are genuinely taller rather than using .tap-44:
+ *  the rows are stacked, so invisible overlays would overlap their
+ *  neighbours and start stealing each other's taps. */
+function FooterLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className="flex min-h-[44px] items-center">
+      {children}
+    </Link>
   );
 }
 
@@ -307,7 +318,7 @@ export function Home() {
                 <Link
                   key={b.slug}
                   to={`/gift-finder?budget=${b.slug}`}
-                  className="inline-flex h-10 shrink-0 items-center rounded-pill bg-surface-sunk px-4 text-body font-medium text-ink transition-all duration-fast active:scale-[0.96]"
+                  className="inline-flex h-11 shrink-0 items-center rounded-pill bg-surface-sunk px-4 text-body font-medium text-ink transition-all duration-fast active:scale-[0.96]"
                 >
                   {b.label}
                 </Link>
@@ -470,31 +481,31 @@ export function Home() {
 
               <div>
                 <p className="text-eyebrow uppercase text-inverse/30">Shop</p>
-                <div className="mt-3 flex flex-col gap-2 text-body">
-                  <Link to="/browse">Categories</Link>
-                  <Link to="/gift-finder">Occasions</Link>
-                  <Link to="/gift-cards">Gift Cards</Link>
-                  <Link to="/gift-finder?budget=under-20">Under $20</Link>
+                <div className="mt-1 flex flex-col text-body">
+                  <FooterLink to="/browse">Categories</FooterLink>
+                  <FooterLink to="/gift-finder">Occasions</FooterLink>
+                  <FooterLink to="/gift-cards">Gift Cards</FooterLink>
+                  <FooterLink to="/gift-finder?budget=under-20">Under $20</FooterLink>
                 </div>
               </div>
 
               <div>
                 <p className="text-eyebrow uppercase text-inverse/30">Company</p>
-                <div className="mt-3 flex flex-col gap-2 text-body">
-                  <Link to="/about">About CADO</Link>
-                  <Link to="/partners">Partner with CADO</Link>
-                  <Link to="/help">Contact</Link>
+                <div className="mt-1 flex flex-col text-body">
+                  <FooterLink to="/about">About CADO</FooterLink>
+                  <FooterLink to="/partners">Partner with CADO</FooterLink>
+                  <FooterLink to="/help">Contact</FooterLink>
                 </div>
               </div>
 
               <div>
                 <p className="text-eyebrow uppercase text-inverse/30">Help</p>
-                <div className="mt-3 flex flex-col gap-2 text-body">
-                  <Link to="/delivery-returns">Delivery &amp; Returns</Link>
-                  <Link to="/orders">Track your order</Link>
-                  <Link to="/privacy">Privacy Policy</Link>
-                  <Link to="/terms">Terms of Service</Link>
-                  <Link to="/help">FAQ</Link>
+                <div className="mt-1 flex flex-col text-body">
+                  <FooterLink to="/delivery-returns">Delivery &amp; Returns</FooterLink>
+                  <FooterLink to="/orders">Track your order</FooterLink>
+                  <FooterLink to="/privacy">Privacy Policy</FooterLink>
+                  <FooterLink to="/terms">Terms of Service</FooterLink>
+                  <FooterLink to="/help">FAQ</FooterLink>
                 </div>
               </div>
             </div>

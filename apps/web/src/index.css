@@ -130,6 +130,28 @@ h1.font-display {
   scroll-snap-align: start;
 }
 
+/* Raises a small control to the 44px minimum touch target without changing
+   how it looks or how much room it takes. The overlay is a child of the
+   control, so a tap anywhere in it still hits the control.
+
+   Use this only where growing the element itself would push the layout
+   around — header icons, inline "See all" links. Do NOT use it on stacked
+   lists like the footer: the overlays of adjacent rows would overlap and
+   start stealing each other's taps. Those rows should genuinely be taller. */
+.tap-44 {
+  position: relative;
+}
+.tap-44::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  height: 44px;
+  width: 100%;
+  min-width: 44px;
+}
+
 /* Loading placeholder — shaped like the thing it's replacing, never a
    lone spinner. */
 .skeleton {

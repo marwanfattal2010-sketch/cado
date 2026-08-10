@@ -70,7 +70,7 @@ export function Account() {
         <div className="mt-6">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-display text-h2">Stores on CADO</h2>
-            <Link to="/browse" className="text-caption font-medium text-ribbon">
+            <Link to="/browse" className="tap-44 text-caption font-medium text-ribbon">
               See all →
             </Link>
           </div>
