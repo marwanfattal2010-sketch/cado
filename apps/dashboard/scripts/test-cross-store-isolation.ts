@@ -134,7 +134,10 @@ async function main() {
       Array.isArray(r.sub_orders) ? r.sub_orders[0]?.partner_id : r.sub_orders?.partner_id;
     const a = rows.filter((r) => partnerOf(r) === STORE_A).length;
     const b = rows.filter((r) => partnerOf(r) === STORE_B).length;
+    // If this positive control fails, the isolation assertion below is
+    // meaningless rather than reassuring — see 0035. Say so out loud.
     assert(a > 0, `sees its own order items (${a} rows)`);
+    if (a === 0) log("        ^ isolation for this table is UNPROVEN, not passing");
     assert(b === 0, `sees ZERO of store B's order items`);
   }
   log("");
@@ -166,12 +169,22 @@ async function main() {
   log("");
 
   // ---- sub_orders (delivery data) ----
+  //
+  // The positive control here is not optional. This table originally asserted
+  // only the "zero of store B" half, and that is how the order_items bug fixed
+  // in 0035 survived: when a query returns nothing for ANYONE, "sees zero of
+  // store B" passes for the wrong reason. Every table below must prove it can
+  // see its own rows before its isolation claim means anything.
   log("sub_orders:");
   {
     const all = await sb.from("sub_orders").select("id, partner_id");
     const rows = all.data ?? [];
+    const a = rows.filter((r) => r.partner_id === STORE_A).length;
     const b = rows.filter((r) => r.partner_id === STORE_B).length;
+    const targeted = await sb.from("sub_orders").select("id").eq("partner_id", STORE_B);
+    assert(a > 0, `sees its own sub_orders (${a} rows)`);
     assert(b === 0, `sees ZERO of store B's sub_orders`);
+    assert((targeted.data ?? []).length === 0, `sees ZERO when explicitly querying partner_id = B`);
   }
   log("");
 
