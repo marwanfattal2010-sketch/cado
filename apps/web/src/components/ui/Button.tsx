@@ -17,7 +17,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
 
 // 52px on primary actions per spec; md is for inline/secondary placements.
 const SIZES: Record<ButtonSize, string> = {
-  md: "h-11 px-5 text-sm",
+  md: "h-11 px-5 text-body",
   lg: "h-[52px] px-7 text-[15px]",
 };
 

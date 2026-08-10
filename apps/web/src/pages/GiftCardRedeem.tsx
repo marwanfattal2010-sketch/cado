@@ -103,7 +103,7 @@ export function GiftCardRedeem() {
         autoCapitalize="characters"
         autoComplete="off"
         placeholder="XXXX-XXXX-XXXX"
-        className="mt-8 w-full rounded-card border border-line bg-surface px-5 py-4 text-center font-display text-lg tracking-wider outline-none focus:border-ink/35"
+        className="mt-8 w-full rounded-card border border-line bg-surface px-5 py-4 text-center font-display text-h2 tracking-wider outline-none focus:border-ink/35"
       />
 
       {checking ? <p className="mt-4 text-center text-body text-muted">Checking...</p> : null}

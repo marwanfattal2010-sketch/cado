@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { GoogleIcon } from "../components/Icons";
+import { Button } from "../components/ui";
+
+const FIELD =
+  "w-full rounded-card border border-line bg-surface px-4 py-3.5 text-body outline-none transition focus:border-ink/35";
 
 export function Login() {
   const { signIn, signInWithGoogle } = useAuth();
@@ -20,7 +24,7 @@ export function Login() {
       await signIn(email.trim(), password);
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign in");
+      setError(err instanceof Error ? err.message : "Could not log you in.");
     } finally {
       setSubmitting(false);
     }
@@ -32,59 +36,66 @@ export function Login() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign in with Google");
+      setError(err instanceof Error ? err.message : "Could not log you in with Google.");
       setGoogleLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto flex max-w-md flex-col px-6 py-24">
-      <h1 className="font-display text-3xl">Log in</h1>
+    <div className="mx-auto flex max-w-md flex-col px-6 py-20">
+      <h1 className="font-display text-h1">Log in</h1>
 
-      <button
+      <Button
         type="button"
         onClick={onGoogle}
         disabled={googleLoading}
-        className="mt-8 flex w-full items-center justify-center gap-3 rounded-pill border border-ink/15 py-3 text-sm font-medium disabled:opacity-50"
+        variant="secondary"
+        fullWidth
+        className="mt-8"
       >
         <GoogleIcon className="h-5 w-5" />
-        {googleLoading ? "Redirecting..." : "Continue with Google"}
-      </button>
+        {googleLoading ? "Taking you to Google…" : "Continue with Google"}
+      </Button>
 
-      <div className="my-6 flex items-center gap-3 text-xs text-ink/40">
-        <div className="h-px flex-1 bg-ink/10" />
+      <div className="my-6 flex items-center gap-3 text-caption text-muted">
+        <div className="h-px flex-1 bg-line" />
         or
-        <div className="h-px flex-1 bg-ink/10" />
+        <div className="h-px flex-1 bg-line" />
       </div>
 
       <form onSubmit={onSubmit} className="space-y-3">
         <input
-          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className={FIELD}
           type="email"
           placeholder="Email"
+          aria-label="Email"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
-          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className={FIELD}
           type="password"
           placeholder="Password"
+          aria-label="Password"
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-pill bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-50"
-        >
-          {submitting ? "Signing in..." : "Log in"}
-        </button>
+        {error ? (
+          <p role="alert" className="text-body text-alert">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" disabled={submitting} fullWidth>
+          {submitting ? "Logging you in…" : "Log in"}
+        </Button>
       </form>
-      <p className="mt-6 text-sm text-ink/50">
-        Don't have an account?{" "}
-        <Link to="/signup" className="font-medium text-ink">
-          Sign up
+
+      <p className="mt-6 text-body text-muted">
+        No account yet?{" "}
+        <Link to="/signup" className="font-medium text-ribbon underline">
+          Create one
         </Link>
       </p>
     </div>

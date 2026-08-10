@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { GoogleIcon } from "../components/Icons";
+import { Button, ButtonLink } from "../components/ui";
+
+const FIELD =
+  "w-full rounded-card border border-line bg-surface px-4 py-3.5 text-body outline-none transition focus:border-ink/35";
 
 export function Signup() {
   const { signUp, signInWithGoogle } = useAuth();
@@ -19,6 +23,9 @@ export function Signup() {
     setError(null);
     setSubmitting(true);
     try {
+      // Only shows "check your email" when Supabase actually withheld a
+      // session. Showing it unconditionally once locked every new customer
+      // out, because email confirmation is off and no mail ever arrived.
       const { needsEmailConfirm } = await signUp(email.trim(), password, fullName.trim());
       if (needsEmailConfirm) {
         setConfirmSent(true);
@@ -26,7 +33,7 @@ export function Signup() {
         navigate("/account");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign up");
+      setError(err instanceof Error ? err.message : "Could not create your account.");
     } finally {
       setSubmitting(false);
     }
@@ -38,76 +45,87 @@ export function Signup() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign up with Google");
+      setError(err instanceof Error ? err.message : "Could not sign you up with Google.");
       setGoogleLoading(false);
     }
   };
 
   if (confirmSent) {
     return (
-      <div className="mx-auto max-w-md px-6 py-24 text-center">
-        <h1 className="font-display text-3xl">Check your email</h1>
-        <p className="mt-4 text-ink/60">We sent a confirmation link to {email}. Confirm it, then log in.</p>
-        <Link to="/login" className="mt-8 inline-block rounded-pill bg-ink px-6 py-3 text-sm text-cream">
-          Back to login
-        </Link>
+      <div className="mx-auto max-w-md px-6 py-20 text-center">
+        <h1 className="font-display text-h1">Check your email</h1>
+        <p className="mt-4 text-body text-muted">
+          We sent a confirmation link to {email}. Open it, then log in.
+        </p>
+        <ButtonLink to="/login" className="mt-8">
+          Back to log in
+        </ButtonLink>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col px-6 py-24">
-      <h1 className="font-display text-3xl">Create account</h1>
+    <div className="mx-auto flex max-w-md flex-col px-6 py-20">
+      <h1 className="font-display text-h1">Create an account</h1>
 
-      <button
+      <Button
         type="button"
         onClick={onGoogle}
         disabled={googleLoading}
-        className="mt-8 flex w-full items-center justify-center gap-3 rounded-pill border border-ink/15 py-3 text-sm font-medium disabled:opacity-50"
+        variant="secondary"
+        fullWidth
+        className="mt-8"
       >
         <GoogleIcon className="h-5 w-5" />
-        {googleLoading ? "Redirecting..." : "Continue with Google"}
-      </button>
+        {googleLoading ? "Taking you to Google…" : "Continue with Google"}
+      </Button>
 
-      <div className="my-6 flex items-center gap-3 text-xs text-ink/40">
-        <div className="h-px flex-1 bg-ink/10" />
+      <div className="my-6 flex items-center gap-3 text-caption text-muted">
+        <div className="h-px flex-1 bg-line" />
         or
-        <div className="h-px flex-1 bg-ink/10" />
+        <div className="h-px flex-1 bg-line" />
       </div>
 
       <form onSubmit={onSubmit} className="space-y-3">
         <input
-          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className={FIELD}
           placeholder="Full name"
+          aria-label="Full name"
+          autoComplete="name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
         />
         <input
-          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className={FIELD}
           type="email"
           placeholder="Email"
+          aria-label="Email"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
-          className="w-full rounded-card border border-ink/15 px-4 py-3 text-sm outline-none focus:border-ink/40"
+          className={FIELD}
           type="password"
           placeholder="Password"
+          aria-label="Password"
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-pill bg-ink py-3 text-sm tracking-wide text-cream disabled:opacity-50"
-        >
-          {submitting ? "Signing up..." : "Sign up"}
-        </button>
+        {error ? (
+          <p role="alert" className="text-body text-alert">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" disabled={submitting} fullWidth>
+          {submitting ? "Creating your account…" : "Create account"}
+        </Button>
       </form>
-      <p className="mt-6 text-sm text-ink/50">
+
+      <p className="mt-6 text-body text-muted">
         Already have an account?{" "}
-        <Link to="/login" className="font-medium text-ink">
+        <Link to="/login" className="font-medium text-ribbon underline">
           Log in
         </Link>
       </p>

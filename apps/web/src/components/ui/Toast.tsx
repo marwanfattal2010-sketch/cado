@@ -39,7 +39,7 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
   return (
     <div
       role="status"
-      className="animate-toast-in rounded-pill bg-ink px-5 py-3 text-sm text-inverse shadow-lift"
+      className="animate-toast-in rounded-pill bg-ink px-5 py-3 text-body text-inverse shadow-lift"
     >
       {toast.message}
     </div>

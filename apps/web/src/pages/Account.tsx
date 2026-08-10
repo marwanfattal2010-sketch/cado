@@ -2,6 +2,26 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useTopStores } from "../hooks/useStores";
 import { AccountIcon, GiftIcon, GlobeIcon, HeartIcon, HelpIcon, OrdersIcon, SettingsIcon } from "../components/Icons";
+import { Button, ButtonLink } from "../components/ui";
+
+/** Every row in the account list is the same shape, so the 52px height and
+ *  the hairline between rows can't drift apart. */
+function Row({ to, Icon, label, first }: { to: string; Icon: typeof HelpIcon; label: string; first?: boolean }) {
+  return (
+    <Link
+      to={to}
+      className={`flex min-h-[52px] items-center gap-3 px-4 py-3.5 transition hover:bg-surface-sunk ${
+        first ? "" : "border-t border-line"
+      }`}
+    >
+      <Icon className="h-5 w-5 text-muted" />
+      <span className="flex-1 text-body">{label}</span>
+      <span aria-hidden className="text-muted">
+        ›
+      </span>
+    </Link>
+  );
+}
 
 export function Account() {
   const { session, profile, signOut } = useAuth();
@@ -10,29 +30,21 @@ export function Account() {
   if (!session) {
     return (
       <div className="mx-auto max-w-md px-6 py-20 text-center">
-        <AccountIcon className="mx-auto h-10 w-10 text-ink/20" />
-        <h1 className="mt-4 font-display text-2xl font-semibold">Your account</h1>
-        <p className="mt-2 text-sm text-ink/50">Log in to manage your orders and details.</p>
+        <AccountIcon className="mx-auto h-10 w-10 text-muted" />
+        <h1 className="mt-4 font-display text-h1">Your account</h1>
+        <p className="mt-2 text-body text-muted">Log in to manage your orders and details.</p>
         <div className="mt-6 flex flex-col gap-3">
-          <Link to="/login" className="rounded-pill bg-ink py-3 text-sm text-cream">
+          <ButtonLink to="/login" fullWidth>
             Log in
-          </Link>
-          <Link to="/signup" className="rounded-pill bg-ink/5 py-3 text-sm text-ink">
+          </ButtonLink>
+          <ButtonLink to="/signup" variant="secondary" fullWidth>
             Create an account
-          </Link>
+          </ButtonLink>
         </div>
 
-        <div className="mt-10 overflow-hidden rounded-card bg-white text-left ring-1 ring-ink/5">
-          <Link to="/help" className="flex items-center gap-3 px-4 py-4 transition hover:bg-ink/[0.03]">
-            <HelpIcon className="h-5 w-5 text-ink/50" />
-            <span className="flex-1 text-sm">Help Center</span>
-            <span className="text-ink/25">›</span>
-          </Link>
-          <Link to="/language" className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]">
-            <GlobeIcon className="h-5 w-5 text-ink/50" />
-            <span className="flex-1 text-sm">Language</span>
-            <span className="text-ink/25">›</span>
-          </Link>
+        <div className="mt-10 overflow-hidden rounded-card bg-surface text-left shadow-rest">
+          <Row to="/help" Icon={HelpIcon} label="Help Center" first />
+          <Row to="/language" Icon={GlobeIcon} label="Language" />
         </div>
       </div>
     );
@@ -42,22 +54,24 @@ export function Account() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-6">
-      <div className="flex items-center gap-4 rounded-sheet bg-ink px-6 py-7 text-cream">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-gold text-2xl font-semibold text-ink">
+      <div className="flex items-center gap-4 rounded-sheet bg-ink px-6 py-7 text-inverse">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-gold font-display text-h1 text-ink">
           {(name ?? "?").charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0">
-          <p className="truncate font-display text-xl font-semibold">{name}</p>
-          <p className="truncate text-sm text-cream/60">{session.user.email}</p>
+          <p className="truncate font-display text-h2">{name}</p>
+          <p className="truncate text-body text-inverse/60">{session.user.email}</p>
         </div>
       </div>
 
+      {/* Honest label. This list is every active store, ordered by name — it
+          is not a ranking, so it can't be called "stores you'll love". */}
       {topStores.data && topStores.data.length > 0 ? (
         <div className="mt-6">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold tracking-wide text-ink/50">STORES YOU'LL LOVE</h2>
-            <Link to="/browse" className="text-xs text-ink/40 underline">
-              See all
+            <h2 className="font-display text-h2">Stores on CADO</h2>
+            <Link to="/browse" className="text-caption font-medium text-ribbon">
+              See all →
             </Link>
           </div>
           <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
@@ -65,72 +79,51 @@ export function Account() {
               <Link
                 key={store.id}
                 to={`/store/${store.id}`}
-                className="flex w-28 shrink-0 flex-col items-center gap-2 rounded-card bg-white p-3 text-center ring-1 ring-ink/5 transition hover:ring-ink/15"
+                className="flex w-28 shrink-0 flex-col items-center gap-2 rounded-card bg-surface p-3 text-center shadow-rest transition-transform duration-fast active:scale-[0.97]"
               >
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill bg-ink/5">
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill bg-surface-sunk">
                   {store.logo_url ? (
                     <img src={store.logo_url} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-lg font-semibold text-ink/40">{store.name.charAt(0)}</span>
+                    <span className="font-display text-h2 text-muted">{store.name.charAt(0)}</span>
                   )}
                 </div>
-                <span className="line-clamp-2 text-xs font-medium leading-tight">{store.name}</span>
+                <span className="line-clamp-2 text-caption font-medium leading-tight">{store.name}</span>
               </Link>
             ))}
           </div>
         </div>
       ) : null}
 
-      <div className="mt-6 overflow-hidden rounded-card bg-white ring-1 ring-ink/5">
-        <Link to="/settings" className="flex items-center gap-3 px-4 py-4 transition hover:bg-ink/[0.03]">
-          <SettingsIcon className="h-5 w-5 text-ink/50" />
-          <span className="flex-1 text-sm">Settings</span>
-          <span className="text-ink/25">›</span>
-        </Link>
-        <Link to="/wishlist" className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]">
-          <HeartIcon className="h-5 w-5 text-ink/50" />
-          <span className="flex-1 text-sm">Wishlist</span>
-          <span className="text-ink/25">›</span>
-        </Link>
-        <Link to="/language" className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]">
-          <GlobeIcon className="h-5 w-5 text-ink/50" />
-          <span className="flex-1 text-sm">Language</span>
-          <span className="text-ink/25">›</span>
-        </Link>
-        <Link to="/help" className="flex items-center gap-3 border-t border-ink/8 px-4 py-4 transition hover:bg-ink/[0.03]">
-          <HelpIcon className="h-5 w-5 text-ink/50" />
-          <span className="flex-1 text-sm">Help Center</span>
-          <span className="text-ink/25">›</span>
-        </Link>
+      <div className="mt-6 overflow-hidden rounded-card bg-surface shadow-rest">
+        <Row to="/settings" Icon={SettingsIcon} label="Settings" first />
+        <Row to="/wishlist" Icon={HeartIcon} label="Wishlist" />
+        <Row to="/language" Icon={GlobeIcon} label="Language" />
+        <Row to="/help" Icon={HelpIcon} label="Help Center" />
       </div>
 
       <div className="mt-4 flex gap-3">
         <Link
           to="/orders"
-          className="flex flex-1 items-center gap-2 rounded-card bg-white px-4 py-3 text-sm text-ink/60 ring-1 ring-ink/5 transition hover:ring-ink/15"
+          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
         >
-          <OrdersIcon className="h-4 w-4 text-ink/40" />
+          <OrdersIcon className="h-4 w-4 text-muted" />
           My orders
         </Link>
         <Link
           to="/gift-cards"
-          className="flex flex-1 items-center gap-2 rounded-card bg-white px-4 py-3 text-sm text-ink/60 ring-1 ring-ink/5 transition hover:ring-ink/15"
+          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
         >
-          <GiftIcon className="h-4 w-4 text-ink/40" />
+          <GiftIcon className="h-4 w-4 text-muted" />
           Gift cards
         </Link>
       </div>
 
-      <button
-        onClick={signOut}
-        className="mt-6 w-full rounded-pill bg-ink/5 py-3.5 text-sm font-medium text-ink/70 transition hover:bg-ink/10"
-      >
+      <Button onClick={signOut} variant="secondary" fullWidth className="mt-6">
         Log out
-      </button>
+      </Button>
 
-      <p className="mt-10 text-center text-[11px] tracking-widest text-ink/25">
-        CADO — GIFTS, DELIVERED. LEBANON.
-      </p>
+      <p className="mt-10 text-center text-eyebrow uppercase text-muted">Cado — gifts, delivered. Lebanon.</p>
     </div>
   );
 }

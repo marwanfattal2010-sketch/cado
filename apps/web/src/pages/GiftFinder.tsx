@@ -154,7 +154,7 @@ export function GiftFinder() {
           <button
             key={c.key}
             onClick={() => set(c.key, null)}
-            className="inline-flex h-8 items-center rounded-pill bg-surface px-3.5 text-caption font-medium text-ink/70 shadow-rest transition active:scale-95"
+            className="inline-flex h-11 items-center rounded-pill bg-surface px-4 text-body font-medium text-muted shadow-rest transition active:scale-95"
           >
             {c.label} <span className="ml-1 text-muted">✕</span>
           </button>

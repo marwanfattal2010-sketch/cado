@@ -92,7 +92,11 @@ export function useStoreProducts(storeId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, price, currency, product_images(storage_path, is_primary)")
+        // same_day + stock_quantity so the card's badges match what the same
+        // product shows on the homepage.
+        .select(
+          "id, title, price, compare_at_price, currency, same_day, stock_quantity, product_images(storage_path, is_primary)"
+        )
         .eq("partner_id", storeId as string)
         .eq("is_active", true)
         .limit(100);

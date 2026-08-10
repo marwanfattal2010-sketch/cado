@@ -268,7 +268,7 @@ export function Product() {
           {product.description ? (
             <div className="mt-6">
               <h2 className="font-display text-h2">About this gift</h2>
-              <p className="mt-2 text-body text-ink/70">{product.description}</p>
+              <p className="mt-2 text-body text-muted">{product.description}</p>
             </div>
           ) : null}
 

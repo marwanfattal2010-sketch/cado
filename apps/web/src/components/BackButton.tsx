@@ -11,7 +11,7 @@ export function BackButton() {
       <button
         onClick={() => navigate(-1)}
         aria-label="Go back"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-pill bg-white/70 text-ink/60 shadow-sm ring-1 ring-ink/10 transition hover:bg-white hover:text-ink"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-pill border border-line bg-surface/70 text-muted shadow-rest transition hover:bg-surface hover:text-ink active:scale-90"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M15 18l-6-6 6-6" />

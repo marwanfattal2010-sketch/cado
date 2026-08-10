@@ -213,7 +213,7 @@ export function Home() {
                 <p className="font-display text-h2">Not sure what to get?</p>
                 <p className="mt-1 text-body text-inverse/70">Three questions. We’ll find it.</p>
               </div>
-              <span className="shrink-0 text-3xl text-gold" aria-hidden>
+              <span className="shrink-0 text-[28px] text-gold" aria-hidden>
                 🎀
               </span>
             </Link>
@@ -379,8 +379,8 @@ export function Home() {
                   key={s.n}
                   className="w-[220px] shrink-0 rounded-card bg-surface p-5 text-center shadow-rest sm:w-auto"
                 >
-                  <p className="font-display text-h1 text-ink/15">{s.n}</p>
-                  <s.Icon className="mx-auto mt-1 h-7 w-7 text-ink/70" />
+                  <p className="font-display text-h1 text-line">{s.n}</p>
+                  <s.Icon className="mx-auto mt-1 h-7 w-7 text-muted" />
                   <p className="mt-3 text-body font-semibold">{s.title}</p>
                   <p className="mt-1 text-caption leading-relaxed text-muted">{s.desc}</p>
                 </div>
@@ -396,8 +396,8 @@ export function Home() {
                   key={w.label}
                   className="flex flex-col items-center gap-2 rounded-card bg-surface py-5 text-center shadow-rest"
                 >
-                  <w.Icon className="h-6 w-6 text-ink/70" />
-                  <span className="text-caption font-medium text-ink/70">{w.label}</span>
+                  <w.Icon className="h-6 w-6 text-muted" />
+                  <span className="text-caption font-medium text-muted">{w.label}</span>
                 </div>
               ))}
             </div>
@@ -423,7 +423,7 @@ export function Home() {
               <div className="scroll-row gap-3 px-4">
                 {REVIEWS.map((r, i) => (
                   <div key={i} className="w-[240px] shrink-0 rounded-card bg-surface p-4 shadow-rest">
-                    <p className="mt-2 line-clamp-2 text-body text-ink/70">“{r.quote}”</p>
+                    <p className="mt-2 line-clamp-2 text-body text-muted">“{r.quote}”</p>
                     <p className="mt-2 text-caption font-medium text-muted">
                       {r.name}, {r.city}
                     </p>
@@ -441,7 +441,7 @@ export function Home() {
                   <span className="flex h-7 w-7 items-center justify-center rounded-card bg-gold font-display text-[13px] font-semibold text-ink">
                     C
                   </span>
-                  <span className="font-display text-lg font-semibold tracking-[0.14em] text-inverse">CADO</span>
+                  <span className="font-display text-h2 tracking-[0.14em] text-inverse">CADO</span>
                 </div>
                 <p className="mt-3 text-caption">Gifts, delivered the same day, across Lebanon.</p>
               </div>

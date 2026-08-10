@@ -1,24 +1,41 @@
+import { AREAS, CUTOFF_HOUR } from "../lib/area";
+
+/** Each note is a fact the customer can hold CADO to, so they're written
+ *  from the same constants the rest of the site uses rather than retyped. */
+const NOTES = [
+  {
+    title: "Same-day delivery",
+    body: `Order before ${CUTOFF_HOUR % 12 || 12}PM and it arrives the same day. After that, it goes out the next morning.`,
+  },
+  {
+    title: "Where we deliver",
+    body: `${AREAS.join(", ")}. If you're outside these, message us before ordering and we'll tell you honestly whether we can reach you.`,
+  },
+  {
+    title: "Delivery fee",
+    body: "A flat $5 per order, however many stores it comes from.",
+  },
+  {
+    title: "Orders from several stores",
+    body: "If your order includes items from more than one store, they may arrive as separate deliveries.",
+  },
+  {
+    title: "Returns and exchanges",
+    body: "Reach out with your order number and we'll coordinate with the store on your behalf.",
+  },
+];
+
 export function DeliveryReturns() {
   return (
     <div className="mx-auto max-w-2xl px-5 py-6">
-      <h1 className="font-display text-2xl font-semibold">Delivery &amp; Returns</h1>
+      <h1 className="font-display text-h1">Delivery &amp; Returns</h1>
       <div className="mt-6 flex flex-col gap-3">
-        <div className="rounded-card bg-white p-4 ring-1 ring-ink/5">
-          <p className="text-sm font-medium">Same-day delivery</p>
-          <p className="mt-1 text-sm text-ink/60">Order before 4PM and it arrives the same day, across Lebanon.</p>
-        </div>
-        <div className="rounded-card bg-white p-4 ring-1 ring-ink/5">
-          <p className="text-sm font-medium">Multiple stores</p>
-          <p className="mt-1 text-sm text-ink/60">
-            If your order includes items from more than one store, they may arrive as separate deliveries.
-          </p>
-        </div>
-        <div className="rounded-card bg-white p-4 ring-1 ring-ink/5">
-          <p className="text-sm font-medium">Returns &amp; exchanges</p>
-          <p className="mt-1 text-sm text-ink/60">
-            Reach out with your order number and we'll coordinate with the store on your behalf.
-          </p>
-        </div>
+        {NOTES.map((n) => (
+          <div key={n.title} className="rounded-card bg-surface p-4 shadow-rest">
+            <p className="text-body font-medium">{n.title}</p>
+            <p className="mt-1 text-body text-muted">{n.body}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

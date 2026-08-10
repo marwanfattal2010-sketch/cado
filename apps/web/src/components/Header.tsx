@@ -44,7 +44,7 @@ export function Header() {
               >
                 C
               </span>
-              <span className="font-display text-xl font-semibold tracking-[0.14em]">CADO</span>
+              <span className="font-display text-h2 tracking-[0.14em]">CADO</span>
             </Link>
           </div>
 
@@ -64,7 +64,7 @@ export function Header() {
             <Link
               to={onStorePage ? `/cart?store=${storeId}` : "/cart"}
               aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-ink/70 transition-all duration-fast hover:bg-surface-sunk hover:text-ink active:scale-90"
+              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted transition-all duration-fast hover:bg-surface-sunk hover:text-ink active:scale-90"
             >
               <BasketIcon className="h-[22px] w-[22px]" />
               {count > 0 ? (

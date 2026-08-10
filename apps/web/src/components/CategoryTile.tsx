@@ -26,7 +26,7 @@ export function CategoryTile({ slug, name }: { slug: string; name: string }) {
         className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${FOCUS[slug] ?? "object-center"}`}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-transparent" />
-      <span className="absolute bottom-3.5 left-4 font-display text-base font-semibold text-white drop-shadow">
+      <span className="absolute bottom-3.5 left-4 font-display text-h2 text-inverse drop-shadow">
         {name}
       </span>
     </Link>

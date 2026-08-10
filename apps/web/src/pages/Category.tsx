@@ -254,9 +254,9 @@ export function Category() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 <div className="relative p-5">
-                  <p className="font-display text-h2 text-white">{store.name}</p>
+                  <p className="font-display text-h2 text-inverse">{store.name}</p>
                   {store.description ? (
-                    <p className="mt-1 line-clamp-2 text-caption text-white/70">{store.description}</p>
+                    <p className="mt-1 line-clamp-2 text-caption text-inverse/70">{store.description}</p>
                   ) : null}
                 </div>
               </Link>

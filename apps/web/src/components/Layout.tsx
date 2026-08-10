@@ -8,7 +8,7 @@ import { ScrollToTop } from "./ScrollToTop";
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-cream text-ink">
+    <div className="min-h-screen bg-canvas text-ink">
       <ScrollToTop />
       <Splash />
       <TopProgressBar />

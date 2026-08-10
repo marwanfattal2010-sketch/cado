@@ -140,7 +140,11 @@ export function useGiftFinderProducts(opts: {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("id, title, price, currency, partner:partners(name), product_images(storage_path, is_primary)")
+        .select(
+          // Same badge fields as every other card query — otherwise the gift
+          // finder is the one place a same-day gift doesn't say so.
+          "id, title, price, compare_at_price, currency, same_day, stock_quantity, partner:partners(name), product_images(storage_path, is_primary)"
+        )
         .eq("is_active", true);
       if (recipient) query = query.contains("recipient_tags", [recipient]);
       if (minPrice != null) query = query.gte("price", minPrice);
