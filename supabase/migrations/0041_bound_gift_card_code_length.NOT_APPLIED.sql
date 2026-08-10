@@ -1,0 +1,62 @@
+-- ============================================================================
+-- NOT APPLIED. Needs a human to approve before it runs against production.
+-- ============================================================================
+-- This file changes the BODY of place_order(), which is live money code. Every
+-- other fix in this pass was done with a trigger specifically to avoid that.
+-- This one cannot be, and the reasoning is worth recording so nobody re-opens
+-- the question:
+--
+--   * A CHECK constraint can only see a column. p_gift_card_code is only ever
+--     persisted into orders.gift_card_code AFTER the code has already been
+--     looked up and validated — an over-long code raises at the lookup and
+--     never reaches the INSERT, so a CHECK on that column never fires on the
+--     input we are trying to reject.
+--   * A BEFORE INSERT trigger has the same problem: the first table place_order
+--     touches on the gift card path is gift_card_rate_limit (via
+--     check_rate_limit), and that function is not passed the code.
+--   * Narrowing the parameter type to varchar(64) would not work either —
+--     PostgreSQL ignores length modifiers on function parameters — and it would
+--     require DROP + CREATE rather than CREATE OR REPLACE, which is a far more
+--     dangerous operation on live money code than editing the body.
+--
+-- Severity is LOW, which is why this is proposed rather than applied. The
+-- current behaviour on a multi-megabyte p_gift_card_code is:
+--     perform check_rate_limit('gift_card_redeem', 5);   -- counts against them
+--     select * into v_card from gift_cards where code = p_gift_card_code ...
+--     -> not found -> raise 'That gift card code is not valid.'
+-- so it is rejected, it is rate limited to 5/minute per account since 0027, and
+-- it never gets stored. The cost is bandwidth and a transient allocation, not a
+-- database DoS. Real codes are 20 characters (max length in gift_cards today).
+--
+-- The check is placed AFTER check_rate_limit deliberately: a caller spraying
+-- junk codes should still burn their rate-limit budget doing it. It is placed
+-- BEFORE the lookup so the oversized value is never compared or locked against.
+--
+-- The 12-parameter signature is UNCHANGED — names, order, types and defaults
+-- are byte-identical to what is live. scripts/test-gift-card-security.mjs calls
+-- place_order by parameter name and will keep resolving.
+--
+-- HOW TO VERIFY AFTER APPLYING:
+--   select pg_get_function_identity_arguments(oid)
+--   from pg_proc where proname = 'place_order';
+--   -- must still be the 12 params, in the same order.
+--
+-- TO APPLY: replace the body below with the CURRENT live body of place_order()
+-- first --
+--   select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--   where n.nspname = 'public' and p.proname = 'place_order';
+-- -- and re-apply only the diff marked GIFT CARD LENGTH BOUND. Do not paste
+-- this file blind: place_order is under active development by other agents and
+-- the body captured here is from 2026-08-09 16:38 UTC. Applying a stale body
+-- would silently revert whatever landed in between.
+--
+-- The diff, in full, is exactly these five lines inserted after the
+-- `perform check_rate_limit('gift_card_redeem', 5);` line:
+--
+--     if length(p_gift_card_code) > 64 then
+--       raise exception '%', v_gc_err;
+--     end if;
+--
+-- No other change. It is deliberately reusing v_gc_err ('That gift card code is
+-- not valid.') so an attacker cannot distinguish "too long" from "no such card"
+-- and use the difference to probe the code format.

@@ -73,6 +73,13 @@ because CLI login was lost.
   when 0021 dropped the PIN. Update it in the same commit as any signature
   change.
 - Every balance change writes to `audit_log`.
+- **A withdrawn product cannot be bought** (0040). `place_order()` reads the
+  cart through `SECURITY DEFINER`, which bypasses the `is_active` catalogue
+  policy, and nothing prunes `cart_items` when a store deactivates a product —
+  so before 0040 a customer could check out an item that had been pulled from
+  sale. A `BEFORE INSERT` trigger on `order_items` now rejects it. Note the
+  guard is at checkout, not at add-to-cart: adding an inactive product to a
+  cart still succeeds, by design, because the money boundary is the order.
 
 **Privilege columns are assigned, never chosen** (0026):
 - `profiles.role` and `profiles.partner_id` cannot be set by the account that
