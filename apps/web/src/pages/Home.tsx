@@ -322,11 +322,11 @@ export function Home() {
             </section>
           ) : null}
 
-          {/* 5 — SHOP BY CATEGORY. Four small tiles per row on mobile so all
-              nine fit in ~2.5 rows — one screen, no giant tiles. */}
+          {/* 5 — SHOP BY CATEGORY. Three per row: 9 categories land as a
+              clean 3-3-3 grid (Marwan's call after trying 4-per-row). */}
           <section className="pt-5">
             <SectionHead title="Shop by category" to="/browse" />
-            <div className="mx-auto grid max-w-6xl grid-cols-4 gap-2.5 px-4 sm:grid-cols-5">
+            <div className="mx-auto grid max-w-6xl grid-cols-3 gap-3 px-4 sm:grid-cols-5">
               {categories.data?.map((cat) => (
                 <Link
                   key={cat.id}
@@ -343,7 +343,7 @@ export function Home() {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <span className="text-[11px] font-medium leading-tight">{tidyCategory(cat.name)}</span>
+                  <span className="text-[13px] font-medium leading-tight">{tidyCategory(cat.name)}</span>
                 </Link>
               ))}
             </div>

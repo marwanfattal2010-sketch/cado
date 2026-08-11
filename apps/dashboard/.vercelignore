@@ -1,0 +1,6 @@
+# Never ship local secrets or build output; Vercel builds from source and
+# gets its configuration from project env vars, not from files.
+.env*
+.next
+node_modules
+scripts/

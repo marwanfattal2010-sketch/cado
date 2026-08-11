@@ -12,8 +12,24 @@
  */
 const isDev = process.env.NODE_ENV !== "production";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const supabaseOrigin = supabaseUrl ? new URL(supabaseUrl).origin : "";
+// Strip stray quotes: a value pasted or piped into `vercel env add` can arrive
+// wrapped in them, and a bare `new URL()` on that throws "Invalid URL" while
+// loading the config — which fails the build with no reference to this line.
+// The CSP is not worth breaking a deploy over: fall back to no Supabase origin
+// and warn loudly instead.
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim().replace(/^["']|["']$/g, "");
+
+let supabaseOrigin = "";
+if (supabaseUrl) {
+  try {
+    supabaseOrigin = new URL(supabaseUrl).origin;
+  } catch {
+    console.warn(
+      `[next.config] NEXT_PUBLIC_SUPABASE_URL is not a valid URL (${JSON.stringify(supabaseUrl)}); ` +
+        "CSP will omit the Supabase origin, so images and API calls will be blocked."
+    );
+  }
+}
 
 const csp = [
   "default-src 'self'",
@@ -35,7 +51,6 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ["@cado/shared"],
   async headers() {
     return [
       {
