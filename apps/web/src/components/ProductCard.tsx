@@ -108,7 +108,13 @@ export function ProductCard({
           {partner.name}
         </p>
       ) : null}
-      <p className="mt-0.5 line-clamp-2 text-product-name leading-snug">{title}</p>
+      {/* Always two lines tall, whether the name needs one or two.
+          line-clamp-2 already caps the top; without a floor a one-line name
+          made the card 19px shorter than its neighbours, so prices in a grid
+          row sat at different heights and a loading row was taller than the
+          row that replaced it. 2.75em = 2 x leading-snug (1.375), so it tracks
+          the type scale instead of hard-coding 39px. */}
+      <p className="mt-0.5 line-clamp-2 min-h-[2.75em] text-product-name leading-snug">{title}</p>
       <div className={`${compact ? "mt-0.5" : "mt-1"} flex items-baseline gap-2`}>
         <span className="text-price">${Number(price).toFixed(0)}</span>
         {onSale ? (

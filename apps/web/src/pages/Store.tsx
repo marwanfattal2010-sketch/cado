@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useStore, useStoreProducts } from "../hooks/useStores";
 import { ProductCard } from "../components/ProductCard";
-import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
+import { ProductGridSkeleton } from "../components/Skeleton";
 import { ButtonLink } from "../components/ui";
 
 export function Store() {
@@ -10,11 +10,31 @@ export function Store() {
   const products = useStoreProducts(id);
 
   if (store.isLoading) {
+    // The placeholder is the real page with the words taken out: the same
+    // sunk header band, the same padding, the same grid underneath. The old
+    // one was a centred stack on the plain canvas with different margins, so
+    // the band and the grid both landed somewhere else when the store
+    // arrived. Bars sit INSIDE the real headings so the line boxes — and
+    // therefore the band's height — are the ones the page is about to use.
     return (
-      <div className="mx-auto max-w-6xl px-5 py-10">
-        <Skeleton className="mx-auto h-8 w-2/3" />
-        <Skeleton className="mx-auto mt-4 h-4 w-1/2" />
-        <div className="mt-10">
+      // Keyed against the loaded branch below. A store with no description or
+      // no city makes the real band shorter than any placeholder can predict,
+      // and matching the loaded markup this closely means React would
+      // otherwise reconcile the two and *move* the grid instead of replacing
+      // the band it sits under.
+      <div key="store-loading" aria-busy="true">
+        <div className="border-b border-line bg-surface-sunk px-6 py-12 text-center">
+          <h1 className="font-display text-display">
+            <span className="skeleton inline-block h-[26px] w-2/3 rounded-pill align-middle" />
+          </h1>
+          <p className="mx-auto mt-3 max-w-lg text-body text-muted">
+            <span className="skeleton inline-block h-[11px] w-4/5 rounded-pill align-middle" />
+          </p>
+          <p className="mt-2 text-eyebrow uppercase">
+            <span className="skeleton inline-block h-[9px] w-28 rounded-pill align-middle" />
+          </p>
+        </div>
+        <div className="mx-auto max-w-6xl px-5 py-8">
           <ProductGridSkeleton count={6} />
         </div>
       </div>
@@ -25,7 +45,7 @@ export function Store() {
   // span forever on the word Loading.
   if (!store.data) {
     return (
-      <div className="mx-auto max-w-md px-6 py-20 text-center">
+      <div key="store-missing" className="mx-auto max-w-md px-6 py-20 text-center">
         <h1 className="font-display text-h1">Store not found</h1>
         <p className="mt-2 text-body text-muted">This store may have closed, or the link is wrong.</p>
         <ButtonLink to="/browse" className="mt-6">
@@ -38,7 +58,7 @@ export function Store() {
   const list = products.data ?? [];
 
   return (
-    <div>
+    <div key="store-loaded">
       <div className="border-b border-line bg-surface-sunk px-6 py-12 text-center">
         <h1 className="font-display text-display">{store.data.name}</h1>
         {store.data.description ? (

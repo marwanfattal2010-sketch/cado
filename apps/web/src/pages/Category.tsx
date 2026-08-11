@@ -6,7 +6,7 @@ import { useCategories } from "../hooks/useCategories";
 import { CategoryChips, tidyCategory } from "../components/CategoryChips";
 import { ProductCard } from "../components/ProductCard";
 import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
-import { ProductGridSkeleton, ProductRowSkeleton, Skeleton } from "../components/Skeleton";
+import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
 import { SlidersIcon } from "../components/Icons";
 import { Button, RemovableChip, RibbonEmpty } from "../components/ui";
 import {
@@ -155,6 +155,51 @@ export function Category() {
     [rows]
   );
 
+  /**
+   * One gate for the whole body.
+   *
+   * Products and stores are the two queries that decide WHICH sections exist,
+   * and "New in …" / "Stores for …" sit above the grid — so a section that
+   * mounts (or vanishes) late drags everything below it. Resolving them
+   * separately is what made every category page shift: the grid was pushed
+   * down when the store row grew, and yanked up 580px on /category/shoes when
+   * both sections turned out not to qualify.
+   *
+   * The two branches carry different keys on purpose. React then replaces the
+   * subtree instead of reconciling <section> onto <section>, so no painted
+   * node straddles the swap — the placeholder is replaced where it stands
+   * rather than being moved.
+   */
+  const dataReady = !products.isLoading && !stores.isLoading;
+
+  /**
+   * How much space the placeholder should reserve.
+   *
+   * useCategoryCounts is not an extra request: the chip rail pinned at the top
+   * of this page already blocks on it (useStockedCategories), so it is in
+   * flight from the first render and normally lands before the product rows
+   * do. When it has, the loading state reserves what this category is actually
+   * going to need. That is why /category/shoes — one gift, no qualifying
+   * sections — no longer draws a three-section page and then throws most of it
+   * away. When it hasn't landed yet we fall back to a full page, which is the
+   * common case.
+   */
+  /*
+   * Frozen on the first render for this slug, and deliberately never revised.
+   * Reading it live is a shift of its own: on a cold load the count query
+   * lands mid-skeleton, and /category/shoes went from an eight-card
+   * placeholder to a one-card placeholder while still loading — 0.32 of CLS
+   * inside the loading state. A placeholder that changes its mind is worse
+   * than one that guesses.
+   */
+  const expected = useRef<{ slug?: string; count?: number }>({});
+  if (expected.current.slug !== slug) {
+    expected.current = { slug, count: slug ? categoryCounts.data?.get(slug) : undefined };
+  }
+  const expectedCount = expected.current.count;
+  const expectSections = expectedCount == null || expectedCount >= MIN_SECTION_ITEMS;
+  const skeletonCards = Math.max(1, Math.min(expectedCount ?? 8, PAGE));
+
   return (
     <div className="pb-12">
       {/* The category rail stays pinned on every category page, so hopping
@@ -173,13 +218,17 @@ export function Category() {
         </nav>
 
         <h1 className="mt-2 font-display text-h1">{categoryName}</h1>
-        {products.isLoading ? (
-          <Skeleton className="mt-1.5 h-3 w-20" />
-        ) : (
-          <p className="mt-1 text-caption text-muted">
-            {visible.length} {visible.length === 1 ? "gift" : "gifts"}
-          </p>
-        )}
+        {/* The bar lives INSIDE the real <p>, so the line box is the same
+            12px/1.4 whether it holds a placeholder or "8 gifts". The old
+            version swapped a 12px block for a 16.8px line of text and pushed
+            every section below it down by 4px. */}
+        <p className="mt-1 text-caption text-muted">
+          {products.isLoading ? (
+            <span className="skeleton inline-block h-[9px] w-16 rounded-pill align-middle" />
+          ) : (
+            `${visible.length} ${visible.length === 1 ? "gift" : "gifts"}`
+          )}
+        </p>
 
         {activeChips.length ? (
           <div className="mt-3 flex flex-wrap gap-2">
@@ -192,178 +241,204 @@ export function Category() {
         ) : null}
       </div>
 
-      {/* 2 — HIGHLIGHTS. Only when there is enough here to fill a row. */}
-      {products.isLoading ? (
-        <section className="pt-6">
-          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">New in {categoryName}</h2>
-          <ProductRowSkeleton />
-        </section>
-      ) : showHighlights ? (
-        <section className="pt-6">
-          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">New in {categoryName}</h2>
-          <div className="scroll-row">
-            {highlights.map((p) => (
-              <div key={p.id} className="w-[42vw] shrink-0 sm:w-[190px]">
-                <ProductCard {...(p as Parameters<typeof ProductCard>[0])} />
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {/* 3 — STORES. Tapping one filters the grid below rather than
-          navigating away, so the comparison stays on one screen. */}
-      {stores.isLoading ? (
-        <section className="pt-7">
-          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
-          <div className="scroll-row">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <StoreCardSkeleton key={i} />
-            ))}
-          </div>
-        </section>
-      ) : showStores ? (
-        <section className="pt-7">
-          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
-          <div className="scroll-row">
-            {stores.data?.map((store) => (
-              <button
-                key={store.id}
-                onClick={() => {
-                  setFilters({ ...filters, storeId: filters.storeId === store.id ? null : store.id });
-                  document
-                    .getElementById("category-grid")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                aria-pressed={filters.storeId === store.id}
-                className={`shrink-0 rounded-card ${
-                  filters.storeId === store.id ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas" : ""
-                }`}
-              >
-                {/* Non-linking variant on purpose: here the card filters the
-                    grid, and an <a> inside a <button> is invalid markup that
-                    swallows the click in some browsers. */}
-                <StoreCard store={store} interactive={false} />
-              </button>
-            ))}
-          </div>
-          <p className="mx-auto max-w-6xl px-4 pt-2 text-caption text-muted">
-            Tap a store to filter the gifts below.
-          </p>
-        </section>
-      ) : null}
-
-      {/* 4 — SORT + FILTER, then the grid. Sort is one dropdown, filters are
-          one sheet. Mixing them into a single chip row is what made the old
-          bar impossible to read at a glance. */}
-      <div id="category-grid" className="mx-auto max-w-6xl px-4 pt-7">
-        <div className="flex items-center gap-2">
-          <label className="relative flex h-11 flex-1 items-center rounded-pill border border-line bg-surface">
-            <span className="sr-only">Sort gifts</span>
-            {/* The select fills the whole pill rather than sitting as a 17px
-                line of text inside it — otherwise the actual tap target is
-                the text, not the control. */}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as Sort)}
-              className="h-full w-full appearance-none rounded-pill bg-transparent pl-4 pr-9 text-caption font-medium text-ink outline-none"
-            >
-              {SORTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  Sort: {s.label}
-                </option>
-              ))}
-            </select>
-            <span aria-hidden className="pointer-events-none absolute right-4 text-[10px] text-muted">
-              ▾
-            </span>
-          </label>
-
-          {/* Same glyph and same panel as the homepage's in-place category
-              view — only the placement differs, because this page has a sort
-              control to sit beside. */}
-          <button
-            onClick={() => setSheetOpen(true)}
-            aria-haspopup="dialog"
-            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-pill border border-line bg-surface px-5 text-caption font-medium text-ink transition-all duration-press ease-out active:scale-[0.97]"
-          >
-            <SlidersIcon className="h-[18px] w-[18px]" />
-            Filters
-            {countActive(filters) ? (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-pill bg-primary px-1.5 text-[11px] font-semibold text-inverse">
-                {countActive(filters)}
-              </span>
-            ) : null}
-          </button>
-        </div>
-
-        <div className="pt-5">
-          {products.isLoading ? (
-            <ProductGridSkeleton count={8} />
-          ) : visible.length > 0 ? (
+      {!dataReady ? (
+        /* The loading view. Same sections in the same order at the same
+           heights — see ProductRowSkeleton / StoreCardSkeleton, which are
+           sized off the real type scale and the real card widths. */
+        <div key="loading" aria-busy="true">
+          {expectSections ? (
             <>
-              <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
-                {visible.slice(0, shown).map((p) => (
-                  <ProductCard key={p.id} {...(p as Parameters<typeof ProductCard>[0])} />
-                ))}
-              </div>
-              <div ref={sentinel} className="h-8" />
-              {/* Thin, but real. Never padded out with repeats. */}
-              {visible.length < MIN_SECTION_ITEMS && activeChips.length === 0 ? (
-                <p className="pt-1 text-caption text-muted">
-                  More gifts arriving soon.
-                  {relatedCategory ? (
-                    <>
-                      {" "}
-                      In the meantime, try{" "}
-                      {/* .tap-44 because this is a short word inside a
-                          sentence — growing the link itself would break the
-                          line. Nothing tappable sits next to it, so the
-                          invisible overlay can't steal a neighbour's tap. */}
-                      <Link
-                        to={`/category/${relatedCategory.slug}`}
-                        className="tap-44 font-medium text-ink underline underline-offset-4"
-                      >
-                        {tidyCategory(relatedCategory.name)}
-                      </Link>
-                      .
-                    </>
-                  ) : null}
+              <section className="pt-6">
+                <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">New in {categoryName}</h2>
+                <ProductRowSkeleton />
+              </section>
+              <section className="pt-7">
+                <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
+                <div className="scroll-row">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <StoreCardSkeleton key={i} />
+                  ))}
+                </div>
+                {/* The real section carries this line, so the placeholder
+                    reserves its height too — leaving it out is what made the
+                    store row 26px shorter while loading. */}
+                <p className="mx-auto max-w-6xl px-4 pt-2 text-caption text-muted">
+                  <span className="skeleton inline-block h-[9px] w-44 rounded-pill align-middle" />
                 </p>
-              ) : null}
+              </section>
             </>
-          ) : (
-            <div className="py-14 text-center">
-              <RibbonEmpty className="mx-auto h-14 w-14" />
-              <p className="mt-3 font-display text-h2">Nothing here yet</p>
-              <p className="mx-auto mt-2 max-w-xs text-body text-muted">
-                {activeChips.length
-                  ? "No gifts match these filters. Try widening them."
-                  : `We're still adding gifts to ${categoryName}.`}
-              </p>
-              {activeChips.length ? (
-                <Button className="mt-5" onClick={() => setFilters(NO_FILTERS)}>
-                  Clear filters
-                </Button>
-              ) : relatedCategory ? (
-                <Link
-                  to={`/category/${relatedCategory.slug}`}
-                  className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
-                >
-                  Browse {tidyCategory(relatedCategory.name)}
-                </Link>
-              ) : (
-                <Link
-                  to="/browse"
-                  className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
-                >
-                  Browse all categories
-                </Link>
-              )}
+          ) : null}
+
+          <div className="mx-auto max-w-6xl px-4 pt-7">
+            <div className="flex items-center gap-2">
+              <span className="skeleton h-11 flex-1 rounded-pill" />
+              <span className="skeleton h-11 w-[104px] shrink-0 rounded-pill" />
             </div>
-          )}
+            <div className="pt-5">
+              <ProductGridSkeleton count={skeletonCards} />
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div key="content">
+        {/* 2 — HIGHLIGHTS. Only when there is enough here to fill a row. */}
+        {showHighlights ? (
+          <section className="pt-6">
+            <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">New in {categoryName}</h2>
+            <div className="scroll-row">
+              {highlights.map((p) => (
+                <div key={p.id} className="w-[42vw] shrink-0 sm:w-[190px]">
+                  <ProductCard {...(p as Parameters<typeof ProductCard>[0])} />
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {/* 3 — STORES. Tapping one filters the grid below rather than
+            navigating away, so the comparison stays on one screen. */}
+        {showStores ? (
+          <section className="pt-7">
+            <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
+            <div className="scroll-row">
+              {stores.data?.map((store) => (
+                <button
+                  key={store.id}
+                  onClick={() => {
+                    setFilters({ ...filters, storeId: filters.storeId === store.id ? null : store.id });
+                    document
+                      .getElementById("category-grid")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  aria-pressed={filters.storeId === store.id}
+                  className={`shrink-0 rounded-card ${
+                    filters.storeId === store.id ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas" : ""
+                  }`}
+                >
+                  {/* Non-linking variant on purpose: here the card filters the
+                      grid, and an <a> inside a <button> is invalid markup that
+                      swallows the click in some browsers. */}
+                  <StoreCard store={store} interactive={false} />
+                </button>
+              ))}
+            </div>
+            <p className="mx-auto max-w-6xl px-4 pt-2 text-caption text-muted">
+              Tap a store to filter the gifts below.
+            </p>
+          </section>
+        ) : null}
+
+        {/* 4 — SORT + FILTER, then the grid. Sort is one dropdown, filters are
+            one sheet. Mixing them into a single chip row is what made the old
+            bar impossible to read at a glance. */}
+        <div id="category-grid" className="mx-auto max-w-6xl px-4 pt-7">
+          <div className="flex items-center gap-2">
+            <label className="relative flex h-11 flex-1 items-center rounded-pill border border-line bg-surface">
+              <span className="sr-only">Sort gifts</span>
+              {/* The select fills the whole pill rather than sitting as a 17px
+                  line of text inside it — otherwise the actual tap target is
+                  the text, not the control. */}
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as Sort)}
+                className="h-full w-full appearance-none rounded-pill bg-transparent pl-4 pr-9 text-caption font-medium text-ink outline-none"
+              >
+                {SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    Sort: {s.label}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden className="pointer-events-none absolute right-4 text-[10px] text-muted">
+                ▾
+              </span>
+            </label>
+
+            {/* Same glyph and same panel as the homepage's in-place category
+                view — only the placement differs, because this page has a sort
+                control to sit beside. */}
+            <button
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-pill border border-line bg-surface px-5 text-caption font-medium text-ink transition-all duration-press ease-out active:scale-[0.97]"
+            >
+              <SlidersIcon className="h-[18px] w-[18px]" />
+              Filters
+              {countActive(filters) ? (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-pill bg-primary px-1.5 text-[11px] font-semibold text-inverse">
+                  {countActive(filters)}
+                </span>
+              ) : null}
+            </button>
+          </div>
+
+          <div className="pt-5">
+            {visible.length > 0 ? (
+              <>
+                <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
+                  {visible.slice(0, shown).map((p) => (
+                    <ProductCard key={p.id} {...(p as Parameters<typeof ProductCard>[0])} />
+                  ))}
+                </div>
+                <div ref={sentinel} className="h-8" />
+                {/* Thin, but real. Never padded out with repeats. */}
+                {visible.length < MIN_SECTION_ITEMS && activeChips.length === 0 ? (
+                  <p className="pt-1 text-caption text-muted">
+                    More gifts arriving soon.
+                    {relatedCategory ? (
+                      <>
+                        {" "}
+                        In the meantime, try{" "}
+                        {/* .tap-44 because this is a short word inside a
+                            sentence — growing the link itself would break the
+                            line. Nothing tappable sits next to it, so the
+                            invisible overlay can't steal a neighbour's tap. */}
+                        <Link
+                          to={`/category/${relatedCategory.slug}`}
+                          className="tap-44 font-medium text-ink underline underline-offset-4"
+                        >
+                          {tidyCategory(relatedCategory.name)}
+                        </Link>
+                        .
+                      </>
+                    ) : null}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <div className="py-14 text-center">
+                <RibbonEmpty className="mx-auto h-14 w-14" />
+                <p className="mt-3 font-display text-h2">Nothing here yet</p>
+                <p className="mx-auto mt-2 max-w-xs text-body text-muted">
+                  {activeChips.length
+                    ? "No gifts match these filters. Try widening them."
+                    : `We're still adding gifts to ${categoryName}.`}
+                </p>
+                {activeChips.length ? (
+                  <Button className="mt-5" onClick={() => setFilters(NO_FILTERS)}>
+                    Clear filters
+                  </Button>
+                ) : relatedCategory ? (
+                  <Link
+                    to={`/category/${relatedCategory.slug}`}
+                    className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
+                  >
+                    Browse {tidyCategory(relatedCategory.name)}
+                  </Link>
+                ) : (
+                  <Link
+                    to="/browse"
+                    className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
+                  >
+                    Browse all categories
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        </div>
+      )}
 
       <CategoryFilterPanel
         open={sheetOpen}

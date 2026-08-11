@@ -161,6 +161,17 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Reserve the scrollbar track whether or not the page currently overflows.
+   Without this, a page that is taller than the viewport while its skeleton is
+   up and shorter than the viewport once the real (thin) content lands loses
+   its scrollbar — and the whole layout, header and bottom nav included, slides
+   15px sideways. That is a genuine layout shift on desktop, and it was the
+   whole of /store/<id>'s CLS and a third of /category/shoes'.
+   No-op on iOS/Android, where scrollbars are overlays and take no space. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
