@@ -152,15 +152,14 @@ export function Product() {
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
 
-          {session ? (
-            <button
-              onClick={() => toggleFavorite.mutate({ productId: product.id, isFavorite })}
-              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-              className="tap-44 absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
-            >
-              <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
-            </button>
-          ) : null}
+          {/* No login gate: signed-out hearts persist locally (see useFavorites). */}
+          <button
+            onClick={() => toggleFavorite.mutate({ productId: product.id, isFavorite })}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            className="tap-44 absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
+          >
+            <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
+          </button>
 
           {images.length > 1 ? (
             <div className="mt-3 flex justify-center gap-1.5">

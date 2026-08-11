@@ -314,6 +314,28 @@ export function Home() {
             </div>
           </section>
 
+          {/* 5b — BIRTHDAY BANNER, restored from the old homepage. Birthdays
+              are the flagship occasion, so it gets the visual weight right
+              after the category grid. Whole card is the link. */}
+          <section className="mx-auto max-w-6xl px-4 pt-7">
+            <Link
+              to="/gift-finder?occasion=birthday"
+              className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-sheet p-6 transition-transform duration-fast active:scale-[0.99]"
+            >
+              <img
+                src="/occasions/birthday-banner.jpg"
+                alt=""
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+              <p className="relative font-display text-h1 text-inverse drop-shadow">Birthday coming up?</p>
+              <p className="relative mt-1 text-body text-inverse/85 drop-shadow">
+                Same-day gifts, sorted by what always lands.
+              </p>
+            </Link>
+          </section>
+
           {/* 6 — NEED IT TODAY, with the real cut-off. */}
           {needToday.data && needToday.data.length > 0 ? (
             <section className="pt-7">

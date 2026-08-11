@@ -5,28 +5,22 @@ import { ProductGridSkeleton } from "../components/Skeleton";
 import { HeartIcon } from "../components/Icons";
 import { ButtonLink } from "../components/ui";
 
+/** No login gate: signed-out hearts live on this device (see useFavorites)
+ *  and render here just the same. Signed in, the list is the account's. */
 export function Wishlist() {
   const { session } = useAuth();
   const favorites = useFavorites();
-
-  if (!session) {
-    return (
-      <div className="mx-auto max-w-md px-6 py-20 text-center">
-        <HeartIcon className="mx-auto h-10 w-10 text-muted" />
-        <h1 className="mt-4 font-display text-h1">Your favorites</h1>
-        <p className="mt-2 text-body text-muted">Log in to save gifts for later.</p>
-        <ButtonLink to="/login" className="mt-6">
-          Log in
-        </ButtonLink>
-      </div>
-    );
-  }
 
   const items = favorites.data ?? [];
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-6">
       <h1 className="font-display text-h1">Your favorites</h1>
+      {!session && items.length > 0 ? (
+        <p className="mt-1 text-caption text-muted">
+          Saved on this device — log in to keep them on every device.
+        </p>
+      ) : null}
 
       {favorites.isLoading ? (
         <div className="mt-6">

@@ -7,8 +7,8 @@ import { AccountIcon, GiftIcon, HeartIcon, HomeIcon, OrdersIcon } from "./Icons"
 // sections and the footer.
 const TABS = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
-  { to: "/wishlist", label: "Favorites", Icon: HeartIcon, end: false },
   { to: "/gift-cards", label: "Gift Cards", Icon: GiftIcon, end: false },
+  { to: "/wishlist", label: "Favorites", Icon: HeartIcon, end: false },
   { to: "/orders", label: "Orders", Icon: OrdersIcon, end: false },
   { to: "/account", label: "Account", Icon: AccountIcon, end: false },
 ];

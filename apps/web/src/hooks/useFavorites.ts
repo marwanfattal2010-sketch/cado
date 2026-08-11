@@ -1,27 +1,130 @@
+import { useSyncExternalStore } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 
+/**
+ * Favorites work signed out too: hearting shouldn't demand an account.
+ * Signed-out hearts live in localStorage on this device; signed-in hearts are
+ * DB-backed exactly as before. If someone hearts locally and then signs in,
+ * the DB simply wins — no merge flow. Deliberate: a merge would silently
+ * write device state into their account, and the simple rule ("your account
+ * list is your account list") is predictable and easy to reason about.
+ */
+
+const LOCAL_KEY = "cado-favorites";
+const LOCAL_EVENT = "cado-favorites-change";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function readLocalIds(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LOCAL_KEY) ?? "[]") as unknown;
+    if (!Array.isArray(parsed)) return [];
+    // Only well-formed uuids: these ids end up in a PostgREST .in() filter,
+    // and localStorage is user-editable.
+    return parsed.filter((x): x is string => typeof x === "string" && UUID_RE.test(x));
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalIds(ids: string[]) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(ids));
+  localIdsCache = ids;
+  window.dispatchEvent(new CustomEvent(LOCAL_EVENT));
+}
+
+// useSyncExternalStore needs a stable snapshot reference between changes.
+let localIdsCache: string[] = [];
+let localIdsCacheInitialized = false;
+
+function localIdsSnapshot(): string[] {
+  if (!localIdsCacheInitialized) {
+    localIdsCache = readLocalIds();
+    localIdsCacheInitialized = true;
+  }
+  return localIdsCache;
+}
+
+function subscribeLocalIds(onChange: () => void) {
+  const sync = () => {
+    localIdsCache = readLocalIds();
+    onChange();
+  };
+  window.addEventListener(LOCAL_EVENT, sync);
+  window.addEventListener("storage", sync); // other tabs
+  return () => {
+    window.removeEventListener(LOCAL_EVENT, sync);
+    window.removeEventListener("storage", sync);
+  };
+}
+
+function useLocalFavoriteIds(): string[] {
+  return useSyncExternalStore(subscribeLocalIds, localIdsSnapshot);
+}
+
+type FavoriteEntry = {
+  id: string;
+  product_id: string;
+  product: {
+    id: string;
+    title: string;
+    price: number;
+    currency: string | null;
+    product_images: { storage_path: string; is_primary: boolean }[] | null;
+  } | null;
+};
+
+async function fetchDbFavorites(): Promise<FavoriteEntry[]> {
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("id, product_id, product:products(id, title, price, currency, product_images(storage_path, is_primary))")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return data as unknown as FavoriteEntry[];
+}
+
+/** The full list with product data — what the Favorites page renders. */
 export function useFavorites() {
   const { session } = useAuth();
+  const localIds = useLocalFavoriteIds();
   return useQuery({
-    queryKey: ["favorites"],
-    enabled: !!session,
-    queryFn: async () => {
+    // The local key carries the ids, so a heart/unheart refetches by itself.
+    queryKey: session ? ["favorites"] : ["favorites", "local", localIds],
+    queryFn: async (): Promise<FavoriteEntry[]> => {
+      if (session) return fetchDbFavorites();
+      if (localIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("favorites")
-        .select("id, product_id, product:products(id, title, price, currency, product_images(storage_path, is_primary))")
-        .order("created_at", { ascending: false })
-        .limit(200);
+        .from("products")
+        .select("id, title, price, currency, product_images(storage_path, is_primary)")
+        .in("id", localIds);
       if (error) throw error;
-      return data;
+      const byId = new Map((data ?? []).map((p) => [p.id, p]));
+      // Keep the local order (newest heart first); drop ids that no longer
+      // resolve to a live product.
+      return localIds
+        .filter((id) => byId.has(id))
+        .map((id) => ({
+          id,
+          product_id: id,
+          product: byId.get(id) as unknown as FavoriteEntry["product"],
+        }));
     },
   });
 }
 
+/** Just the hearted ids, for the heart buttons. Signed out this is pure
+ *  localStorage — no network round-trip per product card. */
 export function useFavoriteIds() {
-  const favorites = useFavorites();
-  return new Set((favorites.data ?? []).map((f) => f.product_id));
+  const { session } = useAuth();
+  const localIds = useLocalFavoriteIds();
+  const db = useQuery({
+    queryKey: ["favorites"],
+    enabled: !!session,
+    queryFn: fetchDbFavorites,
+  });
+  return session ? new Set((db.data ?? []).map((f) => f.product_id)) : new Set(localIds);
 }
 
 export function useToggleFavorite() {
@@ -29,7 +132,11 @@ export function useToggleFavorite() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ productId, isFavorite }: { productId: string; isFavorite: boolean }) => {
-      if (!session) throw new Error("must be logged in");
+      if (!session) {
+        const ids = readLocalIds();
+        writeLocalIds(isFavorite ? ids.filter((x) => x !== productId) : [productId, ...ids]);
+        return;
+      }
       if (isFavorite) {
         const { error } = await supabase
           .from("favorites")

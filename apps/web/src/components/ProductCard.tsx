@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { primaryImage } from "../lib/images";
-import { useAuth } from "../lib/auth";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
 import { timeUntilCutoff } from "../lib/area";
 import { HeartIcon } from "./Icons";
@@ -29,7 +28,6 @@ export function ProductCard({
   partner,
 }: ProductCardProps) {
   const uri = primaryImage(product_images);
-  const { session } = useAuth();
   const favoriteIds = useFavoriteIds();
   const toggleFavorite = useToggleFavorite();
   const isFavorite = favoriteIds.has(id);
@@ -69,22 +67,21 @@ export function ProductCard({
         ) : (
           <div className="flex h-full w-full items-center justify-center text-caption text-muted">No image</div>
         )}
-        {session ? (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              toggleFavorite.mutate({ productId: id, isFavorite });
-            }}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            /* 44px hit area (the visible circle stays 32px) — a 32px target
-               is under the minimum and this sits next to a whole-card link. */
-            className="absolute right-[2px] top-[2px] flex h-11 w-11 items-center justify-center transition active:scale-90"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-surface/90 text-muted shadow-rest transition hover:text-ink">
-              <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
-            </span>
-          </button>
-        ) : null}
+        {/* No login gate: signed-out hearts persist locally (see useFavorites). */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            toggleFavorite.mutate({ productId: id, isFavorite });
+          }}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          /* 44px hit area (the visible circle stays 32px) — a 32px target
+             is under the minimum and this sits next to a whole-card link. */
+          className="absolute right-[2px] top-[2px] flex h-11 w-11 items-center justify-center transition active:scale-90"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-surface/90 text-muted shadow-rest transition hover:text-ink">
+            <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
+          </span>
+        </button>
         {!inStock ? (
           <span className="absolute bottom-2 left-2 rounded-pill bg-ink/80 px-2 py-1 text-caption font-semibold text-inverse">
             Out of stock
