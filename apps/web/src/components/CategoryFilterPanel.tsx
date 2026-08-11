@@ -337,6 +337,7 @@ export function CategoryFilterPanel({
     (s) => countIn("subcategory", s.value) > 0 || on("subcategory", s.value)
   );
   const storeOptions = stores.filter((s) => countIn("storeId", s.id) > 0 || on("storeId", s.id));
+  const budgetOptions = BUDGETS.filter((b) => countIn("budget", b.slug) > 0 || on("budget", b.slug));
 
   /**
    * Colour options come out of the rows in view, never from a list in the
@@ -455,22 +456,24 @@ export function CategoryFilterPanel({
         </FilterGroup>
       ) : null}
 
-      <FilterGroup label="Price">
-        {BUDGETS.map((b) => {
-          const n = countIn("budget", b.slug);
-          if (n === 0 && !on("budget", b.slug)) return null;
-          return (
+      {/* Price. Hidden when only one band has anything in it — on a screen
+          where every gift is $50–$100 already (the gift finder entered from a
+          budget chip, say) the group can only restate what the person just
+          picked. Same rule the Category / Type / Store groups use. */}
+      {budgetOptions.length > 1 ? (
+        <FilterGroup label="Price">
+          {budgetOptions.map((b) => (
             <OptionBox
               key={b.slug}
               checked={on("budget", b.slug)}
               onToggle={() => flip("budget", b.slug)}
-              count={n}
+              count={countIn("budget", b.slug)}
             >
               {b.label}
             </OptionBox>
-          );
-        })}
-      </FilterGroup>
+          ))}
+        </FilterGroup>
+      ) : null}
 
       {/* Size. Real variant names or nothing — never an invented S/M/L rail.
           product_variants is empty in production, so this renders nothing

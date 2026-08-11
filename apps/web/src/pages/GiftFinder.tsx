@@ -12,9 +12,24 @@ import {
   StarIcon,
   WalletIcon,
 } from "../components/Icons";
-import { Button, Chip, RemovableChip, RibbonEmpty } from "../components/ui";
+import { Button, RemovableChip, RibbonEmpty } from "../components/ui";
 import {
-  AUDIENCES,
+  FilterBar,
+  SortSheet,
+  sortProducts,
+  type SortValue,
+} from "../components/FilterBar";
+import {
+  CategoryFilterPanel,
+  NO_FILTERS,
+  countActive,
+  filterLabels,
+  productMatches,
+  removeFilter,
+  type CategoryFilters,
+  type FilterableProduct,
+} from "../components/CategoryFilterPanel";
+import {
   BUDGETS,
   QUIZ_RECIPIENTS,
   budgetBySlug,
@@ -24,6 +39,7 @@ import {
   type Budget,
   type Occasion,
 } from "../lib/filters";
+import { useVariantOptionsForProducts } from "../hooks/useProducts";
 import { useGiftResults, type Row } from "../hooks/useGiftFinder";
 
 /**
@@ -241,32 +257,6 @@ export function GiftFinder() {
   );
 }
 
-/** Sort is an ordering, never a filter — nothing here removes a product.
- *  "Suggested" is the finder's own order (curated lists first, then newest);
- *  it makes no popularity claim, because there is no sales data to make one
- *  from. */
-type Sort = "suggested" | "price_asc" | "price_desc";
-
-const SORTS: { value: Sort; label: string }[] = [
-  { value: "suggested", label: "Suggested" },
-  { value: "price_asc", label: "Price: low to high" },
-  { value: "price_desc", label: "Price: high to low" },
-];
-
-/**
- * The audience refine-chips, in the order they were asked for. These are the
- * same three recipient_tags the category filter panel offers (AUDIENCES in
- * lib/filters.ts — the only three that exist on real products), labelled the
- * way the homepage labels them: "For Her", not "Woman".
- */
-const AUDIENCE_OPTIONS = (["her", "him", "child"] as const)
-  .filter((v) => AUDIENCES.some((a) => a.value === v))
-  .map((value) => ({ value: value as string, label: recipientLabel(value) ?? value }));
-
-const has = (list: string[], v: string) => list.includes(v);
-const toggle = (list: string[], v: string) =>
-  has(list, v) ? list.filter((x) => x !== v) : [...list, v];
-
 function Results({
   results,
   occasion,
@@ -282,14 +272,18 @@ function Results({
 }) {
   /**
    * Refine filters, applied in place over the gifts already fetched. No
-   * refetch, no navigation, no loading flash — tapping a chip re-renders the
-   * grid from the array that is already in memory, which is what makes it
+   * refetch, no navigation, no loading flash — applying the sheet re-renders
+   * the grid from the array that is already in memory, which is what makes it
    * feel instant. The URL keeps holding the *entry* filters (occasion /
    * recipient / budget) so a shared link still lands where it did.
+   *
+   * Same model, same panel and same bar as the category page and search —
+   * see components/CategoryFilterPanel.
    */
-  const [audiences, setAudiences] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [sort, setSort] = useState<Sort>("suggested");
+  const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sort, setSort] = useState<SortValue>("suggested");
 
   const items = useMemo(() => (results.data?.items ?? []) as Row[], [results.data]);
   const totalBeforeBudget = results.data?.totalBeforeBudget ?? 0;
@@ -299,15 +293,9 @@ function Results({
   // ends up mysteriously empty — "Toys" carried over from a budget band that
   // had toys into one that doesn't.
   useEffect(() => {
-    setAudiences([]);
-    setCategories([]);
+    setFilters(NO_FILTERS);
     setSort("suggested");
   }, [occasion?.value, recipient, budget?.slug]);
-
-  const matchesAudience = (p: Row, sel: string[]) =>
-    sel.length === 0 || (p.recipient_tags ?? []).some((t) => sel.includes(t));
-  const matchesCategory = (p: Row, sel: string[]) =>
-    sel.length === 0 || (p.category?.slug != null && sel.includes(p.category.slug));
 
   /**
    * PRICE. Filtered once, through inBudgetRange() — in useGiftResults for the
@@ -318,61 +306,49 @@ function Results({
    */
   const inBand = (p: Row) => inBudgetRange(Number(p.price), budget);
 
-  const visible = useMemo(() => {
-    const list = items.filter(
-      (p) => inBand(p) && matchesAudience(p, audiences) && matchesCategory(p, categories)
-    );
-    if (sort === "price_asc") list.sort((a, b) => Number(a.price) - Number(b.price));
-    if (sort === "price_desc") list.sort((a, b) => Number(b.price) - Number(a.price));
-    return list;
+  /** Everything the panel counts from: already inside the URL's band, so a
+   *  count in the sheet is exactly what applying it will leave on screen. */
+  const rows = useMemo(
+    () => items.filter(inBand) as unknown as FilterableProduct[],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, audiences, categories, sort, budget]);
-
-  /**
-   * Options come from the gifts in view, never from a hardcoded list, so a
-   * chip that could only ever return nothing is never offered. Each count is
-   * computed with the OTHER group's selection applied — the same rule
-   * Category and Search use — so a count always says how many results that
-   * one tap would actually leave you with.
-   *
-   * An option that has fallen to zero while selected stays on screen; hiding
-   * it would strand the filter with no way to switch it off.
-   */
-  const audienceOptions = useMemo(
-    () =>
-      AUDIENCE_OPTIONS.map((o) => ({
-        ...o,
-        count: items.filter(
-          (p) => inBand(p) && matchesCategory(p, categories) && (p.recipient_tags ?? []).includes(o.value)
-        ).length,
-      })).filter((o) => o.count > 0 || has(audiences, o.value)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, categories, audiences, budget]
+    [items, budget]
   );
 
+  const variants = useVariantOptionsForProducts(useMemo(() => rows.map((p) => p.id), [rows]));
+
+  const visible = useMemo(
+    () => sortProducts(rows.filter((p) => productMatches(p, filters, variants.data?.byProduct)), sort),
+    [rows, filters, sort, variants.data]
+  );
+
+  /** Options come from the gifts in view, never from a hardcoded list, so a
+   *  filter that could only ever return nothing is never offered. */
   const categoryOptions = useMemo(() => {
     const names = new Map<string, string>();
     for (const p of items) {
       if (p.category?.slug) names.set(p.category.slug, tidyCategory(p.category.name));
     }
     return [...names.entries()]
-      .map(([value, label]) => ({
-        value,
-        label,
-        count: items.filter(
-          (p) => inBand(p) && matchesAudience(p, audiences) && p.category?.slug === value
-        ).length,
-      }))
-      .filter((o) => o.count > 0 || has(categories, o.value))
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, audiences, categories, budget]);
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [items]);
 
-  const refineCount = audiences.length + categories.length;
-  const clearRefine = () => {
-    setAudiences([]);
-    setCategories([]);
-  };
+  const partnerOptions = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const p of items) {
+      const s = (p as { partner?: { id?: string | null; name?: string | null } | null }).partner;
+      if (s?.id && s.name) names.set(s.id, s.name);
+    }
+    return [...names.entries()].map(([id, name]) => ({ id, name }));
+  }, [items]);
+
+  const refineChips = useMemo(
+    () => filterLabels(filters, { stores: partnerOptions, categories: categoryOptions }),
+    [filters, partnerOptions, categoryOptions]
+  );
+
+  const refineCount = countActive(filters);
+  const clearRefine = () => setFilters(NO_FILTERS);
 
   // Only claim the occasion in the headline when the results actually honour
   // it. "47 gifts · Get Well" above a grid of untagged gifts reads as a
@@ -385,7 +361,9 @@ function Results({
   const count = `${visible.length} ${visible.length === 1 ? "gift" : "gifts"}`;
   const headline = parts.length ? `${count} · ${parts.join(" · ")}` : `${count} to choose from`;
 
-  const activeChips = (
+  /** The answers that came in on the URL. Clearing one of these re-runs the
+   *  query, unlike the refine chips, which are applied in memory. */
+  const entryChips = (
     [
       occasion ? { key: "occasion", label: occasion.label } : null,
       recipient ? { key: "recipient", label: recipientLabel(recipient) ?? recipient } : null,
@@ -398,122 +376,82 @@ function Results({
       <div className="mx-auto max-w-6xl px-4">
         <h1 className="font-display text-h1">{results.isLoading ? "Finding gifts…" : headline}</h1>
 
-        {activeChips.length ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {activeChips.map((c) => (
-              <RemovableChip key={c.key} onRemove={() => onClear(c.key)}>
-                {c.label}
-              </RemovableChip>
-            ))}
-          </div>
-        ) : null}
-
         {/* Say plainly when the answer isn't literally what was asked for.
-            Quietly showing something else is how a filter loses its meaning. */}
+            Quietly showing something else is how a filter loses its meaning.
+            One quiet line — it is a footnote to the headline, not a banner. */}
         {relaxed === "occasion-untagged" && occasion ? (
-          <p className="mt-3 text-caption text-muted">
-            No gifts are tagged {occasion.label.toLowerCase()} yet — showing everything else that suits.
+          <p className="mt-1.5 text-caption text-muted">
+            Nothing tagged {occasion.label.toLowerCase()} yet — showing what else suits.
           </p>
         ) : relaxed === "occasion-thin" && occasion ? (
-          <p className="mt-3 text-caption text-muted">
-            Only a few {occasion.label.toLowerCase()} gifts so far — showing what else fits.
+          <p className="mt-1.5 text-caption text-muted">
+            Few {occasion.label.toLowerCase()} gifts so far — showing what else fits.
           </p>
         ) : null}
-      </div>
-
-      {/*
-        REFINE. Chips narrow the grid in place — no reload, no refetch, no
-        Apply button. Multiple chips in one group are an OR ("For Her or For
-        Kids"); the two groups are ANDed together, which is the combination
-        people actually mean. Every option here was derived from the gifts on
-        screen, so none of them can lead to a guaranteed-empty grid.
-
-        ONE SWIPEABLE LINE, NOT A WRAPPING BLOCK, AND IT IS A CLS FIX AS MUCH
-        AS A LAYOUT ONE. A wrapping row is however many rows tall the data
-        makes it, so it cannot be reserved before the query lands — it
-        appeared above the grid on load and shoved it down (measured: CLS 0 ->
-        0.18 on /gift-finder?budget=20-50). A single .scroll-row is always
-        exactly one chip tall, so the skeleton below reserves the identical
-        box and nothing moves when the real chips arrive.
-
-        Full-bleed rather than inside the px-4 container: .scroll-row carries
-        its own page gutter, so nesting it in padding would double to 32px and
-        put this row out of line with the title above it.
-      */}
-      <div className="pt-4">
-        {results.isLoading ? (
-          <div className="scroll-row" aria-hidden>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <span key={i} className="skeleton h-11 w-[96px] rounded-pill" />
-            ))}
-          </div>
-        ) : audienceOptions.length > 0 || categoryOptions.length > 1 ? (
-          <div className="scroll-row">
-            {audienceOptions.map((o) => (
-              <Chip
-                key={`a-${o.value}`}
-                active={has(audiences, o.value)}
-                onClick={() => setAudiences((s) => toggle(s, o.value))}
-                className="!text-caption"
-              >
-                {o.label}
-                <span className={has(audiences, o.value) ? "opacity-70" : "text-muted"}>{o.count}</span>
-              </Chip>
-            ))}
-            {categoryOptions.map((o) => (
-              <Chip
-                key={`c-${o.value}`}
-                active={has(categories, o.value)}
-                onClick={() => setCategories((s) => toggle(s, o.value))}
-                className="!text-caption"
-              >
-                {o.label}
-                <span className={has(categories, o.value) ? "opacity-70" : "text-muted"}>{o.count}</span>
-              </Chip>
-            ))}
-            {refineCount > 0 ? (
-              <button
-                onClick={clearRefine}
-                className="inline-flex h-11 items-center whitespace-nowrap px-2 text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
-              >
-                Clear
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          /* No refinements worth offering — hold the same 44px so the grid
-             does not jump between this state and the skeleton above. */
-          <div className="h-11" />
-        )}
       </div>
 
       <div className="mx-auto max-w-6xl px-4">
-      {/* SORT. Two directions and the finder's own order — the whole control,
-          because a sort menu with eight entries is a menu nobody reads.
-          Gated on the UNFILTERED count so the control does not appear and
-          disappear (moving the grid) as chips are tapped. */}
+      {/*
+        THE BAR. Two buttons, both opening a sheet — the same control the
+        category page and search use. It replaces the swipeable refine rail
+        plus the separate sort pill that used to sit here.
+
+        It is rendered at a FIXED HEIGHT in both states, which is a CLS fix as
+        much as a layout one: the old wrapping chip block was however many
+        rows tall the data made it, so it could not be reserved before the
+        query landed and it shoved the grid down when it arrived (measured:
+        CLS 0 -> 0.18 on /gift-finder?budget=20-50). The bar is always exactly
+        one 44px row, and the skeleton below reserves the identical box.
+      */}
       {results.isLoading ? (
-        <span className="skeleton mt-3 block h-11 w-full max-w-[240px] rounded-pill" />
-      ) : items.length > 1 ? (
-        <label className="relative mt-3 flex h-11 w-full max-w-[240px] items-center rounded-pill border border-line bg-surface">
-          <span className="sr-only">Sort gifts</span>
-          {/* The select fills the pill rather than sitting as a line of text
-              inside it, so the tap target is the control and not the label. */}
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            className="h-full w-full appearance-none rounded-pill bg-transparent pl-4 pr-9 text-caption font-medium text-ink outline-none"
-          >
-            {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>
-                Sort: {s.label}
-              </option>
-            ))}
-          </select>
-          <span aria-hidden className="pointer-events-none absolute right-4 text-[10px] text-muted">
-            ▾
-          </span>
-        </label>
+        <div className="mt-4 flex items-center gap-2" aria-hidden>
+          <span className="skeleton h-11 flex-1 rounded-pill" />
+          <span className="h-6 w-px shrink-0 bg-line" />
+          <span className="skeleton h-11 flex-1 rounded-pill" />
+        </div>
+      ) : (
+        <div className="mt-4">
+          <FilterBar
+            activeCount={refineCount}
+            sort={sort}
+            onOpenFilter={() => setFilterOpen(true)}
+            onOpenSort={() => setSortOpen(true)}
+          />
+        </div>
+      )}
+
+      {/* One chip row for both kinds of narrowing. The entry filters came
+          from the URL and clearing one re-runs the query; the refine filters
+          are in-memory. They look identical because to the person reading
+          them they mean the same thing — "this is what is narrowing it". */}
+      {!results.isLoading && (entryChips.length > 0 || refineChips.length > 0) ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {entryChips.map((c) => (
+            <RemovableChip key={`entry-${c.key}`} onRemove={() => onClear(c.key)}>
+              {c.label}
+            </RemovableChip>
+          ))}
+          {refineChips.map((c) => (
+            <RemovableChip
+              key={c.id}
+              onRemove={() => setFilters((f) => removeFilter(f, c.key, c.value))}
+            >
+              {c.label}
+            </RemovableChip>
+          ))}
+          {entryChips.length + refineChips.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => {
+                clearRefine();
+                entryChips.forEach((c) => onClear(c.key));
+              }}
+              className="tap-44 inline-flex h-[32px] items-center rounded-pill px-2 text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="mt-6">
@@ -594,6 +532,23 @@ function Results({
         </Link>
       </div>
       </div>
+
+      {/* Results span every category, so — unlike /category/:slug — this
+          panel does offer the Category group. Price is offered only when the
+          gifts in view actually straddle more than one band, so entering
+          from a budget chip does not get a group restating that budget. */}
+      <CategoryFilterPanel
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        rows={rows}
+        stores={partnerOptions}
+        categories={categoryOptions}
+        variants={variants.data}
+        filters={filters}
+        onApply={setFilters}
+      />
+
+      <SortSheet open={sortOpen} onClose={() => setSortOpen(false)} sort={sort} onChange={setSort} />
     </div>
   );
 }
