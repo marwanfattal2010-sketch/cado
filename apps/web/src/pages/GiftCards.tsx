@@ -32,7 +32,7 @@ export function GiftCards() {
           <p className="mt-1 text-body text-muted">
             Got a card or a link? Enter the code — it looks like XXXX-XXXX-XXXX — to add the balance.
           </p>
-          <span className="mt-4 inline-block text-body font-medium text-ribbon">Enter code →</span>
+          <span className="mt-4 inline-block text-body font-medium text-ink">Enter code →</span>
         </Link>
       </div>
     </div>

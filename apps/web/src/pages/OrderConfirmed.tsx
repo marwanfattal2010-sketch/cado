@@ -37,7 +37,7 @@ export function OrderConfirmed() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-10 text-center">
-      <RibbonBow className="mx-auto h-16 w-16 text-ribbon" />
+      <RibbonBow className="mx-auto h-16 w-16 text-ink" />
       <h1 className="mt-4 font-display text-h1">
         {recipient ? `On its way to ${recipient}` : "Order placed"}
       </h1>
@@ -48,7 +48,7 @@ export function OrderConfirmed() {
       <div className="mt-6 rounded-card bg-surface p-4 text-left shadow-rest">
         {STEPS.map((step, i) => (
           <div key={step} className="flex items-center gap-3 py-1.5">
-            <span className={`h-2.5 w-2.5 rounded-pill ${i === 0 ? "bg-ribbon" : "bg-surface-sunk"}`} />
+            <span className={`h-2.5 w-2.5 rounded-pill ${i === 0 ? "bg-primary" : "bg-surface-sunk"}`} />
             <span className={`text-body ${i === 0 ? "font-medium text-ink" : "text-muted"}`}>{step}</span>
           </div>
         ))}
@@ -88,7 +88,7 @@ export function OrderConfirmed() {
 
       <Link
         to="/orders"
-        className="mt-6 inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-ribbon text-body font-medium text-inverse"
+        className="mt-6 inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse"
       >
         Track this order
       </Link>

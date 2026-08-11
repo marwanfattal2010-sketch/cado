@@ -52,7 +52,7 @@ function OccasionRow({ o, onDelete }: { o: OccasionReminder; onDelete: () => voi
         </div>
         <span
           className={`shrink-0 rounded-pill px-2.5 py-1 text-caption font-medium ${
-            soon ? "bg-ribbon-tint text-ribbon" : "bg-surface-sunk text-muted"
+            soon ? "bg-primary-tint text-ink" : "bg-surface-sunk text-muted"
           }`}
         >
           {countdownLabel(days)}
@@ -65,7 +65,7 @@ function OccasionRow({ o, onDelete }: { o: OccasionReminder; onDelete: () => voi
         {soon ? (
           <Link
             to={`/gift-finder${recipient ? `?recipient=${recipient}` : ""}`}
-            className="inline-flex h-9 items-center rounded-pill bg-ribbon px-4 text-caption font-medium text-inverse"
+            className="inline-flex h-9 items-center rounded-pill bg-primary px-4 text-caption font-medium text-inverse"
           >
             Find a gift
           </Link>
@@ -118,7 +118,7 @@ export function Occasions() {
         <p className="mt-2 text-body text-muted">Log in to save the dates you don't want to miss.</p>
         <Link
           to="/login"
-          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse"
+          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
           Log in
         </Link>
@@ -197,7 +197,7 @@ export function Occasions() {
           </p>
           <button
             onClick={() => setOpen(true)}
-            className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
+            className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
           >
             Add your first date
           </button>
@@ -298,7 +298,7 @@ export function Occasions() {
           <button
             onClick={submit}
             disabled={addOccasion.isPending}
-            className="mt-1 inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-ribbon text-body font-medium text-inverse disabled:opacity-40"
+            className="mt-1 inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse disabled:opacity-40"
           >
             {addOccasion.isPending ? "Saving…" : "Save date"}
           </button>

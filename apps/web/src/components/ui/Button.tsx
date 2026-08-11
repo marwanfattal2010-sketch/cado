@@ -5,14 +5,15 @@ export type ButtonVariant = "primary" | "secondary" | "dark" | "ghost";
 export type ButtonSize = "md" | "lg";
 
 /**
- * Accent discipline lives here so it can't drift: ribbon is only ever the
- * primary action. Secondary/dark/ghost cover everything else.
+ * Accent discipline lives here so it can't drift. The primary action is a
+ * charcoal fill with cream text — never a coloured one. `dark` is now the
+ * same thing and is kept only so existing callers don't have to change.
  */
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-ribbon text-inverse hover:bg-ribbon-deep active:bg-ribbon-deep shadow-rest",
-  secondary: "bg-transparent text-ink ring-1 ring-line hover:bg-surface-sunk",
-  dark: "bg-ink text-inverse hover:opacity-90",
-  ghost: "bg-transparent text-ribbon hover:bg-ribbon-tint",
+  primary: "bg-primary text-inverse hover:bg-primary-deep active:bg-primary-deep shadow-rest",
+  secondary: "bg-surface text-ink ring-1 ring-line hover:bg-surface-sunk",
+  dark: "bg-primary text-inverse hover:bg-primary-deep",
+  ghost: "bg-transparent text-ink underline underline-offset-4 hover:bg-surface-sunk",
 };
 
 // 52px on primary actions per spec; md is for inline/secondary placements.
@@ -22,7 +23,7 @@ const SIZES: Record<ButtonSize, string> = {
 };
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-pill font-medium transition-all duration-fast ease disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97]";
+  "inline-flex items-center justify-center gap-2 rounded-pill font-medium transition-all duration-press ease-out disabled:opacity-40 disabled:pointer-events-none active:scale-[0.97]";
 
 type CommonProps = {
   variant?: ButtonVariant;

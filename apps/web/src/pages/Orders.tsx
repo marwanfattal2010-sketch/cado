@@ -70,7 +70,7 @@ export function Orders() {
           <p className="text-body text-muted">We couldn't load your orders just now.</p>
           <button
             onClick={() => orders.refetch()}
-            className="mt-4 min-h-[44px] px-4 text-body font-medium text-ribbon underline"
+            className="mt-4 min-h-[44px] px-4 text-body font-medium text-ink underline"
           >
             Try again
           </button>

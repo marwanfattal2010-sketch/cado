@@ -6,6 +6,7 @@ import { productImageUrl } from "../lib/images";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { Skeleton } from "../components/Skeleton";
+import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
 import { useToast, Chip, RibbonDivider } from "../components/ui";
 import { HeartIcon, ChevronLeftIcon } from "../components/Icons";
@@ -216,14 +217,25 @@ export function Product() {
               <span className="text-today">✓</span> Gift wrap — free, on every order
             </p>
 
-            <label className="mt-3 flex cursor-pointer items-center gap-2.5 text-body">
+            {/* "Say something with it" used to be a banner on the homepage,
+                a long way from anywhere you could act on it. It belongs
+                here, on the control that actually adds the note. */}
+            <label className="mt-3 flex min-h-[56px] cursor-pointer items-center gap-3 text-body">
               <input
                 type="checkbox"
                 checked={wantsNote}
                 onChange={(e) => setWantsNote(e.target.checked)}
-                className="h-4 w-4 accent-[color:var(--ribbon)]"
+                className="h-4 w-4 accent-[color:var(--primary)]"
               />
-              Add a handwritten note
+              <span className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">
+                <Img src="/misc/handwritten-note.jpg" className="h-full w-full object-cover" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-medium">Say something with it</span>
+                <span className="block text-caption text-muted">
+                  Add a handwritten note — free, tucked inside the wrap.
+                </span>
+              </span>
             </label>
 
             {wantsNote ? (
@@ -264,7 +276,7 @@ export function Product() {
                 type="checkbox"
                 checked={hidePrice}
                 onChange={(e) => setHidePrice(e.target.checked)}
-                className="h-4 w-4 accent-[color:var(--ribbon)]"
+                className="h-4 w-4 accent-[color:var(--primary)]"
               />
               Hide the price from them
             </label>
@@ -292,7 +304,7 @@ export function Product() {
                 </summary>
                 <p className="mt-2 text-body text-muted">
                   A verified CADO partner store.{" "}
-                  <Link to={`/store/${product.partner.id}`} className="tap-44 font-medium text-ribbon underline">
+                  <Link to={`/store/${product.partner.id}`} className="tap-44 font-medium text-ink underline">
                     See everything they sell
                   </Link>
                 </p>
@@ -318,7 +330,7 @@ export function Product() {
           <button
             onClick={addToCart}
             disabled={adding || !inStock}
-            className="inline-flex h-[52px] flex-1 items-center justify-center rounded-pill bg-ribbon text-body font-medium text-inverse transition-all duration-fast active:scale-[0.97] disabled:opacity-40"
+            className="inline-flex h-[52px] flex-1 items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-fast active:scale-[0.97] disabled:opacity-40"
           >
             {!inStock ? "Out of stock" : adding ? "Adding..." : "Add to cart"}
           </button>

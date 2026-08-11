@@ -13,12 +13,23 @@ export default {
         ink: "var(--ink)",
         muted: "var(--text-muted)",
         inverse: "var(--text-inverse)",
-        ribbon: {
-          DEFAULT: "var(--ribbon)",
-          deep: "var(--ribbon-deep)",
-          tint: "var(--ribbon-tint)",
+        // Charcoal. Primary buttons, selected chips/filters/tabs, cart badge.
+        primary: {
+          DEFAULT: "var(--primary)",
+          deep: "var(--primary-deep)",
+          tint: "var(--primary-tint)",
         },
-        gold: "var(--gold)",
+        // Retired name, kept so un-migrated classes render charcoal rather
+        // than reintroducing the old burgundy. Prefer `primary` in new code.
+        ribbon: {
+          DEFAULT: "var(--primary)",
+          deep: "var(--primary-deep)",
+          tint: "var(--primary-tint)",
+        },
+        gold: {
+          DEFAULT: "var(--gold)",
+          deep: "var(--gold-deep)",
+        },
         today: {
           DEFAULT: "var(--today)",
           tint: "var(--today-tint)",
@@ -75,6 +86,7 @@ export default {
         ease: "var(--ease)",
       },
       transitionDuration: {
+        press: "120ms",
         fast: "140ms",
         base: "240ms",
       },
@@ -96,8 +108,11 @@ export default {
           "0%": { backgroundPosition: "-400px 0" },
           "100%": { backgroundPosition: "400px 0" },
         },
+        // 200ms fade + a 6px slide. Deliberately ONE transform, applied to
+        // one wrapper, and removed the moment it finishes — see
+        // PageTransition.tsx for why leaving it on breaks sticky bars.
         "page-in": {
-          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "0%": { opacity: "0", transform: "translateY(6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         "fade-in": {
@@ -123,7 +138,7 @@ export default {
         "splash-fade": "splash-fade 1200ms ease-out both",
         bump: "bump 350ms ease-out",
         shimmer: "shimmer 1.4s ease-in-out infinite",
-        "page-in": "page-in 240ms var(--ease) both",
+        "page-in": "page-in 200ms var(--ease) both",
         "fade-in": "fade-in 300ms ease-out both",
         "sheet-up": "sheet-up 240ms var(--ease) both",
         "toast-in": "toast-in 240ms var(--ease) both",

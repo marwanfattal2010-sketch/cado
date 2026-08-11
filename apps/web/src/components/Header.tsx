@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
 import { useAuth } from "../lib/auth";
@@ -63,21 +63,69 @@ export function Header() {
   const relevant = onStorePage ? items.filter((i) => i.product?.partner?.id === storeId) : items;
   const count = relevant.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
 
+  /**
+   * Publish the header's real height as --header-h.
+   *
+   * Everything pinned below the header (the homepage search + category rail,
+   * the category page's rail) offsets by this variable. Hardcoding it is how
+   * the top of the search bar ended up hidden behind the header: the number
+   * in the stylesheet was 57px, the header was 61px on the homepage and 89px
+   * on inner pages, and nothing complained. Measuring means the two can
+   * never disagree again — including on a late font load or a wrapped
+   * "Deliver to" label.
+   */
+  const headerRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--header-h",
+        `${Math.round(el.getBoundingClientRect().height)}px`
+      );
+    // Measured synchronously in a layout effect — after the DOM is in place,
+    // before paint. Not in requestAnimationFrame: a frame callback never
+    // arrives in a backgrounded or headless tab, and this must be right on
+    // the very first render.
+    publish();
+    // ResizeObserver is the belt to the route-change braces: it catches a
+    // late font load or an orientation change. It is deliberately not the
+    // only mechanism — the effect re-runs on every navigation too, because
+    // a missed notification means a sticky bar sitting behind the header
+    // with nothing to indicate anything is wrong.
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pathname]);
+
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-line bg-canvas/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+      <header ref={headerRef} className="sticky top-0 z-20 border-b border-line bg-canvas/95 backdrop-blur">
+        {/* 68px = a 44px content row + 2 x 12px padding, and it is written
+            as the border-box total because Tailwind's preflight sets
+            box-sizing: border-box — a min-h-[44px] here quietly resolves to
+            a 44px OUTER box and does nothing. This keeps the header exactly
+            the same height with and without the back button, so --header-h
+            never jumps on navigation. */}
+        <div className="mx-auto flex min-h-[68px] max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
             {!isHome ? (
               <button
                 onClick={() => navigate(-1)}
                 aria-label="Go back"
-                className="tap-44 -ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-muted transition hover:bg-surface-sunk hover:text-ink"
+                /* h-11 = 44px. NOT h-8: this project's spacing scale maps 8
+                   to 64px, so h-8 w-8 built a 64px button that pushed the
+                   whole header from 61px to 89px on every inner page — and
+                   with it every sticky bar measured from the header. */
+                className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-muted transition hover:bg-surface-sunk hover:text-ink"
               >
                 <ChevronLeftIcon className="h-5 w-5" />
               </button>
             ) : null}
-            <Link to="/" className="flex shrink-0 items-center" aria-label="CADO home">
+            {/* .tap-44 rather than a taller logo: growing the mark itself
+                would push the whole header down. The overlay is a child, so
+                a tap anywhere in the 44px band still hits the link. */}
+            <Link to="/" className="tap-44 flex shrink-0 items-center" aria-label="CADO home">
               {/* h-[32px], not h-8: the project's spacing scale maps 8 to 64px. */}
               <BrandLogo variant="ink" className="h-[32px] w-auto" />
             </Link>
@@ -105,7 +153,7 @@ export function Header() {
               {count > 0 ? (
                 <span
                   key={count}
-                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-ribbon px-1 text-[10px] font-semibold text-inverse"
+                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-primary px-1 text-[10px] font-semibold text-inverse"
                 >
                   {count}
                 </span>
@@ -122,11 +170,11 @@ export function Header() {
               key={a}
               onClick={() => setArea(a)}
               className={`flex min-h-[52px] items-center justify-between rounded-card px-4 py-3.5 text-left text-body transition ${
-                a === area ? "bg-ribbon-tint font-medium text-ink" : "bg-surface-sunk text-ink hover:bg-line"
+                a === area ? "bg-primary-tint font-medium text-ink" : "bg-surface-sunk text-ink hover:bg-line"
               }`}
             >
               {a}
-              {a === area ? <span className="text-ribbon">✓</span> : null}
+              {a === area ? <span className="text-ink">✓</span> : null}
             </button>
           ))}
         </div>

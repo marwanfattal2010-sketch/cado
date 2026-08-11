@@ -125,7 +125,7 @@ export function Signup() {
 
       <p className="mt-6 text-body text-muted">
         Already have an account?{" "}
-        <Link to="/login" className="font-medium text-ribbon underline">
+        <Link to="/login" className="font-medium text-ink underline">
           Log in
         </Link>
       </p>

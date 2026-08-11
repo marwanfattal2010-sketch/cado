@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { curatedTitles } from "../lib/curation";
-import { BUDGETS, inBudgetRange } from "../lib/filters";
+import { budgetBySlug, inBudgetRange, occasionByValue } from "../lib/filters";
 
 const FIELDS =
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, product_images(storage_path, is_primary), partner:partners(id, name)";
+  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, created_at, product_images(storage_path, is_primary), partner:partners(id, name)";
 
 type Row = {
   id: string;
@@ -13,10 +13,25 @@ type Row = {
   [k: string]: unknown;
 };
 
-export type FinderResult = {
+export type GiftResult = {
   items: Row[];
-  /** How we got here, so the UI can be honest about a widened search. */
-  relaxed: null | "budget" | "occasion" | "staff-picks";
+  /**
+   * How honest the screen has to be about what it is showing.
+   *   null                — exactly what was asked for.
+   *   "occasion-thin"     — too few gifts for that occasion, so the occasion
+   *                         was dropped and other gifts for the same person
+   *                         are shown instead.
+   *   "occasion-untagged" — nothing in the catalogue carries that occasion
+   *                         tag at all yet.
+   *
+   * The budget is NEVER relaxed. Showing a $65 gift under a heading that
+   * says "Under $20" is exactly what teaches people not to trust a filter,
+   * so a thin band shows a thin grid and says why.
+   */
+  relaxed: null | "occasion-thin" | "occasion-untagged";
+  /** How many matched before the budget was applied — lets the empty state
+   *  say "there are 12 gifts for Mom, just none in this band". */
+  totalBeforeBudget: number;
 };
 
 async function fetchByTitles(titles: string[]) {
@@ -28,67 +43,65 @@ async function fetchByTitles(titles: string[]) {
   return (data ?? []).slice().sort((a, b) => (order.get(a.title) ?? 99) - (order.get(b.title) ?? 99));
 }
 
-function inBudget(items: Row[], budgetSlug?: string | null) {
-  const b = BUDGETS.find((x) => x.slug === budgetSlug);
-  if (!b) return items;
-  // Shared helper: upper bound exclusive, so a $50 gift is in one band only.
-  return items.filter((p) => inBudgetRange(Number(p.price), b));
-}
-
 async function fetchByTags(recipient?: string | null, occasion?: string | null) {
   let q = supabase.from("products").select(FIELDS).eq("is_active", true);
   if (recipient) q = q.contains("recipient_tags", [recipient]);
-  if (occasion && occasion !== "just-because") q = q.contains("occasion_tags", [occasion]);
-  const { data, error } = await q.order("price", { ascending: true }).limit(40);
+  if (occasion) q = q.contains("occasion_tags", [occasion]);
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(60);
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as unknown as Row[];
 }
 
 /**
- * Never returns an empty list. Ladder, in order:
- *   curated exact -> curated ignoring budget -> tag match -> tag match
- *   without occasion -> staff picks.
- * An empty gift finder is worse than a slightly wider one, so widening is
- * reported back to the UI rather than hidden.
+ * Backs every path into a gift grid: an occasion chip, a recipient card, a
+ * budget chip, and the two-step quiz. Any combination of the three filters
+ * is valid, including none at all — a "Skip" on step one has to land on
+ * real gifts, not a dead end.
  */
-export function useGiftFinderResults(opts: {
+export function useGiftResults(opts: {
   recipient?: string | null;
   occasion?: string | null;
   budget?: string | null;
 }) {
-  const { recipient, occasion, budget } = opts;
+  const { recipient = null, occasion = null, budget = null } = opts;
 
-  return useQuery<FinderResult>({
-    queryKey: ["gift-finder", recipient ?? null, occasion ?? null, budget ?? null],
-    enabled: !!recipient,
+  return useQuery<GiftResult>({
+    queryKey: ["gift-results", recipient, occasion, budget],
     queryFn: async () => {
-      const curated = curatedTitles(recipient, occasion);
+      const occ = occasionByValue(occasion);
+      // "just-because" means no occasion, and an occasion nothing is tagged
+      // with has nothing to filter on — neither should reach the database.
+      const occasionTag = occ?.tagged ? occ.value : null;
+      const band = budgetBySlug(budget);
 
-      if (curated) {
-        const all = await fetchByTitles(curated);
-        const exact = inBudget(all, budget);
-        if (exact.length >= 4) return { items: exact, relaxed: null };
-        if (all.length >= 4) return { items: all, relaxed: "budget" };
+      let base: Row[] = [];
+      let relaxed: GiftResult["relaxed"] = null;
+
+      // Hand-picked lists first, and only for combinations someone actually
+      // curated. Pure tag-filtering is what makes a gift finder feel like it
+      // doesn't understand you.
+      const curated = recipient && occasionTag ? curatedTitles(recipient, occasionTag) : null;
+      if (curated) base = (await fetchByTitles(curated)) as unknown as Row[];
+
+      if (base.length < 4) base = await fetchByTags(recipient, occasionTag);
+
+      // Too thin for that occasion — widen to the same person, and say so.
+      if (occasionTag && base.length < 4) {
+        const wider = await fetchByTags(recipient, null);
+        if (wider.length > base.length) {
+          base = wider;
+          relaxed = "occasion-thin";
+        }
       }
 
-      const tagged = await fetchByTags(recipient, occasion);
-      const taggedInBudget = inBudget(tagged as Row[], budget);
-      if (taggedInBudget.length >= 4) return { items: taggedInBudget.slice(0, 12), relaxed: curated ? null : null };
-      if (tagged.length >= 4) return { items: (tagged as Row[]).slice(0, 12), relaxed: "budget" };
+      // The occasion exists as a chip but nothing carries the tag yet.
+      if (occ && !occ.tagged && occ.value !== "just-because") relaxed = "occasion-untagged";
 
-      // Drop the occasion before dropping the person — who it's for matters more.
-      const recipientOnly = await fetchByTags(recipient, null);
-      const recipientInBudget = inBudget(recipientOnly as Row[], budget);
-      if (recipientInBudget.length >= 4) return { items: recipientInBudget.slice(0, 12), relaxed: "occasion" };
-      if (recipientOnly.length >= 4) return { items: (recipientOnly as Row[]).slice(0, 12), relaxed: "occasion" };
-
-      const { data } = await supabase
-        .from("products")
-        .select(FIELDS)
-        .eq("is_active", true)
-        .contains("tags", ["staff-pick"])
-        .limit(12);
-      return { items: (data ?? []) as Row[], relaxed: "staff-picks" };
+      return {
+        items: base.filter((p) => inBudgetRange(Number(p.price), band)),
+        relaxed,
+        totalBeforeBudget: base.length,
+      };
     },
   });
 }

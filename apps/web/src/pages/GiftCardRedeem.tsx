@@ -59,7 +59,7 @@ export function GiftCardRedeem() {
         </p>
         <Link
           to="/login"
-          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse"
+          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
           Log in
         </Link>
@@ -83,7 +83,7 @@ export function GiftCardRedeem() {
         </p>
         <Link
           to="/"
-          className="mt-8 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse"
+          className="mt-8 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
           Start shopping
         </Link>
@@ -112,7 +112,7 @@ export function GiftCardRedeem() {
       <button
         onClick={() => verify(code)}
         disabled={checking || !code.trim()}
-        className="mt-6 h-[52px] w-full rounded-pill bg-ribbon text-body font-medium text-inverse disabled:opacity-40"
+        className="mt-6 h-[52px] w-full rounded-pill bg-primary text-body font-medium text-inverse disabled:opacity-40"
       >
         {checking ? "Checking..." : "Redeem"}
       </button>

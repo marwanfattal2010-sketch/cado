@@ -94,7 +94,7 @@ export function Login() {
 
       <p className="mt-6 text-body text-muted">
         No account yet?{" "}
-        <Link to="/signup" className="font-medium text-ribbon underline">
+        <Link to="/signup" className="font-medium text-ink underline">
           Create one
         </Link>
       </p>

@@ -124,7 +124,7 @@ export function Checkout() {
         <p className="mt-2 text-body text-muted">Log in to place your order.</p>
         <Link
           to="/login"
-          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse"
+          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
           Log in
         </Link>
@@ -138,7 +138,7 @@ export function Checkout() {
         <h1 className="font-display text-h1">Your cart is empty</h1>
         <Link
           to="/gift-finder"
-          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse"
+          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
           Find a gift
         </Link>
@@ -219,7 +219,7 @@ export function Checkout() {
                 name="addr"
                 checked={addressSource === "recipient_whatsapp"}
                 onChange={() => setAddressSource("recipient_whatsapp")}
-                className="mt-1 h-4 w-4 accent-[color:var(--ribbon)]"
+                className="mt-1 h-4 w-4 accent-[color:var(--primary)]"
               />
               <span>
                 Ask them for their address by WhatsApp
@@ -235,7 +235,7 @@ export function Checkout() {
                 name="addr"
                 checked={addressSource === "buyer"}
                 onChange={() => setAddressSource("buyer")}
-                className="h-4 w-4 accent-[color:var(--ribbon)]"
+                className="h-4 w-4 accent-[color:var(--primary)]"
               />
               I'll enter the address myself
             </label>
@@ -245,7 +245,7 @@ export function Checkout() {
                 type="checkbox"
                 checked={hidePrice}
                 onChange={(e) => setHidePrice(e.target.checked)}
-                className="h-4 w-4 accent-[color:var(--ribbon)]"
+                className="h-4 w-4 accent-[color:var(--primary)]"
               />
               Hide the price from them
             </label>
@@ -335,7 +335,7 @@ export function Checkout() {
                 name="pay"
                 checked={payment === p.value}
                 onChange={() => setPayment(p.value)}
-                className="h-4 w-4 accent-[color:var(--ribbon)]"
+                className="h-4 w-4 accent-[color:var(--primary)]"
               />
               <span>
                 {p.label}
@@ -428,7 +428,7 @@ export function Checkout() {
           <button
             onClick={submit}
             disabled={placeOrder.isPending}
-            className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-ribbon text-body font-medium text-inverse transition-all duration-fast active:scale-[0.98] disabled:opacity-40"
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-fast active:scale-[0.98] disabled:opacity-40"
           >
             {placeOrder.isPending ? "Placing order…" : `Place order — $${total.toFixed(0)}`}
           </button>

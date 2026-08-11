@@ -1,96 +1,155 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useProductsByCategory } from "../hooks/useProducts";
-import { useStoresByCategory, useSubcategories } from "../hooks/useStores";
+import { useCategoryCounts, useProductsByCategory } from "../hooks/useProducts";
+import { useStoresByCategory } from "../hooks/useStores";
 import { useCategories } from "../hooks/useCategories";
+import { CategoryChips, tidyCategory } from "../components/CategoryChips";
 import { ProductCard } from "../components/ProductCard";
-import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
-import { Chip, RibbonEmpty } from "../components/ui";
-import { BUDGETS, inBudgetRange } from "../lib/filters";
+import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
+import { ProductGridSkeleton, ProductRowSkeleton, Skeleton } from "../components/Skeleton";
+import { Button, Chip, RemovableChip, RibbonEmpty, Sheet } from "../components/ui";
+import { AUDIENCES, BUDGETS, budgetBySlug, inBudgetRange } from "../lib/filters";
 
 type Sort = "popular" | "newest" | "price_asc" | "price_desc";
 
 const SORTS: { value: Sort; label: string }[] = [
   { value: "popular", label: "Popular" },
   { value: "newest", label: "Newest" },
-  { value: "price_asc", label: "Price ↑" },
-  { value: "price_desc", label: "Price ↓" },
+  { value: "price_asc", label: "Price: low to high" },
+  { value: "price_desc", label: "Price: high to low" },
 ];
 
-// Reuses the shared bands so this filter can't drift from the gift finder
-// or the homepage budget pills.
-const PRICE_RANGES = [{ slug: "any", label: "Any price", min: 0, max: null as number | null }, ...BUDGETS];
-
+/** Below these a section is hidden rather than shown half-empty. */
+const MIN_SECTION_ITEMS = 4;
+const MIN_SECTION_STORES = 2;
 const PAGE = 12;
+
+type Filters = {
+  audience: string | null;
+  budget: string | null;
+  storeId: string | null;
+  subcategory: string | null;
+  sameDayOnly: boolean;
+};
+
+const NO_FILTERS: Filters = {
+  audience: null,
+  budget: null,
+  storeId: null,
+  subcategory: null,
+  sameDayOnly: false,
+};
+
+type Row = NonNullable<ReturnType<typeof useProductsByCategory>["data"]>[number];
 
 export function Category() {
   const { slug } = useParams<{ slug: string }>();
-  const [subcategory, setSubcategory] = useState<string | undefined>(undefined);
+
+  /** Applied filters — what the grid is actually showing. */
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  /** Draft filters — what the sheet shows before Apply is tapped. */
+  const [draft, setDraft] = useState<Filters>(NO_FILTERS);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [sort, setSort] = useState<Sort>("popular");
-  const [priceIndex, setPriceIndex] = useState(0);
-  const [storeId, setStoreId] = useState<string>("");
   const [shown, setShown] = useState(PAGE);
 
   const categories = useCategories();
-  const subcategories = useSubcategories(slug);
+  const categoryCounts = useCategoryCounts();
   const stores = useStoresByCategory(slug);
-  const products = useProductsByCategory(slug, { subcategorySlug: subcategory, sort });
+  const products = useProductsByCategory(slug);
 
-  const categoryName =
-    categories.data?.find((c) => c.slug === slug)?.name ?? slug?.replace(/-/g, " ") ?? "";
+  const category = categories.data?.find((c) => c.slug === slug);
+  const categoryName = category ? tidyCategory(category.name) : (slug?.replace(/-/g, " ") ?? "");
 
-  const rows = useMemo(() => products.data ?? [], [products.data]);
+  const rows = useMemo(() => (products.data ?? []) as Row[], [products.data]);
 
-  const matches = (p: (typeof rows)[number], opts: { price?: number; store?: string }) => {
-    const i = opts.price ?? priceIndex;
-    if (i !== 0 && !inBudgetRange(p.price, PRICE_RANGES[i])) return false;
-    const s = opts.store ?? storeId;
-    if (s && p.partner?.id !== s) return false;
+  // Reset when the category changes — carrying "Lumière Fine Jewelry" over
+  // into Toys is how a page ends up mysteriously empty.
+  useEffect(() => {
+    setFilters(NO_FILTERS);
+    setDraft(NO_FILTERS);
+    setSort("popular");
+  }, [slug]);
+
+  /** One matcher, used for the grid and for every count in the sheet. */
+  const matches = (p: Row, f: Filters) => {
+    if (f.audience && !(p.recipient_tags as string[] | null)?.includes(f.audience)) return false;
+    if (f.budget && !inBudgetRange(Number(p.price), budgetBySlug(f.budget))) return false;
+    if (f.storeId && p.partner?.id !== f.storeId) return false;
+    if (f.subcategory && p.subcategory?.slug !== f.subcategory) return false;
+    // Same rule as the card badge: the store offers same-day AND there is
+    // stock. An unknown stock count never earns the promise.
+    if (f.sameDayOnly && !(p.same_day === true && (p.stock_quantity ?? 0) > 0)) return false;
     return true;
   };
 
-  // Price and store filter client-side: the query already caps the row set,
-  // so this avoids a refetch on every tweak and lets the counts below be
-  // exact rather than estimated.
-  const visible = useMemo(
-    () => rows.filter((p) => matches(p, {})),
+  const visible = useMemo(() => {
+    const sorted = rows.filter((p) => matches(p, filters));
+    switch (sort) {
+      case "price_asc":
+        sorted.sort((a, b) => Number(a.price) - Number(b.price));
+        break;
+      case "price_desc":
+        sorted.sort((a, b) => Number(b.price) - Number(a.price));
+        break;
+      case "newest":
+        sorted.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        break;
+      case "popular":
+        // Editorially flagged first, newest after. There is no sales or view
+        // data the storefront can read, so this is a curated order — and
+        // nothing on the page claims otherwise. No ranks, no "#1 seller".
+        sorted.sort(
+          (a, b) =>
+            Number(!!b.is_trending) - Number(!!a.is_trending) ||
+            String(b.created_at).localeCompare(String(a.created_at))
+        );
+        break;
+    }
+    return sorted;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, priceIndex, storeId]
-  );
+  }, [rows, filters, sort]);
 
   /**
-   * Counts are computed with the *other* filters still applied, so each
-   * number is what you'd actually get by tapping it. A count that ignores
-   * your current filters sends people into empty screens.
+   * Counts inside the sheet are computed with the *other* draft filters still
+   * applied, so each number is what you'd actually get by tapping it. A count
+   * that ignores your current selection sends people into empty screens.
    */
-  const priceCounts = useMemo(
-    () => PRICE_RANGES.map((_, i) => rows.filter((p) => matches(p, { price: i })).length),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, storeId]
-  );
-  const storeCounts = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const p of rows) {
-      if (!matches(p, { store: "" })) continue;
-      const id = p.partner?.id;
-      if (id) map.set(id, (map.get(id) ?? 0) + 1);
-    }
-    return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, priceIndex]);
+  const countWith = (patch: Partial<Filters>) =>
+    rows.filter((p) => matches(p, { ...draft, ...patch })).length;
 
-  const filtersActive = priceIndex !== 0 || storeId !== "" || subcategory !== undefined;
+  const subcategories = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of rows) if (p.subcategory?.slug) map.set(p.subcategory.slug, p.subcategory.name);
+    return [...map.entries()].map(([value, label]) => ({ value, label }));
+  }, [rows]);
 
-  const resetFilters = () => {
-    setPriceIndex(0);
-    setStoreId("");
-    setSubcategory(undefined);
+  const activeChips = useMemo(() => {
+    const out: { key: keyof Filters; label: string }[] = [];
+    if (filters.audience)
+      out.push({ key: "audience", label: AUDIENCES.find((a) => a.value === filters.audience)?.label ?? "" });
+    if (filters.budget) out.push({ key: "budget", label: budgetBySlug(filters.budget)?.label ?? "" });
+    if (filters.storeId)
+      out.push({ key: "storeId", label: stores.data?.find((s) => s.id === filters.storeId)?.name ?? "Store" });
+    if (filters.subcategory)
+      out.push({
+        key: "subcategory",
+        label: subcategories.find((s) => s.value === filters.subcategory)?.label ?? "",
+      });
+    if (filters.sameDayOnly) out.push({ key: "sameDayOnly", label: "Arrives today" });
+    return out;
+  }, [filters, stores.data, subcategories]);
+
+  const clearOne = (key: keyof Filters) => {
+    const next = { ...filters, [key]: key === "sameDayOnly" ? false : null } as Filters;
+    setFilters(next);
+    setDraft(next);
   };
 
-  // Reveal more as you reach the bottom, rather than making anyone hunt for
-  // a "load more" button with a thumb.
+  // Reveal more as you reach the bottom rather than making anyone hunt for a
+  // "load more" button with a thumb.
   const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => setShown(PAGE), [slug, subcategory, sort, priceIndex, storeId]);
+  useEffect(() => setShown(PAGE), [slug, filters, sort]);
   useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
@@ -104,18 +163,49 @@ export function Category() {
     return () => io.disconnect();
   }, [visible.length]);
 
+  /** A sibling category that actually has gifts in it. Pointing a thin shelf
+   *  at another empty shelf is worse than not pointing anywhere. */
+  const relatedCategory = useMemo(() => {
+    const counts = categoryCounts.data;
+    if (!counts || !categories.data) return null;
+    return (
+      categories.data
+        .filter((c) => c.slug !== slug && (counts.get(c.slug) ?? 0) >= MIN_SECTION_ITEMS)
+        .sort((a, b) => (counts.get(b.slug) ?? 0) - (counts.get(a.slug) ?? 0))[0] ?? null
+    );
+  }, [categoryCounts.data, categories.data, slug]);
+
+  const showHighlights = rows.length >= MIN_SECTION_ITEMS;
+  const showStores = (stores.data?.length ?? 0) >= MIN_SECTION_STORES;
+
+  /** Newest-first, and labelled as such. There is no order or view data the
+   *  storefront can read under RLS, so calling this "Most popular" would be
+   *  inventing a bestseller rank. */
+  const highlights = useMemo(
+    () => rows.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 10),
+    [rows]
+  );
+
+  const draftCount = rows.filter((p) => matches(p, draft)).length;
+
   return (
-    <div className="mx-auto max-w-6xl pb-12">
-      <div className="px-4 pt-6">
+    <div className="pb-12">
+      {/* The category rail stays pinned on every category page, so hopping
+          from Toys to Perfumes is one tap and never a trip home. */}
+      <div className="sticky top-[var(--header-h)] z-[15] border-b border-line bg-canvas/95 py-2.5 backdrop-blur">
+        <CategoryChips activeSlug={slug} />
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 pt-5">
         <nav className="flex items-center gap-1.5 text-caption text-muted">
           <Link to="/" className="tap-44 hover:text-ink">
             Home
           </Link>
-          <span>›</span>
-          <span className="capitalize">{categoryName}</span>
+          <span aria-hidden>›</span>
+          <span>{categoryName}</span>
         </nav>
 
-        <h1 className="mt-2 font-display text-h1 capitalize">{categoryName}</h1>
+        <h1 className="mt-2 font-display text-h1">{categoryName}</h1>
         {products.isLoading ? (
           <Skeleton className="mt-1.5 h-3 w-20" />
         ) : (
@@ -123,147 +213,330 @@ export function Category() {
             {visible.length} {visible.length === 1 ? "gift" : "gifts"}
           </p>
         )}
-      </div>
 
-      {subcategories.data && subcategories.data.length > 0 ? (
-        <div className="scroll-row mt-4 gap-2 px-4">
-          <Chip active={!subcategory} onClick={() => setSubcategory(undefined)}>
-            All
-          </Chip>
-          {subcategories.data.map((sub) => (
-            <Chip key={sub.id} active={subcategory === sub.slug} onClick={() => setSubcategory(sub.slug)}>
-              {sub.name}
-            </Chip>
-          ))}
-        </div>
-      ) : null}
-
-      {/* Sticky filter bar. top-[57px] clears the sticky header so the two
-          never double-stack. Chips apply instantly — no Apply button. */}
-      <div className="sticky top-[57px] z-10 mt-4 border-y border-line bg-canvas/95 backdrop-blur">
-        <div className="scroll-row gap-2 px-4 py-3">
-          {SORTS.map((s) => (
-            <Chip
-              key={s.value}
-              active={sort === s.value}
-              onClick={() => setSort(s.value)}
-              className="tap-44 !h-9 !px-3.5 !text-caption"
-            >
-              {s.label}
-            </Chip>
-          ))}
-          <span className="w-px shrink-0 self-stretch bg-line" />
-          {PRICE_RANGES.map((r, i) =>
-            // Hide bands that would land on an empty screen.
-            i === 0 || priceCounts[i] > 0 ? (
-              <Chip
-                key={r.slug}
-                active={priceIndex === i}
-                onClick={() => setPriceIndex(i)}
-                className="tap-44 !h-9 !px-3.5 !text-caption"
-              >
-                {r.label}
-                {i > 0 ? <span className="opacity-60"> {priceCounts[i]}</span> : null}
-              </Chip>
-            ) : null
-          )}
-          {stores.data && stores.data.length > 1 ? (
-            <>
-              <span className="w-px shrink-0 self-stretch bg-line" />
-              {stores.data
-                .filter((s) => (storeCounts.get(s.id) ?? 0) > 0)
-                .map((s) => (
-                  <Chip
-                    key={s.id}
-                    active={storeId === s.id}
-                    onClick={() => setStoreId(storeId === s.id ? "" : s.id)}
-                    className="tap-44 !h-9 !px-3.5 !text-caption"
-                  >
-                    {s.name}
-                    <span className="opacity-60"> {storeCounts.get(s.id)}</span>
-                  </Chip>
-                ))}
-            </>
-          ) : null}
-          {filtersActive ? (
-            <button
-              onClick={resetFilters}
-              className="shrink-0 px-2 text-caption font-medium text-muted underline"
-            >
-              Clear
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="px-4 pt-5">
-        {products.isLoading ? (
-          <ProductGridSkeleton count={8} />
-        ) : visible.length > 0 ? (
-          <>
-            <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
-              {visible.slice(0, shown).map((p) => (
-                <ProductCard key={p.id} {...p} />
-              ))}
-            </div>
-            <div ref={sentinel} className="h-8" />
-          </>
-        ) : (
-          <div className="py-14 text-center">
-            <RibbonEmpty className="mx-auto h-14 w-14" />
-            <p className="mt-3 font-display text-h2">Nothing here yet</p>
-            <p className="mx-auto mt-2 max-w-xs text-body text-muted">
-              {filtersActive
-                ? "No gifts match these filters. Try widening them."
-                : "We're still adding gifts to this category."}
-            </p>
-            {filtersActive ? (
-              <button
-                onClick={resetFilters}
-                className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
-              >
-                Clear filters
-              </button>
-            ) : (
-              <Link
-                to="/browse"
-                className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
-              >
-                Browse all categories
-              </Link>
-            )}
-          </div>
-        )}
-      </div>
-
-      {stores.data && stores.data.length > 0 ? (
-        <div className="mt-10 px-4">
-          <h2 className="mb-3 text-eyebrow uppercase text-muted">Stores in this category</h2>
-          <div className="flex flex-col gap-3">
-            {stores.data.map((store) => (
-              <Link
-                key={store.id}
-                to={`/store/${store.id}`}
-                className="group relative flex aspect-[16/9] flex-col justify-end overflow-hidden rounded-card bg-ink transition-transform duration-fast active:scale-[0.98]"
-              >
-                <img
-                  src={store.cover_image_url ?? `/categories/${slug}.jpg`}
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-                <div className="relative p-5">
-                  <p className="font-display text-h2 text-inverse">{store.name}</p>
-                  {store.description ? (
-                    <p className="mt-1 line-clamp-2 text-caption text-inverse/70">{store.description}</p>
-                  ) : null}
-                </div>
-              </Link>
+        {activeChips.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {activeChips.map((c) => (
+              <RemovableChip key={c.key} onRemove={() => clearOne(c.key)}>
+                {c.label}
+              </RemovableChip>
             ))}
           </div>
-        </div>
+        ) : null}
+      </div>
+
+      {/* 2 — HIGHLIGHTS. Only when there is enough here to fill a row. */}
+      {products.isLoading ? (
+        <section className="pt-6">
+          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">New in {categoryName}</h2>
+          <ProductRowSkeleton />
+        </section>
+      ) : showHighlights ? (
+        <section className="pt-6">
+          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">New in {categoryName}</h2>
+          <div className="scroll-row gap-3 px-4">
+            {highlights.map((p) => (
+              <div key={p.id} className="w-[42vw] shrink-0 sm:w-[190px]">
+                <ProductCard {...(p as Parameters<typeof ProductCard>[0])} />
+              </div>
+            ))}
+          </div>
+        </section>
       ) : null}
+
+      {/* 3 — STORES. Tapping one filters the grid below rather than
+          navigating away, so the comparison stays on one screen. */}
+      {stores.isLoading ? (
+        <section className="pt-7">
+          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
+          <div className="scroll-row gap-3 px-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <StoreCardSkeleton key={i} />
+            ))}
+          </div>
+        </section>
+      ) : showStores ? (
+        <section className="pt-7">
+          <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
+          <div className="scroll-row gap-3 px-4">
+            {stores.data?.map((store) => (
+              <button
+                key={store.id}
+                onClick={() => {
+                  const next = { ...filters, storeId: filters.storeId === store.id ? null : store.id };
+                  setFilters(next);
+                  setDraft(next);
+                  document
+                    .getElementById("category-grid")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                aria-pressed={filters.storeId === store.id}
+                className={`shrink-0 rounded-card ${
+                  filters.storeId === store.id ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas" : ""
+                }`}
+              >
+                {/* Non-linking variant on purpose: here the card filters the
+                    grid, and an <a> inside a <button> is invalid markup that
+                    swallows the click in some browsers. */}
+                <StoreCard store={store} interactive={false} />
+              </button>
+            ))}
+          </div>
+          <p className="mx-auto max-w-6xl px-4 pt-2 text-caption text-muted">
+            Tap a store to filter the gifts below.
+          </p>
+        </section>
+      ) : null}
+
+      {/* 4 — SORT + FILTER, then the grid. Sort is one dropdown, filters are
+          one sheet. Mixing them into a single chip row is what made the old
+          bar impossible to read at a glance. */}
+      <div id="category-grid" className="mx-auto max-w-6xl px-4 pt-7">
+        <div className="flex items-center gap-2">
+          <label className="relative flex h-11 flex-1 items-center rounded-pill border border-line bg-surface">
+            <span className="sr-only">Sort gifts</span>
+            {/* The select fills the whole pill rather than sitting as a 17px
+                line of text inside it — otherwise the actual tap target is
+                the text, not the control. */}
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+              className="h-full w-full appearance-none rounded-pill bg-transparent pl-4 pr-9 text-caption font-medium text-ink outline-none"
+            >
+              {SORTS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  Sort: {s.label}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden className="pointer-events-none absolute right-4 text-[10px] text-muted">
+              ▾
+            </span>
+          </label>
+
+          <button
+            onClick={() => {
+              setDraft(filters);
+              setSheetOpen(true);
+            }}
+            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-pill border border-line bg-surface px-5 text-caption font-medium text-ink transition-all duration-press ease-out active:scale-[0.97]"
+          >
+            Filters
+            {activeChips.length ? (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-pill bg-primary px-1.5 text-[11px] font-semibold text-inverse">
+                {activeChips.length}
+              </span>
+            ) : null}
+          </button>
+        </div>
+
+        <div className="pt-5">
+          {products.isLoading ? (
+            <ProductGridSkeleton count={8} />
+          ) : visible.length > 0 ? (
+            <>
+              <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
+                {visible.slice(0, shown).map((p) => (
+                  <ProductCard key={p.id} {...(p as Parameters<typeof ProductCard>[0])} />
+                ))}
+              </div>
+              <div ref={sentinel} className="h-8" />
+              {/* Thin, but real. Never padded out with repeats. */}
+              {visible.length < MIN_SECTION_ITEMS && activeChips.length === 0 ? (
+                <p className="pt-1 text-caption text-muted">
+                  More gifts arriving soon.
+                  {relatedCategory ? (
+                    <>
+                      {" "}
+                      In the meantime, try{" "}
+                      {/* .tap-44 because this is a short word inside a
+                          sentence — growing the link itself would break the
+                          line. Nothing tappable sits next to it, so the
+                          invisible overlay can't steal a neighbour's tap. */}
+                      <Link
+                        to={`/category/${relatedCategory.slug}`}
+                        className="tap-44 font-medium text-ink underline underline-offset-4"
+                      >
+                        {tidyCategory(relatedCategory.name)}
+                      </Link>
+                      .
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <div className="py-14 text-center">
+              <RibbonEmpty className="mx-auto h-14 w-14" />
+              <p className="mt-3 font-display text-h2">Nothing here yet</p>
+              <p className="mx-auto mt-2 max-w-xs text-body text-muted">
+                {activeChips.length
+                  ? "No gifts match these filters. Try widening them."
+                  : `We're still adding gifts to ${categoryName}.`}
+              </p>
+              {activeChips.length ? (
+                <Button
+                  className="mt-5"
+                  onClick={() => {
+                    setFilters(NO_FILTERS);
+                    setDraft(NO_FILTERS);
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : relatedCategory ? (
+                <Link
+                  to={`/category/${relatedCategory.slug}`}
+                  className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
+                >
+                  Browse {tidyCategory(relatedCategory.name)}
+                </Link>
+              ) : (
+                <Link
+                  to="/browse"
+                  className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
+                >
+                  Browse all categories
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Filters">
+        {/* "For" first and unmissable. Fashion and Shoes lean on it hardest,
+            but it stays inside the sheet rather than becoming a top tab —
+            CADO is gift-first, so who it's for is a filter, not the frame. */}
+        <FilterGroup label="For">
+          {AUDIENCES.map((a) => {
+            const n = countWith({ audience: a.value });
+            if (n === 0 && draft.audience !== a.value) return null;
+            return (
+              <Chip
+                key={a.value}
+                active={draft.audience === a.value}
+                onClick={() => setDraft({ ...draft, audience: draft.audience === a.value ? null : a.value })}
+                className="!h-10 !px-4 !text-caption"
+              >
+                {a.label}
+                <span className="opacity-60">{n}</span>
+              </Chip>
+            );
+          })}
+        </FilterGroup>
+
+        <FilterGroup label="Budget">
+          {BUDGETS.map((b) => {
+            const n = countWith({ budget: b.slug });
+            if (n === 0 && draft.budget !== b.slug) return null;
+            return (
+              <Chip
+                key={b.slug}
+                active={draft.budget === b.slug}
+                onClick={() => setDraft({ ...draft, budget: draft.budget === b.slug ? null : b.slug })}
+                className="!h-10 !px-4 !text-caption"
+              >
+                {b.label}
+                <span className="opacity-60">{n}</span>
+              </Chip>
+            );
+          })}
+        </FilterGroup>
+
+        {subcategories.length > 1 ? (
+          <FilterGroup label="Type">
+            {subcategories.map((s) => {
+              const n = countWith({ subcategory: s.value });
+              if (n === 0 && draft.subcategory !== s.value) return null;
+              return (
+                <Chip
+                  key={s.value}
+                  active={draft.subcategory === s.value}
+                  onClick={() =>
+                    setDraft({ ...draft, subcategory: draft.subcategory === s.value ? null : s.value })
+                  }
+                  className="!h-10 !px-4 !text-caption"
+                >
+                  {s.label}
+                  <span className="opacity-60">{n}</span>
+                </Chip>
+              );
+            })}
+          </FilterGroup>
+        ) : null}
+
+        {(stores.data?.length ?? 0) > 1 ? (
+          <FilterGroup label="Store">
+            {stores.data?.map((s) => {
+              const n = countWith({ storeId: s.id });
+              if (n === 0 && draft.storeId !== s.id) return null;
+              return (
+                <Chip
+                  key={s.id}
+                  active={draft.storeId === s.id}
+                  onClick={() => setDraft({ ...draft, storeId: draft.storeId === s.id ? null : s.id })}
+                  className="!h-10 !px-4 !text-caption"
+                >
+                  {s.name}
+                  <span className="opacity-60">{n}</span>
+                </Chip>
+              );
+            })}
+          </FilterGroup>
+        ) : null}
+
+        <div className="mt-5 flex min-h-[52px] items-center justify-between gap-4 border-t border-line pt-4">
+          <span className="text-body font-medium">
+            Arrives today only
+            <span className="mt-0.5 block text-caption font-normal text-muted">
+              In stock and out for same-day delivery.
+            </span>
+          </span>
+          <button
+            role="switch"
+            aria-checked={draft.sameDayOnly}
+            aria-label="Arrives today only"
+            onClick={() => setDraft({ ...draft, sameDayOnly: !draft.sameDayOnly })}
+            /* Explicit pixels: this project's spacing scale maps 8 to 64px
+               and 6 to 32px, so h-8/h-6 would build a switch twice the
+               intended size. */
+            className={`relative h-[32px] w-[52px] shrink-0 rounded-pill transition-colors ${
+              draft.sameDayOnly ? "bg-primary" : "bg-surface-sunk"
+            }`}
+          >
+            <span
+              className={`absolute top-1 h-[24px] w-[24px] rounded-pill bg-surface shadow-rest transition-all ${
+                draft.sameDayOnly ? "left-[24px]" : "left-1"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="mt-5 flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={() => setDraft(NO_FILTERS)}>
+            Clear all
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() => {
+              setFilters(draft);
+              setSheetOpen(false);
+            }}
+          >
+            Show {draftCount}
+          </Button>
+        </div>
+      </Sheet>
+    </div>
+  );
+}
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-4 first:mt-1">
+      <p className="text-eyebrow uppercase text-muted">{label}</p>
+      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
     </div>
   );
 }

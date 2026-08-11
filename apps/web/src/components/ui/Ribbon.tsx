@@ -10,7 +10,7 @@ export function RibbonLoader({ className = "h-10 w-10" }: { className?: string }
     <svg className={className} viewBox="0 0 64 64" fill="none" role="status" aria-label="Loading">
       <path
         d="M32 40C32 40 18 30 18 22a7 7 0 0 1 14-3 7 7 0 0 1 14 3c0 8-14 18-14 18Z"
-        stroke="var(--ribbon)"
+        stroke="var(--primary)"
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -18,7 +18,7 @@ export function RibbonLoader({ className = "h-10 w-10" }: { className?: string }
         className="animate-draw-ribbon"
         style={{ animationIterationCount: "infinite" }}
       />
-      <path d="M32 40v14" stroke="var(--ribbon)" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
+      <path d="M32 40v14" stroke="var(--primary)" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
     </svg>
   );
 }
@@ -29,7 +29,7 @@ export function RibbonBow({ className = "h-16 w-16" }: { className?: string }) {
     <svg className={className} viewBox="0 0 64 64" fill="none" aria-hidden>
       <path
         d="M32 34C32 34 14 26 14 18a6 6 0 0 1 12-2c2 2 6 8 6 8s4-6 6-8a6 6 0 0 1 12 2c0 8-18 16-18 16Z"
-        stroke="var(--ribbon)"
+        stroke="var(--gold)"
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -38,14 +38,14 @@ export function RibbonBow({ className = "h-16 w-16" }: { className?: string }) {
       />
       <path
         d="M26 38l-6 16M38 38l6 16"
-        stroke="var(--ribbon)"
+        stroke="var(--gold)"
         strokeWidth="3"
         strokeLinecap="round"
         strokeDasharray="60"
         className="animate-tie-bow"
         style={{ animationDelay: "200ms" }}
       />
-      <circle cx="32" cy="34" r="3" fill="var(--gold)" />
+      <circle cx="32" cy="34" r="3" fill="var(--primary)" />
     </svg>
   );
 }

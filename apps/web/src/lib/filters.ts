@@ -1,7 +1,8 @@
 /**
- * Single source of truth for the budget bands and recipient options used by
- * the homepage shortcuts and the gift finder. Both read from here so the
- * labels, price bands, and URL slugs can never drift apart.
+ * Single source of truth for the budget bands, recipients and occasions
+ * used by the homepage shortcuts, the category filter sheet and the gift
+ * finder. Everything reads from here so labels, price bands and URL slugs
+ * can never drift apart between screens.
  */
 
 export type Budget = {
@@ -11,17 +12,29 @@ export type Budget = {
   max: number | null;
 };
 
+/**
+ * Four bands, everywhere. The homepage chips, the filter sheet and the quiz
+ * all render this exact array — if a fifth band ever appears here it appears
+ * in all three at once, which is the point.
+ */
 export const BUDGETS: Budget[] = [
   { slug: "under-20", label: "Under $20", min: 0, max: 20 },
   { slug: "20-50", label: "$20 – $50", min: 20, max: 50 },
   { slug: "50-100", label: "$50 – $100", min: 50, max: 100 },
-  { slug: "100-200", label: "$100 – $200", min: 100, max: 200 },
-  { slug: "200-plus", label: "$200+", min: 200, max: null },
+  { slug: "100-plus", label: "$100+", min: 100, max: null },
 ];
 
-export function budgetBySlug(slug: string | null): Budget | null {
+/** The old five-band scheme split $100+ in two. Links that were already
+ *  shared (or bookmarked) still have to land somewhere sensible. */
+const LEGACY_BUDGET_SLUGS: Record<string, string> = {
+  "100-200": "100-plus",
+  "200-plus": "100-plus",
+};
+
+export function budgetBySlug(slug: string | null | undefined): Budget | null {
   if (!slug) return null;
-  return BUDGETS.find((b) => b.slug === slug) ?? null;
+  const resolved = LEGACY_BUDGET_SLUGS[slug] ?? slug;
+  return BUDGETS.find((b) => b.slug === resolved) ?? null;
 }
 
 /**
@@ -47,8 +60,9 @@ export type Recipient = {
 };
 
 /**
- * Every entry maps to a recipient_tag that actually exists on products —
- * a card that leads to a guaranteed-empty result is worse than no card.
+ * The photo row on the homepage. Every entry maps to a recipient_tag that
+ * actually exists on products — a card that leads to a guaranteed-empty
+ * result is worse than no card.
  */
 export const RECIPIENTS: Recipient[] = [
   { value: "her", label: "For Her", img: "/recipients/for-her.jpg" },
@@ -60,28 +74,73 @@ export const RECIPIENTS: Recipient[] = [
   { value: "child", label: "For Kids", img: "/recipients/for-kids.jpg" },
 ];
 
-export function recipientByValue(value: string | null): Recipient | null {
+export function recipientByValue(value: string | null | undefined): Recipient | null {
   if (!value) return null;
   return RECIPIENTS.find((r) => r.value === value) ?? null;
 }
 
-export type Occasion = {
-  /** Matches products.occasion_tags where one exists; "just-because" and
-   *  "sorry" have no tag yet and fall through to recipient+budget only. */
-  value: string;
-  label: string;
-};
-
-export const OCCASIONS: Occasion[] = [
-  { value: "birthday", label: "Birthday" },
-  { value: "graduation", label: "Congratulations" },
-  { value: "housewarming", label: "Visiting them" },
-  { value: "anniversary", label: "Anniversary" },
-  { value: "newborn", label: "New baby" },
-  { value: "just-because", label: "Just because" },
+/**
+ * Step 1 of the quiz. Six plain chips, no photos: at this point the person
+ * has already said they don't know what to get, so the screen should be a
+ * decision, not a mood board.
+ *
+ * `null` is "Someone else" — a real answer that applies no recipient filter
+ * rather than a dead end.
+ */
+export const QUIZ_RECIPIENTS: { value: string | null; label: string }[] = [
+  { value: "mother", label: "Mom" },
+  { value: "father", label: "Dad" },
+  { value: "partner", label: "Partner" },
+  { value: "friend", label: "Friend" },
+  { value: "child", label: "Kids" },
+  { value: null, label: "Someone else" },
 ];
 
-export function occasionByValue(value: string | null): Occasion | null {
+/** Label for a recipient slug, including the quiz-only ones. */
+export function recipientLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return (
+    RECIPIENTS.find((r) => r.value === value)?.label ??
+    QUIZ_RECIPIENTS.find((r) => r.value === value)?.label ??
+    null
+  );
+}
+
+export type Occasion = {
+  /** Matches products.occasion_tags where one exists. */
+  value: string;
+  label: string;
+  /**
+   * False when no product in the catalogue carries this tag yet. The chip
+   * still exists — it is navigation people look for — but the results screen
+   * uses this to say plainly that there is nothing tagged for it yet instead
+   * of quietly showing unrelated gifts as if they matched.
+   *
+   * "just-because" is deliberately false too: it means "no occasion", so it
+   * should show everything rather than filter to a tag.
+   */
+  tagged: boolean;
+};
+
+/** Birthday first — it is the flagship occasion by a wide margin. */
+export const OCCASIONS: Occasion[] = [
+  { value: "birthday", label: "Birthday", tagged: true },
+  { value: "anniversary", label: "Anniversary", tagged: true },
+  { value: "get-well", label: "Get Well", tagged: false },
+  { value: "graduation", label: "Graduation", tagged: true },
+  { value: "newborn", label: "New Baby", tagged: true },
+  { value: "just-because", label: "Just Because", tagged: false },
+];
+
+export function occasionByValue(value: string | null | undefined): Occasion | null {
   if (!value) return null;
   return OCCASIONS.find((o) => o.value === value) ?? null;
 }
+
+/** The three "For" audiences offered inside the category filter sheet.
+ *  Fashion and Shoes lean on this hardest, but it applies everywhere. */
+export const AUDIENCES: { value: string; label: string }[] = [
+  { value: "her", label: "For Her" },
+  { value: "him", label: "For Him" },
+  { value: "child", label: "For Kids" },
+];

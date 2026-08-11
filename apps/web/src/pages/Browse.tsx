@@ -34,7 +34,7 @@ export function Browse() {
             <p className="text-body text-muted">Nothing matches “{query}” yet.</p>
             <p className="mt-2 text-body text-muted">
               Try a category below, or let the{" "}
-              <Link to="/gift-finder" className="font-medium text-ribbon underline">
+              <Link to="/gift-finder" className="font-medium text-ink underline">
                 gift finder
               </Link>{" "}
               pick for you.

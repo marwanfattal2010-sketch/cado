@@ -69,55 +69,70 @@ export function useFeaturedProducts() {
   });
 }
 
-/** Shared with the hook below and with hover-prefetching, so both always
- * agree on exactly what a "category products" query means. */
-export function categoryProductsQuery(
-  categorySlug: string,
-  opts?: { subcategorySlug?: string; sort?: "price_asc" | "price_desc" | "newest" | "popular" }
-) {
+/**
+ * Shared with the hook below and with the category rail's prefetching, so
+ * both always agree on exactly what a "category products" query means.
+ *
+ * One query per category, ordered newest-first, capped at 100 — sorting and
+ * every filter happen client-side on top of this. That is deliberate: it
+ * means changing the sort or ticking a filter is instant with no refetch and
+ * no loading flash, and it lets the filter sheet show exact counts instead
+ * of estimates.
+ */
+export function categoryProductsQuery(categorySlug: string) {
   return {
-    queryKey: ["products", "category", categorySlug, opts?.subcategorySlug, opts?.sort],
+    queryKey: ["products", "category", categorySlug],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("products")
         .select(
           // same_day + stock_quantity ride along so the card's delivery and
           // stock badges work here too. Without them the same product showed
           // "Today" on the homepage and nothing on the category page.
-          "id, title, price, compare_at_price, currency, created_at, is_trending, same_day, stock_quantity, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(slug), product_images(storage_path, is_primary)"
+          // recipient_tags backs the For Her/Him/Kids filter.
+          "id, title, price, compare_at_price, currency, created_at, is_trending, same_day, stock_quantity, recipient_tags, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(id, name, slug), product_images(storage_path, is_primary)"
         )
         .eq("is_active", true)
-        .eq("categories.slug", categorySlug);
-      if (opts?.subcategorySlug) {
-        query = query.eq("subcategories.slug", opts.subcategorySlug);
-      }
-      switch (opts?.sort) {
-        case "price_asc":
-          query = query.order("price", { ascending: true });
-          break;
-        case "price_desc":
-          query = query.order("price", { ascending: false });
-          break;
-        case "popular":
-          query = query.order("is_trending", { ascending: false }).order("created_at", { ascending: false });
-          break;
-        default:
-          query = query.order("created_at", { ascending: false });
-      }
-      const { data, error } = await query.limit(100);
+        .eq("categories.slug", categorySlug)
+        .order("created_at", { ascending: false })
+        .limit(100);
       if (error) throw error;
       return data;
     },
   };
 }
 
-export function useProductsByCategory(
-  categorySlug: string | undefined,
-  opts?: { subcategorySlug?: string; sort?: "price_asc" | "price_desc" | "newest" | "popular" }
-) {
+export function useProductsByCategory(categorySlug: string | undefined) {
   return useQuery({
-    ...categoryProductsQuery(categorySlug ?? "", opts),
+    ...categoryProductsQuery(categorySlug ?? ""),
     enabled: !!categorySlug,
+  });
+}
+
+/**
+ * How many active gifts sit in each category. One small query over the whole
+ * catalogue, used to point a thin category at a sibling that actually has
+ * something in it — a "try this instead" link to another empty shelf is
+ * worse than no link.
+ */
+export function useCategoryCounts() {
+  return useQuery({
+    queryKey: ["products", "category-counts"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("category:categories(slug)")
+        .eq("is_active", true)
+        .limit(1000);
+      if (error) throw error;
+      const counts = new Map<string, number>();
+      for (const row of data ?? []) {
+        const slug = (row as { category?: { slug?: string } | null }).category?.slug;
+        if (slug) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+      }
+      return counts;
+    },
   });
 }
 

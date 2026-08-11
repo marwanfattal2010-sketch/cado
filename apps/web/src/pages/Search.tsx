@@ -80,8 +80,10 @@ export function Search() {
   const TabButton = ({ value, label, count }: { value: Tab; label: string; count: number }) => (
     <button
       onClick={() => setTab(value)}
-      className={`inline-flex h-9 items-center gap-1.5 rounded-pill px-4 text-caption font-medium transition-all duration-fast active:scale-[0.96] ${
-        tab === value ? "bg-ribbon text-inverse" : "bg-surface-sunk text-ink"
+      /* Same two states as every chip on the site: charcoal fill when
+         selected, white with a hairline when not. */
+      className={`tap-44 inline-flex h-9 items-center gap-1.5 rounded-pill border px-4 text-caption font-medium transition-all duration-press ease-out active:scale-[0.97] ${
+        tab === value ? "border-primary bg-primary text-inverse" : "border-line bg-surface text-ink"
       }`}
     >
       {label}
@@ -207,7 +209,7 @@ function EmptyResult({ query, kind }: { query: string; kind: "gifts" | "stores" 
       </p>
       <Link
         to="/gift-finder"
-        className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-7 text-body font-medium text-inverse"
+        className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
       >
         Find a gift
       </Link>

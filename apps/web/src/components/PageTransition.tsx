@@ -17,8 +17,8 @@ export function PageTransition({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setAnimating(true);
-    // Slightly longer than the 240ms animation so it can't cut off early.
-    const t = setTimeout(() => setAnimating(false), 320);
+    // Slightly longer than the 200ms animation so it can't cut off early.
+    const t = setTimeout(() => setAnimating(false), 260);
     return () => clearTimeout(t);
   }, [location.pathname]);
 

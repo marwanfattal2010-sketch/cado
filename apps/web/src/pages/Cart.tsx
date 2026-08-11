@@ -56,7 +56,7 @@ export function Cart() {
         <p className="mt-2 text-body text-muted">Log in to see your cart.</p>
         <Link
           to="/login"
-          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse"
+          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
           Log in
         </Link>
@@ -74,7 +74,7 @@ export function Cart() {
         <p className="mt-2 text-body text-muted">Tell us who it's for and we'll narrow it down.</p>
         <Link
           to="/gift-finder"
-          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse"
+          className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
           Find a gift
         </Link>
@@ -184,7 +184,7 @@ export function Cart() {
         <div className="mx-auto max-w-2xl">
           <button
             onClick={() => navigate("/checkout")}
-            className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-ribbon text-body font-medium text-inverse transition-all duration-fast active:scale-[0.98]"
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-fast active:scale-[0.98]"
           >
             Checkout — ${(subtotal + DELIVERY_FEE).toFixed(0)}
           </button>
