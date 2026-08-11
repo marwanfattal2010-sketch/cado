@@ -7,16 +7,24 @@ export function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`skeleton rounded-card ${className}`} />;
 }
 
-/** Matches the ProductCard grid exactly — image, store, name, price. */
-export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
+/** Matches the ProductCard grid exactly — image, store, name, price.
+ *  `compact` mirrors ProductCard's compact spacing, so the trending grid
+ *  reserves the height it is about to need and nothing moves on swap. */
+export function ProductGridSkeleton({
+  count = 8,
+  compact = false,
+}: {
+  count?: number;
+  compact?: boolean;
+}) {
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+    <div className={`grid grid-cols-2 md:grid-cols-4 ${compact ? "gap-x-3 gap-y-4" : "gap-3"}`}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i}>
           <Skeleton className="aspect-square w-full" />
-          <Skeleton className="mt-2.5 h-3 w-2/5" />
+          <Skeleton className={`${compact ? "mt-1.5" : "mt-2.5"} h-3 w-2/5`} />
           <Skeleton className="mt-2 h-4 w-4/5" />
-          <Skeleton className="mt-2 h-4 w-1/3" />
+          <Skeleton className={`${compact ? "mt-1.5" : "mt-2"} h-4 w-1/3`} />
         </div>
       ))}
     </div>

@@ -15,6 +15,13 @@ type ProductCardProps = {
   stock_quantity?: number | null;
   product_images?: { storage_path: string; is_primary: boolean }[] | null;
   partner?: { name: string } | null;
+  /**
+   * Tighter vertical rhythm under the photo, for dense grids like Trending.
+   * Spacing only — the type tokens, the photo ratio and every badge stay
+   * identical, so a product reads the same wherever it appears and nobody
+   * has to invent a font size that isn't in the scale.
+   */
+  compact?: boolean;
 };
 
 export function ProductCard({
@@ -26,6 +33,7 @@ export function ProductCard({
   stock_quantity,
   product_images,
   partner,
+  compact = false,
 }: ProductCardProps) {
   const uri = primaryImage(product_images);
   const favoriteIds = useFavoriteIds();
@@ -95,9 +103,13 @@ export function ProductCard({
 
       {/* Store first — it's the trust signal, and it lets the product name
           take two lines without the card growing unpredictably. */}
-      {partner?.name ? <p className="mt-2.5 truncate text-store text-muted">{partner.name}</p> : null}
+      {partner?.name ? (
+        <p className={`${compact ? "mt-1.5" : "mt-2.5"} truncate text-store text-muted`}>
+          {partner.name}
+        </p>
+      ) : null}
       <p className="mt-0.5 line-clamp-2 text-product-name leading-snug">{title}</p>
-      <div className="mt-1 flex items-baseline gap-2">
+      <div className={`${compact ? "mt-0.5" : "mt-1"} flex items-baseline gap-2`}>
         <span className="text-price">${Number(price).toFixed(0)}</span>
         {onSale ? (
           <span className="text-caption text-muted line-through">${Number(compare_at_price).toFixed(0)}</span>

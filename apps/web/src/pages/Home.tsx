@@ -10,7 +10,7 @@ import { HeroCarousel } from "../components/HeroCarousel";
 import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
 import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
-import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
+import { ProductGridSkeleton } from "../components/Skeleton";
 import { SearchIcon, GiftIcon, WrapIcon, ShieldCheckIcon, WalletIcon, TruckIcon } from "../components/Icons";
 import { ButtonLink, ChipLink } from "../components/ui";
 import { BUDGETS, OCCASIONS, RECIPIENTS } from "../lib/filters";
@@ -22,6 +22,15 @@ import { BENEFITS, PARTNER_EMAIL, PARTNER_WHATSAPP_NUMBER } from "./Partners";
  * render.
  */
 const MIN_SECTION_ITEMS = 4;
+
+/**
+ * Trending is a 2-column grid, 4 rows. Eight is what the seeded catalogue
+ * actually has tagged `trending`; if that ever drops the grid gets shorter
+ * rather than padded, because a repeated or invented card is a lie about
+ * what's on the site. Below MIN_SECTION_ITEMS the whole section hides.
+ */
+const TRENDING_ROWS = 4;
+const TRENDING_MAX = TRENDING_ROWS * 2;
 
 /** Long enough to read as a deliberate swap, short enough that it never
  *  feels like waiting. Matched by the inline transition duration below. */
@@ -76,7 +85,11 @@ function PhotoCard({ to, img, label }: { to: string; img: string; label: string 
   return (
     <Link
       to={to}
-      className="relative flex h-[180px] w-[140px] shrink-0 items-end overflow-hidden rounded-card bg-surface-sunk p-3"
+      /* aspect-[7/9] on a 140px card is the same 140x180 box the fixed height
+         gave, but expressed as a ratio: the slot exists at layout time, before
+         the photo has a single byte, so the rail never reflows. The sunk tint
+         is the placeholder that shows through until it does. */
+      className="relative flex aspect-[7/9] w-[140px] shrink-0 items-end overflow-hidden rounded-card bg-surface-sunk p-3"
     >
       <Img src={img} className="absolute inset-0 h-full w-full object-cover" />
       {/* black/… works where a token/… would not: `black` is a real hex in
@@ -89,32 +102,42 @@ function PhotoCard({ to, img, label }: { to: string; img: string; label: string 
   );
 }
 
-/** One row = one filter over the product table, so a product always shows
- *  the same price wherever it appears. Hidden entirely below the minimum. */
-function ProductRow({
-  title,
-  to,
+/**
+ * Trending, as a vertical 2-column grid instead of a swipe strip.
+ *
+ * A carousel shows three-and-a-bit cards and hides the rest behind a gesture
+ * a lot of people never make; eight cards stacked in four rows are all
+ * visible on the way down the page, which is the direction someone is
+ * already moving. "See all" still goes to the full list.
+ *
+ * `.slice` never pads. Fewer than TRENDING_MAX real trending products means
+ * fewer rows, and fewer than MIN_SECTION_ITEMS means no section.
+ */
+function TrendingGrid({
   query,
 }: {
-  title: string;
-  to: string;
   query: { data?: Parameters<typeof ProductCard>[0][]; isLoading: boolean };
 }) {
-  if (!query.isLoading && (query.data?.length ?? 0) < MIN_SECTION_ITEMS) return null;
+  const items = query.data?.slice(0, TRENDING_MAX) ?? [];
+  if (!query.isLoading && items.length < MIN_SECTION_ITEMS) return null;
+
   return (
     <section className="pt-7">
-      <SectionHead title={title} to={to} />
-      {query.isLoading ? (
-        <ProductRowSkeleton />
-      ) : (
-        <div className="scroll-row gap-3 px-4">
-          {query.data?.map((p) => (
-            <div key={p.id} className="w-[42vw] shrink-0 sm:w-[190px]">
-              <ProductCard {...p} />
-            </div>
-          ))}
-        </div>
-      )}
+      <SectionHead title="Trending this week" to="/gift-finder?skip=1" />
+      <div className="mx-auto max-w-6xl px-4">
+        {query.isLoading ? (
+          <ProductGridSkeleton count={TRENDING_MAX} compact />
+        ) : (
+          /* gap-y a touch larger than gap-x: rows need to separate from each
+             other vertically or the four of them read as one grey block, but
+             the columns want to stay tight so the photos dominate. */
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4 md:grid-cols-4">
+            {items.map((p) => (
+              <ProductCard key={p.id} {...p} compact />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -310,10 +333,16 @@ export function Home() {
           )}
         </div>
       ) : (
-        /* The cross-fade wrapper. Opacity only — see selectCategory. */
+        /* The cross-fade wrapper. Opacity only — see selectCategory.
+           min-h keeps the body at least a screen tall through the swap, so a
+           thin category (two products) can't collapse the page shorter than
+           the viewport, drag the scroll position with it and flash the footer
+           halfway up the screen on the way through. */
         <div
           style={{ transitionDuration: `${SWAP_MS}ms` }}
-          className={`transition-opacity ease-out ${swapping ? "opacity-0" : "opacity-100"}`}
+          className={`min-h-[calc(100vh-var(--header-h))] transition-opacity ease-out ${
+            swapping ? "opacity-0" : "opacity-100"
+          }`}
         >
           {activeSlug ? (
             <CategoryInline browse={browse} />
@@ -412,12 +441,13 @@ export function Home() {
                 </div>
               </section>
 
-              {/* 10 — TRENDING. Hides itself if there aren't enough real
+              {/* 10 — TRENDING. A 2-column grid, not a strip: see
+                  TrendingGrid. Hides itself if there aren't enough real
                   ones. "See all" goes to the unfiltered gift grid, not to
                   /browse — /browse is the category index, and landing on a
                   wall of categories after tapping "see all gifts" is a dead
                   end. */}
-              <ProductRow title="Trending this week" to="/gift-finder?skip=1" query={trending} />
+              <TrendingGrid query={trending} />
 
               {/* 11 — HOW CADO WORKS. One compact strip and one hairline of
                   trust copy. Left exactly as it was — the fuller version of

@@ -139,6 +139,18 @@
   --header-h: 69px;
 }
 
+/* Kill the vertical rubber-band / pull-to-refresh where the browser lets us.
+   Set on BOTH html and body: the viewport takes its overscroll behaviour from
+   html, and only propagates body's when html hasn't declared one, so writing
+   it in one place makes the result depend on which element the UA happens to
+   pick. The x axis is deliberately left alone here — the page has no
+   horizontal overflow, and `none` on x would also disable the browser's
+   edge-swipe back gesture. */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -217,6 +229,20 @@ button:active:not(:disabled),
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+
+  /* Swiping a strip past its last card must not bounce the page sideways or
+     trigger the browser's edge-swipe-back. `contain` keeps the overscroll
+     inside the strip. */
+  overscroll-behavior-x: contain;
+
+  /* The y axis is EXPLICITLY left chaining. Setting `overflow-x: auto` makes
+     the computed overflow-y `auto` too, so a strip is technically a vertical
+     scroll container with nothing to scroll — and `overscroll-behavior-y:
+     contain`/`none` on it would swallow vertical drags that start on a strip
+     instead of passing them to the page. That is the exact opposite of what
+     we want here: a vertical drag anywhere, including on a strip, scrolls
+     the page. Do not "tidy" this into the shorthand. */
+  overscroll-behavior-y: auto;
 }
 .scroll-row::-webkit-scrollbar {
   display: none;
