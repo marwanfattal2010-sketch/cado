@@ -15,3 +15,6 @@ supabase/.temp/
 # Next.js / TypeScript build output
 .next/
 *.tsbuildinfo
+
+# Database backups contain real customer names, phones and addresses.
+cado-backups/
