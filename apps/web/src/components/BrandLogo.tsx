@@ -5,6 +5,12 @@
  * Jost 600 loaded in index.html applies. Geometry and colors are copied
  * verbatim from packages/shared/brand/logo-horizontal(.-cream).svg — do not
  * tweak them here; regenerate the masters instead.
+ *
+ * The one deliberate departure from the master is the wordmark's tracking.
+ * The brand SVG specifies letter-spacing 6, and at the size the header
+ * actually renders it, the gap after the A reads as a word break — "CA DO"
+ * rather than CADO. Tightened to 2.5, which keeps the airy feel without
+ * looking like two words. The master SVGs are unchanged for print/export.
  */
 const TEXT_COLORS = { ink: "#181611", cream: "#F6F1E7" } as const;
 const GOLD = "#B08D4F";
@@ -37,7 +43,7 @@ export function BrandLogo({
         fontFamily="Jost, sans-serif"
         fontWeight="600"
         fontSize="40"
-        letterSpacing="6"
+        letterSpacing="2.5"
         fill={c}
       >
         CADO

@@ -50,7 +50,7 @@ export function BrandLogo({
         className={jost.className}
         fontWeight="600"
         fontSize="40"
-        letterSpacing="6"
+        letterSpacing="2.5"
         fill={fg}
       >
         CADO
