@@ -9,6 +9,7 @@ import {
   useNeedItToday,
 } from "../hooks/useProducts";
 import { useSearchStores, useTopStores } from "../hooks/useStores";
+import { BrandLogo } from "../components/BrandLogo";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
@@ -581,12 +582,7 @@ export function Home() {
           <footer className="border-t border-inverse/10 bg-ink px-4 py-8 text-inverse/60">
             <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-card bg-gold font-display text-[13px] font-semibold text-ink">
-                    C
-                  </span>
-                  <span className="font-display text-h2 tracking-[0.14em] text-inverse">CADO</span>
-                </div>
+                <BrandLogo variant="cream" className="h-[32px] w-auto" />
                 <p className="mt-3 text-caption">Gifts, delivered the same day, across Lebanon.</p>
               </div>
 

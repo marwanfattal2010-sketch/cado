@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BrandLogo } from "./BrandLogo";
 
 const SEEN_KEY = "cado-splash-seen";
 
@@ -27,9 +28,7 @@ export function Splash() {
       }`}
       aria-hidden
     >
-      <span className="animate-splash-in font-display text-5xl font-semibold tracking-[0.3em] text-cream sm:text-6xl">
-        CADO
-      </span>
+      <BrandLogo variant="cream" className="animate-splash-in h-20 w-auto sm:h-24" />
       <span className="animate-splash-fade mt-4 text-[11px] tracking-[0.35em] text-gold">
         GIFTS, DELIVERED
       </span>

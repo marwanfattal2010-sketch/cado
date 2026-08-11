@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
 import { useAuth } from "../lib/auth";
+import { BrandLogo } from "./BrandLogo";
 import { BasketIcon, ChevronLeftIcon } from "./Icons";
 import {
   AREAS,
@@ -76,16 +77,9 @@ export function Header() {
                 <ChevronLeftIcon className="h-5 w-5" />
               </button>
             ) : null}
-            <Link to="/" className="flex shrink-0 items-center gap-2">
-              {/* Gold plate, dark mark — the original was a dark mark on a
-                  near-black square, which disappeared at header size. */}
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-card bg-gold font-display text-[15px] font-semibold text-ink"
-                aria-hidden
-              >
-                C
-              </span>
-              <span className="font-display text-h2 tracking-[0.14em]">CADO</span>
+            <Link to="/" className="flex shrink-0 items-center" aria-label="CADO home">
+              {/* h-[32px], not h-8: the project's spacing scale maps 8 to 64px. */}
+              <BrandLogo variant="ink" className="h-[32px] w-auto" />
             </Link>
           </div>
 
