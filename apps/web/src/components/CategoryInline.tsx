@@ -8,13 +8,16 @@ import { ProductCard } from "./ProductCard";
 import { StoreCard, StoreCardSkeleton } from "./StoreCard";
 import { ProductGridSkeleton, Skeleton } from "./Skeleton";
 import { SlidersIcon } from "./Icons";
-import { RemovableChip, RibbonEmpty } from "./ui";
+import { RibbonEmpty } from "./ui";
+import { ActiveFilterChips } from "./FilterBar";
 import {
   CategoryFilterPanel,
   NO_FILTERS,
   countActive,
   filterLabels,
   productMatches,
+  removeFilter,
+  toggleFilter,
   type CategoryFilters,
   type FilterableProduct,
 } from "./CategoryFilterPanel";
@@ -144,8 +147,8 @@ export function CategoryInline({ browse }: { browse: CategoryBrowse }) {
   }, [visible.length]);
 
   const chips = filterLabels(filters, { stores: browse.storeList, subcategories: browse.subcategories });
-  const clearOne = (key: keyof CategoryFilters) =>
-    setFilters({ ...filters, [key]: key === "sameDayOnly" ? false : null } as CategoryFilters);
+  const clearOne = (key: keyof CategoryFilters, value?: string) =>
+    setFilters((f) => removeFilter(f, key, value));
 
   const showStores = (stores.data?.length ?? 0) >= MIN_SECTION_STORES;
 
@@ -173,15 +176,7 @@ export function CategoryInline({ browse }: { browse: CategoryBrowse }) {
           </Link>
         </div>
 
-        {chips.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {chips.map((c) => (
-              <RemovableChip key={c.key} onRemove={() => clearOne(c.key)}>
-                {c.label}
-              </RemovableChip>
-            ))}
-          </div>
-        ) : null}
+        <ActiveFilterChips chips={chips} onRemove={clearOne} onClear={() => setFilters(NO_FILTERS)} />
       </div>
 
       {/* Stores for the category, on a soft band so the row reads as its own
@@ -203,15 +198,12 @@ export function CategoryInline({ browse }: { browse: CategoryBrowse }) {
             {stores.data?.map((store) => (
               <button
                 key={store.id}
-                onClick={() =>
-                  setFilters({
-                    ...filters,
-                    storeId: filters.storeId === store.id ? null : store.id,
-                  })
-                }
-                aria-pressed={filters.storeId === store.id}
+                onClick={() => setFilters((f) => toggleFilter(f, "storeId", store.id))}
+                aria-pressed={filters.storeId.includes(store.id)}
                 className={`shrink-0 rounded-card ${
-                  filters.storeId === store.id ? "ring-2 ring-primary ring-offset-2 ring-offset-tint-sage" : ""
+                  filters.storeId.includes(store.id)
+                    ? "ring-2 ring-primary ring-offset-2 ring-offset-tint-sage"
+                    : ""
                 }`}
               >
                 {/* Non-linking: here the card filters the grid, and an <a>

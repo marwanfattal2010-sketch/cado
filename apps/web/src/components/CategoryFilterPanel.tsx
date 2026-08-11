@@ -1,45 +1,66 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button, Chip, Sheet } from "./ui";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Sheet } from "./ui";
 import { AUDIENCES, BUDGETS, budgetBySlug, inBudgetRange } from "../lib/filters";
 import type { VariantOptions } from "../hooks/useProducts";
 
 /**
- * One filter model, one matcher, one panel — shared by the category page and
- * by the in-place category view on the homepage. They used to be able to
- * drift; now a group added here appears in both or in neither.
+ * One filter model, one matcher, one panel — shared by the category page, the
+ * in-place category view on the homepage, search results and the gift finder
+ * results. They used to be able to drift; now a group added here appears in
+ * all of them or in none.
  *
  * EVERY GROUP HERE IS BACKED BY A COLUMN THAT ACTUALLY HAS VALUES IN IT.
  * Verified against the live database on 2026-08-11:
- *   Gender -> products.recipient_tags   him 12, her 20, child 12 of 47 active
+ *   For    -> products.recipient_tags   her 20, him 12, child 12 of 47 active
  *   Colour -> products.color            32 of 47 active carry a value
  *   Size   -> product_variants.name     ZERO rows exist yet, so the group
  *                                       does not render at all
  * Nothing in this file hardcodes an option list. Options are derived from
  * the rows actually in view, and an option whose count is 0 is not shown, so
  * a filter can never lead to a guaranteed-empty screen.
+ *
+ * MULTI-SELECT. Every group is an array. Within a group the values are ORed
+ * ("Her or Kids"), and the groups are ANDed together — which is the
+ * combination people actually mean when they tick two boxes.
  */
 export type CategoryFilters = {
-  /** A recipient_tag: him / her / child. Surfaced as "Gender". */
-  audience: string | null;
-  /** A product_variants.name. Empty in production today — see useProducts. */
-  size: string | null;
+  /** recipient_tags: her / him / child. Surfaced as "For". */
+  audience: string[];
+  /** product_variants.name. Empty in production today — see useProducts. */
+  size: string[];
   /** products.color, matched on the exact stored string. */
-  color: string | null;
-  budget: string | null;
-  storeId: string | null;
-  subcategory: string | null;
+  color: string[];
+  /** Budget band slugs. Always resolved through inBudgetRange(). */
+  budget: string[];
+  storeId: string[];
+  /** Top-level category slug. Only offered outside a category page. */
+  category: string[];
+  subcategory: string[];
   sameDayOnly: boolean;
 };
 
 export const NO_FILTERS: CategoryFilters = {
-  audience: null,
-  size: null,
-  color: null,
-  budget: null,
-  storeId: null,
-  subcategory: null,
+  audience: [],
+  size: [],
+  color: [],
+  budget: [],
+  storeId: [],
+  category: [],
+  subcategory: [],
   sameDayOnly: false,
 };
+
+/** The array-valued keys, in the order their chips should read. */
+const LIST_KEYS = [
+  "audience",
+  "category",
+  "subcategory",
+  "color",
+  "budget",
+  "size",
+  "storeId",
+] as const;
+type ListKey = (typeof LIST_KEYS)[number];
 
 /** The minimum a product row has to look like to be filterable. */
 export type FilterableProduct = {
@@ -50,6 +71,7 @@ export type FilterableProduct = {
   same_day?: boolean | null;
   stock_quantity?: number | null;
   partner?: { id?: string | null } | null;
+  category?: { slug?: string | null } | null;
   subcategory?: { slug?: string | null } | null;
 };
 
@@ -57,8 +79,8 @@ export type FilterableProduct = {
  * How a colour NAME is drawn as a dot. This is not an option list — the
  * options come from products.color — it only decides what swatch to paint
  * next to a name the database already gave us. A colour with no entry here
- * still renders, just as a plain text chip, so new values from the dashboard
- * are never dropped.
+ * still renders, with a neutral dot, so new values from the dashboard are
+ * never dropped.
  *
  * Literal hex is correct here and is the one sanctioned exception to the
  * "no raw hex" rule: these are samples of a real-world colour, so they
@@ -84,28 +106,13 @@ const SWATCH: Record<string, string> = {
   cream: "#f2e8d8",
 };
 
-function ColorSwatch({ name }: { name: string }) {
+const MULTI = "conic-gradient(#b23a34,#e2c14e,#4f7d5a,#4a7ab0,#7b5f97,#b23a34)";
+
+function swatchStyle(name: string): { background: string } | null {
   const key = name.trim().toLowerCase();
+  if (key === "multicolour" || key === "multicolor") return { background: MULTI };
   const hex = SWATCH[key];
-  const multi = key === "multicolour" || key === "multicolor";
-  if (!hex && !multi) return null;
-  return (
-    <span
-      aria-hidden
-      /* ring-black/15 rather than ring-ink/15. This used to be forced —
-         alpha on a token colour compiled to no rule at all — but the tokens
-         are channel triples now, so `ring-ink/15` would work. Kept as black
-         on purpose: this hairline sits on top of arbitrary swatch colours to
-         stop pale ones vanishing, so it wants neutral black, not the warm
-         ink that the rest of the UI is drawn in. */
-      className="h-[14px] w-[14px] shrink-0 rounded-pill ring-1 ring-inset ring-black/15"
-      style={{
-        background: multi
-          ? "conic-gradient(#b23a34,#e2c14e,#4f7d5a,#4a7ab0,#7b5f97,#b23a34)"
-          : hex,
-      }}
-    />
-  );
+  return hex ? { background: hex } : null;
 }
 
 /** The single matcher. Every grid and every count in the panel runs this,
@@ -115,12 +122,21 @@ export function productMatches(
   f: CategoryFilters,
   sizesByProduct?: Map<string, Set<string>>
 ): boolean {
-  if (f.audience && !(p.recipient_tags as string[] | null)?.includes(f.audience)) return false;
-  if (f.size && !sizesByProduct?.get(p.id)?.has(f.size)) return false;
-  if (f.color && p.color !== f.color) return false;
-  if (f.budget && !inBudgetRange(Number(p.price), budgetBySlug(f.budget))) return false;
-  if (f.storeId && p.partner?.id !== f.storeId) return false;
-  if (f.subcategory && p.subcategory?.slug !== f.subcategory) return false;
+  const tags = (p.recipient_tags as string[] | null) ?? [];
+  if (f.audience.length && !f.audience.some((a) => tags.includes(a))) return false;
+  if (f.size.length) {
+    const own = sizesByProduct?.get(p.id);
+    if (!own || !f.size.some((s) => own.has(s))) return false;
+  }
+  if (f.color.length && !(p.color && f.color.includes(p.color))) return false;
+  // Bands share edges and the upper bound is exclusive — see inBudgetRange().
+  // Never replace this with a raw min/max comparison.
+  if (f.budget.length && !f.budget.some((b) => inBudgetRange(Number(p.price), budgetBySlug(b))))
+    return false;
+  if (f.storeId.length && !(p.partner?.id && f.storeId.includes(p.partner.id))) return false;
+  if (f.category.length && !(p.category?.slug && f.category.includes(p.category.slug))) return false;
+  if (f.subcategory.length && !(p.subcategory?.slug && f.subcategory.includes(p.subcategory.slug)))
+    return false;
   // Same rule as the card badge: the store offers same-day AND there is
   // stock. An unknown stock count never earns the promise.
   if (f.sameDayOnly && !(p.same_day === true && (p.stock_quantity ?? 0) > 0)) return false;
@@ -128,57 +144,143 @@ export function productMatches(
 }
 
 export function countActive(f: CategoryFilters): number {
-  return (
-    (f.audience ? 1 : 0) +
-    (f.size ? 1 : 0) +
-    (f.color ? 1 : 0) +
-    (f.budget ? 1 : 0) +
-    (f.storeId ? 1 : 0) +
-    (f.subcategory ? 1 : 0) +
-    (f.sameDayOnly ? 1 : 0)
-  );
+  return LIST_KEYS.reduce((n, k) => n + f[k].length, 0) + (f.sameDayOnly ? 1 : 0);
 }
+
+/** Add or drop one value inside one group. */
+export function toggleFilter(
+  f: CategoryFilters,
+  key: ListKey,
+  value: string
+): CategoryFilters {
+  const list = f[key];
+  return { ...f, [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] };
+}
+
+/** What the removable chips under the bar do. `value` is undefined for the
+ *  one boolean group. */
+export function removeFilter(
+  f: CategoryFilters,
+  key: keyof CategoryFilters,
+  value?: string
+): CategoryFilters {
+  if (key === "sameDayOnly") return { ...f, sameDayOnly: false };
+  const list = f[key as ListKey];
+  return { ...f, [key]: value == null ? [] : list.filter((v) => v !== value) };
+}
+
+export type ActiveFilterChip = {
+  /** Stable across renders so React keys don't collide between groups. */
+  id: string;
+  key: keyof CategoryFilters;
+  value?: string;
+  label: string;
+};
 
 export function filterLabels(
   f: CategoryFilters,
   ctx: {
     stores?: { id: string; name: string }[];
+    categories?: { value: string; label: string }[];
     subcategories?: { value: string; label: string }[];
   }
-): { key: keyof CategoryFilters; label: string }[] {
-  const out: { key: keyof CategoryFilters; label: string }[] = [];
-  if (f.audience) out.push({ key: "audience", label: AUDIENCES.find((a) => a.value === f.audience)?.label ?? "" });
-  if (f.size) out.push({ key: "size", label: f.size });
-  if (f.color) out.push({ key: "color", label: f.color });
-  if (f.budget) out.push({ key: "budget", label: budgetBySlug(f.budget)?.label ?? "" });
-  if (f.storeId)
-    out.push({ key: "storeId", label: ctx.stores?.find((s) => s.id === f.storeId)?.name ?? "Store" });
-  if (f.subcategory)
-    out.push({
-      key: "subcategory",
-      label: ctx.subcategories?.find((s) => s.value === f.subcategory)?.label ?? "",
-    });
-  if (f.sameDayOnly) out.push({ key: "sameDayOnly", label: "Arrives today" });
+): ActiveFilterChip[] {
+  const out: ActiveFilterChip[] = [];
+  const push = (key: ListKey, value: string, label: string) =>
+    out.push({ id: `${key}:${value}`, key, value, label });
+
+  for (const v of f.audience) push("audience", v, AUDIENCES.find((a) => a.value === v)?.label ?? v);
+  for (const v of f.category)
+    push("category", v, ctx.categories?.find((c) => c.value === v)?.label ?? v);
+  for (const v of f.subcategory)
+    push("subcategory", v, ctx.subcategories?.find((s) => s.value === v)?.label ?? v);
+  for (const v of f.color) push("color", v, v);
+  for (const v of f.budget) push("budget", v, budgetBySlug(v)?.label ?? v);
+  for (const v of f.size) push("size", v, v);
+  for (const v of f.storeId)
+    push("storeId", v, ctx.stores?.find((s) => s.id === v)?.name ?? "Store");
+  if (f.sameDayOnly) out.push({ id: "sameDayOnly", key: "sameDayOnly", label: "Arrives today" });
   return out;
 }
 
-function FilterGroup({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function FilterGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="mt-5 first:mt-1">
+    <div className="border-b border-line py-5 first:pt-1 last:border-b-0">
       <p className="text-eyebrow uppercase text-muted">{label}</p>
-      {hint ? <p className="mt-1 text-caption text-muted">{hint}</p> : null}
-      <div className="mt-2 flex flex-wrap gap-2">{children}</div>
+      <div className="mt-3 flex flex-wrap gap-2">{children}</div>
     </div>
+  );
+}
+
+/**
+ * One option. A checkbox in behaviour and in semantics (role/aria-checked),
+ * drawn as a pill so the panel stays in the site's chip language rather than
+ * introducing a second control style. The tick is what says "you can pick
+ * more than one" — a filled pill on its own reads as a radio.
+ */
+function OptionBox({
+  checked,
+  onToggle,
+  count,
+  swatch,
+  children,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  count: number;
+  swatch?: { background: string } | null;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onToggle}
+      className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-pill border px-4 text-caption font-medium transition-all duration-press ease-out active:scale-[0.97] ${
+        checked
+          ? "border-primary bg-primary text-inverse"
+          : "border-line bg-surface text-ink hover:bg-surface-sunk"
+      }`}
+    >
+      {swatch !== undefined ? (
+        <span
+          aria-hidden
+          /* ring-black/15 rather than ring-ink/15 on purpose: this hairline
+             sits on top of arbitrary swatch colours to stop pale ones
+             vanishing, so it wants neutral black, not the warm ink the rest
+             of the UI is drawn in. */
+          className="h-[16px] w-[16px] shrink-0 rounded-pill ring-1 ring-inset ring-black/15"
+          style={swatch ?? { background: "rgb(var(--surface-sunk))" }}
+        />
+      ) : null}
+      <span
+        aria-hidden
+        className={`flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-sm border text-[11px] leading-none ${
+          checked ? "border-inverse bg-inverse text-primary" : "border-line"
+        }`}
+      >
+        {checked ? "✓" : ""}
+      </span>
+      {children}
+      <span className={checked ? "opacity-70" : "text-muted"}>{count}</span>
+    </button>
   );
 }
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Everything in the category, unfiltered — counts are computed from this. */
+  /** Everything in view, unfiltered — counts are computed from this. */
   rows: FilterableProduct[];
-  stores: { id: string; name: string }[];
-  subcategories: { value: string; label: string }[];
+  stores?: { id: string; name: string }[];
+  /**
+   * Top-level categories. Pass these ONLY on screens that are not already
+   * inside one category (search, gift finder) — on /category/:slug the group
+   * would have exactly one option and filter nothing.
+   */
+  categories?: { value: string; label: string }[];
+  subcategories?: { value: string; label: string }[];
   variants?: VariantOptions;
   filters: CategoryFilters;
   onApply: (next: CategoryFilters) => void;
@@ -187,19 +289,21 @@ type Props = {
 /**
  * The filter panel. Draft-then-apply rather than instant: unlike the chip
  * rails, this is a multi-group form, and re-sorting the grid under a sheet
- * you can't see is disorienting.
+ * you can't see is disorienting. The count on the Show button is live, so
+ * you can see what a tick costs you before you commit to it.
  *
  * Every group is data-driven. An option whose live count is 0 is not
- * rendered at all (unless it is the one currently selected, so you can still
+ * rendered at all (unless it is the one currently ticked, so you can still
  * see and clear it), and a whole group disappears when it has nothing real
- * behind it. That is why Sizes is invisible today.
+ * behind it. That is why Size is invisible today.
  */
 export function CategoryFilterPanel({
   open,
   onClose,
   rows,
-  stores,
-  subcategories,
+  stores = [],
+  categories = [],
+  subcategories = [],
   variants,
   filters,
   onApply,
@@ -212,21 +316,31 @@ export function CategoryFilterPanel({
   }, [open, filters]);
 
   const sizes = variants?.byProduct;
+
+  /**
+   * The count a tick would leave you with — computed with the OTHER groups
+   * applied, and with this group's own selection replaced rather than added
+   * to. That is what makes "Her 12" mean twelve, whatever else is ticked.
+   */
   const countWith = (patch: Partial<CategoryFilters>) =>
     rows.filter((p) => productMatches(p, { ...draft, ...patch }, sizes)).length;
+  const countIn = (key: ListKey, value: string) => countWith({ [key]: [value] } as Partial<CategoryFilters>);
   const total = rows.filter((p) => productMatches(p, draft, sizes)).length;
 
-  const toggle = <K extends keyof CategoryFilters>(key: K, value: CategoryFilters[K]) =>
-    setDraft((d) => ({ ...d, [key]: d[key] === value ? null : value }));
+  const on = (key: ListKey, value: string) => draft[key].includes(value);
+  const flip = (key: ListKey, value: string) => setDraft((d) => toggleFilter(d, key, value));
 
-  const genders = AUDIENCES.filter((a) => countWith({ audience: a.value }) > 0 || draft.audience === a.value);
-  const sizeOptions = (variants?.options ?? []).filter(
-    (s) => countWith({ size: s }) > 0 || draft.size === s
+  const audienceOptions = AUDIENCES.filter((a) => countIn("audience", a.value) > 0 || on("audience", a.value));
+  const sizeOptions = (variants?.options ?? []).filter((s) => countIn("size", s) > 0 || on("size", s));
+  const categoryOptions = categories.filter((c) => countIn("category", c.value) > 0 || on("category", c.value));
+  const subcategoryOptions = subcategories.filter(
+    (s) => countIn("subcategory", s.value) > 0 || on("subcategory", s.value)
   );
+  const storeOptions = stores.filter((s) => countIn("storeId", s.id) > 0 || on("storeId", s.id));
 
   /**
    * Colour options come out of the rows in view, never from a list in the
-   * code — so a category only ever offers the colours it actually stocks.
+   * code — so a screen only ever offers the colours it actually stocks.
    * Commonest first, ties alphabetical.
    */
   const colorOptions = useMemo(() => {
@@ -238,127 +352,160 @@ export function CategoryFilterPanel({
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([name]) => name)
-      .filter((name) => countWith({ color: name }) > 0 || draft.color === name);
+      .filter((name) => countIn("color", name) > 0 || on("color", name));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, draft, sizes]);
 
+  const dirty = countActive(draft) > 0;
+
   return (
-    <Sheet open={open} onClose={onClose} title="Filters">
-      {/* Gender first — it is the one people reach for in Fashion and Shoes,
-          and it is the only group here that maps to a tag every product
-          already carries. */}
-      {genders.length ? (
-        <FilterGroup label="Gender">
-          {genders.map((a) => (
-            <Chip
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Filter"
+      fullHeight
+      footer={
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setDraft(NO_FILTERS)}
+            disabled={!dirty}
+            className="inline-flex h-[52px] shrink-0 items-center rounded-pill px-4 text-body font-medium text-muted underline underline-offset-4 transition disabled:opacity-40 enabled:hover:text-ink"
+          >
+            Clear all
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onApply(draft);
+              onClose();
+            }}
+            className="inline-flex h-[52px] flex-1 items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-press ease-out active:scale-[0.98]"
+          >
+            Show {total} {total === 1 ? "gift" : "gifts"}
+          </button>
+        </div>
+      }
+    >
+      {/* For — the one group that maps to a tag every product already
+          carries, and the one people reach for first. */}
+      {audienceOptions.length ? (
+        <FilterGroup label="For">
+          {audienceOptions.map((a) => (
+            <OptionBox
               key={a.value}
-              active={draft.audience === a.value}
-              onClick={() => toggle("audience", a.value)}
-              className="!px-4 !text-caption"
+              checked={on("audience", a.value)}
+              onToggle={() => flip("audience", a.value)}
+              count={countIn("audience", a.value)}
             >
               {a.label}
-              <span className="opacity-60">{countWith({ audience: a.value })}</span>
-            </Chip>
+            </OptionBox>
           ))}
         </FilterGroup>
       ) : null}
 
-      {/* Sizes. Real variant names or nothing — never an invented S/M/L rail.
-          Renders only when partners have actually added variants. */}
-      {sizeOptions.length ? (
-        <FilterGroup label="Size">
-          {sizeOptions.map((s) => (
-            <Chip
-              key={s}
-              active={draft.size === s}
-              onClick={() => toggle("size", s)}
-              className="!px-4 !text-caption"
+      {/* Category. Only rendered where the caller passed options — i.e. not
+          on a page that is already inside one category. */}
+      {categoryOptions.length > 1 ? (
+        <FilterGroup label="Category">
+          {categoryOptions.map((c) => (
+            <OptionBox
+              key={c.value}
+              checked={on("category", c.value)}
+              onToggle={() => flip("category", c.value)}
+              count={countIn("category", c.value)}
             >
-              {s}
-              <span className="opacity-60">{countWith({ size: s })}</span>
-            </Chip>
+              {c.label}
+            </OptionBox>
+          ))}
+        </FilterGroup>
+      ) : null}
+
+      {subcategoryOptions.length > 1 ? (
+        <FilterGroup label="Type">
+          {subcategoryOptions.map((s) => (
+            <OptionBox
+              key={s.value}
+              checked={on("subcategory", s.value)}
+              onToggle={() => flip("subcategory", s.value)}
+              count={countIn("subcategory", s.value)}
+            >
+              {s.label}
+            </OptionBox>
           ))}
         </FilterGroup>
       ) : null}
 
       {/* Colour. Options are whatever products.color actually holds for the
-          gifts in this category — nothing is offered that has no match. */}
+          gifts in view — nothing is offered that has no match. Names with no
+          swatch in the table above still render, with a neutral dot. */}
       {colorOptions.length ? (
         <FilterGroup label="Colour">
           {colorOptions.map((c) => (
-            <Chip
+            <OptionBox
               key={c}
-              active={draft.color === c}
-              onClick={() => toggle("color", c)}
-              className="!px-4 !text-caption"
+              checked={on("color", c)}
+              onToggle={() => flip("color", c)}
+              count={countIn("color", c)}
+              swatch={swatchStyle(c)}
             >
-              <ColorSwatch name={c} />
               {c}
-              <span className="opacity-60">{countWith({ color: c })}</span>
-            </Chip>
+            </OptionBox>
           ))}
         </FilterGroup>
       ) : null}
 
-      <FilterGroup label="Budget">
+      <FilterGroup label="Price">
         {BUDGETS.map((b) => {
-          const n = countWith({ budget: b.slug });
-          if (n === 0 && draft.budget !== b.slug) return null;
+          const n = countIn("budget", b.slug);
+          if (n === 0 && !on("budget", b.slug)) return null;
           return (
-            <Chip
+            <OptionBox
               key={b.slug}
-              active={draft.budget === b.slug}
-              onClick={() => toggle("budget", b.slug)}
-              className="!px-4 !text-caption"
+              checked={on("budget", b.slug)}
+              onToggle={() => flip("budget", b.slug)}
+              count={n}
             >
               {b.label}
-              <span className="opacity-60">{n}</span>
-            </Chip>
+            </OptionBox>
           );
         })}
       </FilterGroup>
 
-      {subcategories.length > 1 ? (
-        <FilterGroup label="Type">
-          {subcategories.map((s) => {
-            const n = countWith({ subcategory: s.value });
-            if (n === 0 && draft.subcategory !== s.value) return null;
-            return (
-              <Chip
-                key={s.value}
-                active={draft.subcategory === s.value}
-                onClick={() => toggle("subcategory", s.value)}
-                className="!px-4 !text-caption"
-              >
-                {s.label}
-                <span className="opacity-60">{n}</span>
-              </Chip>
-            );
-          })}
+      {/* Size. Real variant names or nothing — never an invented S/M/L rail.
+          product_variants is empty in production, so this renders nothing
+          today and lights up by itself the first time a partner adds one. */}
+      {sizeOptions.length ? (
+        <FilterGroup label="Size">
+          {sizeOptions.map((s) => (
+            <OptionBox
+              key={s}
+              checked={on("size", s)}
+              onToggle={() => flip("size", s)}
+              count={countIn("size", s)}
+            >
+              {s}
+            </OptionBox>
+          ))}
         </FilterGroup>
       ) : null}
 
-      {stores.length > 1 ? (
+      {storeOptions.length > 1 ? (
         <FilterGroup label="Store">
-          {stores.map((s) => {
-            const n = countWith({ storeId: s.id });
-            if (n === 0 && draft.storeId !== s.id) return null;
-            return (
-              <Chip
-                key={s.id}
-                active={draft.storeId === s.id}
-                onClick={() => toggle("storeId", s.id)}
-                className="!px-4 !text-caption"
-              >
-                {s.name}
-                <span className="opacity-60">{n}</span>
-              </Chip>
-            );
-          })}
+          {storeOptions.map((s) => (
+            <OptionBox
+              key={s.id}
+              checked={on("storeId", s.id)}
+              onToggle={() => flip("storeId", s.id)}
+              count={countIn("storeId", s.id)}
+            >
+              {s.name}
+            </OptionBox>
+          ))}
         </FilterGroup>
       ) : null}
 
-      <div className="mt-5 flex min-h-[52px] items-center justify-between gap-4 border-t border-line pt-4">
+      <div className="flex min-h-[52px] items-center justify-between gap-4 py-5">
         <span className="text-body font-medium">
           Arrives today only
           <span className="mt-0.5 block text-caption font-normal text-muted">
@@ -386,21 +533,6 @@ export function CategoryFilterPanel({
             }`}
           />
         </button>
-      </div>
-
-      <div className="mt-5 flex gap-3">
-        <Button variant="secondary" className="flex-1" onClick={() => setDraft(NO_FILTERS)}>
-          Clear all
-        </Button>
-        <Button
-          className="flex-1"
-          onClick={() => {
-            onApply(draft);
-            onClose();
-          }}
-        >
-          Show {total}
-        </Button>
       </div>
     </Sheet>
   );

@@ -1,11 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useSearchProducts } from "../hooks/useProducts";
+import { useSearchProducts, useVariantOptionsForProducts } from "../hooks/useProducts";
 import { useSearchStores } from "../hooks/useStores";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeleton";
+import { tidyCategory } from "../components/CategoryChips";
 import { SearchIcon } from "../components/Icons";
-import { RibbonEmpty } from "../components/ui";
+import { Button, RibbonEmpty } from "../components/ui";
+import {
+  ActiveFilterChips,
+  FilterBar,
+  SortSheet,
+  sortProducts,
+  type SortValue,
+} from "../components/FilterBar";
+import {
+  CategoryFilterPanel,
+  NO_FILTERS,
+  countActive,
+  filterLabels,
+  productMatches,
+  removeFilter,
+  type CategoryFilters,
+  type FilterableProduct,
+} from "../components/CategoryFilterPanel";
 
 type Tab = "items" | "stores";
 
@@ -27,6 +45,10 @@ export function Search() {
   const [tab, setTab] = useState<Tab>("items");
   const [recents, setRecents] = useState<string[]>(readRecents);
   const [shown, setShown] = useState(PAGE);
+  const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sort, setSort] = useState<SortValue>("suggested");
   const input = useRef<HTMLInputElement>(null);
 
   // Debounce so results settle as you pause typing rather than firing a
@@ -40,10 +62,64 @@ export function Search() {
   const products = useSearchProducts(query);
   const searching = query.trim().length > 0;
 
-  const productList = useMemo(() => products.data ?? [], [products.data]);
+  const productList = useMemo(
+    () => (products.data ?? []) as unknown as FilterableProduct[],
+    [products.data]
+  );
   const storeList = useMemo(() => stores.data ?? [], [stores.data]);
 
-  useEffect(() => setShown(PAGE), [query, tab]);
+  /**
+   * Sizes for exactly the gifts on screen. product_variants is empty in
+   * production, so this returns nothing and the Size group does not render —
+   * it lights up by itself once a partner adds a variant.
+   */
+  const variants = useVariantOptionsForProducts(useMemo(
+    () => productList.map((p) => p.id),
+    [productList]
+  ));
+
+  /** Filter and sort happen over the response already in memory — no
+   *  refetch, so a tick is instant and the panel's counts are exact. */
+  const visible = useMemo(
+    () => sortProducts(productList.filter((p) => productMatches(p, filters, variants.data?.byProduct)), sort),
+    [productList, filters, sort, variants.data]
+  );
+
+  /** Options built from the results in view, never a hardcoded list. */
+  const categoryOptions = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const p of productList) {
+      const c = (p as { category?: { slug?: string | null; name?: string | null } | null }).category;
+      if (c?.slug && c.name) names.set(c.slug, tidyCategory(c.name));
+    }
+    return [...names.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [productList]);
+
+  const partnerOptions = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const p of productList) {
+      const s = (p as { partner?: { id?: string | null; name?: string | null } | null }).partner;
+      if (s?.id && s.name) names.set(s.id, s.name);
+    }
+    return [...names.entries()].map(([id, name]) => ({ id, name }));
+  }, [productList]);
+
+  const activeChips = useMemo(
+    () => filterLabels(filters, { stores: partnerOptions, categories: categoryOptions }),
+    [filters, partnerOptions, categoryOptions]
+  );
+
+  // A filter that survives into a different search is how a screen ends up
+  // mysteriously empty — "Under $20" carried over from a term that had cheap
+  // gifts into one that doesn't.
+  useEffect(() => {
+    setFilters(NO_FILTERS);
+    setSort("suggested");
+  }, [query]);
+
+  useEffect(() => setShown(PAGE), [query, tab, filters, sort]);
 
   // Remember a term only once it has clearly settled and returned something,
   // so half-typed fragments don't fill the recent list.
@@ -65,13 +141,13 @@ export function Search() {
     if (!el) return;
     const io = new IntersectionObserver(
       (e) => {
-        if (e[0].isIntersecting) setShown((n) => (n >= productList.length ? n : n + PAGE));
+        if (e[0].isIntersecting) setShown((n) => (n >= visible.length ? n : n + PAGE));
       },
       { rootMargin: "400px" }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [productList.length]);
+  }, [visible.length]);
 
   const clearRecents = () => {
     localStorage.removeItem(RECENTS_KEY);
@@ -133,7 +209,9 @@ export function Search() {
 
       {searching ? (
         <div className="mt-4 flex gap-2">
-          <TabButton value="items" label="Gifts" count={productList.length} />
+          {/* Counts what is actually on screen, so it stays true as the
+              filter sheet narrows the grid. */}
+          <TabButton value="items" label="Gifts" count={visible.length} />
           <TabButton value="stores" label="Stores" count={storeList.length} />
         </div>
       ) : null}
@@ -168,16 +246,58 @@ export function Search() {
       ) : tab === "items" ? (
         products.isLoading ? (
           <div className="mt-6">
-            <ProductGridSkeleton count={6} />
+            {/* Reserve the bar too, so the first row of results does not get
+                shoved down 44px when the response lands. */}
+            <div className="flex items-center gap-2">
+              <span className="skeleton h-11 flex-1 rounded-pill" />
+              <span className="h-6 w-px shrink-0 bg-line" />
+              <span className="skeleton h-11 flex-1 rounded-pill" />
+            </div>
+            <div className="pt-5">
+              <ProductGridSkeleton count={6} />
+            </div>
           </div>
         ) : productList.length > 0 ? (
           <>
-            <div className="mt-6 grid animate-fade-in grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {productList.slice(0, shown).map((p) => (
-                <ProductCard key={p.id} {...(p as Parameters<typeof ProductCard>[0])} />
-              ))}
+            <div className="mt-6">
+              <FilterBar
+                activeCount={countActive(filters)}
+                sort={sort}
+                onOpenFilter={() => setFilterOpen(true)}
+                onOpenSort={() => setSortOpen(true)}
+              />
+              <ActiveFilterChips
+                chips={activeChips}
+                onRemove={(key, value) => setFilters((f) => removeFilter(f, key, value))}
+                onClear={() => setFilters(NO_FILTERS)}
+              />
             </div>
-            <div ref={sentinel} className="h-8" />
+
+            {visible.length > 0 ? (
+              <>
+                <div className="mt-5 grid animate-fade-in grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {visible.slice(0, shown).map((p) => (
+                    <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
+                  ))}
+                </div>
+                <div ref={sentinel} className="h-8" />
+              </>
+            ) : (
+              /* Filtered to nothing is the person's own doing and is one tap
+                 to undo — it must never be dressed up as "we have nothing". */
+              <div className="py-14 text-center">
+                <RibbonEmpty className="mx-auto h-14 w-14" />
+                <p className="mt-3 font-display text-h2">No gifts match these filters</p>
+                <p className="mx-auto mt-2 max-w-xs text-body text-muted">
+                  There {productList.length === 1 ? "is" : "are"} {productList.length}{" "}
+                  {productList.length === 1 ? "result" : "results"} for "{query}" — just none matching
+                  all of them.
+                </p>
+                <Button className="mt-5" onClick={() => setFilters(NO_FILTERS)}>
+                  Clear filters
+                </Button>
+              </div>
+            )}
           </>
         ) : (
           <EmptyResult query={query} kind="gifts" />
@@ -213,6 +333,21 @@ export function Search() {
       ) : (
         <EmptyResult query={query} kind="stores" />
       )}
+
+      {/* Search spans every category, so unlike /category/:slug this panel
+          DOES offer the Category group. */}
+      <CategoryFilterPanel
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        rows={productList}
+        stores={partnerOptions}
+        categories={categoryOptions}
+        variants={variants.data}
+        filters={filters}
+        onApply={setFilters}
+      />
+
+      <SortSheet open={sortOpen} onClose={() => setSortOpen(false)} sort={sort} onChange={setSort} />
     </div>
   );
 }

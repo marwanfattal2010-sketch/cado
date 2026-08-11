@@ -226,6 +226,16 @@ export function ChevronLeftIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+/** Two opposed arrows — the sort control beside the filter button. */
+export function SortIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 4v16M7 20l-3.2-3.4M7 20l3.2-3.4" />
+      <path d="M17 20V4M17 4l-3.2 3.4M17 4l3.2 3.4" />
+    </svg>
+  );
+}
+
 /** The stacked-lines / sliders filter glyph. Three tracks with a handle on
  *  each — it reads as "adjust" at 20px, which a plain funnel does not. */
 export function SlidersIcon({ className = base }: IconProps) {

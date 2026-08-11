@@ -184,6 +184,48 @@ export function useVariantOptionsByCategory(categorySlug: string | undefined) {
 }
 
 /**
+ * Size options for an arbitrary set of products — the search and gift-finder
+ * equivalent of the hook above, which can only ask by category.
+ *
+ * Same honesty rule: product_variants has ZERO rows in production, so this
+ * returns an empty option list today and the Size group renders nothing at
+ * all. It lights up by itself the first time a partner adds a variant. Do
+ * not seed it with a hardcoded S/M/L list.
+ *
+ * The id list is sorted into the query key so two screens showing the same
+ * gifts in a different order share one cached result.
+ */
+export function useVariantOptionsForProducts(productIds: string[]) {
+  const ids = [...productIds].sort();
+  return useQuery<VariantOptions>({
+    queryKey: ["variants", "products", ids],
+    enabled: ids.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_variants")
+        .select("name, product_id")
+        .eq("is_active", true)
+        .in("product_id", ids)
+        .limit(500);
+      if (error) throw error;
+
+      const byProduct = new Map<string, Set<string>>();
+      const seen = new Set<string>();
+      for (const row of (data ?? []) as { name: string; product_id: string }[]) {
+        const name = (row.name ?? "").trim();
+        if (!name) continue;
+        let set = byProduct.get(row.product_id);
+        if (!set) byProduct.set(row.product_id, (set = new Set()));
+        set.add(name);
+        seen.add(name);
+      }
+      return { byProduct, options: [...seen].sort(compareSizes) };
+    },
+  });
+}
+
+/**
  * How many active gifts sit in each category. One small query over the whole
  * catalogue, used to point a thin category at a sibling that actually has
  * something in it — a "try this instead" link to another empty shelf is
@@ -268,7 +310,11 @@ export function useSearchProducts(query: string) {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, title, price, currency, same_day, stock_quantity, tags, product_images(storage_path, is_primary), partner:partners(id, name)"
+          // created_at / is_trending back the Sort sheet; recipient_tags,
+          // color and the two category embeds back the Filter sheet. Search
+          // results are filtered and sorted entirely client-side over this
+          // one response, so a tick is instant and the counts are exact.
+          "id, title, price, compare_at_price, currency, created_at, is_trending, same_day, stock_quantity, tags, recipient_tags, color, category:categories(slug, name), subcategory:subcategories(slug, name), product_images(storage_path, is_primary), partner:partners(id, name)"
         )
         .eq("is_active", true)
         .or(`title.ilike.%${term}%,tags.cs.{${term}}`)

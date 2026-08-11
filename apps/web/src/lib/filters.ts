@@ -154,19 +154,19 @@ export function occasionByValue(value: string | null | undefined): Occasion | nu
 }
 
 /**
- * The Gender group inside the category filter panel.
+ * The "For" group inside the filter panel.
  *
  * These are not new fields — each maps onto a recipient_tag that already
  * exists on real products (live counts on 2026-08-11: her 20, him 12,
  * child 12 of 47 active gifts), which is why the group can be offered at
  * all. The panel additionally hides any option whose live count is 0, so a
- * category with no womenswear never shows a "Woman" chip that leads
- * nowhere.
+ * category with no womenswear never shows a "Her" chip that leads nowhere.
  *
- * Man before Woman only because that is the order it was asked for.
+ * Her / Him / Kids, in that order, because that is the order it was asked
+ * for. Labels are the bare noun — the group heading already says "For".
  */
 export const AUDIENCES: { value: string; label: string }[] = [
-  { value: "him", label: "Man" },
-  { value: "her", label: "Woman" },
+  { value: "her", label: "Her" },
+  { value: "him", label: "Him" },
   { value: "child", label: "Kids" },
 ];

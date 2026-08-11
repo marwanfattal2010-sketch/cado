@@ -7,26 +7,25 @@ import { CategoryChips, tidyCategory } from "../components/CategoryChips";
 import { ProductCard } from "../components/ProductCard";
 import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
 import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
-import { SlidersIcon } from "../components/Icons";
-import { Button, RemovableChip, RibbonEmpty } from "../components/ui";
+import { Button, RibbonEmpty } from "../components/ui";
+import {
+  ActiveFilterChips,
+  FilterBar,
+  SortSheet,
+  sortProducts,
+  type SortValue,
+} from "../components/FilterBar";
 import {
   CategoryFilterPanel,
   NO_FILTERS,
   countActive,
   filterLabels,
   productMatches,
+  removeFilter,
+  toggleFilter,
   type CategoryFilters,
   type FilterableProduct,
 } from "../components/CategoryFilterPanel";
-
-type Sort = "popular" | "newest" | "price_asc" | "price_desc";
-
-const SORTS: { value: Sort; label: string }[] = [
-  { value: "popular", label: "Popular" },
-  { value: "newest", label: "Newest" },
-  { value: "price_asc", label: "Price: low to high" },
-  { value: "price_desc", label: "Price: high to low" },
-];
 
 /** Below these a section is hidden rather than shown half-empty. */
 const MIN_SECTION_ITEMS = 4;
@@ -42,7 +41,8 @@ export function Category() {
    *  ever sees what was actually applied. */
   const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sort, setSort] = useState<Sort>("popular");
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sort, setSort] = useState<SortValue>("suggested");
   const [shown, setShown] = useState(PAGE);
 
   const categories = useCategories();
@@ -61,7 +61,7 @@ export function Category() {
   // into Toys is how a page ends up mysteriously empty.
   useEffect(() => {
     setFilters(NO_FILTERS);
-    setSort("popular");
+    setSort("suggested");
   }, [slug]);
 
   /** The shared matcher — the same function the panel counts with and the
@@ -69,32 +69,18 @@ export function Category() {
   const matches = (p: Row, f: CategoryFilters) =>
     productMatches(p as unknown as FilterableProduct, f, sizes);
 
-  const visible = useMemo(() => {
-    const sorted = rows.filter((p) => matches(p, filters));
-    switch (sort) {
-      case "price_asc":
-        sorted.sort((a, b) => Number(a.price) - Number(b.price));
-        break;
-      case "price_desc":
-        sorted.sort((a, b) => Number(b.price) - Number(a.price));
-        break;
-      case "newest":
-        sorted.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-        break;
-      case "popular":
-        // Editorially flagged first, newest after. There is no sales or view
-        // data the storefront can read, so this is a curated order — and
-        // nothing on the page claims otherwise. No ranks, no "#1 seller".
-        sorted.sort(
-          (a, b) =>
-            Number(!!b.is_trending) - Number(!!a.is_trending) ||
-            String(b.created_at).localeCompare(String(a.created_at))
-        );
-        break;
-    }
-    return sorted;
+  /**
+   * Rows arrive newest-first from the query (see categoryProductsQuery), so
+   * "Suggested" — editorially flagged first, then whatever order we already
+   * had — resolves to trending-then-newest without a second comparator here.
+   * There is no sales or view data the storefront can read, so nothing on
+   * this page claims a popularity rank.
+   */
+  const visible = useMemo(
+    () => sortProducts(rows.filter((p) => matches(p, filters)), sort),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, filters, sort]);
+    [rows, filters, sort]
+  );
 
   const subcategories = useMemo(() => {
     const map = new Map<string, string>();
@@ -112,8 +98,8 @@ export function Category() {
     [filters, storeList, subcategories]
   );
 
-  const clearOne = (key: keyof CategoryFilters) =>
-    setFilters({ ...filters, [key]: key === "sameDayOnly" ? false : null } as CategoryFilters);
+  const clearOne = (key: keyof CategoryFilters, value?: string) =>
+    setFilters((f) => removeFilter(f, key, value));
 
   // Reveal more as you reach the bottom rather than making anyone hunt for a
   // "load more" button with a thumb.
@@ -229,16 +215,6 @@ export function Category() {
             `${visible.length} ${visible.length === 1 ? "gift" : "gifts"}`
           )}
         </p>
-
-        {activeChips.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {activeChips.map((c) => (
-              <RemovableChip key={c.key} onRemove={() => clearOne(c.key)}>
-                {c.label}
-              </RemovableChip>
-            ))}
-          </div>
-        ) : null}
       </div>
 
       {!dataReady ? (
@@ -270,9 +246,13 @@ export function Category() {
           ) : null}
 
           <div className="mx-auto max-w-6xl px-4 pt-7">
+            {/* Mirrors <FilterBar/> exactly — two flex-1 pills either side of
+                a 1px divider. A placeholder that isn't the same shape as the
+                control is a layout shift with extra steps. */}
             <div className="flex items-center gap-2">
               <span className="skeleton h-11 flex-1 rounded-pill" />
-              <span className="skeleton h-11 w-[104px] shrink-0 rounded-pill" />
+              <span className="h-6 w-px shrink-0 bg-line" />
+              <span className="skeleton h-11 flex-1 rounded-pill" />
             </div>
             <div className="pt-5">
               <ProductGridSkeleton count={skeletonCards} />
@@ -305,14 +285,16 @@ export function Category() {
                 <button
                   key={store.id}
                   onClick={() => {
-                    setFilters({ ...filters, storeId: filters.storeId === store.id ? null : store.id });
+                    setFilters((f) => toggleFilter(f, "storeId", store.id));
                     document
                       .getElementById("category-grid")
                       ?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
-                  aria-pressed={filters.storeId === store.id}
+                  aria-pressed={filters.storeId.includes(store.id)}
                   className={`shrink-0 rounded-card ${
-                    filters.storeId === store.id ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas" : ""
+                    filters.storeId.includes(store.id)
+                      ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas"
+                      : ""
                   }`}
                 >
                   {/* Non-linking variant on purpose: here the card filters the
@@ -328,49 +310,22 @@ export function Category() {
           </section>
         ) : null}
 
-        {/* 4 — SORT + FILTER, then the grid. Sort is one dropdown, filters are
-            one sheet. Mixing them into a single chip row is what made the old
-            bar impossible to read at a glance. */}
+        {/* 4 — THE BAR, then the grid. Two buttons, both opening a sheet.
+            What you picked comes back as chips underneath, so the bar itself
+            is always exactly one row tall. */}
         <div id="category-grid" className="mx-auto max-w-6xl px-4 pt-7">
-          <div className="flex items-center gap-2">
-            <label className="relative flex h-11 flex-1 items-center rounded-pill border border-line bg-surface">
-              <span className="sr-only">Sort gifts</span>
-              {/* The select fills the whole pill rather than sitting as a 17px
-                  line of text inside it — otherwise the actual tap target is
-                  the text, not the control. */}
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as Sort)}
-                className="h-full w-full appearance-none rounded-pill bg-transparent pl-4 pr-9 text-caption font-medium text-ink outline-none"
-              >
-                {SORTS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    Sort: {s.label}
-                  </option>
-                ))}
-              </select>
-              <span aria-hidden className="pointer-events-none absolute right-4 text-[10px] text-muted">
-                ▾
-              </span>
-            </label>
+          <FilterBar
+            activeCount={countActive(filters)}
+            sort={sort}
+            onOpenFilter={() => setSheetOpen(true)}
+            onOpenSort={() => setSortOpen(true)}
+          />
 
-            {/* Same glyph and same panel as the homepage's in-place category
-                view — only the placement differs, because this page has a sort
-                control to sit beside. */}
-            <button
-              onClick={() => setSheetOpen(true)}
-              aria-haspopup="dialog"
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-pill border border-line bg-surface px-5 text-caption font-medium text-ink transition-all duration-press ease-out active:scale-[0.97]"
-            >
-              <SlidersIcon className="h-[18px] w-[18px]" />
-              Filters
-              {countActive(filters) ? (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-pill bg-primary px-1.5 text-[11px] font-semibold text-inverse">
-                  {countActive(filters)}
-                </span>
-              ) : null}
-            </button>
-          </div>
+          <ActiveFilterChips
+            chips={activeChips}
+            onRemove={clearOne}
+            onClear={() => setFilters(NO_FILTERS)}
+          />
 
           <div className="pt-5">
             {visible.length > 0 ? (
@@ -440,6 +395,8 @@ export function Category() {
         </div>
       )}
 
+      {/* No `categories` prop: this page is already inside one category, so
+          that group would offer exactly one option and filter nothing. */}
       <CategoryFilterPanel
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -450,6 +407,8 @@ export function Category() {
         filters={filters}
         onApply={setFilters}
       />
+
+      <SortSheet open={sortOpen} onClose={() => setSortOpen(false)} sort={sort} onChange={setSort} />
     </div>
   );
 }

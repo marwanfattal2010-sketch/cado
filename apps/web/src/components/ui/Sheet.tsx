@@ -4,19 +4,35 @@ type Props = {
   open: boolean;
   onClose: () => void;
   title?: string;
+  /**
+   * Fill the screen instead of hugging the content. For the filter panel,
+   * which is a multi-group form: at 375px a content-height sheet grows and
+   * shrinks as groups appear, so the Apply bar moves under your thumb
+   * between one category and the next.
+   */
+  fullHeight?: boolean;
+  /**
+   * Pinned to the bottom of the panel, outside the scrolling body. This is a
+   * flex row in normal flow, NOT `position: fixed` — the panel animates in on
+   * a transform, which would make it the containing block for a fixed child
+   * and leave the bar wherever the animation started.
+   */
+  footer?: ReactNode;
   children: ReactNode;
 };
 
 /**
- * Bottom sheet. Used for gift options, variant pickers, the area selector —
- * anywhere a full page would make the person lose their place.
+ * Bottom sheet. Used for gift options, variant pickers, the area selector,
+ * filters and sort — anywhere a full page would make the person lose their
+ * place.
  *
  * Dismissal: backdrop tap, Escape, or a downward drag past 100px.
  */
-export function Sheet({ open, onClose, title, children }: Props) {
+export function Sheet({ open, onClose, title, fullHeight = false, footer, children }: Props) {
   const [dragY, setDragY] = useState(0);
   const startY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   // Escape to close, and lock background scroll while open so the page
   // behind doesn't move under the sheet.
@@ -41,6 +57,13 @@ export function Sheet({ open, onClose, title, children }: Props) {
   if (!open) return null;
 
   const onTouchStart = (e: React.TouchEvent) => {
+    // Only arm the drag when the body is scrolled to the top. Otherwise a
+    // normal downward scroll inside a long filter list reads as "dismiss",
+    // and the sheet slides away mid-scroll.
+    if ((bodyRef.current?.scrollTop ?? 0) > 0) {
+      startY.current = null;
+      return;
+    }
     startY.current = e.touches[0].clientY;
   };
   const onTouchMove = (e: React.TouchEvent) => {
@@ -70,13 +93,23 @@ export function Sheet({ open, onClose, title, children }: Props) {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         style={{ transform: dragY ? `translateY(${dragY}px)` : undefined }}
-        className="relative max-h-[85vh] w-full max-w-lg animate-sheet-up overflow-y-auto rounded-t-sheet bg-surface pb-[env(safe-area-inset-bottom)] shadow-lift"
+        className={`relative flex w-full max-w-lg animate-sheet-up flex-col rounded-t-sheet bg-surface pb-[env(safe-area-inset-bottom)] shadow-lift ${
+          fullHeight ? "h-[92dvh] max-h-[92dvh]" : "max-h-[85vh]"
+        }`}
       >
-        <div className="sticky top-0 z-10 bg-surface pt-3">
+        <div className="shrink-0 bg-surface pt-3">
           <div className="mx-auto h-1 w-10 rounded-pill bg-line" aria-hidden />
           {title ? <h2 className="px-5 pb-3 pt-3 font-display text-h2">{title}</h2> : null}
         </div>
-        <div className="px-5 pb-6">{children}</div>
+        {/* min-h-0 so this can actually shrink inside the flex column —
+            without it the body refuses to scroll and pushes the footer off
+            the bottom of the panel. */}
+        <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+          {children}
+        </div>
+        {footer ? (
+          <div className="shrink-0 border-t border-line bg-surface px-5 pb-4 pt-3">{footer}</div>
+        ) : null}
       </div>
     </div>
   );
