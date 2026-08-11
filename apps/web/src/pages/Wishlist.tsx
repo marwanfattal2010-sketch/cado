@@ -13,7 +13,7 @@ export function Wishlist() {
     return (
       <div className="mx-auto max-w-md px-6 py-20 text-center">
         <HeartIcon className="mx-auto h-10 w-10 text-muted" />
-        <h1 className="mt-4 font-display text-h1">Your wishlist</h1>
+        <h1 className="mt-4 font-display text-h1">Your favorites</h1>
         <p className="mt-2 text-body text-muted">Log in to save gifts for later.</p>
         <ButtonLink to="/login" className="mt-6">
           Log in
@@ -26,7 +26,7 @@ export function Wishlist() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-6">
-      <h1 className="font-display text-h1">Your wishlist</h1>
+      <h1 className="font-display text-h1">Your favorites</h1>
 
       {favorites.isLoading ? (
         <div className="mt-6">

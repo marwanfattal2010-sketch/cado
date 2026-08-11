@@ -1,11 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { AccountIcon, CalendarIcon, GiftIcon, HomeIcon, OrdersIcon } from "./Icons";
+import { AccountIcon, GiftIcon, HeartIcon, HomeIcon, OrdersIcon } from "./Icons";
 
 // No Search tab — search lives inline on the homepage, where people already
 // look for it, and a fifth destination here would crowd the row.
+// Occasions lost its tab to Favorites; it stays reachable from the homepage
+// sections and the footer.
 const TABS = [
   { to: "/", label: "Home", Icon: HomeIcon, end: true },
-  { to: "/occasions", label: "Occasions", Icon: CalendarIcon, end: false },
+  { to: "/wishlist", label: "Favorites", Icon: HeartIcon, end: false },
   { to: "/gift-cards", label: "Gift Cards", Icon: GiftIcon, end: false },
   { to: "/orders", label: "Orders", Icon: OrdersIcon, end: false },
   { to: "/account", label: "Account", Icon: AccountIcon, end: false },

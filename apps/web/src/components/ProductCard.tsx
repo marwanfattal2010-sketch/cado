@@ -75,7 +75,7 @@ export function ProductCard({
               e.preventDefault();
               toggleFavorite.mutate({ productId: id, isFavorite });
             }}
-            aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             /* 44px hit area (the visible circle stays 32px) — a 32px target
                is under the minimum and this sits next to a whole-card link. */
             className="absolute right-[2px] top-[2px] flex h-11 w-11 items-center justify-center transition active:scale-90"

@@ -97,7 +97,7 @@ export function Account() {
 
       <div className="mt-6 overflow-hidden rounded-card bg-surface shadow-rest">
         <Row to="/settings" Icon={SettingsIcon} label="Settings" first />
-        <Row to="/wishlist" Icon={HeartIcon} label="Wishlist" />
+        <Row to="/wishlist" Icon={HeartIcon} label="Favorites" />
         <Row to="/language" Icon={GlobeIcon} label="Language" />
         <Row to="/help" Icon={HelpIcon} label="Help Center" />
       </div>

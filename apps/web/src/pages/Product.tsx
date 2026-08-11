@@ -155,7 +155,7 @@ export function Product() {
           {session ? (
             <button
               onClick={() => toggleFavorite.mutate({ productId: product.id, isFavorite })}
-              aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
               className="tap-44 absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
             >
               <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
