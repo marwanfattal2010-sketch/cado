@@ -86,21 +86,47 @@ export function setAddressDetails(details: AddressDetails) {
 }
 
 /**
- * Same-day cut-off. Real information the customer needs, not manufactured
- * urgency — so it must be honest about having passed.
+ * Same-day cut-off — MIDNIGHT, not 4PM.
+ *
+ * Confirmed by Marwan 2026-08: an order placed any time before midnight is
+ * delivered the same day. After midnight there is no same-day slot left to
+ * promise, so the customer picks a delivery date and the earliest one is
+ * tomorrow.
+ *
+ * SAME_DAY_OPENS_HOUR closes that overnight window. It is a judgement call,
+ * not a rule Marwan gave: 08:00 is when a courier can realistically be
+ * moving, so between 00:00 and 08:00 the site stops offering same-day rather
+ * than promising a delivery nobody can make. Change this one constant if the
+ * real operating hours differ.
+ *
+ * This is real information the customer needs, never manufactured urgency:
+ * no countdown, no "X minutes left". It must be honest about having passed.
  */
-export const CUTOFF_HOUR = 16;
+export const CUTOFF_HOUR = 24;
+export const SAME_DAY_OPENS_HOUR = 8;
+/** How the cut-off is written in copy. `24` has no sensible 12-hour form. */
+export const CUTOFF_LABEL = "midnight";
 
+/** True while an order placed now still earns same-day delivery. */
+export function sameDayOpen(now = new Date()) {
+  const h = now.getHours();
+  return h >= SAME_DAY_OPENS_HOUR && h < CUTOFF_HOUR;
+}
+
+/**
+ * Kept as `{ passed, label }` because several screens read one or the other:
+ * the product card only asks `.passed` before it will say "today", the
+ * product page prints `.label`.
+ */
 export function timeUntilCutoff(now = new Date()) {
-  const cutoff = new Date(now);
-  cutoff.setHours(CUTOFF_HOUR, 0, 0, 0);
-  const ms = cutoff.getTime() - now.getTime();
-  if (ms <= 0) return { passed: true as const, label: "Order now for tomorrow morning" };
-  const mins = Math.floor(ms / 60000);
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
+  if (!sameDayOpen(now)) {
+    return {
+      passed: true as const,
+      label: "Choose your delivery date — earliest tomorrow",
+    };
+  }
   return {
     passed: false as const,
-    label: h > 0 ? `${h}h ${m}m left for same-day delivery` : `${m}m left for same-day delivery`,
+    label: `Order before ${CUTOFF_LABEL} for delivery today`,
   };
 }

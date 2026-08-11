@@ -3,7 +3,16 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeleton";
 import { tidyCategory } from "../components/CategoryChips";
-import { ChevronLeftIcon, GiftIcon } from "../components/Icons";
+import {
+  AccountIcon,
+  ChevronLeftIcon,
+  GiftIcon,
+  HeartIcon,
+  LightningIcon,
+  StarIcon,
+  WalletIcon,
+  WrapIcon,
+} from "../components/Icons";
 import { Button, Chip, RemovableChip, RibbonEmpty } from "../components/ui";
 import {
   AUDIENCES,
@@ -88,16 +97,61 @@ function StepShell({
       <Progress step={step} />
       <h1 className="mt-5 font-display text-h1">{title}</h1>
       {subtitle ? <p className="mt-1.5 text-body text-muted">{subtitle}</p> : null}
-      <div className="mt-5 flex flex-wrap gap-2.5">{children}</div>
+      <div className="mt-5 grid grid-cols-2 gap-2.5">{children}</div>
     </div>
   );
 }
 
-/** Two-up option chips. Same two states as every other chip on the site:
- *  white with a hairline, or a charcoal fill. No photos — by this point the
- *  person has said they don't know what to get, so the screen should be a
- *  decision, not a mood board. */
-const OPTION = "!h-[52px] flex-1 basis-[45%] !px-5";
+/**
+ * A quiz option. Two-up, 96px tall, icon over label.
+ *
+ * It was a 52px text chip in a wrapping flex row, which left two thirds of a
+ * 375x812 screen empty under a question — the screen read as unfinished. The
+ * resting colours are the chip's exact resting colours (hairline border,
+ * surface fill, ink text) so this is the same object, just given the room a
+ * primary choice deserves. No photos: by this point the person has said they
+ * don't know what to get, so the screen should be a decision, not a mood
+ * board.
+ */
+function QuizOption({
+  Icon,
+  label,
+  filled,
+  onClick,
+}: {
+  Icon: typeof GiftIcon;
+  label: string;
+  filled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-[96px] flex-col items-center justify-center gap-2 rounded-card border border-line bg-surface px-3 text-center text-body font-medium text-ink transition-all duration-press ease-out hover:bg-surface-sunk active:scale-[0.97]"
+    >
+      <Icon className="h-6 w-6 text-gold-deep" filled={filled} />
+      <span className="leading-tight">{label}</span>
+    </button>
+  );
+}
+
+/** One icon per option so the grid reads at a glance. Nothing here claims
+ *  anything about the products — it is a label, not data. */
+const RECIPIENT_ICONS: Record<string, { Icon: typeof GiftIcon; filled?: boolean }> = {
+  mother: { Icon: HeartIcon },
+  father: { Icon: StarIcon },
+  partner: { Icon: HeartIcon, filled: true },
+  friend: { Icon: AccountIcon },
+  child: { Icon: LightningIcon },
+};
+
+const BUDGET_ICONS: { Icon: typeof GiftIcon }[] = [
+  { Icon: WalletIcon },
+  { Icon: GiftIcon },
+  { Icon: WrapIcon },
+  { Icon: StarIcon },
+];
 
 export function GiftFinder() {
   const [params, setParams] = useSearchParams();
@@ -133,15 +187,18 @@ export function GiftFinder() {
         subtitle="Two quick taps, then gifts."
         onSkip={() => go({ skip: "1" })}
       >
-        {QUIZ_RECIPIENTS.map((r) => (
-          <Chip
-            key={r.label}
-            className={OPTION}
-            onClick={() => go({ recipient: r.value, step: "2", skip: r.value ? null : "1" })}
-          >
-            {r.label}
-          </Chip>
-        ))}
+        {QUIZ_RECIPIENTS.map((r) => {
+          const icon = (r.value && RECIPIENT_ICONS[r.value]) || { Icon: GiftIcon };
+          return (
+            <QuizOption
+              key={r.label}
+              Icon={icon.Icon}
+              filled={icon.filled}
+              label={r.label}
+              onClick={() => go({ recipient: r.value, step: "2", skip: r.value ? null : "1" })}
+            />
+          );
+        })}
       </StepShell>
     );
   }
@@ -156,10 +213,13 @@ export function GiftFinder() {
         onBack={() => go({ recipient: null, step: null, skip: null })}
         onSkip={() => go({ step: null, skip: "1" })}
       >
-        {BUDGETS.map((b) => (
-          <Chip key={b.slug} className={OPTION} onClick={() => go({ budget: b.slug, step: null })}>
-            {b.label}
-          </Chip>
+        {BUDGETS.map((b, i) => (
+          <QuizOption
+            key={b.slug}
+            Icon={(BUDGET_ICONS[i] ?? BUDGET_ICONS[0]).Icon}
+            label={b.label}
+            onClick={() => go({ budget: b.slug, step: null })}
+          />
         ))}
       </StepShell>
     );

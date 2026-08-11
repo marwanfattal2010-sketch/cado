@@ -30,13 +30,13 @@ import { Button, ButtonLink, RibbonDivider } from "../components/ui";
  */
 const HOW_IT_WORKS = [
   { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "From stores across Lebanon." },
-  { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Your note inside, free." },
-  { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order by 4PM, arrives tonight." },
+  { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Your note inside, free at most stores." },
+  { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order before midnight, arrives today." },
 ];
 
 const WHY_CADO = [
   { Icon: TruckIcon, label: "Same-day delivery" },
-  { Icon: WrapIcon, label: "Free gift wrapping" },
+  { Icon: WrapIcon, label: "Free gift wrap from most stores" },
   { Icon: ShieldCheckIcon, label: "Verified Lebanese stores" },
   { Icon: WalletIcon, label: "Pay on delivery" },
 ];

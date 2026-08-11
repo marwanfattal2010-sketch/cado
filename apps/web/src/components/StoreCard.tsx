@@ -10,19 +10,6 @@ export type StoreCardStore = {
   is_live?: boolean | null;
 };
 
-/** Two letters, from the first two words. Only ever a fallback for a store
- *  that hasn't uploaded a logo — rendered as a cream monogram on the cover
- *  rather than as the whole card, which is what made the old initial-circles
- *  look like a placeholder instead of a brand. */
-function monogram(name: string) {
-  return name
-    .split(/\s+/)
-    .filter((w) => /[a-z0-9]/i.test(w))
-    .slice(0, 2)
-    .map((w) => w.charAt(0).toUpperCase())
-    .join("");
-}
-
 function Cover({ store }: { store: StoreCardStore }) {
   return (
     <>
@@ -38,30 +25,23 @@ function Cover({ store }: { store: StoreCardStore }) {
   );
 }
 
-function Label({ store, muted = false }: { store: StoreCardStore; muted?: boolean }) {
+/**
+ * Photo, name, one line. No avatar.
+ *
+ * The 44px circle used to hold a two-letter monogram whenever a store had no
+ * logo, which is most of them — so the row read as "BB · CS · CC", three
+ * placeholders pretending to be brands. The storefront photo is the brand
+ * here; a circle in front of it was only ever competing with it.
+ */
+function Label({ store }: { store: StoreCardStore }) {
   return (
-    <div className="relative mt-auto flex items-end gap-3 p-4">
-      <span
-        className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-pill ${
-          muted ? "bg-canvas/25 text-inverse/70" : "bg-canvas text-ink"
-        } shadow-rest`}
-      >
-        {store.logo_url ? (
-          <img src={store.logo_url} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="font-display text-[15px] font-semibold leading-none">
-            {monogram(store.name)}
-          </span>
-        )}
+    <div className="relative mt-auto p-4">
+      <span className="block truncate font-display text-h2 leading-tight text-inverse drop-shadow">
+        {store.name}
       </span>
-      <span className="min-w-0">
-        <span className="block truncate font-display text-h2 leading-tight text-inverse drop-shadow">
-          {store.name}
-        </span>
-        {store.description ? (
-          <span className="mt-0.5 block truncate text-caption text-inverse/75">{store.description}</span>
-        ) : null}
-      </span>
+      {store.description ? (
+        <span className="mt-0.5 block truncate text-caption text-inverse/75">{store.description}</span>
+      ) : null}
     </div>
   );
 }
@@ -99,7 +79,7 @@ export function StoreCard({
         <span className="absolute left-4 top-4 rounded-pill bg-canvas/90 px-2.5 py-1 text-caption font-semibold text-ink">
           Coming soon
         </span>
-        <Label store={store} muted />
+        <Label store={store} />
       </div>
     );
   }
