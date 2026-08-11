@@ -67,6 +67,21 @@
   --ribbon-deep: var(--primary-deep);
   --ribbon-tint: var(--primary-tint);
 
+  /* Soft section tints.
+     Backgrounds ONLY — never text, never a button, never a border that has
+     to carry meaning. They exist so the page has warmth and rhythm without
+     adding an accent hue that competes with charcoal + gold.
+
+     Blush is a desaturated warm clay, deliberately NOT the retired burgundy:
+     it is a surface you read black text on, not an accent you paint a UI
+     control with. Measured against the type tokens:
+       ink   15.5–15.8 : 1   muted  5.0–5.1 : 1   today  5.4–5.5 : 1
+     all clear AA. --gold-deep lands at ~4.2 on these, so gold text does not
+     go on a tint band — gold stays on canvas or on charcoal. */
+  --tint-sage: #e8efe9;
+  --tint-blush: #f7ebe6;
+  --tint-sand: #f4ead8;
+
   /* Semantic */
   --today: #1f6b4a;
   --today-tint: #e4f0ea;

@@ -37,6 +37,13 @@ export default {
         alert: "var(--alert)",
         line: "var(--border)",
         cream: "var(--canvas)",
+        // Soft section tints. Backgrounds only — see the note in index.css.
+        // Not an accent set: nothing tappable is ever filled with these.
+        tint: {
+          sage: "var(--tint-sage)",
+          blush: "var(--tint-blush)",
+          sand: "var(--tint-sand)",
+        },
       },
       fontFamily: {
         display: ['"Fraunces"', "Georgia", "serif"],

@@ -811,11 +811,57 @@ export type Database = {
           },
         ]
       }
+      product_variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price_delta: number
+          product_id: string
+          sku: string | null
+          sort_order: number
+          stock_quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_delta?: number
+          product_id: string
+          sku?: string | null
+          sort_order?: number
+          stock_quantity?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_delta?: number
+          product_id?: string
+          sku?: string | null
+          sort_order?: number
+          stock_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           avg_rating: number | null
           category_id: string
           compare_at_price: number | null
+          color: string | null
+          color_is_placeholder: boolean
           country: string
           created_at: string
           currency: string
@@ -843,6 +889,8 @@ export type Database = {
           avg_rating?: number | null
           category_id: string
           compare_at_price?: number | null
+          color?: string | null
+          color_is_placeholder?: boolean
           country?: string
           created_at?: string
           currency?: string
@@ -870,6 +918,8 @@ export type Database = {
           avg_rating?: number | null
           category_id?: string
           compare_at_price?: number | null
+          color?: string | null
+          color_is_placeholder?: boolean
           country?: string
           created_at?: string
           currency?: string

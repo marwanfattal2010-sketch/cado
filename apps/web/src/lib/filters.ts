@@ -110,26 +110,42 @@ export type Occasion = {
   /** Matches products.occasion_tags where one exists. */
   value: string;
   label: string;
+  /** Photo for the homepage card. Every entry has one — these render as
+   *  image cards, so an entry without a photo would be a grey hole. */
+  img: string;
   /**
-   * False when no product in the catalogue carries this tag yet. The chip
+   * False when no product in the catalogue carries this tag yet. The card
    * still exists — it is navigation people look for — but the results screen
    * uses this to say plainly that there is nothing tagged for it yet instead
    * of quietly showing unrelated gifts as if they matched.
    *
-   * "just-because" is deliberately false too: it means "no occasion", so it
-   * should show everything rather than filter to a tag.
+   * Checked against the live catalogue on 2026-08-11. Tags actually present:
+   * birthday 35, anniversary 11, graduation 9, housewarming 7, newborn 6,
+   * mothers-day 5, valentine 5, eid 2, wedding 2. Nothing carries
+   * "visiting-someone", "get-well" or "engagement", so those are false and
+   * the results screen says so rather than pretending.
    */
   tagged: boolean;
 };
 
-/** Birthday first — it is the flagship occasion by a wide margin. */
+/**
+ * ORDER IS DELIBERATE AND IS NOT ALPHABETICAL OR BY VOLUME.
+ *
+ * Visiting Someone leads because in Lebanon turning up at someone's house
+ * with something in your hand is the most common gifting occasion there is —
+ * it outnumbers birthdays in real life even though it carries no tag in the
+ * catalogue yet. Anniversary, Get Well Soon, Birthday, Graduation follow;
+ * the rest trail.
+ */
 export const OCCASIONS: Occasion[] = [
-  { value: "birthday", label: "Birthday", tagged: true },
-  { value: "anniversary", label: "Anniversary", tagged: true },
-  { value: "get-well", label: "Get Well", tagged: false },
-  { value: "graduation", label: "Graduation", tagged: true },
-  { value: "newborn", label: "New Baby", tagged: true },
-  { value: "just-because", label: "Just Because", tagged: false },
+  { value: "visiting-someone", label: "Visiting Someone", img: "/occasions/visiting-someone.jpg", tagged: false },
+  { value: "anniversary", label: "Anniversary", img: "/occasions/anniversary.jpg", tagged: true },
+  { value: "get-well", label: "Get Well Soon", img: "/occasions/get-well-soon.jpg", tagged: false },
+  { value: "birthday", label: "Birthday", img: "/occasions/birthday-banner.jpg", tagged: true },
+  { value: "graduation", label: "Graduation", img: "/occasions/graduation.jpg", tagged: true },
+  { value: "newborn", label: "New Baby", img: "/occasions/new-baby.jpg", tagged: true },
+  { value: "wedding", label: "Wedding", img: "/occasions/wedding.jpg", tagged: true },
+  { value: "engagement", label: "Engagement", img: "/occasions/engagement.jpg", tagged: false },
 ];
 
 export function occasionByValue(value: string | null | undefined): Occasion | null {
@@ -137,10 +153,20 @@ export function occasionByValue(value: string | null | undefined): Occasion | nu
   return OCCASIONS.find((o) => o.value === value) ?? null;
 }
 
-/** The three "For" audiences offered inside the category filter sheet.
- *  Fashion and Shoes lean on this hardest, but it applies everywhere. */
+/**
+ * The Gender group inside the category filter panel.
+ *
+ * These are not new fields — each maps onto a recipient_tag that already
+ * exists on real products (live counts on 2026-08-11: her 20, him 12,
+ * child 12 of 47 active gifts), which is why the group can be offered at
+ * all. The panel additionally hides any option whose live count is 0, so a
+ * category with no womenswear never shows a "Woman" chip that leads
+ * nowhere.
+ *
+ * Man before Woman only because that is the order it was asked for.
+ */
 export const AUDIENCES: { value: string; label: string }[] = [
-  { value: "her", label: "For Her" },
-  { value: "him", label: "For Him" },
-  { value: "child", label: "For Kids" },
+  { value: "him", label: "Man" },
+  { value: "her", label: "Woman" },
+  { value: "child", label: "Kids" },
 ];

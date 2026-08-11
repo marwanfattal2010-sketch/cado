@@ -89,8 +89,11 @@ export function categoryProductsQuery(categorySlug: string) {
           // same_day + stock_quantity ride along so the card's delivery and
           // stock badges work here too. Without them the same product showed
           // "Today" on the homepage and nothing on the category page.
-          // recipient_tags backs the For Her/Him/Kids filter.
-          "id, title, price, compare_at_price, currency, created_at, is_trending, same_day, stock_quantity, recipient_tags, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(id, name, slug), product_images(storage_path, is_primary)"
+          // recipient_tags backs the Gender filter; color backs the Colour
+          // filter. color_is_placeholder is deliberately NOT selected — it is
+          // a dashboard-side data-quality flag and has no meaning to a
+          // shopper, so it must not be able to leak into the storefront.
+          "id, title, price, compare_at_price, currency, created_at, is_trending, same_day, stock_quantity, recipient_tags, color, partner:partners(id, name), category:categories!inner(slug), subcategory:subcategories(id, name, slug), product_images(storage_path, is_primary)"
         )
         .eq("is_active", true)
         .eq("categories.slug", categorySlug)
@@ -106,6 +109,77 @@ export function useProductsByCategory(categorySlug: string | undefined) {
   return useQuery({
     ...categoryProductsQuery(categorySlug ?? ""),
     enabled: !!categorySlug,
+  });
+}
+
+/**
+ * Sizes are ordered the way a shop rail is ordered, not the way a string
+ * sort would do it — "Large, Medium, Small" and "10, 6, 8" are both wrong.
+ * Anything unrecognised falls to the end in plain alphabetical order rather
+ * than being dropped.
+ */
+const SIZE_ORDER = [
+  "xxs", "xs", "extra small", "s", "small", "m", "medium", "l", "large",
+  "xl", "extra large", "xxl", "xxxl", "one size", "os",
+];
+
+function compareSizes(a: string, b: string) {
+  const ia = SIZE_ORDER.indexOf(a.toLowerCase());
+  const ib = SIZE_ORDER.indexOf(b.toLowerCase());
+  if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  const na = Number(a);
+  const nb = Number(b);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  return a.localeCompare(b);
+}
+
+export type VariantOptions = {
+  /** product id -> the variant names that product actually has. */
+  byProduct: Map<string, Set<string>>;
+  /** Every distinct variant name in this category, shop-ordered. */
+  options: string[];
+};
+
+/**
+ * Size options for one category, derived from product_variants.name.
+ *
+ * HONESTY NOTE — READ BEFORE "FIXING" THIS.
+ * `product_variants` is the only real size data that exists: there is no
+ * size column on products, and no colour column anywhere in the schema. As
+ * of 2026-08-11 the table has ZERO rows in production, so this returns an
+ * empty option list and the Sizes group renders nothing at all. That is the
+ * point. The group lights up by itself the first time a partner adds a
+ * variant in the dashboard, and until then nobody is shown a size chip that
+ * matches no product. Do not seed this with a hardcoded S/M/L list.
+ */
+export function useVariantOptionsByCategory(categorySlug: string | undefined) {
+  return useQuery<VariantOptions>({
+    queryKey: ["variants", "category", categorySlug],
+    enabled: !!categorySlug,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_variants")
+        // Same embed-and-filter shape as useStoresByCategory: alias the
+        // nested table in the select, filter on its real name in the path.
+        .select("name, product_id, products!inner(category:categories!inner(slug))")
+        .eq("is_active", true)
+        .eq("products.categories.slug", categorySlug as string)
+        .limit(500);
+      if (error) throw error;
+
+      const byProduct = new Map<string, Set<string>>();
+      const seen = new Set<string>();
+      for (const row of (data ?? []) as unknown as { name: string; product_id: string }[]) {
+        const name = (row.name ?? "").trim();
+        if (!name) continue;
+        let set = byProduct.get(row.product_id);
+        if (!set) byProduct.set(row.product_id, (set = new Set()));
+        set.add(name);
+        seen.add(name);
+      }
+      return { byProduct, options: [...seen].sort(compareSizes) };
+    },
   });
 }
 

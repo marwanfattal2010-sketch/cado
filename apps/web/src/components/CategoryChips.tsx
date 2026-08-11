@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategories } from "../hooks/useCategories";
 import { categoryProductsQuery } from "../hooks/useProducts";
-import { ChipLink } from "./ui";
+import { Chip, ChipLink } from "./ui";
 
 /** Everything on CADO is a gift — "& Gifts" in a category label says
  *  nothing, and the chips have to stay short enough that four or five fit
@@ -26,9 +26,20 @@ export function tidyCategory(name: string) {
 export function CategoryChips({
   activeSlug,
   className = "",
+  onSelect,
 }: {
   activeSlug?: string;
   className?: string;
+  /**
+   * In-place mode. When this is supplied the chips stop being links and
+   * become buttons that hand the slug back to the caller — the homepage
+   * swaps its content instead of navigating. Tapping the already-active chip
+   * calls back with `null`, which is how you get back out to the homepage.
+   *
+   * Without it the chips stay plain <Link>s, which is what every category
+   * page and every direct /category/<slug> link still relies on.
+   */
+  onSelect?: (slug: string | null) => void;
 }) {
   const categories = useCategories();
   const queryClient = useQueryClient();
@@ -57,18 +68,32 @@ export function CategoryChips({
 
   return (
     <div ref={rowRef} className={`scroll-row gap-2 px-4 ${className}`}>
-      {categories.data.map((cat) => (
-        <span key={cat.id} data-slug={cat.slug} className="shrink-0">
-          <ChipLink
-            to={`/category/${cat.slug}`}
-            active={activeSlug === cat.slug}
-            onPointerEnter={() => queryClient.prefetchQuery(categoryProductsQuery(cat.slug))}
-            className="tap-44 !h-9 !px-3.5 !text-caption"
-          >
-            {tidyCategory(cat.name)}
-          </ChipLink>
-        </span>
-      ))}
+      {categories.data.map((cat) => {
+        const active = activeSlug === cat.slug;
+        const prefetch = () => queryClient.prefetchQuery(categoryProductsQuery(cat.slug));
+        return (
+          <span key={cat.id} data-slug={cat.slug} className="shrink-0" onPointerEnter={prefetch}>
+            {onSelect ? (
+              <Chip
+                active={active}
+                onClick={() => onSelect(active ? null : cat.slug)}
+                className="tap-44 !h-9 !px-3.5 !text-caption"
+              >
+                {tidyCategory(cat.name)}
+              </Chip>
+            ) : (
+              <ChipLink
+                to={`/category/${cat.slug}`}
+                active={active}
+                onPointerEnter={prefetch}
+                className="tap-44 !h-9 !px-3.5 !text-caption"
+              >
+                {tidyCategory(cat.name)}
+              </ChipLink>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }

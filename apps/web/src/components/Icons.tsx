@@ -225,3 +225,16 @@ export function ChevronLeftIcon({ className = "h-4 w-4" }: IconProps) {
     </svg>
   );
 }
+
+/** The stacked-lines / sliders filter glyph. Three tracks with a handle on
+ *  each — it reads as "adjust" at 20px, which a plain funnel does not. */
+export function SlidersIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+      <circle cx="9" cy="7" r="2.2" fill="var(--surface)" />
+      <circle cx="15" cy="12" r="2.2" fill="var(--surface)" />
+      <circle cx="8" cy="17" r="2.2" fill="var(--surface)" />
+    </svg>
+  );
+}

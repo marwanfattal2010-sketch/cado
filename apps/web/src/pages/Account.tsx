@@ -1,8 +1,75 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useTopStores } from "../hooks/useStores";
-import { AccountIcon, GiftIcon, GlobeIcon, HeartIcon, HelpIcon, OrdersIcon, SettingsIcon } from "../components/Icons";
-import { Button, ButtonLink } from "../components/ui";
+import {
+  AccountIcon,
+  GiftIcon,
+  GlobeIcon,
+  HeartIcon,
+  HelpIcon,
+  OrdersIcon,
+  SettingsIcon,
+  ShieldCheckIcon,
+  TruckIcon,
+  WalletIcon,
+  WrapIcon,
+} from "../components/Icons";
+import { Button, ButtonLink, RibbonDivider } from "../components/ui";
+
+/**
+ * The fuller "How CADO works" panel, recovered from the pre-redesign
+ * homepage (it lived there until 0195c24). The homepage keeps the compact
+ * one-line strip — a shopper scrolling for a birthday present does not need
+ * three cards explaining the concept. Here it does earn its space: Account
+ * is where someone lands when they are deciding whether to trust the thing,
+ * and it is the one screen with room for it.
+ *
+ * Every claim on it is one CADO actually makes elsewhere on the site
+ * (same-day, free wrapping, pay on delivery, verified stores). Nothing here
+ * is a number, a rating or a count, because there is no real one to show.
+ */
+const HOW_IT_WORKS = [
+  { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "From stores across Lebanon." },
+  { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Your note inside, free." },
+  { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order by 4PM, arrives tonight." },
+];
+
+const WHY_CADO = [
+  { Icon: TruckIcon, label: "Same-day delivery" },
+  { Icon: WrapIcon, label: "Free gift wrapping" },
+  { Icon: ShieldCheckIcon, label: "Verified Lebanese stores" },
+  { Icon: WalletIcon, label: "Pay on delivery" },
+];
+
+function HowCadoWorks() {
+  return (
+    <section className="mt-10">
+      <RibbonDivider className="mb-4" />
+      <h2 className="text-center font-display text-h2">How CADO works</h2>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {HOW_IT_WORKS.map((s) => (
+          <div key={s.n} className="rounded-card bg-surface p-3 text-center shadow-rest">
+            <s.Icon className="mx-auto h-5 w-5 text-muted" />
+            <p className="mt-1.5 text-caption font-semibold">{s.title}</p>
+            <p className="mt-0.5 text-[11px] leading-snug text-muted">{s.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {WHY_CADO.map((w) => (
+          <div
+            key={w.label}
+            className="flex flex-col items-center gap-2 rounded-card bg-surface py-5 text-center shadow-rest"
+          >
+            <w.Icon className="h-6 w-6 text-muted" />
+            <span className="text-caption font-medium text-muted">{w.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 /** Every row in the account list is the same shape, so the 52px height and
  *  the hairline between rows can't drift apart. */
@@ -45,6 +112,12 @@ export function Account() {
         <div className="mt-10 overflow-hidden rounded-card bg-surface text-left shadow-rest">
           <Row to="/help" Icon={HelpIcon} label="Help Center" first />
           <Row to="/language" Icon={GlobeIcon} label="Language" />
+        </div>
+
+        {/* Signed out is exactly when someone is still deciding, so the
+            explainer belongs here too. */}
+        <div className="text-left">
+          <HowCadoWorks />
         </div>
       </div>
     );
@@ -122,6 +195,8 @@ export function Account() {
       <Button onClick={signOut} variant="secondary" fullWidth className="mt-6">
         Log out
       </Button>
+
+      <HowCadoWorks />
 
       <p className="mt-10 text-center text-eyebrow uppercase text-muted">Cado — gifts, delivered. Lebanon.</p>
     </div>
