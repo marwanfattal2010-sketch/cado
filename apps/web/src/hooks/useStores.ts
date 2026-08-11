@@ -69,17 +69,29 @@ export function useTopStores() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, name, slug, logo_url, cover_image_url, description, is_live")
+        .select("id, name, slug, logo_url, cover_image_url, description, is_live, products(id)")
         .eq("status", "active")
+        .eq("products.is_active", true)
         .order("name")
-        .limit(40);
+        .limit(60);
       if (error) throw error;
-      // Live stores lead; every coming-soon store is kept. A flat limit with
-      // live-first ordering silently cut the coming-soon stores off the end,
-      // which is how GS and Zahar vanished from the first deploy of this row.
-      const live = (data ?? []).filter((s) => s.is_live).slice(0, 10);
-      const comingSoon = (data ?? []).filter((s) => !s.is_live);
-      return [...live, ...comingSoon];
+
+      // Order by how much a store actually has to sell, not by its name.
+      // Alphabetical plus a cap meant the row was decided by first letter:
+      // Zahar went live with 9 real products and immediately dropped off the
+      // end, while empty stores kept their place. A shopper tapping this row
+      // wants a shop with things in it.
+      const rows = (data ?? []) as Array<
+        (typeof data extends (infer R)[] ? R : never) & { products?: { id: string }[] }
+      >;
+      const stocked = rows
+        .filter((s) => s.is_live && (s.products?.length ?? 0) > 0)
+        .sort((a, b) => (b.products?.length ?? 0) - (a.products?.length ?? 0))
+        .slice(0, 12);
+      // Coming-soon stores keep their place at the end regardless — they are
+      // the whole reason this row shows non-clickable cards at all.
+      const comingSoon = rows.filter((s) => !s.is_live);
+      return [...stocked, ...comingSoon];
     },
   });
 }
