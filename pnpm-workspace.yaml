@@ -1,9 +1,17 @@
 packages:
   - "apps/*"
   - "packages/*"
+# Dependencies allowed to run install scripts. pnpm 10 refuses to run them
+# unless they are listed true here, and on EAS Build that refusal is a hard
+# failure (ERR_PNPM_IGNORED_BUILDS) reported only as "Unknown error" — it
+# failed two Android builds. sharp is not a mobile dependency; it arrived
+# transitively with Next.js when apps/dashboard was added.
+#
+# `sharp` was left as the literal placeholder text pnpm writes when it cannot
+# prompt, which is not a boolean and so never granted anything.
 allowBuilds:
   esbuild: true
-  sharp: set this to true or false
+  sharp: true
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.11'
   - '@expo/inline-modules@0.1.4'
