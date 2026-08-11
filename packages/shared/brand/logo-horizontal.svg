@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 110" role="img" aria-label="CADO">
+  <g transform="translate(48,55)">
+    <rect x="-24" y="-14" width="48" height="38" rx="5" fill="none" stroke="#181611" stroke-width="3.6"/>
+    <line x1="0" y1="-14" x2="0" y2="24" stroke="#181611" stroke-width="3.6"/>
+    <path d="M0,-14 C-9,-30 -26,-26 -18,-16 M0,-14 C9,-30 26,-26 18,-16" fill="none" stroke="#B08D4F" stroke-width="3.6" stroke-linecap="round"/>
+  </g>
+  <text x="95" y="68" font-family="Jost, sans-serif" font-weight="600" font-size="40" letter-spacing="6" fill="#181611">CADO</text>
+</svg>

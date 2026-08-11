@@ -27,6 +27,7 @@ export function useStoresByCategory(categorySlug: string | undefined) {
         .from("partners")
         .select("id, name, slug, description, logo_url, cover_image_url, products!inner(category:categories!inner(slug))")
         .eq("status", "active")
+        .eq("is_live", true)
         .eq("products.categories.slug", categorySlug as string)
         .limit(100);
       if (error) throw error;
@@ -49,6 +50,9 @@ export function useSearchStores(query: string) {
         .from("partners")
         .select("id, name, slug, description, cover_image_url")
         .eq("status", "active")
+        // Coming-soon stores (is_live=false) stay out of search — they'd be
+        // clickable links to a store with nothing in it.
+        .eq("is_live", true)
         .or(`name.ilike.%${term}%,description.ilike.%${term}%`)
         .limit(20);
       if (error) throw error;
@@ -57,16 +61,19 @@ export function useSearchStores(query: string) {
   });
 }
 
+/** The homepage stores row — the ONE place is_live=false stores appear,
+ *  rendered as non-clickable "Coming soon". Everything else filters them out. */
 export function useTopStores() {
   return useQuery({
     queryKey: ["stores", "top"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, name, slug, logo_url, cover_image_url, description")
+        .select("id, name, slug, logo_url, cover_image_url, description, is_live")
         .eq("status", "active")
+        .order("is_live", { ascending: false })
         .order("name")
-        .limit(8);
+        .limit(12);
       if (error) throw error;
       return data;
     },

@@ -728,6 +728,7 @@ export type Database = {
           description: string | null
           email: string | null
           id: string
+          is_live: boolean
           logo_url: string | null
           name: string
           phone: string | null
@@ -743,6 +744,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_live?: boolean
           logo_url?: string | null
           name: string
           phone?: string | null
@@ -758,6 +760,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_live?: boolean
           logo_url?: string | null
           name?: string
           phone?: string | null

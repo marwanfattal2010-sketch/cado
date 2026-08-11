@@ -42,10 +42,11 @@ const MORE_OCCASIONS = [
   { name: "Engagement", img: "/occasions/engagement.jpg" },
 ];
 
+// Two short lines each — these render as compact 3-up cards on mobile.
 const HOW_IT_WORKS = [
-  { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "Browse gifts from stores across Lebanon." },
-  { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Every order comes gift-wrapped, with your note inside." },
-  { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order before 4PM and it arrives the same day." },
+  { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "From stores across Lebanon." },
+  { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Your note inside, free." },
+  { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order by 4PM, arrives tonight." },
 ];
 
 const WHY_CADO = [
@@ -114,14 +115,14 @@ function ProductRow({
 }) {
   if (!query.isLoading && !query.data?.length) return null;
   return (
-    <section className="pt-7">
+    <section className="pt-5">
       <SectionHead title={title} to={to} />
       {query.isLoading ? (
         <ProductRowSkeleton />
       ) : (
         <div className="scroll-row gap-3 px-4">
           {query.data?.map((p) => (
-            <div key={p.id} className="w-[44vw] shrink-0 sm:w-[190px]">
+            <div key={p.id} className="w-[42vw] shrink-0 sm:w-[190px]">
               <ProductCard {...p} />
             </div>
           ))}
@@ -139,7 +140,6 @@ export function Home() {
   const stores = useTopStores();
   const trending = useProductsByTag("trending");
   const mostGifted = useProductsByTag("most-gifted");
-  const newOnCado = useProductsByTag("new");
   const needToday = useNeedItToday();
 
   const [query, setQuery] = useState("");
@@ -159,21 +159,22 @@ export function Home() {
     <div>
       {/* 1 — HERO. Not a ring: an engagement ring is the least universal gift
           there is. The product is the arrival, not the object. */}
-      <section className="relative mx-4 mt-3 flex aspect-[4/5] max-h-[62vh] flex-col justify-end overflow-hidden rounded-card px-6 pb-8 sm:aspect-[16/7]">
+      <section className="relative mx-4 mt-3 flex aspect-[5/4] max-h-[40vh] flex-col justify-end overflow-hidden rounded-card px-6 pb-6 sm:aspect-[16/7] sm:max-h-none">
         <HeroCarousel />
         <h1 className="relative max-w-sm font-display text-display text-inverse drop-shadow sm:max-w-lg">
           Wrapped, and at their door by tonight.
         </h1>
         <Link
           to="/gift-finder"
-          className="relative mt-5 inline-flex h-[52px] w-fit items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse transition-all duration-fast active:scale-[0.97]"
+          className="relative mt-4 inline-flex h-[52px] w-fit items-center rounded-pill bg-ribbon px-8 text-body font-medium text-inverse transition-all duration-fast active:scale-[0.97]"
         >
           Find a gift
         </Link>
       </section>
 
-      {/* 2 — SEARCH. Searches inline; no navigation away. */}
-      <div className="mx-auto max-w-6xl px-4 pt-4">
+      {/* 2 — SEARCH. Searches inline; no navigation away. Above the fold at
+          375px now that the hero is ~35% shorter. */}
+      <div className="mx-auto max-w-6xl px-4 pt-3">
         <div className="flex items-center gap-3 rounded-pill border border-line bg-surface px-5 py-3.5 shadow-rest">
           <SearchIcon className="h-[18px] w-[18px] shrink-0 text-muted" />
           <input
@@ -236,41 +237,27 @@ export function Home() {
         </div>
       ) : (
         <>
-          {/* 3 — GIFT FINDER. Whoever taps "not sure what to get" is exactly
-              who CADO exists for, so send them to the finder first. */}
-          <section className="mx-auto max-w-6xl px-4 pt-6">
+          {/* 3 — GIFT FINDER, as a compact banner: one title line, one
+              subtitle line. The other dark banner (gift cards) lives far
+              down the page so the two never stack. */}
+          <section className="mx-auto max-w-6xl px-4 pt-4">
             <Link
               to="/gift-finder"
-              className="flex items-center justify-between gap-4 rounded-card bg-ink px-6 py-5 text-inverse transition-transform duration-fast active:scale-[0.99]"
+              className="flex items-center justify-between gap-4 rounded-card bg-ink px-5 py-3.5 text-inverse transition-transform duration-fast active:scale-[0.99]"
             >
-              <div>
-                <p className="font-display text-h2">Not sure what to get?</p>
-                <p className="mt-1 text-body text-inverse/70">Three questions. We’ll find it.</p>
+              <div className="min-w-0">
+                <p className="truncate text-body font-semibold">Not sure what to get?</p>
+                <p className="mt-0.5 truncate text-caption text-inverse/70">Three questions. We’ll find it.</p>
               </div>
-              <span className="shrink-0 text-[28px] text-gold" aria-hidden>
+              <span className="shrink-0 text-[22px] text-gold" aria-hidden>
                 🎀
               </span>
-            </Link>
-
-            {/* 3b — GIFT CARD BANNER, restored from the old homepage: the
-                whole card is the link, straight to /gift-cards. Slimmer than
-                the finder card and worded differently so the dark pair
-                doesn't read as duplicates. */}
-            <Link
-              to="/gift-cards"
-              className="mt-3 flex min-h-[72px] items-center justify-between gap-4 rounded-card bg-ink px-6 py-4 text-inverse transition-transform duration-fast active:scale-[0.99]"
-            >
-              <div>
-                <p className="text-body font-semibold">Skip the guessing</p>
-                <p className="mt-0.5 text-caption text-inverse/60">Send a CADO gift card instead.</p>
-              </div>
-              <GiftIcon className="h-8 w-8 shrink-0 text-gold" />
             </Link>
           </section>
 
           {/* 4 — SHOP BY RECIPIENT. Above category on purpose: people think
               "something for my sister" before "I need shoes". */}
-          <section className="pt-7">
+          <section className="pt-5">
             <SectionHead title="Shop by recipient" />
             <div className="scroll-row gap-3 px-4">
               {RECIPIENTS.map((r) => (
@@ -289,10 +276,57 @@ export function Home() {
             </div>
           </section>
 
-          {/* 5 — SHOP BY CATEGORY. Three per row, not five. */}
-          <section className="pt-7">
+          {/* 4b — STORES ON CADO, moved up from the bottom of the page.
+              Text-styled circles, never a brand's logo image. is_live=false
+              stores render as non-clickable "Coming soon" — real signings,
+              no products yet, and no pretending otherwise. */}
+          {stores.data && stores.data.length > 0 ? (
+            <section className="pt-5">
+              <SectionHead title="Stores on CADO" to="/browse" />
+              <div className="scroll-row gap-3 px-4">
+                {stores.data.map((store) =>
+                  store.is_live ? (
+                    <Link
+                      key={store.id}
+                      to={`/store/${store.id}`}
+                      className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 text-center transition-transform duration-fast active:scale-[0.96]"
+                    >
+                      <span className="flex h-[72px] w-[72px] items-center justify-center rounded-pill bg-surface shadow-rest">
+                        <span className="font-display text-[13px] font-semibold leading-tight text-ink">
+                          {store.name.split(" ").slice(0, 2).map((w) => w.charAt(0)).join("")}
+                        </span>
+                      </span>
+                      <span className="line-clamp-2 text-[11px] font-medium leading-tight">{store.name}</span>
+                    </Link>
+                  ) : (
+                    <div
+                      key={store.id}
+                      aria-disabled
+                      className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 text-center opacity-80"
+                    >
+                      <span className="relative flex h-[72px] w-[72px] items-center justify-center rounded-pill bg-surface-sunk">
+                        <span className="font-display text-[13px] font-semibold leading-tight text-muted">
+                          {store.name.split(" ").slice(0, 2).map((w) => w.charAt(0)).join("")}
+                        </span>
+                        <span className="absolute -bottom-1 rounded-pill bg-ink px-1.5 py-0.5 text-[9px] font-semibold text-inverse">
+                          Coming soon
+                        </span>
+                      </span>
+                      <span className="line-clamp-2 text-[11px] font-medium leading-tight text-muted">
+                        {store.name}
+                      </span>
+                    </div>
+                  )
+                )}
+              </div>
+            </section>
+          ) : null}
+
+          {/* 5 — SHOP BY CATEGORY. Four small tiles per row on mobile so all
+              nine fit in ~2.5 rows — one screen, no giant tiles. */}
+          <section className="pt-5">
             <SectionHead title="Shop by category" to="/browse" />
-            <div className="mx-auto grid max-w-6xl grid-cols-3 gap-3 px-4 sm:grid-cols-5">
+            <div className="mx-auto grid max-w-6xl grid-cols-4 gap-2.5 px-4 sm:grid-cols-5">
               {categories.data?.map((cat) => (
                 <Link
                   key={cat.id}
@@ -309,7 +343,7 @@ export function Home() {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <span className="text-[13px] font-medium leading-tight">{tidyCategory(cat.name)}</span>
+                  <span className="text-[11px] font-medium leading-tight">{tidyCategory(cat.name)}</span>
                 </Link>
               ))}
             </div>
@@ -318,10 +352,10 @@ export function Home() {
           {/* 5b — BIRTHDAY BANNER, restored from the old homepage. Birthdays
               are the flagship occasion, so it gets the visual weight right
               after the category grid. Whole card is the link. */}
-          <section className="mx-auto max-w-6xl px-4 pt-7">
+          <section className="mx-auto max-w-6xl px-4 pt-5">
             <Link
               to="/gift-finder?occasion=birthday"
-              className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-sheet p-6 transition-transform duration-fast active:scale-[0.99]"
+              className="relative flex h-[170px] flex-col justify-end overflow-hidden rounded-sheet p-6 transition-transform duration-fast active:scale-[0.99]"
             >
               <img
                 src="/occasions/birthday-banner.jpg"
@@ -337,9 +371,10 @@ export function Home() {
             </Link>
           </section>
 
-          {/* 6 — NEED IT TODAY, with the real cut-off. */}
+          {/* 6 — NEED IT TODAY, with the real cut-off. Kept exactly as a
+              scroll row, per the redesign spec. */}
           {needToday.data && needToday.data.length > 0 ? (
-            <section className="pt-7">
+            <section className="pt-5">
               <div className="mx-auto flex max-w-6xl items-end justify-between gap-3 px-4 pb-3">
                 <div>
                   <h2 className="font-display text-h2">Need it today</h2>
@@ -350,7 +385,7 @@ export function Home() {
               </div>
               <div className="scroll-row gap-3 px-4">
                 {needToday.data.map((p) => (
-                  <div key={p.id} className="w-[44vw] shrink-0 sm:w-[190px]">
+                  <div key={p.id} className="w-[42vw] shrink-0 sm:w-[190px]">
                     <ProductCard {...p} />
                   </div>
                 ))}
@@ -358,11 +393,21 @@ export function Home() {
             </section>
           ) : null}
 
-          {/* 7 — TRENDING */}
-          <ProductRow title="Trending this week" to="/browse" query={trending} />
+          {/* 7 — MOST GIFTED FOR BIRTHDAYS: the main section, so it's the one
+              that looks different — a 2-column grid, not another scroll row. */}
+          {mostGifted.data && mostGifted.data.length > 0 ? (
+            <section className="pt-5">
+              <SectionHead title="Most gifted for birthdays" to="/gift-finder?occasion=birthday" />
+              <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 px-4 sm:grid-cols-4">
+                {mostGifted.data.slice(0, 4).map((p) => (
+                  <ProductCard key={p.id} {...p} />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-          {/* 8 — SHOP BY BUDGET */}
-          <section className="pt-7">
+          {/* 8 — SHOP BY BUDGET, directly under the birthdays grid. */}
+          <section className="pt-5">
             <SectionHead title="Shop by budget" />
             <div className="scroll-row gap-2 px-4">
               {BUDGETS.map((b) => (
@@ -377,15 +422,29 @@ export function Home() {
             </div>
           </section>
 
-          {/* 9 — MOST GIFTED FOR BIRTHDAYS */}
-          <ProductRow
-            title="Most gifted for birthdays"
-            to="/gift-finder?occasion=birthday"
-            query={mostGifted}
-          />
+          {/* 9 — TRENDING THIS WEEK. "New on CADO" is merged into this one
+              row — four near-identical scroll rows was repetition, not
+              information. */}
+          <ProductRow title="Trending this week" to="/browse" query={trending} />
+
+          {/* 9b — GIFT CARD BANNER: the second dark banner, deliberately this
+              far from the quiz banner so the two never stack. Whole card
+              links straight to gift cards. */}
+          <section className="mx-auto max-w-6xl px-4 pt-5">
+            <Link
+              to="/gift-cards"
+              className="flex items-center justify-between gap-4 rounded-card bg-ink px-5 py-3.5 text-inverse transition-transform duration-fast active:scale-[0.99]"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-body font-semibold">Skip the guessing</p>
+                <p className="mt-0.5 truncate text-caption text-inverse/70">Send a CADO gift card instead.</p>
+              </div>
+              <GiftIcon className="h-6 w-6 shrink-0 text-gold" />
+            </Link>
+          </section>
 
           {/* 10 — MORE OCCASIONS. Deliberately small; birthdays are the path. */}
-          <section className="pt-7">
+          <section className="pt-5">
             <SectionHead title="More occasions" />
             <div className="scroll-row gap-2.5 px-4">
               {MORE_OCCASIONS.map((o) => (
@@ -402,56 +461,25 @@ export function Home() {
             </div>
           </section>
 
-          {/* 11 — NEW ON CADO */}
-          <ProductRow title="New on CADO" to="/browse" query={newOnCado} />
-
-          {/* 12 — STORE SPOTLIGHT. Logo cards, not letter avatars. */}
-          {stores.data && stores.data.length > 0 ? (
-            <section className="pt-7">
-              <SectionHead title="Stores on CADO" to="/browse" />
-              <div className="scroll-row gap-3 px-4">
-                {stores.data.map((store) => (
-                  <Link
-                    key={store.id}
-                    to={`/store/${store.id}`}
-                    className="w-[120px] shrink-0 rounded-card bg-surface p-3 text-center shadow-rest transition-transform duration-fast active:scale-[0.97]"
-                  >
-                    <div className="mx-auto flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-card bg-surface">
-                      <img
-                        src={store.logo_url || store.cover_image_url || "/categories/gift-card.jpg"}
-                        alt=""
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <p className="mt-2 line-clamp-2 text-[13px] font-medium leading-tight">{store.name}</p>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {/* 13 — HOW CADO WORKS. A quiet, typographic break. */}
-          <section className="mx-auto max-w-6xl px-4 pt-8">
-            <RibbonDivider className="mb-5" />
+          {/* 11 — HOW CADO WORKS. Halved: small icon, title, two short lines.
+              (The stores row moved up beside recipients; "New on CADO" is
+              merged into Trending.) */}
+          <section className="mx-auto max-w-6xl px-4 pt-6">
+            <RibbonDivider className="mb-4" />
             <h2 className="text-center font-display text-h2">How CADO works</h2>
-            <div className="mt-5 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
+            <div className="mt-4 grid grid-cols-3 gap-2">
               {HOW_IT_WORKS.map((s) => (
-                <div
-                  key={s.n}
-                  className="w-[220px] shrink-0 rounded-card bg-surface p-5 text-center shadow-rest sm:w-auto"
-                >
-                  <p className="font-display text-h1 text-line">{s.n}</p>
-                  <s.Icon className="mx-auto mt-1 h-7 w-7 text-muted" />
-                  <p className="mt-3 text-body font-semibold">{s.title}</p>
-                  <p className="mt-1 text-caption leading-relaxed text-muted">{s.desc}</p>
+                <div key={s.n} className="rounded-card bg-surface p-3 text-center shadow-rest">
+                  <s.Icon className="mx-auto h-5 w-5 text-muted" />
+                  <p className="mt-1.5 text-caption font-semibold">{s.title}</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-muted">{s.desc}</p>
                 </div>
               ))}
             </div>
           </section>
 
           {/* 14 — WHY CADO. 2x2 on mobile. */}
-          <section className="mx-auto max-w-6xl px-4 pt-7">
+          <section className="mx-auto max-w-6xl px-4 pt-5">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {WHY_CADO.map((w) => (
                 <div
@@ -466,7 +494,7 @@ export function Home() {
           </section>
 
           {/* 15 — SAY SOMETHING WITH IT. The emotional beat. */}
-          <section className="mx-auto max-w-6xl px-4 pt-7">
+          <section className="mx-auto max-w-6xl px-4 pt-5">
             <div className="flex flex-col overflow-hidden rounded-card bg-ribbon-tint sm:flex-row sm:items-center">
               <div className="px-6 py-6 sm:flex-1">
                 <p className="font-display text-h2">Say something with it</p>
@@ -480,7 +508,7 @@ export function Home() {
 
           {/* 15b — INSTAGRAM STRIP. Static images and a profile link only —
               no API, no fake feed. Every tile opens @cado.lb. */}
-          <section className="pt-8">
+          <section className="pt-6">
             <div className="mx-auto max-w-6xl px-4 pb-3">
               <a
                 href="https://instagram.com/cado.lb"
@@ -561,7 +589,7 @@ export function Home() {
 
           {/* Reviews — hidden until real ones exist. */}
           {REVIEWS.length > 0 ? (
-            <section className="pt-7">
+            <section className="pt-5">
               <SectionHead title="What people are saying" />
               <div className="scroll-row gap-3 px-4">
                 {REVIEWS.map((r, i) => (

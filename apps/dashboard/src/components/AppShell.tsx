@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { t, type DictKey } from "@/lib/dictionary";
 import type { DashboardRole } from "@/lib/auth";
+import { BrandLogo } from "./BrandLogo";
 
 interface NavItem {
   href: string;
@@ -94,11 +95,10 @@ function Brand({
 }) {
   return (
     <div>
-      <p className="font-display text-lg tracking-tight text-ink">
-        CADO <span className="text-gold">Partners</span>
-      </p>
+      {/* Official logo, ink variant — the shell is cream/surface. */}
+      <BrandLogo variant="ink" height={compact ? 24 : 30} />
       {!compact && (
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1.5 text-xs text-muted">
           {role === "admin" ? "CADO staff" : storeName ?? "Your store"}
         </p>
       )}
