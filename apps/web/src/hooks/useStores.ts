@@ -71,11 +71,15 @@ export function useTopStores() {
         .from("partners")
         .select("id, name, slug, logo_url, cover_image_url, description, is_live")
         .eq("status", "active")
-        .order("is_live", { ascending: false })
         .order("name")
-        .limit(12);
+        .limit(40);
       if (error) throw error;
-      return data;
+      // Live stores lead; every coming-soon store is kept. A flat limit with
+      // live-first ordering silently cut the coming-soon stores off the end,
+      // which is how GS and Zahar vanished from the first deploy of this row.
+      const live = (data ?? []).filter((s) => s.is_live).slice(0, 10);
+      const comingSoon = (data ?? []).filter((s) => !s.is_live);
+      return [...live, ...comingSoon];
     },
   });
 }
