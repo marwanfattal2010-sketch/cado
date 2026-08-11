@@ -201,7 +201,7 @@ export function Category() {
       ) : showHighlights ? (
         <section className="pt-6">
           <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">New in {categoryName}</h2>
-          <div className="scroll-row gap-3 px-4">
+          <div className="scroll-row">
             {highlights.map((p) => (
               <div key={p.id} className="w-[42vw] shrink-0 sm:w-[190px]">
                 <ProductCard {...(p as Parameters<typeof ProductCard>[0])} />
@@ -216,7 +216,7 @@ export function Category() {
       {stores.isLoading ? (
         <section className="pt-7">
           <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
-          <div className="scroll-row gap-3 px-4">
+          <div className="scroll-row">
             {Array.from({ length: 2 }).map((_, i) => (
               <StoreCardSkeleton key={i} />
             ))}
@@ -225,7 +225,7 @@ export function Category() {
       ) : showStores ? (
         <section className="pt-7">
           <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
-          <div className="scroll-row gap-3 px-4">
+          <div className="scroll-row">
             {stores.data?.map((store) => (
               <button
                 key={store.id}

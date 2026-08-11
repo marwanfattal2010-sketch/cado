@@ -10,9 +10,9 @@ import { HeroCarousel } from "../components/HeroCarousel";
 import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
 import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
-import { ProductGridSkeleton } from "../components/Skeleton";
+import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
 import { SearchIcon, GiftIcon, WrapIcon, ShieldCheckIcon, WalletIcon, TruckIcon } from "../components/Icons";
-import { ButtonLink, ChipLink } from "../components/ui";
+import { ButtonLink } from "../components/ui";
 import { BUDGETS, OCCASIONS, RECIPIENTS } from "../lib/filters";
 import { BENEFITS, PARTNER_EMAIL, PARTNER_WHATSAPP_NUMBER } from "./Partners";
 
@@ -98,6 +98,66 @@ function PhotoCard({ to, img, label }: { to: string; img: string; label: string 
       <span className="relative font-display text-[15px] font-semibold leading-tight text-inverse drop-shadow">
         {label}
       </span>
+    </Link>
+  );
+}
+
+/**
+ * One row = one filter over the product table, so a product always shows the
+ * same price wherever it appears. Hidden entirely below the minimum.
+ *
+ * Restored from 47486cc^, where it was deleted as dead code once Trending
+ * became a grid. It is back because "Most gifted for birthdays" is meant to
+ * swipe, not stack — see the call site.
+ */
+function ProductRow({
+  title,
+  to,
+  query,
+}: {
+  title: string;
+  to: string;
+  query: { data?: Parameters<typeof ProductCard>[0][]; isLoading: boolean };
+}) {
+  if (!query.isLoading && (query.data?.length ?? 0) < MIN_SECTION_ITEMS) return null;
+  return (
+    <section className="pt-7">
+      <SectionHead title={title} to={to} />
+      {query.isLoading ? (
+        <ProductRowSkeleton />
+      ) : (
+        <div className="scroll-row">
+          {query.data?.map((p) => (
+            <div key={p.id} className="w-[42vw] sm:w-[190px]">
+              <ProductCard {...p} />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * A budget band as a gift tag: the price in the serif display face on cream,
+ * inside a near-black hairline, with the little punched hole a real tag has.
+ *
+ * It replaces a plain pill. A pill said "filter"; the price band is the most
+ * concrete decision on the homepage — most people know their number before
+ * they know their category — so it gets an object, not a control. No new
+ * colour is involved: canvas, --primary and the display face, all existing.
+ */
+function BudgetTag({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      /* 88px tall clears the 44px minimum twice over, and the fixed width
+         keeps all four tags the same size whether the label is "$100+" or
+         "$20 – $50". */
+      className="flex h-[88px] w-[128px] flex-col items-center justify-center rounded-card border border-primary bg-canvas px-3 text-center transition-all duration-press ease-out active:scale-[0.97]"
+    >
+      <span aria-hidden className="mb-2 h-2 w-2 rounded-pill border border-primary/45" />
+      <span className="font-display text-h2 leading-tight text-ink">{label}</span>
     </Link>
   );
 }
@@ -194,8 +254,10 @@ function SiteFooter() {
 export function Home() {
   const stores = useTopStores();
   const trending = useProductsByTag("trending");
+  const mostGifted = useProductsByTag("most-gifted");
 
   const [query, setQuery] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
   const searching = query.trim().length > 0;
   const searchProducts = useSearchProducts(query);
   const searchStores = useSearchStores(query);
@@ -246,16 +308,51 @@ export function Home() {
       */}
       <div className="sticky top-[var(--header-h)] z-[15] border-b border-line bg-canvas/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 pb-2 pt-2.5">
-          <div className="flex h-11 flex-1 items-center gap-2.5 rounded-pill border border-line bg-surface px-4 shadow-rest">
-            <SearchIcon className="h-[18px] w-[18px] shrink-0 text-muted" />
+          {/*
+            A real <form role="search">, not a bare input. That is what makes
+            the iOS keyboard's return key say "Search" (type="search" +
+            enterKeyHint="search" only get the label; without a form to submit,
+            pressing it does nothing and the keyboard stays up). Submitting
+            blurs the field, which is what actually dismisses the keyboard and
+            hands the screen back.
+
+            The search itself is unchanged and still live: `query` updates on
+            every keystroke and the results below re-render as you type, so by
+            the time return is pressed the answer is already on screen. Submit
+            is a way to put the keyboard away, never a gate in front of it —
+            hence preventDefault and no navigation.
+
+            The magnifier is after the input in DOM order, so it sits at the
+            right edge while the placeholder still starts from the left.
+          */}
+          <form
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              searchInput.current?.blur();
+            }}
+            /* The input is 42px inside a 44px pill and does not reach the
+               horizontal padding or the icon, so a tap on the pill's edge
+               would otherwise land on nothing. This makes the whole 44px
+               control the tap target, which is what it looks like. */
+            onClick={() => searchInput.current?.focus()}
+            className="search-field flex h-11 flex-1 items-center gap-2.5 rounded-pill border border-line bg-surface px-4 shadow-rest transition-colors duration-fast"
+          >
             <input
+              ref={searchInput}
+              type="search"
+              enterKeyHint="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search gifts or stores"
               aria-label="Search gifts or stores"
-              className="w-full min-w-0 bg-transparent text-body text-ink outline-none placeholder:text-muted"
+              /* h-full, not the input's default 23px line box: the pill is
+                 44px and the input has to BE the tap target, or the top and
+                 bottom 10px of the bar look tappable and do nothing. */
+              className="h-full w-full min-w-0 bg-transparent text-body text-ink outline-none placeholder:text-muted"
             />
-          </div>
+            <SearchIcon className="h-[18px] w-[18px] shrink-0 text-muted" aria-hidden />
+          </form>
           {/* What used to be a full-width black quiz banner interrupting the
               page. It's a way out for someone who's stuck, not a gate. */}
           <Link
@@ -364,6 +461,55 @@ export function Home() {
                 </Link>
               </section>
 
+              {/* 4b — BIRTHDAY BANNER. Restored verbatim from baee07b, which
+                  had itself restored it from the original homepage; the
+                  round-2 redesign (0195c24) dropped it. Same markup, same
+                  photo, same /gift-finder?occasion=birthday target.
+
+                  It sits directly under the hero rather than below the
+                  category grid where it used to live: birthdays are CADO's
+                  flagship occasion, and this is the first shoppable thing on
+                  the page. */}
+              <section className="mx-auto max-w-6xl px-4 pt-7">
+                <Link
+                  to="/gift-finder?occasion=birthday"
+                  className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-sheet p-6 transition-transform duration-fast active:scale-[0.99]"
+                >
+                  <img
+                    src="/occasions/birthday-banner.jpg"
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+                  <p className="relative font-display text-h1 text-inverse drop-shadow">Birthday coming up?</p>
+                  <p className="relative mt-1 text-body text-inverse/85 drop-shadow">
+                    Same-day gifts, sorted by what always lands.
+                  </p>
+                </Link>
+              </section>
+
+              {/* 4c — MOST GIFTED FOR BIRTHDAYS. Restored as the swipe row it
+                  originally was (92e3a81); the version 0195c24 hid had been
+                  turned into a 2-column grid, which is not what this section
+                  is. It stays a carousel — Trending is the grid on this page,
+                  and two grids in a row read as one undifferentiated wall.
+
+                  Sits directly under the birthday banner: same occasion, so
+                  the banner asks the question and this answers it.
+
+                  The data is the editorial `most-gifted` tag and nothing else
+                  — no rank, no number, no "#1" anywhere, because there is no
+                  order-volume data the storefront can read to justify one.
+                  "Most gifted" is a curator's shelf label, and if fewer than
+                  MIN_SECTION_ITEMS products carry the tag the whole section
+                  hides rather than showing a padded row. */}
+              <ProductRow
+                title="Most gifted for birthdays"
+                to="/gift-finder?occasion=birthday"
+                query={mostGifted}
+              />
+
               {/* 5 — OCCASIONS. Photo cards, the same treatment as the
                   recipient rail below — the small text pills that briefly
                   replaced them made the most emotional row on the page look
@@ -376,7 +522,7 @@ export function Home() {
                   nothing is asked. */}
               <section className="pt-7">
                 <SectionHead title="Shop by occasion" />
-                <div className="scroll-row gap-3 px-4">
+                <div className="scroll-row">
                   {OCCASIONS.map((o) => (
                     <PhotoCard
                       key={o.value}
@@ -398,7 +544,7 @@ export function Home() {
                   sister" before they think "I need shoes". */}
               <section className="pt-7">
                 <SectionHead title="Shop by recipient" />
-                <div className="scroll-row gap-3 px-4">
+                <div className="scroll-row">
                   {RECIPIENTS.map((r) => (
                     <PhotoCard
                       key={r.value}
@@ -421,22 +567,25 @@ export function Home() {
                   tap. */}
               <section className="mt-7 bg-tint-sage py-7">
                 <SectionHead title="Stores on CADO" />
-                <div className="scroll-row gap-3 px-4">
+                <div className="scroll-row">
                   {stores.isLoading
                     ? Array.from({ length: 3 }).map((_, i) => <StoreCardSkeleton key={i} />)
                     : stores.data?.map((store) => <StoreCard key={store.id} store={store} />)}
                 </div>
               </section>
 
-              {/* 9 — SHOP BY BUDGET, on a warm blush band. Four bands,
-                  straight to a pre-filtered grid, no questions in between. */}
-              <section className="bg-tint-blush py-7">
+              {/* 9 — SHOP BY BUDGET. The blush band is gone: a pink stripe
+                  was the one place on the page a hue filled a large surface,
+                  and it fought the sage shelf directly above it. Plain canvas
+                  now, so the tags themselves are the only thing to look at.
+
+                  Four bands, straight to a pre-filtered grid, no questions in
+                  between. */}
+              <section className="py-7">
                 <SectionHead title="Shop by budget" />
-                <div className="scroll-row gap-2 px-4">
+                <div className="scroll-row">
                   {BUDGETS.map((b) => (
-                    <ChipLink key={b.slug} to={`/gift-finder?budget=${b.slug}`}>
-                      {b.label}
-                    </ChipLink>
+                    <BudgetTag key={b.slug} to={`/gift-finder?budget=${b.slug}`} label={b.label} />
                   ))}
                 </div>
               </section>

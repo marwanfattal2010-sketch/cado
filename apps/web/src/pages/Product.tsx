@@ -33,7 +33,7 @@ function Row({
   return (
     <section className="pt-7">
       <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">{title}</h2>
-      <div className="scroll-row gap-3 px-4">
+      <div className="scroll-row">
         {items.map((p) => (
           <div key={p.id} className="w-[44vw] shrink-0 sm:w-[190px]">
             <ProductCard {...p} />
@@ -127,7 +127,9 @@ export function Product() {
       <div className="mx-auto max-w-6xl md:grid md:grid-cols-2 md:gap-8 md:px-4 md:pt-4">
         {/* Gallery */}
         <div className="relative">
-          <div className="scroll-row md:rounded-card md:overflow-hidden">
+          {/* Edge-to-edge on purpose — see .scroll-row-flush. The gallery is
+              the photo, so the shared page gutter would read as a bug here. */}
+          <div className="scroll-row scroll-row-flush md:rounded-card md:overflow-hidden">
             {images.length > 0 ? (
               images.map((img, i) => (
                 <img

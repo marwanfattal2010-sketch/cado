@@ -103,6 +103,16 @@
   --alert: var(--gold-deep);
   --border: 226 217 205;
 
+  /* The page gutter. Every full-bleed horizontal strip aligns its first card
+     to this, and it is the same 16px that `px-4` gives the centred content
+     containers — so a section title, the search bar and a carousel's first
+     card all start on one vertical line. Change it here, not per section. */
+  --page-x: 16px;
+  /* One gap for every carousel. 12px: tight enough that a trailing card still
+     peeks on a 375px screen, wide enough that two photo cards read as two
+     cards rather than one strip. */
+  --row-gap: 12px;
+
   /* 8px grid */
   --space-1: 4px;
   --space-2: 8px;
@@ -219,11 +229,28 @@ button:active:not(:disabled),
   transform: none !important;
 }
 
-/* Horizontal scrolling rows (category/product strips) — snap, no visible
+/* Horizontal scrolling rows (category/product/chip strips) — snap, no visible
    scrollbar, and the container bleeds to the screen edge so the trailing
-   card visibly peeks, which is what signals "swipe me". */
+   card visibly peeks, which is what signals "swipe me".
+
+   THE GUTTER AND THE GAP LIVE HERE, NOT ON THE CALL SITES. Every strip used
+   to carry its own `px-4 gap-2`/`gap-3`, which is how the budget chips ended
+   up 8px apart and the occasion cards 12px, and how one strip could be
+   re-padded without the others following. Do not add `px-*` or `gap-*` to a
+   .scroll-row — it doubles the gutter and puts the rows back out of step.
+
+   scroll-padding-inline is the half that is easy to miss and is the actual
+   fix for "the first card is cut off". `scroll-snap-type: x mandatory` snaps
+   the first child to the *snapport* start, and the snapport ignores ordinary
+   padding — so the browser scrolled the 16px of padding-left out of view on
+   load and parked the first card flush against the screen edge, out of line
+   with every title on the page. scroll-padding-inline insets the snapport by
+   the same gutter, so the resting position of card one is the page margin. */
 .scroll-row {
   display: flex;
+  gap: var(--row-gap);
+  padding-inline: var(--page-x);
+  scroll-padding-inline: var(--page-x);
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -249,6 +276,48 @@ button:active:not(:disabled),
 }
 .scroll-row > * {
   scroll-snap-align: start;
+  /* A flex item with nothing to shrink to is still allowed to shrink; every
+     card in these rows sets its own width, so let none of them squeeze. */
+  flex-shrink: 0;
+}
+
+/* The one strip that must NOT be inset: an edge-to-edge media gallery, where
+   the photo is supposed to fill the screen and a gutter would read as a bug.
+   Kept as an explicit opt-out so the default stays "aligned to the margin". */
+.scroll-row-flush {
+  padding-inline: 0;
+  scroll-padding-inline: 0;
+  gap: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Search field focus.
+
+   The global :focus-visible ring is gold, which is correct for buttons and
+   links on cream but wrong on a full-width text field — a gold halo around
+   the search bar reads as a validation warning, not as focus. This swaps it
+   for the quieter thing the field already has: its own hairline, darkened.
+
+   Focus is NOT removed, it is replaced. :focus-within darkens the border
+   from --border to near-black ink, which is a visible, keyboard-reachable
+   focus indicator. Only the input's own outline is suppressed, so a clear
+   button or any other control sitting inside the field keeps its ring.
+   --------------------------------------------------------------------- */
+.search-field:focus-within {
+  border-color: rgb(var(--ink) / 0.45);
+}
+.search-field:focus-visible,
+.search-field > input:focus-visible {
+  outline: none;
+}
+/* type="search" paints a native ✕ in WebKit that would collide with the
+   magnifier now sitting at the right edge. */
+.search-field::-webkit-search-cancel-button,
+.search-field::-webkit-search-decoration,
+.search-field input::-webkit-search-cancel-button,
+.search-field input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* Raises a small control to the 44px minimum touch target without changing

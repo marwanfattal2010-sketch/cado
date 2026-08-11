@@ -3,13 +3,19 @@ import { supabase } from "../lib/supabase";
 import { curatedTitles } from "../lib/curation";
 import { budgetBySlug, inBudgetRange, occasionByValue } from "../lib/filters";
 
+// recipient_tags and the category embed ride along so the results screen can
+// build its refine-chips from the gifts actually in view, rather than from a
+// hardcoded list that would offer filters matching nothing. Both are plain
+// reads on columns the storefront already exposes elsewhere.
 const FIELDS =
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, created_at, product_images(storage_path, is_primary), partner:partners(id, name)";
+  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, created_at, recipient_tags, category:categories(slug, name), product_images(storage_path, is_primary), partner:partners(id, name)";
 
-type Row = {
+export type Row = {
   id: string;
   title: string;
   price: number;
+  recipient_tags?: string[] | null;
+  category?: { slug: string; name: string } | null;
   [k: string]: unknown;
 };
 

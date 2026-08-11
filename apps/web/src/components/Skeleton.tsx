@@ -34,7 +34,7 @@ export function ProductGridSkeleton({
 /** Same card shape, laid out as a horizontal row. */
 export function ProductRowSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="scroll-row gap-3 px-4">
+    <div className="scroll-row">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="w-[44vw] shrink-0 sm:w-[180px]">
           <Skeleton className="aspect-square w-full" />

@@ -84,7 +84,7 @@ export function CategoryChips({
 
   if (categories.isLoading) {
     return (
-      <div className={`scroll-row gap-2 px-4 ${className}`}>
+      <div className={`scroll-row ${className}`}>
         {Array.from({ length: 6 }).map((_, i) => (
           <span key={i} className="skeleton h-9 w-[86px] shrink-0 rounded-pill" />
         ))}
@@ -95,7 +95,7 @@ export function CategoryChips({
   if (!categories.data?.length) return null;
 
   return (
-    <div ref={rowRef} className={`scroll-row gap-2 px-4 ${className}`}>
+    <div ref={rowRef} className={`scroll-row ${className}`}>
       {/* First chip, and the default. Only in in-place mode: on a category
           page "All" would have to mean "go to the homepage", which is what
           the logo already does. */}

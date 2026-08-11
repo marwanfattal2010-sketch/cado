@@ -190,7 +190,7 @@ export function CategoryInline({ browse }: { browse: CategoryBrowse }) {
       {stores.isLoading ? (
         <section className="mt-5 bg-tint-sage py-6">
           <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {name}</h2>
-          <div className="scroll-row gap-3 px-4">
+          <div className="scroll-row">
             {Array.from({ length: 2 }).map((_, i) => (
               <StoreCardSkeleton key={i} />
             ))}
@@ -199,7 +199,7 @@ export function CategoryInline({ browse }: { browse: CategoryBrowse }) {
       ) : showStores ? (
         <section className="mt-5 bg-tint-sage py-6">
           <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {name}</h2>
-          <div className="scroll-row gap-3 px-4">
+          <div className="scroll-row">
             {stores.data?.map((store) => (
               <button
                 key={store.id}

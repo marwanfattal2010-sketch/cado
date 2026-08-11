@@ -27,6 +27,7 @@ export function Search() {
   const [tab, setTab] = useState<Tab>("items");
   const [recents, setRecents] = useState<string[]>(readRecents);
   const [shown, setShown] = useState(PAGE);
+  const input = useRef<HTMLInputElement>(null);
 
   // Debounce so results settle as you pause typing rather than firing a
   // request per keystroke. 200ms is below the threshold most people notice.
@@ -93,17 +94,34 @@ export function Search() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <div className="relative">
+      {/* A form, so enterKeyHint="search" is not a lie: the return key has
+          something to submit, and submitting blurs the field and drops the
+          keyboard. Results are already live as you type (see the debounce
+          above), so submit deliberately does nothing else. */}
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          input.current?.blur();
+        }}
+        className="relative"
+      >
         <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
         <input
+          ref={input}
           autoFocus
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
+          type="search"
+          enterKeyHint="search"
           placeholder="Search gifts or stores…"
-          className="w-full rounded-pill border border-line bg-surface py-3.5 pl-12 pr-11 text-body outline-none transition focus:border-ink/35"
+          /* .search-field: same neutral focus as the homepage bar — the global
+             gold ring is suppressed and the hairline darkens instead. */
+          className="search-field w-full rounded-pill border border-line bg-surface py-3.5 pl-12 pr-11 text-body outline-none transition"
         />
         {raw ? (
           <button
+            type="button"
             onClick={() => setRaw("")}
             aria-label="Clear search"
             className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-pill text-muted hover:bg-surface-sunk"
@@ -111,7 +129,7 @@ export function Search() {
             ✕
           </button>
         ) : null}
-      </div>
+      </form>
 
       {searching ? (
         <div className="mt-4 flex gap-2">
