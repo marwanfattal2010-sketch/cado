@@ -71,13 +71,49 @@ export function useCreateAddress() {
       area: string;
       street: string;
       building?: string;
+      floor?: string;
+      apartment?: string;
+      notes?: string;
     }) => {
       if (!session) throw new Error("Not signed in");
       const { data, error } = await supabase
         .from("addresses")
-        .insert({ ...input, profile_id: session.user.id, is_default: true })
+        .insert({
+          ...input,
+          // Optional text fields: store null, not "".
+          building: input.building?.trim() || null,
+          floor: input.floor?.trim() || null,
+          apartment: input.apartment?.trim() || null,
+          notes: input.notes?.trim() || null,
+          profile_id: session.user.id,
+          is_default: true,
+        })
         .select()
         .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["addresses"] }),
+  });
+}
+
+/** Street-level edits to an existing address (header area picker, mostly). */
+export function useUpdateAddress() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      city?: string;
+      street?: string;
+      building?: string | null;
+      floor?: string | null;
+      apartment?: string | null;
+      notes?: string | null;
+    }) => {
+      if (!session) throw new Error("Not signed in");
+      const { id, ...fields } = input;
+      const { data, error } = await supabase.from("addresses").update(fields).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },

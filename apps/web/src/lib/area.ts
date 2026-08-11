@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
  * Same-day delivery is the whole promise, so the site has to know where the
  * customer is. Persisted locally — there's no account requirement to browse.
  */
-export const AREAS = ["Beirut", "Metn", "Jounieh", "Tripoli", "Saida", "Zahle"] as const;
+// Only cities we genuinely deliver to today. A stale stored pick from the
+// old longer list falls back to Beirut in getArea().
+export const AREAS = ["Beirut", "Tripoli"] as const;
 export type Area = (typeof AREAS)[number];
 
 const KEY = "cado-area";
@@ -35,6 +37,52 @@ export function useArea(): [Area, (a: Area) => void] {
   }, []);
 
   return [area, setArea];
+}
+
+/**
+ * Optional street-level details the shopper can attach from the header's
+ * area picker. Mirrors the addresses table's street fields (street, building,
+ * floor, apartment, notes) so checkout can prefill instead of asking again.
+ * Local-only for guests; the signed-in path also updates their default
+ * address record from the picker.
+ */
+export type AddressDetails = {
+  street: string;
+  building: string;
+  floor: string;
+  apartment: string;
+  notes: string;
+};
+
+export const EMPTY_ADDRESS_DETAILS: AddressDetails = {
+  street: "",
+  building: "",
+  floor: "",
+  apartment: "",
+  notes: "",
+};
+
+const ADDRESS_KEY = "cado-address-details";
+
+export function getAddressDetails(): AddressDetails {
+  try {
+    const raw = localStorage.getItem(ADDRESS_KEY);
+    if (!raw) return { ...EMPTY_ADDRESS_DETAILS };
+    const p = JSON.parse(raw) as Partial<AddressDetails>;
+    return {
+      street: typeof p.street === "string" ? p.street : "",
+      building: typeof p.building === "string" ? p.building : "",
+      floor: typeof p.floor === "string" ? p.floor : "",
+      apartment: typeof p.apartment === "string" ? p.apartment : "",
+      notes: typeof p.notes === "string" ? p.notes : "",
+    };
+  } catch {
+    return { ...EMPTY_ADDRESS_DETAILS };
+  }
+}
+
+export function setAddressDetails(details: AddressDetails) {
+  localStorage.setItem(ADDRESS_KEY, JSON.stringify(details));
 }
 
 /**

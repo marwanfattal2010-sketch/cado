@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
+import { getArea, getAddressDetails } from "../lib/area";
 import { Chip } from "../components/ui";
 
 const MESSAGES = ["Happy birthday!", "Congratulations!", "Thank you", "Get well soon"];
@@ -53,14 +54,22 @@ export function Checkout() {
   const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
   const [giftCardError, setGiftCardError] = useState<string | null>(null);
   const [checkingCard, setCheckingCard] = useState(false);
-  const [addressForm, setAddressForm] = useState({
-    label: "Home",
-    recipient_name: "",
-    phone: "",
-    city: "",
-    area: "",
-    street: "",
-    building: "",
+  // Prefilled from the header's area picker (city + any street details the
+  // shopper saved there), so they don't retype an address they already gave.
+  const [addressForm, setAddressForm] = useState(() => {
+    const saved = getAddressDetails();
+    return {
+      label: "Home",
+      recipient_name: "",
+      phone: "",
+      city: getArea() as string,
+      area: "",
+      street: saved.street,
+      building: saved.building,
+      floor: saved.floor,
+      apartment: saved.apartment,
+      notes: saved.notes,
+    };
   });
 
   const items = cart.data ?? [];
