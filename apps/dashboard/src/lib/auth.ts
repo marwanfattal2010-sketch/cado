@@ -19,6 +19,19 @@ export interface DashboardUser {
 }
 
 /**
+ * A store owner, narrowed so partnerId is non-null. getDashboardUser() only
+ * ever returns role 'store_owner' when profiles.partner_id is set, so this is
+ * a statement of a guarantee that already holds — but expressing it in the
+ * type is what lets a page write `.eq("partner_id", user.partnerId)` without
+ * a non-null assertion. Scoping a query to the caller's own store is the
+ * common case, so it must not be the awkward one.
+ */
+export interface StoreOwnerUser extends DashboardUser {
+  role: "store_owner";
+  partnerId: string;
+}
+
+/**
  * Resolve the current user and their dashboard role, or null if they have no
  * dashboard access. A "store_owner" is profiles.role='partner' WITH a
  * partner_id — the mapping from the spec's invented 'store_owner' role onto
@@ -81,8 +94,13 @@ export async function requireAdmin(): Promise<DashboardUser> {
 }
 
 /** Require a store owner specifically. Admins get bounced to the admin area. */
-export async function requireStoreOwner(): Promise<DashboardUser> {
+export async function requireStoreOwner(): Promise<StoreOwnerUser> {
   const user = await requireDashboardUser();
   if (user.role !== "store_owner") redirect("/admin/stores");
-  return user;
+  // Belt and braces: getDashboardUser() cannot return 'store_owner' without a
+  // partner_id, so this only fires if that invariant is ever broken. Bouncing
+  // to login beats serving a page whose queries would silently lose their
+  // store scope.
+  if (!user.partnerId) redirect("/login");
+  return user as StoreOwnerUser;
 }

@@ -2,17 +2,29 @@ import { requireStoreOwner } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/EmptyState";
 import { t } from "@/lib/dictionary";
+import { ProductEditor } from "./ProductEditor";
 
 export const dynamic = "force-dynamic";
 
 export default async function StoreProductsPage() {
-  await requireStoreOwner();
+  const user = await requireStoreOwner();
   const supabase = await createServerClient();
 
-  // "partner manages own products" scopes this to the caller's store.
+  // Scope to this store EXPLICITLY. RLS will not do it for you here, and an
+  // earlier version of this page relied on it and listed the whole
+  // marketplace: "public reads active products" is
+  // (is_active OR partner_id = my_partner_id() OR is_admin()), which has to
+  // stay that permissive because cado-web serves anonymous shoppers from this
+  // same table. So an unfiltered select returns every ACTIVE product on CADO,
+  // and a store owner saw rival shops' products sitting under "Products".
+  //
+  // Writes were never at risk — "partner manages own products" still blocks
+  // those, and the isolation test proves it — but this read is the store's own
+  // inventory screen and must show only their own rows.
   const { data: products } = await supabase
     .from("products")
     .select("id, title, price, stock_quantity, is_active, product_variants(id, name, stock_quantity)")
+    .eq("partner_id", user.partnerId)
     .order("created_at", { ascending: false });
 
   return (
@@ -56,6 +68,13 @@ export default async function StoreProductsPage() {
                     </span>
                   </div>
                 </div>
+                <ProductEditor
+                  id={p.id}
+                  price={Number(p.price)}
+                  stock={p.stock_quantity ?? 0}
+                  isActive={!!p.is_active}
+                  variants={variants}
+                />
               </li>
             );
           })}

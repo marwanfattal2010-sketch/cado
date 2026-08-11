@@ -5,5 +5,5 @@ import { getDashboardUser } from "@/lib/auth";
 export default async function Home() {
   const user = await getDashboardUser();
   if (!user) redirect("/login");
-  redirect(user.role === "admin" ? "/admin/stores" : "/store");
+  redirect(user.role === "admin" ? "/admin" : "/store");
 }

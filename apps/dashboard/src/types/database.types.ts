@@ -1,369 +1,1885 @@
-/**
- * Dashboard-owned database types.
- *
- * The coordinator asked me NOT to touch packages/shared/src/database.types.ts
- * (another workstream regenerates it), so this is a separate, hand-written file
- * scoped to the tables the dashboard reads or writes. It is intentionally
- * partial — it does not model the whole storefront schema, only what Stage 1
- * touches, plus the tables added in migrations 0031-0033.
- *
- * Verified against information_schema on 2026-08-09.
- */
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15"
+  }
   public: {
     Tables: {
-      profiles: {
+      addresses: {
         Row: {
-          id: string;
-          full_name: string | null;
-          phone: string | null;
-          role: "customer" | "partner" | "admin";
-          partner_id: string | null;
-          avatar_url: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & { id: string };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
-        Relationships: [];
-      };
-      partners: {
-        Row: {
-          id: string;
-          name: string;
-          slug: string;
-          description: string | null;
-          logo_url: string | null;
-          cover_image_url: string | null;
-          status: "pending" | "active" | "suspended";
-          country: string;
-          city: string | null;
-          phone: string | null;
-          email: string | null;
-          commission_rate: number;
-          confirmation_timeout_minutes: number;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["partners"]["Row"]> & { name: string; slug: string };
-        Update: Partial<Database["public"]["Tables"]["partners"]["Row"]>;
-        Relationships: [];
-      };
-      products: {
-        Row: {
-          id: string;
-          partner_id: string;
-          category_id: string;
-          title: string;
-          slug: string;
-          description: string | null;
-          price: number;
-          compare_at_price: number | null;
-          currency: string;
-          sku: string | null;
-          stock_quantity: number;
-          is_active: boolean;
-          is_featured: boolean;
-          is_trending: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["products"]["Row"]>;
-        Update: Partial<Database["public"]["Tables"]["products"]["Row"]>;
-        Relationships: [];
-      };
-      product_variants: {
-        Row: {
-          id: string;
-          product_id: string;
-          name: string;
-          sku: string | null;
-          price_delta: number;
-          stock_quantity: number;
-          is_active: boolean;
-          sort_order: number;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["product_variants"]["Row"]> & {
-          product_id: string;
-          name: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["product_variants"]["Row"]>;
+          apartment: string | null
+          area: string
+          building: string | null
+          city: string
+          country: string
+          created_at: string
+          floor: string | null
+          id: string
+          is_default: boolean
+          label: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          phone: string
+          profile_id: string
+          recipient_name: string
+          street: string
+        }
+        Insert: {
+          apartment?: string | null
+          area: string
+          building?: string | null
+          city: string
+          country?: string
+          created_at?: string
+          floor?: string | null
+          id?: string
+          is_default?: boolean
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          phone: string
+          profile_id: string
+          recipient_name: string
+          street: string
+        }
+        Update: {
+          apartment?: string | null
+          area?: string
+          building?: string | null
+          city?: string
+          country?: string
+          created_at?: string
+          floor?: string | null
+          id?: string
+          is_default?: boolean
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          phone?: string
+          profile_id?: string
+          recipient_name?: string
+          street?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "product_variants_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      orders: {
+            foreignKeyName: "addresses_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log: {
         Row: {
-          id: string;
-          order_number: string;
-          customer_id: string;
-          subtotal: number;
-          delivery_fee: number;
-          total: number;
-          payment_method: string;
-          payment_status: string;
-          is_gift: boolean;
-          created_at: string;
-        };
-        Insert: never;
-        Update: never;
-        Relationships: [];
-      };
-      sub_orders: {
+          action: string
+          actor: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
+      cart_items: {
         Row: {
-          id: string;
-          order_id: string;
-          partner_id: string;
-          status:
-            | "pending"
-            | "accepted"
-            | "preparing"
-            | "ready"
-            | "out_for_delivery"
-            | "delivered"
-            | "cancelled";
-          delivery_date: string | null;
-          delivery_time_slot: string | null;
-          subtotal: number;
-          delivery_fee: number;
-          total: number;
-          partner_notes: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: never;
-        Update: Partial<
-          Pick<
-            Database["public"]["Tables"]["sub_orders"]["Row"],
-            "status" | "delivery_date" | "delivery_time_slot" | "partner_notes"
-          >
-        >;
-        Relationships: [];
-      };
-      order_items: {
-        Row: {
-          id: string;
-          sub_order_id: string;
-          product_id: string | null;
-          product_title_snapshot: string;
-          unit_price_snapshot: number;
-          quantity: number;
-          customization: Json;
-          line_total: number;
-          variant_id: string | null;
-          variant_name_snapshot: string | null;
-          commission_rate_snapshot: number | null;
-          commission_amount_snapshot: number | null;
-          confirmation_status: "pending" | "confirmed" | "rejected" | "substituted";
-          confirmed_at: string | null;
-          rejection_reason: string | null;
-        };
-        Insert: never;
-        Update: Partial<
-          Pick<
-            Database["public"]["Tables"]["order_items"]["Row"],
-            "confirmation_status" | "confirmed_at" | "rejection_reason"
-          >
-        >;
+          created_at: string
+          customization: Json
+          id: string
+          product_id: string
+          profile_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          customization?: Json
+          id?: string
+          product_id: string
+          profile_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          customization?: Json
+          id?: string
+          product_id?: string
+          profile_id?: string
+          quantity?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "order_items_sub_order_id_fkey";
-            columns: ["sub_order_id"];
-            isOneToOne: false;
-            referencedRelation: "sub_orders";
-            referencedColumns: ["id"];
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_items_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      store_payables: {
+            foreignKeyName: "cart_items_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
         Row: {
-          id: string;
-          store_id: string;
-          order_id: string | null;
-          gross_amount: number;
-          commission_rate: number;
-          commission_amount: number;
-          net_owed: number;
-          status: "pending" | "paid";
-          paid_at: string | null;
-          payout_period_id: string | null;
-          created_at: string;
-        };
-        Insert: never;
-        Update: never;
-        Relationships: [];
-      };
-      payout_periods: {
+          icon_name: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      dashboard_seed_registry: {
         Row: {
-          id: string;
-          partner_id: string;
-          period_start: string;
-          period_end: string;
-          status: "open" | "closed" | "paid" | "void";
-          gross_total: number;
-          commission_total: number;
-          net_total: number;
-          reference: string | null;
-          note: string | null;
-          closed_at: string | null;
-          paid_at: string | null;
-          created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["payout_periods"]["Row"]> & {
-          partner_id: string;
-          period_start: string;
-          period_end: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["payout_periods"]["Row"]>;
-        Relationships: [];
-      };
-      store_metrics: {
+          batch: string
+          created_at: string
+          id: number
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          batch: string
+          created_at?: string
+          id?: number
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          batch?: string
+          created_at?: string
+          id?: number
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      favorites: {
         Row: {
-          partner_id: string;
-          day: string;
-          orders_count: number;
-          items_count: number;
-          units_count: number;
-          gross_revenue: number;
-          commission_amount: number;
-          net_revenue: number;
-          cancelled_count: number;
-          delivered_count: number;
-          avg_confirm_seconds: number | null;
-          updated_at: string;
-        };
-        Insert: never;
-        Update: never;
-        Relationships: [];
-      };
-      order_events: {
-        Row: {
-          id: string;
-          order_id: string | null;
-          sub_order_id: string | null;
-          order_item_id: string | null;
-          partner_id: string | null;
-          event_type: string;
-          actor_id: string | null;
-          actor_role: "system" | "customer" | "partner" | "admin";
-          from_status: string | null;
-          to_status: string | null;
-          message: string | null;
-          payload: Json;
-          created_at: string;
-        };
-        Insert: never;
-        Update: never;
-        Relationships: [];
-      };
-      notifications: {
-        Row: {
-          id: string;
-          recipient_id: string | null;
-          partner_id: string | null;
-          sub_order_id: string | null;
-          channel: "email" | "sms" | "whatsapp" | "push" | "in_app";
-          template: string;
-          destination: string | null;
-          subject: string | null;
-          body: string | null;
-          status: "queued" | "sent" | "failed" | "skipped";
-          error: string | null;
-          created_at: string;
-          sent_at: string | null;
-        };
-        Insert: never;
-        Update: never;
-        Relationships: [];
-      };
-      store_owner_invites: {
-        Row: {
-          id: string;
-          email: string;
-          partner_id: string;
-          invited_by: string | null;
-          auth_user_id: string | null;
-          status: "pending" | "accepted" | "revoked";
-          note: string | null;
-          created_at: string;
-          accepted_at: string | null;
-          revoked_at: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["store_owner_invites"]["Row"]> & {
-          email: string;
-          partner_id: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["store_owner_invites"]["Row"]>;
+          created_at: string
+          id: string
+          product_id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          profile_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "store_owner_invites_partner_id_fkey";
-            columns: ["partner_id"];
-            isOneToOne: false;
-            referencedRelation: "partners";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-    };
-    // supabase-js constrains the schema to GenericSchema, which requires all of
-    // Tables, Views, Functions, Enums and CompositeTypes to be present. Omitting
-    // the three empty ones does not fail loudly — the constraint just stops
-    // matching and every .from(...).select() silently resolves to `never`, which
-    // is what produced ~35 "Property 'x' does not exist on type 'never'" errors
-    // across the app. They are declared empty rather than dropped.
-    Views: { [_ in never]: never };
-    Enums: { [_ in never]: never };
-    CompositeTypes: { [_ in never]: never };
+            foreignKeyName: "favorites_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_card_rate_limit: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: number
+          ip_address: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: number
+          ip_address: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: number
+          ip_address?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      gift_card_transactions: {
+        Row: {
+          amount_used: number
+          balance_after: number
+          created_at: string
+          gift_card_id: string
+          id: string
+          order_id: string | null
+          store_id: string | null
+        }
+        Insert: {
+          amount_used: number
+          balance_after: number
+          created_at?: string
+          gift_card_id: string
+          id?: string
+          order_id?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          amount_used?: number
+          balance_after?: number
+          created_at?: string
+          gift_card_id?: string
+          id?: string
+          order_id?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_card_transactions_gift_card_id_fkey"
+            columns: ["gift_card_id"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_card_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_card_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_cards: {
+        Row: {
+          buyer_email: string | null
+          buyer_id: string | null
+          buyer_name: string | null
+          code: string
+          created_at: string
+          currency: string
+          current_balance: number
+          delivery_method: string
+          expires_at: string | null
+          failed_pin_attempts: number
+          id: string
+          locked_until: string | null
+          message: string | null
+          original_amount: number
+          pin_hash: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          status: string
+        }
+        Insert: {
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          code: string
+          created_at?: string
+          currency?: string
+          current_balance: number
+          delivery_method?: string
+          expires_at?: string | null
+          failed_pin_attempts?: number
+          id?: string
+          locked_until?: string | null
+          message?: string | null
+          original_amount: number
+          pin_hash?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          status?: string
+        }
+        Update: {
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          code?: string
+          created_at?: string
+          currency?: string
+          current_balance?: number
+          delivery_method?: string
+          expires_at?: string | null
+          failed_pin_attempts?: number
+          id?: string
+          locked_until?: string | null
+          message?: string | null
+          original_amount?: number
+          pin_hash?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_cards_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          channel: string
+          created_at: string
+          destination: string | null
+          error: string | null
+          id: string
+          partner_id: string | null
+          recipient_id: string | null
+          sent_at: string | null
+          status: string
+          sub_order_id: string | null
+          subject: string | null
+          template: string
+        }
+        Insert: {
+          body?: string | null
+          channel: string
+          created_at?: string
+          destination?: string | null
+          error?: string | null
+          id?: string
+          partner_id?: string | null
+          recipient_id?: string | null
+          sent_at?: string | null
+          status?: string
+          sub_order_id?: string | null
+          subject?: string | null
+          template: string
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          created_at?: string
+          destination?: string | null
+          error?: string | null
+          id?: string
+          partner_id?: string | null
+          recipient_id?: string | null
+          sent_at?: string | null
+          status?: string
+          sub_order_id?: string | null
+          subject?: string | null
+          template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_sub_order_id_fkey"
+            columns: ["sub_order_id"]
+            isOneToOne: false
+            referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      occasion_events: {
+        Row: {
+          banner_image_url: string | null
+          event_date: string
+          id: string
+          is_active: boolean
+          occasion_id: string | null
+          title: string
+        }
+        Insert: {
+          banner_image_url?: string | null
+          event_date: string
+          id?: string
+          is_active?: boolean
+          occasion_id?: string | null
+          title: string
+        }
+        Update: {
+          banner_image_url?: string | null
+          event_date?: string
+          id?: string
+          is_active?: boolean
+          occasion_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "occasion_events_occasion_id_fkey"
+            columns: ["occasion_id"]
+            isOneToOne: false
+            referencedRelation: "occasions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      occasion_reminders: {
+        Row: {
+          created_at: string
+          event_date: string
+          id: string
+          label: string | null
+          last_reminded_on: string | null
+          note: string | null
+          occasion_type: string
+          person_name: string
+          phone: string | null
+          profile_id: string
+          relationship: string | null
+          remind_days_before: number
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          id?: string
+          label?: string | null
+          last_reminded_on?: string | null
+          note?: string | null
+          occasion_type?: string
+          person_name: string
+          phone?: string | null
+          profile_id: string
+          relationship?: string | null
+          remind_days_before?: number
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          id?: string
+          label?: string | null
+          last_reminded_on?: string | null
+          note?: string | null
+          occasion_type?: string
+          person_name?: string
+          phone?: string | null
+          profile_id?: string
+          relationship?: string | null
+          remind_days_before?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "occasion_reminders_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      occasions: {
+        Row: {
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      order_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: string
+          message: string | null
+          order_id: string | null
+          order_item_id: string | null
+          partner_id: string | null
+          payload: Json
+          sub_order_id: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          partner_id?: string | null
+          payload?: Json
+          sub_order_id?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          partner_id?: string | null
+          payload?: Json
+          sub_order_id?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_events_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_events_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_events_sub_order_id_fkey"
+            columns: ["sub_order_id"]
+            isOneToOne: false
+            referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          commission_amount_snapshot: number | null
+          commission_rate_snapshot: number | null
+          confirmation_status: string
+          confirmed_at: string | null
+          customization: Json
+          id: string
+          line_total: number
+          product_id: string | null
+          product_title_snapshot: string
+          quantity: number
+          rejection_reason: string | null
+          sub_order_id: string
+          unit_price_snapshot: number
+          variant_id: string | null
+          variant_name_snapshot: string | null
+        }
+        Insert: {
+          commission_amount_snapshot?: number | null
+          commission_rate_snapshot?: number | null
+          confirmation_status?: string
+          confirmed_at?: string | null
+          customization?: Json
+          id?: string
+          line_total: number
+          product_id?: string | null
+          product_title_snapshot: string
+          quantity: number
+          rejection_reason?: string | null
+          sub_order_id: string
+          unit_price_snapshot: number
+          variant_id?: string | null
+          variant_name_snapshot?: string | null
+        }
+        Update: {
+          commission_amount_snapshot?: number | null
+          commission_rate_snapshot?: number | null
+          confirmation_status?: string
+          confirmed_at?: string | null
+          customization?: Json
+          id?: string
+          line_total?: number
+          product_id?: string | null
+          product_title_snapshot?: string
+          quantity?: number
+          rejection_reason?: string | null
+          sub_order_id?: string
+          unit_price_snapshot?: number
+          variant_id?: string | null
+          variant_name_snapshot?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_sub_order_id_fkey"
+            columns: ["sub_order_id"]
+            isOneToOne: false
+            referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          status: string
+          sub_order_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          status: string
+          sub_order_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          status?: string
+          sub_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_status_history_sub_order_id_fkey"
+            columns: ["sub_order_id"]
+            isOneToOne: false
+            referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          address_source: string
+          created_at: string
+          customer_id: string
+          delivery_address_id: string | null
+          delivery_fee: number
+          delivery_slot: string | null
+          discount_amount: number
+          gift_card_code: string | null
+          gift_message: string | null
+          hide_price: boolean
+          id: string
+          is_gift: boolean
+          notes: string | null
+          order_number: string
+          payment_method: string
+          payment_status: string
+          recipient_name: string | null
+          recipient_phone: string | null
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          address_source?: string
+          created_at?: string
+          customer_id: string
+          delivery_address_id?: string | null
+          delivery_fee?: number
+          delivery_slot?: string | null
+          discount_amount?: number
+          gift_card_code?: string | null
+          gift_message?: string | null
+          hide_price?: boolean
+          id?: string
+          is_gift?: boolean
+          notes?: string | null
+          order_number: string
+          payment_method?: string
+          payment_status?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          subtotal: number
+          total: number
+        }
+        Update: {
+          address_source?: string
+          created_at?: string
+          customer_id?: string
+          delivery_address_id?: string | null
+          delivery_fee?: number
+          delivery_slot?: string | null
+          discount_amount?: number
+          gift_card_code?: string | null
+          gift_message?: string | null
+          hide_price?: boolean
+          id?: string
+          is_gift?: boolean
+          notes?: string | null
+          order_number?: string
+          payment_method?: string
+          payment_status?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          subtotal?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_address_id_fkey"
+            columns: ["delivery_address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          city: string | null
+          commission_rate: number
+          confirmation_timeout_minutes: number
+          country: string
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          phone: string | null
+          slug: string
+          status: string
+        }
+        Insert: {
+          city?: string | null
+          commission_rate?: number
+          confirmation_timeout_minutes?: number
+          country?: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          slug: string
+          status?: string
+        }
+        Update: {
+          city?: string | null
+          commission_rate?: number
+          confirmation_timeout_minutes?: number
+          country?: string
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          slug?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      payout_periods: {
+        Row: {
+          closed_at: string | null
+          commission_total: number
+          created_at: string
+          gross_total: number
+          id: string
+          net_total: number
+          note: string | null
+          paid_at: string | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          reference: string | null
+          status: string
+        }
+        Insert: {
+          closed_at?: string | null
+          commission_total?: number
+          created_at?: string
+          gross_total?: number
+          id?: string
+          net_total?: number
+          note?: string | null
+          paid_at?: string | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          reference?: string | null
+          status?: string
+        }
+        Update: {
+          closed_at?: string | null
+          commission_total?: number
+          created_at?: string
+          gross_total?: number
+          id?: string
+          net_total?: number
+          note?: string | null
+          paid_at?: string | null
+          partner_id?: string
+          period_end?: string
+          period_start?: string
+          reference?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_periods_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_images: {
+        Row: {
+          id: string
+          is_primary: boolean
+          partner_id: string
+          product_id: string
+          sort_order: number
+          storage_path: string
+        }
+        Insert: {
+          id?: string
+          is_primary?: boolean
+          partner_id: string
+          product_id: string
+          sort_order?: number
+          storage_path: string
+        }
+        Update: {
+          id?: string
+          is_primary?: boolean
+          partner_id?: string
+          product_id?: string
+          sort_order?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price_delta: number
+          product_id: string
+          sku: string | null
+          sort_order: number
+          stock_quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_delta?: number
+          product_id: string
+          sku?: string | null
+          sort_order?: number
+          stock_quantity?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_delta?: number
+          product_id?: string
+          sku?: string | null
+          sort_order?: number
+          stock_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          avg_rating: number | null
+          category_id: string
+          compare_at_price: number | null
+          country: string
+          created_at: string
+          currency: string
+          description: string | null
+          gift_wrap_available: boolean
+          gift_wrap_price: number
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          is_trending: boolean
+          occasion_tags: string[]
+          partner_id: string
+          price: number
+          recipient_tags: string[]
+          same_day: boolean
+          sku: string | null
+          slug: string
+          stock_quantity: number
+          subcategory_id: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          avg_rating?: number | null
+          category_id: string
+          compare_at_price?: number | null
+          country?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gift_wrap_available?: boolean
+          gift_wrap_price?: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          is_trending?: boolean
+          occasion_tags?: string[]
+          partner_id: string
+          price: number
+          recipient_tags?: string[]
+          same_day?: boolean
+          sku?: string | null
+          slug: string
+          stock_quantity?: number
+          subcategory_id?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          avg_rating?: number | null
+          category_id?: string
+          compare_at_price?: number | null
+          country?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          gift_wrap_available?: boolean
+          gift_wrap_price?: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          is_trending?: boolean
+          occasion_tags?: string[]
+          partner_id?: string
+          price?: number
+          recipient_tags?: string[]
+          same_day?: boolean
+          sku?: string | null
+          slug?: string
+          stock_quantity?: number
+          subcategory_id?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          partner_id: string | null
+          phone: string | null
+          push_token: string | null
+          role: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          partner_id?: string | null
+          phone?: string | null
+          push_token?: string | null
+          role?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          partner_id?: string | null
+          phone?: string | null
+          push_token?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_metrics: {
+        Row: {
+          avg_confirm_seconds: number | null
+          cancelled_count: number
+          commission_amount: number
+          day: string
+          delivered_count: number
+          gross_revenue: number
+          items_count: number
+          net_revenue: number
+          orders_count: number
+          partner_id: string
+          units_count: number
+          updated_at: string
+        }
+        Insert: {
+          avg_confirm_seconds?: number | null
+          cancelled_count?: number
+          commission_amount?: number
+          day: string
+          delivered_count?: number
+          gross_revenue?: number
+          items_count?: number
+          net_revenue?: number
+          orders_count?: number
+          partner_id: string
+          units_count?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_confirm_seconds?: number | null
+          cancelled_count?: number
+          commission_amount?: number
+          day?: string
+          delivered_count?: number
+          gross_revenue?: number
+          items_count?: number
+          net_revenue?: number
+          orders_count?: number
+          partner_id?: string
+          units_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_owner_invites: {
+        Row: {
+          accepted_at: string | null
+          auth_user_id: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          note: string | null
+          partner_id: string
+          revoked_at: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          note?: string | null
+          partner_id: string
+          revoked_at?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          note?: string | null
+          partner_id?: string
+          revoked_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_owner_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_owner_invites_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payables: {
+        Row: {
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          gross_amount: number
+          id: string
+          net_owed: number
+          order_id: string | null
+          paid_at: string | null
+          payout_period_id: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_rate: number
+          created_at?: string
+          gross_amount: number
+          id?: string
+          net_owed: number
+          order_id?: string | null
+          paid_at?: string | null
+          payout_period_id?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          gross_amount?: number
+          id?: string
+          net_owed?: number
+          order_id?: string | null
+          paid_at?: string | null
+          payout_period_id?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payables_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payables_payout_period_id_fkey"
+            columns: ["payout_period_id"]
+            isOneToOne: false
+            referencedRelation: "payout_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payables_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_orders: {
+        Row: {
+          created_at: string
+          delivery_date: string | null
+          delivery_fee: number
+          delivery_time_slot: string | null
+          id: string
+          order_id: string
+          partner_id: string
+          partner_notes: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_date?: string | null
+          delivery_fee?: number
+          delivery_time_slot?: string | null
+          id?: string
+          order_id: string
+          partner_id: string
+          partner_notes?: string | null
+          status?: string
+          subtotal: number
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_date?: string | null
+          delivery_fee?: number
+          delivery_time_slot?: string | null
+          id?: string
+          order_id?: string
+          partner_id?: string
+          partner_notes?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subcategories: {
+        Row: {
+          category_id: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          category_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          category_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          notify_days_before: number
+          occasion_id: string | null
+          profile_id: string
+          recipient_name: string
+          relationship: string | null
+          reminder_date: string
+          repeat_yearly: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notify_days_before?: number
+          occasion_id?: string | null
+          profile_id: string
+          recipient_name: string
+          relationship?: string | null
+          reminder_date: string
+          repeat_yearly?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notify_days_before?: number
+          occasion_id?: string | null
+          profile_id?: string
+          recipient_name?: string
+          relationship?: string | null
+          reminder_date?: string
+          repeat_yearly?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reminders_occasion_id_fkey"
+            columns: ["occasion_id"]
+            isOneToOne: false
+            referencedRelation: "occasions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reminders_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
-      is_admin: { Args: Record<string, never>; Returns: boolean };
-      is_store_owner: { Args: Record<string, never>; Returns: boolean };
-      my_partner_id: { Args: Record<string, never>; Returns: string | null };
-      partner_order_context: {
-        Args: { p_sub_order_id: string };
+      admin_list_admins: {
+        Args: never
         Returns: {
-          order_number: string;
-          placed_at: string;
-          payment_method: string;
-          payment_status: string;
-          is_gift: boolean;
-          hide_price: boolean;
-          gift_message: string | null;
-          delivery_slot: string | null;
-          recipient_name: string | null;
-          recipient_phone: string | null;
-          address_city: string | null;
-          address_area: string | null;
-          address_street: string | null;
-          address_building: string | null;
-          address_floor: string | null;
-          address_apartment: string | null;
-          address_notes: string | null;
-        }[];
-      };
+          email: string
+          full_name: string
+          since: string
+          user_id: string
+        }[]
+      }
+      admin_money_summary: {
+        Args: never
+        Returns: {
+          gift_cards_active_count: number
+          gift_cards_outstanding_liability: number
+          gift_cards_pending_payment_total: number
+          store_commission_total: number
+          store_gross_total: number
+          store_id: string
+          store_name: string
+          store_net_owed_total: number
+          store_net_paid_total: number
+          store_net_unpaid_total: number
+        }[]
+      }
+      admin_orders: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          customer_name: string
+          delivery_fee: number
+          discount: number
+          order_id: string
+          order_number: string
+          payment_method: string
+          payment_status: string
+          placed_at: string
+          sub_orders: Json
+          subtotal: number
+          total: number
+        }[]
+      }
+      admin_overview_stats: {
+        Args: never
+        Returns: {
+          commission_all_time: number
+          commission_this_month: number
+          delivery_fees_all_time: number
+          orders_all_time: number
+          orders_this_month: number
+          orders_today: number
+          revenue_all_time: number
+          revenue_this_month: number
+          revenue_today: number
+          sub_orders_by_status: Json
+        }[]
+      }
+      admin_partner_totals: {
+        Args: never
+        Returns: {
+          city: string
+          commission: number
+          commission_rate: number
+          gross_revenue: number
+          name: string
+          orders_count: number
+          owner_email: string
+          partner_id: string
+          payable_pending: number
+          status: string
+        }[]
+      }
+      admin_set_role_admin: {
+        Args: { p_email: string; p_make_admin: boolean }
+        Returns: string
+      }
+      admin_set_sub_order_status: {
+        Args: { p_status: string; p_sub_order_id: string }
+        Returns: undefined
+      }
+      cancel_unpaid_gift_card: {
+        Args: { p_gift_card_id: string }
+        Returns: undefined
+      }
+      check_gift_card_balance: {
+        Args: { p_code: string }
+        Returns: {
+          card_message: string
+          currency: string
+          from_name: string
+          remaining_balance: number
+        }[]
+      }
+      check_rate_limit: {
+        Args: { p_endpoint: string; p_max_per_minute?: number }
+        Returns: undefined
+      }
+      confirm_gift_card_payment: {
+        Args: { p_gift_card_id: string }
+        Returns: undefined
+      }
+      current_client_ip: { Args: never; Returns: string }
+      generate_gift_card_code: { Args: never; Returns: string }
+      generate_gift_card_pin: { Args: never; Returns: string }
+      get_gift_recommendations: {
+        Args: {
+          p_budget_max: number
+          p_budget_min: number
+          p_occasion: string
+          p_recipient: string
+        }
+        Returns: {
+          avg_rating: number | null
+          category_id: string
+          compare_at_price: number | null
+          country: string
+          created_at: string
+          currency: string
+          description: string | null
+          gift_wrap_available: boolean
+          gift_wrap_price: number
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          is_trending: boolean
+          occasion_tags: string[]
+          partner_id: string
+          price: number
+          recipient_tags: string[]
+          same_day: boolean
+          sku: string | null
+          slug: string
+          stock_quantity: number
+          subcategory_id: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      is_admin: { Args: never; Returns: boolean }
+      is_store_owner: { Args: never; Returns: boolean }
+      is_valid_contact: { Args: { p_contact: string }; Returns: boolean }
+      is_valid_email: { Args: { p_email: string }; Returns: boolean }
+      my_partner_id: { Args: never; Returns: string }
+      partner_order_context: {
+        Args: { p_sub_order_id: string }
+        Returns: {
+          address_apartment: string
+          address_area: string
+          address_building: string
+          address_city: string
+          address_floor: string
+          address_notes: string
+          address_street: string
+          delivery_slot: string
+          gift_message: string
+          hide_price: boolean
+          is_gift: boolean
+          order_number: string
+          payment_method: string
+          payment_status: string
+          placed_at: string
+          recipient_name: string
+          recipient_phone: string
+        }[]
+      }
+      place_order: {
+        Args: {
+          p_address_source?: string
+          p_delivery_address_id?: string
+          p_delivery_date?: string
+          p_delivery_time_slot?: string
+          p_gift_card_code?: string
+          p_gift_message?: string
+          p_hide_price?: boolean
+          p_is_gift?: boolean
+          p_notes?: string
+          p_payment_method?: string
+          p_recipient_name?: string
+          p_recipient_phone?: string
+        }
+        Returns: string
+      }
+      purchase_gift_card: {
+        Args: {
+          p_amount: number
+          p_buyer_email?: string
+          p_buyer_name?: string
+          p_delivery_method?: string
+          p_message?: string
+          p_recipient_email?: string
+          p_recipient_name?: string
+        }
+        Returns: {
+          code: string
+          id: string
+          original_amount: number
+        }[]
+      }
       rebuild_store_metrics: {
-        Args: { p_partner_id: string; p_from?: string; p_to?: string };
-        Returns: number;
-      };
-    };
-  };
+        Args: { p_from?: string; p_partner_id: string; p_to?: string }
+        Returns: number
+      }
+      reconcile_gift_cards: {
+        Args: never
+        Returns: {
+          actual_spent: number
+          code: string
+          discrepancy: number
+          expected_spent: number
+          gift_card_id: string
+        }[]
+      }
+      record_order_event: {
+        Args: {
+          p_event_type: string
+          p_from_status?: string
+          p_message?: string
+          p_order_id: string
+          p_order_item_id: string
+          p_partner_id: string
+          p_payload?: Json
+          p_sub_order_id: string
+          p_to_status?: string
+        }
+        Returns: undefined
+      }
+      refund_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

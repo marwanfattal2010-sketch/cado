@@ -8,14 +8,19 @@ interface NavItem {
 }
 
 const STORE_NAV: NavItem[] = [
-  { href: "/store", label: "nav.orders" },
+  { href: "/store", label: "nav.overview" },
+  { href: "/store/orders", label: "nav.orders" },
   { href: "/store/products", label: "nav.products" },
   { href: "/store/payouts", label: "nav.payouts" },
+  { href: "/store/account", label: "nav.account" },
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { href: "/admin/stores", label: "nav.stores" },
-  { href: "/admin/invites", label: "nav.invites" },
+  { href: "/admin", label: "nav.overview" },
+  { href: "/admin/orders", label: "nav.orders" },
+  { href: "/admin/stores", label: "nav.partners" },
+  { href: "/admin/products", label: "nav.products" },
+  { href: "/admin/settings", label: "nav.settings" },
 ];
 
 /**
