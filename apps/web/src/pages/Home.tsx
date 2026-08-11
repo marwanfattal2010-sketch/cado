@@ -76,7 +76,10 @@ function TrustStrip() {
     <section className="mx-auto max-w-6xl px-4 pt-4">
       <div className="grid grid-cols-2 divide-x divide-line rounded-card border border-line">
         {HOW_IT_WORKS.map((s) => (
-          <div key={s.label} className="flex flex-col items-center gap-1.5 px-2 py-3.5 text-center">
+          /* Two short labels fit on one line each, so the icon sits beside
+             the text rather than above it — stacked, the strip was 87px of
+             mostly air directly under the hero. */
+          <div key={s.label} className="flex items-center justify-center gap-2 px-2 py-4 text-center">
             <s.Icon className="h-[18px] w-[18px] shrink-0 text-gold-deep" />
             <span className="text-caption font-medium leading-snug">{s.label}</span>
           </div>
