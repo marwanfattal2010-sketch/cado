@@ -1,0 +1,9 @@
+# Zahar's own photographs, downloaded from their public Instagram and uploaded
+# to the product-images bucket by import-zahar-instagram.ts. They are not
+# committed: they are the store's copyright, they are several MB, and the copies
+# that matter already live in Supabase storage.
+#
+# Re-populate (only works while Instagram's signed URLs are still valid):
+#   npx tsx scripts/import-zahar-instagram.ts --download
+*
+!.gitignore
