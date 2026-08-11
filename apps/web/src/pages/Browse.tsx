@@ -5,7 +5,6 @@ import { useSearchProducts } from "../hooks/useProducts";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
 import { CategoryTile } from "../components/CategoryTile";
-import { GiftCardTile } from "../components/GiftCardTile";
 
 export function Browse() {
   const [query, setQuery] = useState("");
@@ -59,7 +58,6 @@ export function Browse() {
           {categories.data?.map((cat) => (
             <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
           ))}
-          <GiftCardTile />
         </div>
       )}
     </div>

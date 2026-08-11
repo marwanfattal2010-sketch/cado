@@ -12,10 +12,19 @@ import { useSearchStores, useTopStores } from "../hooks/useStores";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
-import { SearchIcon, GiftIcon, WrapIcon, ShieldCheckIcon, WalletIcon, TruckIcon } from "../components/Icons";
-import { RibbonDivider } from "../components/ui";
+import {
+  SearchIcon,
+  GiftIcon,
+  WrapIcon,
+  ShieldCheckIcon,
+  WalletIcon,
+  TruckIcon,
+  InstagramIcon,
+} from "../components/Icons";
+import { RibbonDivider, ButtonLink } from "../components/ui";
 import { BUDGETS, RECIPIENTS } from "../lib/filters";
 import { timeUntilCutoff } from "../lib/area";
+import { BENEFITS, PARTNER_EMAIL, PARTNER_WHATSAPP_NUMBER } from "./Partners";
 
 /** Everything here is a gift — "& Gifts" in a category label says nothing. */
 function tidyCategory(name: string) {
@@ -49,6 +58,20 @@ const WHY_CADO = [
  *  testimonial on a new marketplace is easy to spot and costs more trust
  *  than it buys. */
 const REVIEWS: { name: string; city: string; quote: string }[] = [];
+
+/** Static images + a profile link, hardcoded so they're easy to swap for
+ *  real posts once the account has them. No Instagram API/embed is used —
+ *  every tile just opens the profile. */
+const INSTAGRAM_IMAGES = [
+  "/instagram/1.jpg",
+  "/instagram/2.jpg",
+  "/instagram/3.jpg",
+  "/instagram/4.jpg",
+  "/instagram/5.jpg",
+  "/instagram/6.jpg",
+  "/instagram/7.jpg",
+  "/instagram/8.jpg",
+];
 
 function SectionHead({ title, to, eyebrow }: { title: string; to?: string; eyebrow?: string }) {
   return (
@@ -274,15 +297,6 @@ export function Home() {
                   <span className="text-[13px] font-medium leading-tight">{tidyCategory(cat.name)}</span>
                 </Link>
               ))}
-              <Link
-                to="/gift-cards"
-                className="flex flex-col items-center gap-2 text-center transition-transform duration-fast active:scale-[0.96]"
-              >
-                <div className="aspect-square w-full overflow-hidden rounded-card bg-surface-sunk">
-                  <img src="/categories/gift-card.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
-                </div>
-                <span className="text-[13px] font-medium leading-tight">Gift Cards</span>
-              </Link>
             </div>
           </section>
 
@@ -427,25 +441,84 @@ export function Home() {
             </div>
           </section>
 
-          {/* 15b — PARTNER WITH CADO. A short band, not the full pitch: the
-              detail lives on /partners. It sits down here on purpose, past the
-              shopping, because a shopper buying a birthday present is not the
-              audience — but a store owner who scrolls this far is. No store
-              count and no logos: there is nothing real to show yet. */}
-          <section className="mx-auto max-w-6xl px-4 pt-7">
-            <div className="overflow-hidden rounded-card bg-ink px-6 py-7 text-inverse">
-              <p className="text-eyebrow uppercase text-gold">For store owners</p>
-              <p className="mt-2 font-display text-h2">Own a store? Sell on CADO.</p>
-              <p className="mt-2 max-w-md text-body text-inverse/70">
-                No upfront cost, we handle delivery, and you get found by people looking for a gift
-                rather than for you.
-              </p>
-              <Link
-                to="/partners"
-                className="mt-5 inline-flex min-h-[52px] items-center rounded-pill bg-canvas px-6 font-medium text-ink transition-transform duration-fast active:scale-[0.98]"
+          {/* 15b — INSTAGRAM STRIP. Static images and a profile link only —
+              no API, no fake feed. Every tile opens @cado.lb. */}
+          <section className="pt-8">
+            <div className="mx-auto max-w-6xl px-4 pb-3">
+              <a
+                href="https://instagram.com/cado.lb"
+                target="_blank"
+                rel="noreferrer"
+                className="tap-44 text-eyebrow font-semibold uppercase tracking-widest text-muted"
               >
-                Partner with CADO
-              </Link>
+                @CADO.LB on Instagram
+              </a>
+            </div>
+            <div className="scroll-row gap-2 px-4 pb-1">
+              {INSTAGRAM_IMAGES.map((src, i) => (
+                <a
+                  key={i}
+                  href="https://instagram.com/cado.lb"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block h-28 w-28 shrink-0 overflow-hidden rounded-card"
+                >
+                  <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                </a>
+              ))}
+              <a
+                href="https://instagram.com/cado.lb"
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1.5 rounded-card bg-surface-sunk text-center"
+              >
+                <InstagramIcon className="h-5 w-5" />
+                <span className="text-caption font-medium">Follow us</span>
+              </a>
+            </div>
+          </section>
+
+          {/* 15c — PARTNER WITH CADO. The full /partners pitch, full-bleed. It
+              sits down here on purpose, past the shopping, because a shopper
+              buying a birthday present is not the audience — but a store owner
+              who scrolls this far is. Content mirrors Partners.tsx 1:1 (shared
+              constants), and /partners stays as the linkable page. No store
+              count and no logos: there is nothing real to show yet. */}
+          <section className="mt-8 bg-ink text-inverse">
+            <div className="mx-auto max-w-6xl px-4 py-8">
+              <p className="text-eyebrow uppercase text-gold">For store owners</p>
+              <h2 className="mt-3 font-display text-h1 sm:text-display">Own a store? Sell on CADO.</h2>
+              <p className="mt-3 max-w-lg text-body text-inverse/70">
+                Reach customers across Lebanon who are looking for a gift right now. You keep doing what
+                you do — we handle the storefront, the orders, and the delivery.
+              </p>
+
+              <div className="mt-6 grid gap-5 sm:grid-cols-3">
+                {BENEFITS.map((b) => (
+                  <div key={b.title} className="flex items-start gap-3">
+                    <b.Icon className="h-6 w-6 shrink-0 text-gold" />
+                    <div>
+                      <p className="text-body font-semibold">{b.title}</p>
+                      <p className="mt-0.5 text-caption text-inverse/60">{b.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <ButtonLink to={`mailto:${PARTNER_EMAIL}`} variant="secondary" className="!bg-canvas !text-ink !ring-0">
+                  Become a partner
+                </ButtonLink>
+                <ButtonLink
+                  to={`https://wa.me/${PARTNER_WHATSAPP_NUMBER}`}
+                  variant="secondary"
+                  className="!text-inverse !ring-inverse/30"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Talk to us on WhatsApp
+                </ButtonLink>
+              </div>
             </div>
           </section>
 
@@ -467,7 +540,9 @@ export function Home() {
           ) : null}
 
           {/* 16 — FOOTER */}
-          <footer className="mt-8 bg-ink px-4 py-8 text-inverse/60">
+          {/* Continuous with the dark partner block above — a hairline instead
+              of a canvas stripe between two full-bleed dark sections. */}
+          <footer className="border-t border-inverse/10 bg-ink px-4 py-8 text-inverse/60">
             <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-4">
               <div>
                 <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@ export const PARTNER_EMAIL = "fattalmarwan33@gmail.com";
 // Stays hidden until there's a real number worth showing.
 const PARTNER_STORE_COUNT = 0;
 
-const BENEFITS = [
+export const BENEFITS = [
   { Icon: WalletIcon, title: "No upfront cost", desc: "You only pay when you sell." },
   { Icon: TruckIcon, title: "We deliver", desc: "Same-day delivery across Lebanon, handled by us." },
   {
