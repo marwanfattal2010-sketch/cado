@@ -219,7 +219,7 @@ export function Checkout() {
                 name="addr"
                 checked={addressSource === "recipient_whatsapp"}
                 onChange={() => setAddressSource("recipient_whatsapp")}
-                className="mt-1 h-4 w-4 accent-[color:var(--primary)]"
+                className="mt-1 h-4 w-4 accent-[color:rgb(var(--primary))]"
               />
               <span>
                 Ask them for their address by WhatsApp
@@ -235,7 +235,7 @@ export function Checkout() {
                 name="addr"
                 checked={addressSource === "buyer"}
                 onChange={() => setAddressSource("buyer")}
-                className="h-4 w-4 accent-[color:var(--primary)]"
+                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
               />
               I'll enter the address myself
             </label>
@@ -245,7 +245,7 @@ export function Checkout() {
                 type="checkbox"
                 checked={hidePrice}
                 onChange={(e) => setHidePrice(e.target.checked)}
-                className="h-4 w-4 accent-[color:var(--primary)]"
+                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
               />
               Hide the price from them
             </label>
@@ -335,7 +335,7 @@ export function Checkout() {
                 name="pay"
                 checked={payment === p.value}
                 onChange={() => setPayment(p.value)}
-                className="h-4 w-4 accent-[color:var(--primary)]"
+                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
               />
               <span>
                 {p.label}

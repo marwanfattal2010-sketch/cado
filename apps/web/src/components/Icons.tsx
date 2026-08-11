@@ -15,7 +15,7 @@ export function CalendarIcon({ className = base, filled }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="5" width="18" height="16" rx="2.5" fill={filled ? "currentColor" : "none"} />
-      <path d="M8 3v4M16 3v4M3 10h18" stroke={filled ? "var(--canvas)" : "currentColor"} />
+      <path d="M8 3v4M16 3v4M3 10h18" stroke={filled ? "rgb(var(--canvas))" : "currentColor"} />
     </svg>
   );
 }
@@ -232,9 +232,9 @@ export function SlidersIcon({ className = base }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 7h16M4 12h16M4 17h16" />
-      <circle cx="9" cy="7" r="2.2" fill="var(--surface)" />
-      <circle cx="15" cy="12" r="2.2" fill="var(--surface)" />
-      <circle cx="8" cy="17" r="2.2" fill="var(--surface)" />
+      <circle cx="9" cy="7" r="2.2" fill="rgb(var(--surface))" />
+      <circle cx="15" cy="12" r="2.2" fill="rgb(var(--surface))" />
+      <circle cx="8" cy="17" r="2.2" fill="rgb(var(--surface))" />
     </svg>
   );
 }

@@ -225,7 +225,7 @@ export function Product() {
                 type="checkbox"
                 checked={wantsNote}
                 onChange={(e) => setWantsNote(e.target.checked)}
-                className="h-4 w-4 accent-[color:var(--primary)]"
+                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
               />
               <span className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">
                 <Img src="/misc/handwritten-note.jpg" className="h-full w-full object-cover" />
@@ -276,7 +276,7 @@ export function Product() {
                 type="checkbox"
                 checked={hidePrice}
                 onChange={(e) => setHidePrice(e.target.checked)}
-                className="h-4 w-4 accent-[color:var(--primary)]"
+                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
               />
               Hide the price from them
             </label>

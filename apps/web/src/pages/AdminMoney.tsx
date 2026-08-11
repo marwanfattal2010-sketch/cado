@@ -47,7 +47,10 @@ export function AdminMoney() {
           <p className="mt-2 font-display text-2xl font-semibold">USD {Number(liability).toFixed(2)}</p>
           <p className="mt-1 text-xs text-cream/50">{activeCount} active cards — money customers can still spend</p>
         </div>
-        <div className="rounded-card bg-white p-5 ring-1 ring-ink/8">
+        {/* ring-ink/[0.08], not ring-ink/8: Tailwind's opacity scale only has
+            multiples of 5, so a bare /8 generates no rule at all. The
+            arbitrary value keeps the 8% that was intended here. */}
+        <div className="rounded-card bg-white p-5 ring-1 ring-ink/[0.08]">
           <p className="text-xs text-ink/50">Awaiting payment confirmation</p>
           <p className="mt-2 font-display text-2xl font-semibold">USD {Number(pending).toFixed(2)}</p>
           <p className="mt-1 text-xs text-ink/40">Not spendable yet, not counted as liability yet</p>
@@ -78,7 +81,7 @@ export function AdminMoney() {
       <div className="mt-3 overflow-hidden rounded-card bg-white ring-1 ring-ink/5">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-ink/8 text-left text-xs text-ink/40">
+            <tr className="border-b border-ink/[0.08] text-left text-xs text-ink/40">
               <th className="px-4 py-3">Store</th>
               <th className="px-4 py-3">Gross sales</th>
               <th className="px-4 py-3">Commission</th>

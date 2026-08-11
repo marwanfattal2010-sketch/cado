@@ -1,3 +1,13 @@
+/**
+ * Wraps a channel-triple custom property from index.css so Tailwind can build
+ * both the solid utility and its `/xx` alpha variants from one token.
+ *
+ * The `<alpha-value>` placeholder is Tailwind's: it substitutes the modifier
+ * when there is one and `1` when there isn't, so `bg-canvas` and
+ * `bg-canvas/95` both resolve from the same declaration.
+ */
+const token = (name) => `rgb(var(${name}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -6,43 +16,52 @@ export default {
       // Every colour maps to a token in index.css — nothing hardcoded in
       // components. The legacy ink/gold/cream names are kept as aliases so
       // existing classes keep working while the codebase migrates.
+      //
+      // Each token is referenced through this helper rather than as a bare
+      // `var(--x)`. Tailwind implements `bg-canvas/95` by substituting the
+      // opacity into an `<alpha-value>` placeholder, so a colour it cannot
+      // take apart gets NO alpha utility generated — not a fallback, no rule
+      // at all. `var(--canvas)` is opaque to it; `rgb(var(--canvas) / .95)`
+      // is not. That is why the tokens in index.css are channel triples.
+      // Adding a colour here without `token()` silently reintroduces the bug.
       colors: {
-        canvas: "var(--canvas)",
-        surface: "var(--surface)",
-        "surface-sunk": "var(--surface-sunk)",
-        ink: "var(--ink)",
-        muted: "var(--text-muted)",
-        inverse: "var(--text-inverse)",
+        canvas: token("--canvas"),
+        surface: token("--surface"),
+        "surface-sunk": token("--surface-sunk"),
+        ink: token("--ink"),
+        muted: token("--text-muted"),
+        inverse: token("--text-inverse"),
         // Charcoal. Primary buttons, selected chips/filters/tabs, cart badge.
         primary: {
-          DEFAULT: "var(--primary)",
-          deep: "var(--primary-deep)",
-          tint: "var(--primary-tint)",
+          DEFAULT: token("--primary"),
+          deep: token("--primary-deep"),
+          tint: token("--primary-tint"),
         },
         // Retired name, kept so un-migrated classes render charcoal rather
         // than reintroducing the old burgundy. Prefer `primary` in new code.
         ribbon: {
-          DEFAULT: "var(--primary)",
-          deep: "var(--primary-deep)",
-          tint: "var(--primary-tint)",
+          DEFAULT: token("--primary"),
+          deep: token("--primary-deep"),
+          tint: token("--primary-tint"),
         },
         gold: {
-          DEFAULT: "var(--gold)",
-          deep: "var(--gold-deep)",
+          DEFAULT: token("--gold"),
+          deep: token("--gold-deep"),
         },
         today: {
-          DEFAULT: "var(--today)",
-          tint: "var(--today-tint)",
+          DEFAULT: token("--today"),
+          tint: token("--today-tint"),
         },
-        alert: "var(--alert)",
-        line: "var(--border)",
-        cream: "var(--canvas)",
+        // --alert is an alias of --gold-deep, so it is already a triple.
+        alert: token("--alert"),
+        line: token("--border"),
+        cream: token("--canvas"),
         // Soft section tints. Backgrounds only — see the note in index.css.
         // Not an accent set: nothing tappable is ever filled with these.
         tint: {
-          sage: "var(--tint-sage)",
-          blush: "var(--tint-blush)",
-          sand: "var(--tint-sand)",
+          sage: token("--tint-sage"),
+          blush: token("--tint-blush"),
+          sand: token("--tint-sand"),
         },
       },
       fontFamily: {

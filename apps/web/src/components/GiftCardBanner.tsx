@@ -32,10 +32,11 @@ export function GiftCardBanner() {
       </div>
 
       {/* A single gold hairline arc — the brand's ribbon, not a border.
-          `opacity-40` rather than `border-gold/40`: an opacity modifier on a
-          token colour compiles to nothing in this Tailwind config (the
-          palette is plain `var(--x)` strings, which Tailwind 3 cannot mix an
-          alpha into), so `/40` would silently be a full-strength gold line. */}
+          `opacity-40` on the whole span rather than `border-gold/40`. The
+          token colours carry an alpha channel now, so `/40` would compile;
+          it is left alone because the span is nothing but this one border,
+          which makes the two identical on screen, and re-rendering a
+          verified pixel to prove a point is not worth the diff. */}
       <span
         aria-hidden
         className="pointer-events-none absolute -left-10 -top-12 h-36 w-36 rounded-pill border border-gold opacity-40"

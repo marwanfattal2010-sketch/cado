@@ -92,9 +92,12 @@ function ColorSwatch({ name }: { name: string }) {
   return (
     <span
       aria-hidden
-      /* ring-black/15, not ring-ink/15: `black` is a real hex in Tailwind's
-         default palette so the alpha applies, whereas an alpha on a token
-         colour (a bare `var(--x)`) compiles to no rule at all here. */
+      /* ring-black/15 rather than ring-ink/15. This used to be forced —
+         alpha on a token colour compiled to no rule at all — but the tokens
+         are channel triples now, so `ring-ink/15` would work. Kept as black
+         on purpose: this hairline sits on top of arbitrary swatch colours to
+         stop pale ones vanishing, so it wants neutral black, not the warm
+         ink that the rest of the UI is drawn in. */
       className="h-[14px] w-[14px] shrink-0 rounded-pill ring-1 ring-inset ring-black/15"
       style={{
         background: multi

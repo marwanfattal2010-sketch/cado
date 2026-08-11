@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCategories } from "../hooks/useCategories";
+import { useStockedCategories } from "../hooks/useCategories";
 import { categoryProductsQuery } from "../hooks/useProducts";
 import { Chip, ChipLink } from "./ui";
 
@@ -22,6 +22,10 @@ export function tidyCategory(name: string) {
  *
  * Sticky is opt-in because the homepage pins it under the search bar while
  * a category page pins it directly under the header.
+ *
+ * Only stocked categories get a chip. Every chip here is a promise that
+ * there is something behind it, so a category with no products is left out
+ * until it has one — see useStockedCategories.
  */
 export function CategoryChips({
   activeSlug,
@@ -41,7 +45,7 @@ export function CategoryChips({
    */
   onSelect?: (slug: string | null) => void;
 }) {
-  const categories = useCategories();
+  const categories = useStockedCategories();
   const queryClient = useQueryClient();
   const rowRef = useRef<HTMLDivElement>(null);
 

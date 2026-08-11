@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useCategories } from "../hooks/useCategories";
+import { useStockedCategories } from "../hooks/useCategories";
 import { useSearchProducts } from "../hooks/useProducts";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton, Skeleton } from "../components/Skeleton";
@@ -8,7 +8,9 @@ import { CategoryTile } from "../components/CategoryTile";
 
 export function Browse() {
   const [query, setQuery] = useState("");
-  const categories = useCategories();
+  // Stocked only. This grid is the "what can I shop?" answer, so a tile that
+  // opens onto nothing is a wrong answer, not a smaller one.
+  const categories = useStockedCategories();
   const search = useSearchProducts(query);
   const searching = query.trim().length > 1;
   const results = search.data ?? [];
@@ -53,11 +55,28 @@ export function Browse() {
             <Skeleton key={i} className="aspect-[4/3] w-full" />
           ))}
         </div>
-      ) : (
+      ) : categories.data?.length ? (
         <div className="mt-8 grid animate-fade-in grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3">
-          {categories.data?.map((cat) => (
+          {categories.data.map((cat) => (
             <CategoryTile key={cat.id} slug={cat.slug} name={cat.name} />
           ))}
+        </div>
+      ) : (
+        /* Only reachable if every category is out of stock at once, but the
+           grid filters itself now, so it can happen — and a bare white page
+           with a search box is not an answer. */
+        <div className="mt-16 text-center">
+          <p className="font-display text-h2">No categories to show yet</p>
+          <p className="mx-auto mt-2 max-w-xs text-body text-muted">
+            We're still adding gifts. Try a search above, or let the gift finder ask you a couple
+            of questions.
+          </p>
+          <Link
+            to="/gift-finder"
+            className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
+          >
+            Open the gift finder
+          </Link>
         </div>
       )}
     </div>
