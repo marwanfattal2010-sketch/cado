@@ -3,6 +3,7 @@ import { useAuth } from "../lib/auth";
 import { useTopStores } from "../hooks/useStores";
 import {
   AccountIcon,
+  BasketIcon,
   GiftIcon,
   GlobeIcon,
   HeartIcon,
@@ -12,7 +13,6 @@ import {
   ShieldCheckIcon,
   TruckIcon,
   WalletIcon,
-  WrapIcon,
 } from "../components/Icons";
 import { Button, ButtonLink, RibbonDivider } from "../components/ui";
 
@@ -25,18 +25,26 @@ import { Button, ButtonLink, RibbonDivider } from "../components/ui";
  * and it is the one screen with room for it.
  *
  * Every claim on it is one CADO actually makes elsewhere on the site
- * (same-day, free wrapping, pay on delivery, verified stores). Nothing here
- * is a number, a rating or a count, because there is no real one to show.
+ * (same-day, pay on delivery, verified stores). Nothing here is a number, a
+ * rating or a count, because there is no real one to show.
+ *
+ * Step 2 used to be "We wrap it — your note inside, free". CADO is not
+ * offering gift wrapping (Marwan, 2026-08: "i dont need gift wrapping"), so
+ * it is replaced by the step that actually happens in the middle: CADO
+ * collects the gift from the store. That is not a new promise — it is the
+ * same one /partners already makes to store owners ("Same-day delivery
+ * across Lebanon, handled by us").
  */
 const HOW_IT_WORKS = [
   { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "From stores across Lebanon." },
-  { n: "2", Icon: WrapIcon, title: "We wrap it", desc: "Your note inside, free at most stores." },
+  { n: "2", Icon: BasketIcon, title: "We collect it", desc: "From the store, the same day." },
   { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order before midnight, arrives today." },
 ];
 
+/** Three, not four — the "Free gift wrapping" badge is gone with the
+ *  service. A claim we no longer make does not get relocated. */
 const WHY_CADO = [
   { Icon: TruckIcon, label: "Same-day delivery" },
-  { Icon: WrapIcon, label: "Free gift wrap from most stores" },
   { Icon: ShieldCheckIcon, label: "Verified Lebanese stores" },
   { Icon: WalletIcon, label: "Pay on delivery" },
 ];
@@ -56,7 +64,7 @@ function HowCadoWorks() {
         ))}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-3 gap-3">
         {WHY_CADO.map((w) => (
           <div
             key={w.label}

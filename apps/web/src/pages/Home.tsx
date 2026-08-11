@@ -11,7 +11,7 @@ import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
 import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
 import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
-import { SearchIcon, GiftIcon, WrapIcon, TruckIcon } from "../components/Icons";
+import { SearchIcon, GiftIcon, TruckIcon } from "../components/Icons";
 import { timeUntilCutoff } from "../lib/area";
 import { BUDGETS, OCCASIONS, RECIPIENTS } from "../lib/filters";
 
@@ -39,19 +39,21 @@ const SWAP_MS = 170;
  * The trust strip, now directly under the hero instead of buried at the
  * bottom of the page where nobody scrolled to it.
  *
- * "Free gift wrap from most stores", not "We wrap it free": partners carry
- * an `offers_gift_wrap` flag now and at least one live store (GS) has it
- * false, so the blanket version had stopped being true.
+ * TWO items, not three. The middle one used to be "We wrap it free" and then
+ * briefly "Free gift wrap from most stores". CADO is not offering gift
+ * wrapping at all — Marwan, 2026-08: "i dont need gift wrapping" — so the
+ * item is deleted rather than softened. Nothing was invented to fill the
+ * gap; a two-column strip of true things beats a three-column one padded
+ * with a service that doesn't exist.
  *
  * The three grey badges that used to sit under this row (Verified Lebanese
- * stores / Pay on delivery / Free wrapping) are gone from the homepage —
- * they were a second, near-identical strip saying two of the same three
- * things. The full panel still lives on Account, which is the screen someone
+ * stores / Pay on delivery / Free wrapping) are also gone from the homepage
+ * — they were a second, near-identical strip saying the same things. The
+ * remaining true ones still live on Account, which is the screen someone
  * lands on when they are deciding whether to trust CADO at all.
  */
 const HOW_IT_WORKS = [
   { Icon: GiftIcon, label: "Pick a gift" },
-  { Icon: WrapIcon, label: "Free gift wrap from most stores" },
   { Icon: TruckIcon, label: "Delivered today" },
 ];
 
@@ -72,7 +74,7 @@ function useCutoffLine() {
 function TrustStrip() {
   return (
     <section className="mx-auto max-w-6xl px-4 pt-4">
-      <div className="grid grid-cols-3 divide-x divide-line rounded-card border border-line">
+      <div className="grid grid-cols-2 divide-x divide-line rounded-card border border-line">
         {HOW_IT_WORKS.map((s) => (
           <div key={s.label} className="flex flex-col items-center gap-1.5 px-2 py-3.5 text-center">
             <s.Icon className="h-[18px] w-[18px] shrink-0 text-gold-deep" />
@@ -499,8 +501,13 @@ export function Home() {
                   isn't. It is not a countdown and never becomes one. */}
               <section className="relative mx-4 mt-3 flex h-[30vh] max-h-[270px] min-h-[196px] flex-col justify-end overflow-hidden rounded-card px-5 pb-4 sm:h-[30vh]">
                 <HeroCarousel />
+                {/* Was "Wrapped, and at their door by tonight." The brief
+                    said keep that headline; the later instruction that CADO
+                    is not offering gift wrapping overrides it, and this was
+                    the loudest wrapping claim on the site. Same promise, same
+                    rhythm, minus the service that doesn't exist. */}
                 <h1 className="relative max-w-[15ch] font-display text-h1 text-inverse drop-shadow sm:max-w-lg sm:text-display">
-                  Wrapped, and at their door by tonight.
+                  Chosen today, at their door by tonight.
                 </h1>
                 <p className="relative mt-1.5 text-caption text-inverse/90 drop-shadow">{cutoffLine}</p>
                 <Link

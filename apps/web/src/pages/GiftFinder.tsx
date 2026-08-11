@@ -11,7 +11,6 @@ import {
   LightningIcon,
   StarIcon,
   WalletIcon,
-  WrapIcon,
 } from "../components/Icons";
 import { Button, Chip, RemovableChip, RibbonEmpty } from "../components/ui";
 import {
@@ -146,11 +145,13 @@ const RECIPIENT_ICONS: Record<string, { Icon: typeof GiftIcon; filled?: boolean 
   child: { Icon: LightningIcon },
 };
 
-const BUDGET_ICONS: { Icon: typeof GiftIcon }[] = [
+/* No WrapIcon here any more — CADO does not wrap gifts, and a ribbon glyph
+   on a budget tile is still the site depicting a service it doesn't offer. */
+const BUDGET_ICONS: { Icon: typeof GiftIcon; filled?: boolean }[] = [
   { Icon: WalletIcon },
   { Icon: GiftIcon },
-  { Icon: WrapIcon },
   { Icon: StarIcon },
+  { Icon: StarIcon, filled: true },
 ];
 
 export function GiftFinder() {
@@ -217,6 +218,7 @@ export function GiftFinder() {
           <QuizOption
             key={b.slug}
             Icon={(BUDGET_ICONS[i] ?? BUDGET_ICONS[0]).Icon}
+            filled={(BUDGET_ICONS[i] ?? BUDGET_ICONS[0]).filled}
             label={b.label}
             onClick={() => go({ budget: b.slug, step: null })}
           />
