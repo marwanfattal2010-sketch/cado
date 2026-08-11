@@ -32,11 +32,11 @@ function tidyCategory(name: string) {
 }
 
 const MORE_OCCASIONS = [
+  { name: "Visiting Someone", img: "/occasions/visiting-someone.jpg" },
   { name: "Anniversary", img: "/occasions/anniversary.jpg" },
+  { name: "Get Well Soon", img: "/occasions/get-well-soon.jpg" },
   { name: "Graduation", img: "/occasions/graduation.jpg" },
   { name: "New Baby", img: "/occasions/new-baby.jpg" },
-  { name: "Get Well Soon", img: "/occasions/get-well-soon.jpg" },
-  { name: "Visiting Someone", img: "/occasions/visiting-someone.jpg" },
   { name: "Wedding", img: "/occasions/wedding.jpg" },
   { name: "Engagement", img: "/occasions/engagement.jpg" },
 ];
@@ -235,9 +235,8 @@ export function Home() {
         </div>
       ) : (
         <>
-          {/* 3 — GIFT FINDER. Replaces the old gift-card block: whoever taps
-              "not sure what to get" is exactly who CADO exists for, so send
-              them to the finder, not to the lowest-emotion product. */}
+          {/* 3 — GIFT FINDER. Whoever taps "not sure what to get" is exactly
+              who CADO exists for, so send them to the finder first. */}
           <section className="mx-auto max-w-6xl px-4 pt-6">
             <Link
               to="/gift-finder"
@@ -250,6 +249,21 @@ export function Home() {
               <span className="shrink-0 text-[28px] text-gold" aria-hidden>
                 🎀
               </span>
+            </Link>
+
+            {/* 3b — GIFT CARD BANNER, restored from the old homepage: the
+                whole card is the link, straight to /gift-cards. Slimmer than
+                the finder card and worded differently so the dark pair
+                doesn't read as duplicates. */}
+            <Link
+              to="/gift-cards"
+              className="mt-3 flex min-h-[72px] items-center justify-between gap-4 rounded-card bg-ink px-6 py-4 text-inverse transition-transform duration-fast active:scale-[0.99]"
+            >
+              <div>
+                <p className="text-body font-semibold">Skip the guessing</p>
+                <p className="mt-0.5 text-caption text-inverse/60">Send a CADO gift card instead.</p>
+              </div>
+              <GiftIcon className="h-8 w-8 shrink-0 text-gold" />
             </Link>
           </section>
 
