@@ -216,7 +216,10 @@ export function GiftFinder() {
             {items.length < 4 ? (
               <p className="mt-5 text-caption text-muted">
                 More gifts arriving soon.{" "}
-                <Link to="/browse" className="font-medium text-ink underline underline-offset-4">
+                {/* .tap-44 because this sits inside a sentence — growing the
+                    link itself would break the line, and nothing else
+                    tappable is near enough to have its tap stolen. */}
+                <Link to="/browse" className="tap-44 font-medium text-ink underline underline-offset-4">
                   Browse every category
                 </Link>
               </p>
