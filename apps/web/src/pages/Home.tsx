@@ -118,20 +118,20 @@ function TrendingGrid({
   return (
     <section className="pt-7">
       <SectionHead title="Trending this week" to="/gift-finder?skip=1" />
-      <div className="mx-auto max-w-6xl px-4">
-        {query.isLoading ? (
-          <ProductGridSkeleton count={TRENDING_MAX} compact />
-        ) : (
-          /* gap-y a touch larger than gap-x: rows need to separate from each
-             other vertically or the four of them read as one grey block, but
-             the columns want to stay tight so the photos dominate. */
-          <div className="grid grid-cols-2 gap-x-3 gap-y-4 md:grid-cols-4">
-            {items.map((p) => (
-              <ProductCard key={p.id} {...p} compact />
-            ))}
-          </div>
-        )}
-      </div>
+      {query.isLoading ? (
+        <ProductRowSkeleton />
+      ) : (
+        /* A left-to-right rail, not the 2-column stack this briefly was.
+           Same padding, gap and snapping as every other carousel on the
+           page, so Trending doesn't read as a different kind of shelf. */
+        <div className="scroll-row">
+          {items.map((p) => (
+            <div key={p.id} className="w-[42vw] sm:w-[190px]">
+              <ProductCard {...p} />
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
