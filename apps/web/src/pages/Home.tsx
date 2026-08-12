@@ -162,6 +162,13 @@ export function Home() {
      update. */
   const spotlight = stores.data?.find((s) => s.is_live) ?? null;
 
+  /* Everyone else, as circles under the featured card. Coming-soon stores are
+     left out: a 64px circle has no room for the "Coming soon" label the
+     square card carries, and an unlabelled dead tap is worse than absence.
+     They keep their place in the rail higher up the page, which does label
+     them. */
+  const otherStores = (stores.data ?? []).filter((s) => s.is_live && s.id !== spotlight?.id);
+
   const [query, setQuery] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
   const searching = query.trim().length > 0;
@@ -600,6 +607,38 @@ export function Home() {
                       ) : null}
                     </div>
                   </Link>
+
+                  {/* The rest of the shops as small circles under the
+                      featured one. The square rail higher up the page shows
+                      about three at a time; circles this size fit eight, so
+                      the row reads as "and here is everyone else" rather
+                      than repeating the same shelf twice.
+
+                      Coming-soon stores are excluded here — they have
+                      nothing to open, and a circle is too small to carry the
+                      "Coming soon" label the square card uses. They keep
+                      their place in the rail above, which does. */}
+                  {otherStores.length > 0 ? (
+                    <div className="-mx-4 mt-4 flex gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {otherStores.map((store) => (
+                        <Link
+                          key={store.id}
+                          to={`/store/${store.id}`}
+                          className="flex w-[64px] shrink-0 flex-col items-center gap-1.5 text-center transition-transform duration-press ease-out active:scale-[0.96]"
+                        >
+                          <span className="h-16 w-16 overflow-hidden rounded-pill bg-surface-sunk shadow-rest">
+                            <Img
+                              src={store.logo_url ?? store.cover_image_url}
+                              className="h-full w-full object-cover"
+                            />
+                          </span>
+                          <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink">
+                            {store.name}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
                 </section>
               ) : null}
 
