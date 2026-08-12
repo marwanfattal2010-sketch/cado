@@ -80,6 +80,25 @@
      one-line change. Never hardcode #E8542A at a usage site. */
   --accent-brand: 232 84 42;
 
+  /* ------------------------------------------------------------------
+     /shop tab accents. One colour per tab, all in one place so they can be
+     retuned without touching a component. Which one a tab uses is a database
+     value (`browse_tabs.accent_token`), so these names are looked up at
+     runtime as `--tab-<slug>` — grep for the token name, not the hex.
+
+     Channel triples like every other colour here, because they are read as
+     `rgb(var(--tab-x) / .12)` for the soft tinted fills.
+
+     No red. --tab-flowers is a dusty rose rather than the pink-red the first
+     pass had, and there is no --tab-women at all: those tabs are not built.
+     ------------------------------------------------------------------ */
+  --tab-all: var(--accent-brand);
+  --tab-jewelry: 91 42 94;
+  --tab-shoes: 140 74 47;
+  --tab-perfumes: 74 82 51;
+  --tab-chocolate: 74 46 31;
+  --tab-flowers: 154 90 104;
+
   /* Legacy aliases — retired names, no longer red. */
   --ribbon: var(--primary);
   --ribbon-deep: var(--primary-deep);
@@ -295,6 +314,70 @@ button:active:not(:disabled),
   /* A flex item with nothing to shrink to is still allowed to shrink; every
      card in these rows sets its own width, so let none of them squeeze. */
   flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------
+   /shop — the swipe pager.
+
+   Built with scroll-snap and NOT with transforms. Two reasons, both learned
+   the hard way in this codebase:
+
+   1. A transformed ancestor becomes the containing block for every
+      `position: fixed` descendant, which silently unpins the bottom nav and
+      any sheet backdrop inside the pager (see PageTransition.tsx).
+   2. Each panel being its own scroll container is what makes a tab remember
+      where it was scrolled to. That is free here and would be state to keep
+      in sync with any other approach.
+
+   Because the shell is height-constrained, the header above the pager never
+   moves and never needs `position: sticky` — which is the fix for scrolling
+   that "feels loose".
+   --------------------------------------------------------------------- */
+.shop-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.pager {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pager::-webkit-scrollbar {
+  display: none;
+}
+
+.panel {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  /* The bottom nav is fixed and floats over the pager, so every panel has to
+     end above it or the last row of the feed is unreachable. */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+}
+
+/* The tab bar hides its scrollbar the same way the strips do, but it is not
+   a .scroll-row: it must not carry the 16px scroll-padding, because the
+   active tab is centred programmatically rather than snapped. */
+.tab-strip {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+}
+.tab-strip::-webkit-scrollbar {
+  display: none;
 }
 
 /* The one strip that must NOT be inset: an edge-to-edge media gallery, where

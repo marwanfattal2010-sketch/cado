@@ -149,6 +149,171 @@ export type Database = {
           },
         ]
       }
+      browse_banners: {
+        Row: {
+          block_id: string
+          cta_label: string | null
+          ends_at: string | null
+          headline: string | null
+          id: string
+          image_url: string | null
+          link_type: string
+          link_value: string
+          position: number
+          starts_at: string | null
+          subcopy: string | null
+        }
+        Insert: {
+          block_id: string
+          cta_label?: string | null
+          ends_at?: string | null
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          link_type: string
+          link_value: string
+          position: number
+          starts_at?: string | null
+          subcopy?: string | null
+        }
+        Update: {
+          block_id?: string
+          cta_label?: string | null
+          ends_at?: string | null
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          link_type?: string
+          link_value?: string
+          position?: number
+          starts_at?: string | null
+          subcopy?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browse_banners_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "browse_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      browse_blocks: {
+        Row: {
+          config: Json
+          id: string
+          is_active: boolean
+          position: number
+          tab_id: string
+          title: string | null
+          type: string
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          position: number
+          tab_id: string
+          title?: string | null
+          type: string
+        }
+        Update: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          position?: number
+          tab_id?: string
+          title?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browse_blocks_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "browse_tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      browse_tabs: {
+        Row: {
+          accent_token: string
+          filter: Json
+          id: string
+          is_active: boolean
+          label: string
+          label_ar: string | null
+          position: number
+          slug: string
+        }
+        Insert: {
+          accent_token: string
+          filter?: Json
+          id?: string
+          is_active?: boolean
+          label: string
+          label_ar?: string | null
+          position: number
+          slug: string
+        }
+        Update: {
+          accent_token?: string
+          filter?: Json
+          id?: string
+          is_active?: boolean
+          label?: string
+          label_ar?: string | null
+          position?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      browse_tiles: {
+        Row: {
+          block_id: string
+          group_key: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          label: string
+          link_type: string
+          link_value: string
+          position: number
+        }
+        Insert: {
+          block_id: string
+          group_key?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          label: string
+          link_type: string
+          link_value: string
+          position: number
+        }
+        Update: {
+          block_id?: string
+          group_key?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          label?: string
+          link_type?: string
+          link_value?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browse_tiles_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "browse_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           icon_name: string | null
