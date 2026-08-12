@@ -35,19 +35,21 @@ function Cover({ store }: { store: StoreCardStore }) {
  */
 function Label({ store }: { store: StoreCardStore }) {
   return (
-    <div className="relative mt-auto p-4">
-      <span className="block truncate font-display text-h2 leading-tight text-inverse drop-shadow">
+    /* Name only, bottom-left. At 150px square there is no room for a
+       description line without it truncating to nothing useful. */
+    <div className="relative mt-auto p-3">
+      <span className="block truncate text-[14.5px] font-bold leading-tight text-inverse drop-shadow">
         {store.name}
       </span>
-      {store.description ? (
-        <span className="mt-0.5 block truncate text-caption text-inverse/75">{store.description}</span>
-      ) : null}
     </div>
   );
 }
 
+/* Square, 150px. Small enough that three-and-a-bit are on screen at 375px,
+   so the row obviously swipes; the 70vw landscape card before this showed
+   barely more than one and read as a banner rather than a rail. */
 const SHELL =
-  "relative flex aspect-[4/3] w-[70vw] max-w-[300px] shrink-0 flex-col overflow-hidden rounded-card bg-primary sm:w-[280px]";
+  "relative flex aspect-square w-[150px] shrink-0 flex-col overflow-hidden rounded-card bg-primary";
 
 /**
  * The store card. Large enough to feel like a storefront rather than an

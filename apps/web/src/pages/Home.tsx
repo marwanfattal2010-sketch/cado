@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { useSearchProducts, useProductsByTag } from "../hooks/useProducts";
+import { useSearchProducts, useProductsByTag, useNeedItToday } from "../hooks/useProducts";
 import { useSearchStores, useTopStores } from "../hooks/useStores";
 import { BrandLogo } from "../components/BrandLogo";
 import { CategoryChips } from "../components/CategoryChips";
 import { CategoryFilterButton, CategoryInline, useCategoryBrowse } from "../components/CategoryInline";
 import { GiftCardBanner } from "../components/GiftCardBanner";
-import { HeroCarousel } from "../components/HeroCarousel";
 import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
 import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
 import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
 import { SearchIcon, GiftIcon, TruckIcon } from "../components/Icons";
-import { timeUntilCutoff } from "../lib/area";
 import { BUDGETS, OCCASIONS, RECIPIENTS } from "../lib/filters";
 
 /**
@@ -34,60 +32,6 @@ const TRENDING_MAX = TRENDING_ROWS * 2;
 /** Long enough to read as a deliberate swap, short enough that it never
  *  feels like waiting. Matched by the inline transition duration below. */
 const SWAP_MS = 170;
-
-/**
- * The trust strip, now directly under the hero instead of buried at the
- * bottom of the page where nobody scrolled to it.
- *
- * TWO items, not three. The middle one used to be "We wrap it free" and then
- * briefly "Free gift wrap from most stores". CADO is not offering gift
- * wrapping at all — Marwan, 2026-08: "i dont need gift wrapping" — so the
- * item is deleted rather than softened. Nothing was invented to fill the
- * gap; a two-column strip of true things beats a three-column one padded
- * with a service that doesn't exist.
- *
- * The three grey badges that used to sit under this row (Verified Lebanese
- * stores / Pay on delivery / Free wrapping) are also gone from the homepage
- * — they were a second, near-identical strip saying the same things. The
- * remaining true ones still live on Account, which is the screen someone
- * lands on when they are deciding whether to trust CADO at all.
- */
-const HOW_IT_WORKS = [
-  { Icon: GiftIcon, label: "Pick a gift" },
-  { Icon: TruckIcon, label: "Delivered today" },
-];
-
-/**
- * The real cut-off, in words, recomputed on the minute so the page can't sit
- * open through midnight still promising today. No countdown: a ticking clock
- * on a homepage is pressure, and this is meant to be information.
- */
-function useCutoffLine() {
-  const [line, setLine] = useState(() => timeUntilCutoff().label);
-  useEffect(() => {
-    const t = window.setInterval(() => setLine(timeUntilCutoff().label), 60_000);
-    return () => window.clearInterval(t);
-  }, []);
-  return line;
-}
-
-function TrustStrip() {
-  return (
-    <section className="mx-auto max-w-6xl px-4 pt-4">
-      <div className="grid grid-cols-2 divide-x divide-line rounded-card border border-line">
-        {HOW_IT_WORKS.map((s) => (
-          /* Two short labels fit on one line each, so the icon sits beside
-             the text rather than above it — stacked, the strip was 87px of
-             mostly air directly under the hero. */
-          <div key={s.label} className="flex items-center justify-center gap-2 px-2 py-4 text-center">
-            <s.Icon className="h-[18px] w-[18px] shrink-0 text-gold-deep" />
-            <span className="text-caption font-medium leading-snug">{s.label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function SectionHead({ title, to }: { title: string; to?: string }) {
   return (
@@ -204,61 +148,31 @@ function TrendingGrid({
   );
 }
 
-/** Shown under the homepage AND under the in-place category view, so the
- *  page never dead-ends whichever body is on screen. */
-function SiteFooter() {
-  return (
-    <footer className="border-t border-inverse/10 bg-primary px-4 py-8 text-inverse/60">
-      <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-4">
-        <div>
-          <BrandLogo variant="cream" className="h-[32px] w-auto" />
-          <p className="mt-3 text-caption">Gifts, delivered the same day, across Lebanon.</p>
-        </div>
 
-        <div>
-          <p className="text-eyebrow uppercase text-inverse/30">Shop</p>
-          <div className="mt-1 flex flex-col text-body">
-            <FooterLink to="/browse">Categories</FooterLink>
-            <FooterLink to="/gift-finder?occasion=birthday">Birthday gifts</FooterLink>
-            <FooterLink to="/gift-cards">Gift Cards</FooterLink>
-            <FooterLink to="/gift-finder?budget=under-20">Under $20</FooterLink>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-eyebrow uppercase text-inverse/30">Company</p>
-          <div className="mt-1 flex flex-col text-body">
-            <FooterLink to="/about">About CADO</FooterLink>
-            <FooterLink to="/partners">Partner with CADO</FooterLink>
-            <FooterLink to="/help">Contact</FooterLink>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-eyebrow uppercase text-inverse/30">Help</p>
-          <div className="mt-1 flex flex-col text-body">
-            <FooterLink to="/delivery-returns">Delivery &amp; Returns</FooterLink>
-            <FooterLink to="/orders">Track your order</FooterLink>
-            <FooterLink to="/privacy">Privacy Policy</FooterLink>
-            <FooterLink to="/terms">Terms of Service</FooterLink>
-            <FooterLink to="/help">FAQ</FooterLink>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto mt-8 max-w-6xl border-t border-inverse/10 pt-5 text-caption">
-        © 2026 CADO. Made in Lebanon.
-      </div>
-    </footer>
-  );
-}
+/** Static photos from the account, each opening the profile. Hardcoded so
+ *  they're trivial to swap for real posts; no Instagram API, no embed. */
+const INSTAGRAM_IMAGES = [
+  "/instagram/1.jpg",
+  "/instagram/2.jpg",
+  "/instagram/3.jpg",
+  "/instagram/4.jpg",
+  "/instagram/5.jpg",
+  "/instagram/6.jpg",
+  "/instagram/7.jpg",
+  "/instagram/8.jpg",
+];
 
 export function Home() {
   const stores = useTopStores();
   const trending = useProductsByTag("trending");
   const mostGifted = useProductsByTag("most-gifted");
+  const newOnCado = useProductsByTag("new");
+  const needToday = useNeedItToday();
 
-  const cutoffLine = useCutoffLine();
+  /* The live store with the most to sell. A real fact about the catalogue,
+     not a paid slot or a hand-set "featured" flag nobody would remember to
+     update. */
+  const spotlight = stores.data?.find((s) => s.is_live) ?? null;
 
   const [query, setQuery] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
@@ -458,36 +372,32 @@ export function Home() {
             <CategoryInline browse={browse} />
           ) : (
             <>
-              {/* 3 — HERO. A quarter shorter than it was (40vh/360 -> 30vh/
-                  270) so whatever comes next always peeks above the fold on a
-                  375x812 screen. Same photo carousel, same headline, same one
-                  button — only the box lost height.
+              {/* 2 — HERO. Type on cream: no card, no border, no photo, no
+                  button, and deliberately no motion of any kind. The previous
+                  hero was a cycling photo carousel with a fade; this one
+                  renders once and never moves again.
 
-                  The line under the headline is the real cut-off, computed
-                  from the clock: before midnight it says today is still
-                  possible, in the 00:00-08:00 window it says plainly that it
-                  isn't. It is not a countdown and never becomes one. */}
-              <section className="relative mx-4 mt-3 flex h-[30vh] max-h-[270px] min-h-[196px] flex-col justify-end overflow-hidden rounded-card px-5 pb-4 sm:h-[30vh]">
-                <HeroCarousel />
-                {/* Was "Wrapped, and at their door by tonight." The brief
-                    said keep that headline; the later instruction that CADO
-                    is not offering gift wrapping overrides it, and this was
-                    the loudest wrapping claim on the site. Same promise, same
-                    rhythm, minus the service that doesn't exist. */}
-                <h1 className="relative max-w-[15ch] font-display text-h1 text-inverse drop-shadow sm:max-w-lg sm:text-display">
-                  Chosen today, at their door by tonight.
-                </h1>
-                <p className="relative mt-1.5 text-caption text-inverse/90 drop-shadow">{cutoffLine}</p>
-                <Link
-                  to="/gift-finder"
-                  className="relative mt-3 inline-flex h-[52px] w-fit items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse shadow-lift transition-all duration-press ease-out active:scale-[0.97]"
+                  clamp() rather than a fixed 54px: at 375px the three hard
+                  breaks must hold, and "tonight." is the longest line, so the
+                  type scales with the viewport instead of wrapping to four
+                  lines on a narrow phone. */}
+              <section className="mx-auto max-w-6xl px-4 pt-6">
+                <h1
+                  className="font-display font-normal leading-[0.94] tracking-[-0.015em] text-ink"
+                  style={{ fontSize: "clamp(42px, 13.8vw, 54px)" }}
                 >
-                  Find a gift
-                </Link>
+                  Chosen now.
+                  <br />
+                  There by
+                  <br />
+                  <span className="text-accent-brand">tonight.</span>
+                </h1>
+                <hr className="mt-5 border-0 border-t border-line" />
+                <p className="mt-3.5 max-w-[290px] text-[14.5px] leading-relaxed text-muted">
+                  Gifts from real Beirut stores —{" "}
+                  <span className="font-semibold text-ink">ordered today, delivered today.</span>
+                </p>
               </section>
-
-              {/* 4 — TRUST STRIP, straight under the hero. */}
-              <TrustStrip />
 
               {/* 5 — BIRTHDAYS. Banner and carousel are ONE section now: the
                   banner is the section header, the gifts are the answer to
@@ -509,35 +419,34 @@ export function Home() {
                   MIN_SECTION_ITEMS products carry the tag the carousel hides
                   rather than showing a padded row; the banner stays, because
                   it is navigation. */}
-              <section className="pt-7">
-                <div className="mx-auto max-w-6xl px-4">
-                  <Link
-                    to="/gift-finder?occasion=birthday"
-                    className="relative flex h-[190px] flex-col justify-end overflow-hidden rounded-sheet p-6 transition-transform duration-fast active:scale-[0.99]"
-                  >
-                    <img
-                      src="/occasions/birthday-banner.jpg"
-                      alt=""
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 to-black/20" />
-                    <p className="relative font-display text-h1 text-inverse drop-shadow">
-                      Birthday coming up?
-                    </p>
-                    <p className="relative mt-1 text-body text-inverse/85 drop-shadow">
-                      Same-day gifts, sorted by what always lands.
-                    </p>
-                  </Link>
+              {/* 5 — STORES ON CADO. Moved up to the top of the browse:
+                  the two real signed stores are the strongest thing on the
+                  page and were sitting eight sections down. Square cards,
+                  name bottom-left. is_live=false stores keep the card shape
+                  but are not links. */}
+              <section className="mt-7 bg-tint-sage py-7">
+                <SectionHead title="Stores on CADO" />
+                <div className="scroll-row">
+                  {stores.isLoading
+                    ? Array.from({ length: 3 }).map((_, i) => <StoreCardSkeleton key={i} />)
+                    : stores.data?.map((store) => <StoreCard key={store.id} store={store} />)}
                 </div>
+              </section>
 
+              {/* 6 — MOST GIFTED FOR BIRTHDAYS. The balloon banner that used
+                  to head this section is gone; the row stands on its own now.
+
+                  The data is the editorial `most-gifted` tag and nothing else
+                  — no rank, no number, no "#1" anywhere, because there is no
+                  order-volume data the storefront can read to justify one.
+                  Below MIN_SECTION_ITEMS it hides rather than padding out. */}
+              <section className="pt-7">
+                <SectionHead title="Most gifted for birthdays" />
                 {mostGifted.isLoading ? (
-                  <div className="pt-4">
-                    <ProductRowSkeleton />
-                  </div>
+                  <ProductRowSkeleton />
                 ) : (mostGifted.data?.length ?? 0) >= MIN_SECTION_ITEMS ? (
                   <>
-                    <div className="scroll-row pt-4">
+                    <div className="scroll-row">
                       {mostGifted.data?.map((p) => (
                         <div key={p.id} className="w-[42vw] sm:w-[190px]">
                           <ProductCard {...p} />
@@ -580,8 +489,35 @@ export function Home() {
                 </div>
               </section>
 
-              {/* 6 — GIFT CARDS. Moved up out of the tail of the page, where
-                  it was being scrolled past, and rebuilt in colour. */}
+              {/* 8 — NEED IT TODAY. Restored, but narrower than it was: only
+                  products with no variants, so there is nothing to size or
+                  choose — tap, cart, done. A product with three sizes is not
+                  grab-and-go, whatever its delivery time.
+
+                  Same-day is a real claim, so it is gated on the same rule
+                  the card badge uses: the store offers it, stock is known and
+                  above zero, and the midnight cut-off has not passed. In the
+                  00:00-08:00 window the section hides itself rather than
+                  promising a delivery nobody will make. */}
+              {needToday.isLoading ? (
+                <section className="pt-7">
+                  <SectionHead title="Need it today" />
+                  <ProductRowSkeleton />
+                </section>
+              ) : (needToday.data?.length ?? 0) >= MIN_SECTION_ITEMS ? (
+                <section className="pt-7">
+                  <SectionHead title="Need it today" to="/gift-finder" />
+                  <div className="scroll-row">
+                    {needToday.data?.map((p) => (
+                      <div key={p.id} className="w-[42vw] sm:w-[190px]">
+                        <ProductCard {...p} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {/* 9 — GIFT CARDS. */}
               <section className="mx-auto max-w-6xl px-4 pt-7">
                 <GiftCardBanner />
               </section>
@@ -602,25 +538,7 @@ export function Home() {
                 </div>
               </section>
 
-              {/* 8 — STORES ON CADO, on a soft sage band so the row reads as
-                  its own shelf rather than more of the same cream. Big
-                  swipeable storefronts, not avatars. is_live=false stores
-                  are real signings with nothing listed yet; they keep the
-                  card shape but are not links.
-
-                  No "See all": the row already carries every store on CADO,
-                  and a link to a fuller list that isn't fuller is a wasted
-                  tap. */}
-              <section className="mt-7 bg-tint-sage py-7">
-                <SectionHead title="Stores on CADO" />
-                <div className="scroll-row">
-                  {stores.isLoading
-                    ? Array.from({ length: 3 }).map((_, i) => <StoreCardSkeleton key={i} />)
-                    : stores.data?.map((store) => <StoreCard key={store.id} store={store} />)}
-                </div>
-              </section>
-
-              {/* 9 — SHOP BY BUDGET. The blush band is gone: a pink stripe
+              {/* 12 — SHOP BY BUDGET. The blush band is gone: a pink stripe
                   was the one place on the page a hue filled a large surface,
                   and it fought the sage shelf directly above it. Plain canvas
                   now, so the tags themselves are the only thing to look at.
@@ -644,14 +562,66 @@ export function Home() {
                   end. */}
               <TrendingGrid query={trending} />
 
-              {/* 11 — SELL ON CADO, as a compact card.
+              {/* 13 — NEW ON CADO. Restored. Newest first — this is the one
+                  shelf on the page that is a plain fact about the catalogue
+                  rather than a curator's choice, so nothing has to be tagged
+                  for it to be honest. */}
+              {newOnCado.isLoading ? (
+                <section className="pt-7">
+                  <SectionHead title="New on CADO" />
+                  <ProductRowSkeleton />
+                </section>
+              ) : (newOnCado.data?.length ?? 0) >= MIN_SECTION_ITEMS ? (
+                <section className="pt-7">
+                  <SectionHead title="New on CADO" to="/gift-finder" />
+                  <div className="scroll-row">
+                    {newOnCado.data?.map((p) => (
+                      <div key={p.id} className="w-[42vw] sm:w-[190px]">
+                        <ProductCard {...p} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {/* 14 — STORE SPOTLIGHT. One store, full width, lower down —
+                  stores appearing a second time, in a different shape.
+
+                  Whichever live store has the most to sell, which is a real
+                  fact rather than a paid placement or an invented "featured"
+                  flag. Hidden entirely if no live store has products. */}
+              {spotlight ? (
+                <section className="mx-auto max-w-6xl px-4 pt-8">
+                  <SectionHead title="Store spotlight" />
+                  <Link
+                    to={`/store/${spotlight.id}`}
+                    className="relative block aspect-[16/9] overflow-hidden rounded-card bg-surface-sunk transition-transform duration-press ease-out active:scale-[0.99]"
+                  >
+                    <Img
+                      src={spotlight.cover_image_url ?? spotlight.logo_url}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5">
+                      <p className="font-display text-h2 text-inverse drop-shadow">{spotlight.name}</p>
+                      {spotlight.description ? (
+                        <p className="mt-0.5 line-clamp-1 text-caption text-inverse/85 drop-shadow">
+                          {spotlight.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </Link>
+                </section>
+              ) : null}
+
+              {/* 15 — SELL ON CADO, as a compact card.
                   Nothing was deleted: the full pitch (no upfront cost, we
                   deliver, new customers, email and WhatsApp) already lives on
                   /partners and this now links there. It was a full-bleed
                   black section with three benefit columns and two buttons
                   sitting between the shopping and the footer, aimed at an
                   audience of roughly nobody who reaches it. */}
-              <section className="mx-auto max-w-6xl px-4 pt-8">
+              <section className="mx-auto max-w-6xl px-4 py-10">
                 <Link
                   to="/partners"
                   className="block rounded-card bg-primary px-5 py-4 text-inverse transition-transform duration-press ease-out active:scale-[0.99]"
@@ -671,12 +641,45 @@ export function Home() {
                   </span>
                 </Link>
               </section>
+
+              {/* 16 — INSTAGRAM. Real photographs from the account, each
+                  opening the profile. No embed, no follower count, no faked
+                  post metadata — it is a set of pictures and a link. */}
+              <section className="pt-2">
+                <SectionHead title="@cado.lb on Instagram" />
+                <div className="scroll-row">
+                  {INSTAGRAM_IMAGES.map((src) => (
+                    <a
+                      key={src}
+                      href="https://instagram.com/cado.lb"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block aspect-square w-[128px] shrink-0 overflow-hidden rounded-card bg-surface-sunk"
+                    >
+                      <Img src={src} className="h-full w-full object-cover" />
+                    </a>
+                  ))}
+                </div>
+              </section>
+
+              {/* 17 — MINI FOOTER. One line. Everything the old black block
+                  carried — help, delivery, tracking, policies, categories —
+                  now lives on Account as tappable rows, which is where
+                  someone actually goes looking for it. */}
+              <footer className="mx-auto max-w-6xl px-4 pb-8 pt-10 text-center">
+                <p className="text-caption text-muted">
+                  © {new Date().getFullYear()} CADO ·{" "}
+                  <Link to="/privacy" className="underline underline-offset-4">
+                    Privacy
+                  </Link>{" "}
+                  ·{" "}
+                  <Link to="/terms" className="underline underline-offset-4">
+                    Terms
+                  </Link>
+                </p>
+              </footer>
             </>
           )}
-
-          {/* Continuous with the dark partner block above — a hairline
-              instead of a canvas stripe between two full-bleed dark bands. */}
-          <SiteFooter />
         </div>
       )}
     </div>

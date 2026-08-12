@@ -86,7 +86,7 @@ export function CategoryChips({
     return (
       <div className={`scroll-row ${className}`}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <span key={i} className="skeleton h-9 w-[86px] shrink-0 rounded-pill" />
+          <span key={i} className="skeleton h-[38px] w-[86px] shrink-0 rounded-[10px]" />
         ))}
       </div>
     );
@@ -104,7 +104,7 @@ export function CategoryChips({
           <Chip
             active={!activeSlug}
             onClick={() => onSelect(null)}
-            className="tap-44 !h-9 !px-3.5 !text-caption"
+            className="tap-44 !h-[38px] !rounded-[10px] !px-[15px] !text-[13.5px] !font-medium"
           >
             All
           </Chip>
@@ -120,7 +120,7 @@ export function CategoryChips({
               <Chip
                 active={active}
                 onClick={() => onSelect(active ? null : cat.slug)}
-                className="tap-44 !h-9 !px-3.5 !text-caption"
+                className="tap-44 !h-[38px] !rounded-[10px] !px-[15px] !text-[13.5px] !font-medium"
               >
                 {tidyCategory(cat.name)}
               </Chip>
@@ -129,7 +129,7 @@ export function CategoryChips({
                 to={`/category/${cat.slug}`}
                 active={active}
                 onPointerEnter={prefetch}
-                className="tap-44 !h-9 !px-3.5 !text-caption"
+                className="tap-44 !h-[38px] !rounded-[10px] !px-[15px] !text-[13.5px] !font-medium"
               >
                 {tidyCategory(cat.name)}
               </ChipLink>

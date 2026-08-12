@@ -98,6 +98,77 @@ function Row({ to, Icon, label, first }: { to: string; Icon: typeof HelpIcon; la
   );
 }
 
+/**
+ * Everything the homepage's black footer block used to hold.
+ *
+ * It was a wall of links under the shopping, which is the one place nobody
+ * looks for them — Home now ends on a single "© CADO · Privacy · Terms"
+ * line. These are the same destinations as tappable rows, on the screen
+ * people actually open when they want help, an order, or a policy.
+ *
+ * Every row goes somewhere real. There are no dead entries here.
+ */
+const LINK_GROUPS: { heading: string; links: { to: string; label: string }[] }[] = [
+  {
+    heading: "Shop",
+    links: [
+      { to: "/browse", label: "All categories" },
+      { to: "/gift-finder?occasion=birthday", label: "Birthday gifts" },
+      { to: "/gift-cards", label: "Gift cards" },
+    ],
+  },
+  {
+    heading: "Help",
+    links: [
+      { to: "/delivery-returns", label: "Delivery & returns" },
+      { to: "/orders", label: "Track your order" },
+      { to: "/help", label: "Contact us" },
+    ],
+  },
+  {
+    heading: "Company",
+    links: [
+      { to: "/about", label: "About CADO" },
+      { to: "/partners", label: "Become a partner" },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { to: "/privacy", label: "Privacy policy" },
+      { to: "/terms", label: "Terms of service" },
+    ],
+  },
+];
+
+function SiteLinks() {
+  return (
+    <div className="mt-8">
+      {LINK_GROUPS.map((group) => (
+        <div key={group.heading} className="mt-5 first:mt-0">
+          <p className="mb-2 px-1 text-eyebrow uppercase text-muted">{group.heading}</p>
+          <div className="overflow-hidden rounded-card bg-surface shadow-rest">
+            {group.links.map((link, i) => (
+              <Link
+                key={link.to + link.label}
+                to={link.to}
+                className={`flex min-h-[52px] items-center gap-3 px-4 py-3.5 transition hover:bg-surface-sunk ${
+                  i === 0 ? "" : "border-t border-line"
+                }`}
+              >
+                <span className="flex-1 text-body">{link.label}</span>
+                <span aria-hidden className="text-muted">
+                  ›
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Account() {
   const { session, profile, signOut } = useAuth();
   const topStores = useTopStores();
@@ -120,6 +191,13 @@ export function Account() {
         <div className="mt-10 overflow-hidden rounded-card bg-surface text-left shadow-rest">
           <Row to="/help" Icon={HelpIcon} label="Help Center" first />
           <Row to="/language" Icon={GlobeIcon} label="Language" />
+        </div>
+
+        {/* The moved footer links belong here too. Someone signed out is
+            exactly the person hunting for delivery terms or a privacy
+            policy, and Home no longer carries them. */}
+        <div className="text-left">
+          <SiteLinks />
         </div>
 
         {/* Signed out is exactly when someone is still deciding, so the
@@ -205,6 +283,8 @@ export function Account() {
       </Button>
 
       <HowCadoWorks />
+
+      <SiteLinks />
 
       <p className="mt-10 text-center text-eyebrow uppercase text-muted">Cado — gifts, delivered. Lebanon.</p>
     </div>

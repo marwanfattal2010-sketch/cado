@@ -75,6 +75,11 @@
   --gold: 201 162 39;
   --gold-deep: 138 107 20;
 
+  /* The hero accent, and nothing else so far. Defined once on purpose: the
+     final brand orange is not chosen yet, so swapping it must stay a
+     one-line change. Never hardcode #E8542A at a usage site. */
+  --accent-brand: 232 84 42;
+
   /* Legacy aliases — retired names, no longer red. */
   --ribbon: var(--primary);
   --ribbon-deep: var(--primary-deep);

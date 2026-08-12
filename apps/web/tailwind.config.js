@@ -48,6 +48,8 @@ export default {
           DEFAULT: token("--gold"),
           deep: token("--gold-deep"),
         },
+        // Hero accent only. One token, one place to change it.
+        "accent-brand": token("--accent-brand"),
         today: {
           DEFAULT: token("--today"),
           tint: token("--today-tint"),
