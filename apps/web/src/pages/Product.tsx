@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProduct, useRelatedProducts, useOftenTogether } from "../hooks/useProducts";
@@ -6,22 +6,16 @@ import { productImageUrl } from "../lib/images";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { Skeleton } from "../components/Skeleton";
-import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
 import { useToast, Chip, RibbonDivider } from "../components/ui";
 import { HeartIcon, ChevronLeftIcon } from "../components/Icons";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
-import { timeUntilCutoff } from "../lib/area";
+import { CUTOFF_LABEL, timeUntilCutoff } from "../lib/area";
 import { formatMoney } from "../lib/money";
 
-const NOTE_SUGGESTIONS = [
-  "Happy birthday!",
-  "Congratulations!",
-  "Thinking of you",
-  "Get well soon",
-  "Thank you",
-  "With love",
-];
+/** Four ready-made lines, then a way out of them. Anything longer is a
+ *  writing exercise on a screen whose job is to get to Add to cart. */
+const NOTE_SUGGESTIONS = ["Happy birthday!", "Congratulations!", "Thank you", "Get well soon"];
 
 function Row({
   title,
@@ -57,11 +51,10 @@ export function Product() {
 
   const [imgIndex, setImgIndex] = useState(0);
   const [message, setMessage] = useState("");
-  const [noteFrom, setNoteFrom] = useState("");
-  const [noteTo, setNoteTo] = useState("");
   const [wantsNote, setWantsNote] = useState(false);
   const [hidePrice, setHidePrice] = useState(false);
   const [adding, setAdding] = useState(false);
+  const noteField = useRef<HTMLTextAreaElement>(null);
 
   const [cutoff, setCutoff] = useState(() => timeUntilCutoff());
   useEffect(() => {
@@ -92,7 +85,11 @@ export function Product() {
     .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const isFavorite = favoriteIds.has(product.id);
   const inStock = product.stock_quantity == null || product.stock_quantity > 0;
-  const arrivesToday = product.same_day === true && inStock;
+  /* Same rule as the card badge and the filter: the store offers same-day AND
+     there is a positive stock count. An unknown null never earns the promise,
+     which is why this is stricter than `inStock`. */
+  const sameDayEligible =
+    product.same_day === true && product.stock_quantity != null && product.stock_quantity > 0;
 
   const addToCart = async () => {
     if (!session) {
@@ -105,10 +102,12 @@ export function Product() {
         profile_id: session.user.id,
         product_id: product.id,
         quantity: 1,
+        /* Carried per item, so checkout never asks for either of these
+           again — place_order copies this object straight onto the
+           order_item. Deliberately NO `gift_wrap` key: the server adds
+           gift_wrap_price when that flag is true, and CADO does not wrap. */
         customization: {
           message: wantsNote ? message.trim() || undefined : undefined,
-          note_from: wantsNote ? noteFrom.trim() || undefined : undefined,
-          note_to: wantsNote ? noteTo.trim() || undefined : undefined,
           hide_price: hidePrice || undefined,
         },
       });
@@ -193,111 +192,95 @@ export function Product() {
           <h1 className="font-display text-h1">{product.title}</h1>
           <p className="mt-2 text-[22px] font-bold">{formatMoney(product.price)}</p>
 
-          {arrivesToday && !cutoff.passed ? (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-pill bg-today-tint px-3 py-1.5 text-caption font-medium text-today">
-              Arrives today if you order within {cutoff.label.replace(" left for same-day delivery", "")}
-            </p>
-          ) : arrivesToday ? (
-            <p className="mt-3 inline-flex rounded-pill bg-surface-sunk px-3 py-1.5 text-caption font-medium text-muted">
-              Order now for delivery tomorrow morning
+          {/* ONE delivery line, in the flow of the text — not a pill.
+              A tinted capsule here competed with the price directly above it
+              and read as a promotion rather than a fact about delivery. */}
+          {sameDayEligible ? (
+            <p className={`mt-2 text-caption font-medium ${cutoff.passed ? "text-muted" : "text-today"}`}>
+              {cutoff.passed ? cutoff.label : `Arrives today if you order before ${CUTOFF_LABEL}`}
             </p>
           ) : !inStock ? (
-            <p className="mt-3 inline-flex rounded-pill bg-surface-sunk px-3 py-1.5 text-caption font-medium text-muted">
-              Out of stock
-            </p>
+            <p className="mt-2 text-caption font-medium text-muted">Out of stock</p>
           ) : null}
 
           {inStock && product.stock_quantity != null && product.stock_quantity <= 3 ? (
-            <p className="mt-2 text-caption font-medium text-alert">Only {product.stock_quantity} left</p>
+            <p className="mt-1 text-caption font-medium text-alert">Only {product.stock_quantity} left</p>
           ) : null}
 
-          {/* Gift options. Wrapping is standard and free, so it's stated, not
-              offered as a choice the person has to make. */}
-          <div className="mt-6 rounded-card bg-surface p-4 shadow-rest">
-            <p className="font-display text-h2">Gift options</p>
-
-            <p className="mt-3 flex items-center gap-2 text-body">
-              <span className="text-today">✓</span> Gift wrap — free, on every order
-            </p>
-
-            {/* "Say something with it" used to be a banner on the homepage,
-                a long way from anywhere you could act on it. It belongs
-                here, on the control that actually adds the note. */}
-            <label className="mt-3 flex min-h-[56px] cursor-pointer items-center gap-3 text-body">
+          {/* Two plain checkboxes. No card, no heading, no thumbnail — this
+              is a pair of choices, and dressing it as a panel made it look
+              like a step you had to complete before buying. */}
+          <div className="mt-5 space-y-1">
+            <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-body">
               <input
                 type="checkbox"
                 checked={wantsNote}
                 onChange={(e) => setWantsNote(e.target.checked)}
-                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
+                className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
               />
-              <span className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">
-                <Img src="/misc/handwritten-note.jpg" className="h-full w-full object-cover" />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-medium">Say something with it</span>
-                <span className="block text-caption text-muted">
-                  Add a handwritten note — free, tucked inside the wrap.
-                </span>
-              </span>
+              Add a free handwritten note
             </label>
 
             {wantsNote ? (
-              <div className="mt-3 border-l-2 border-line pl-3">
+              <div className="pb-1 pl-[26px]">
                 <div className="flex flex-wrap gap-1.5">
                   {NOTE_SUGGESTIONS.map((s) => (
-                    <Chip key={s} active={message === s} onClick={() => setMessage(s)} className="!h-8 !px-3 !text-caption">
+                    <Chip
+                      key={s}
+                      active={message === s}
+                      onClick={() => setMessage(s)}
+                      className="!h-8 !px-3 !text-caption"
+                    >
                       {s}
                     </Chip>
                   ))}
+                  {/* Not a filter — an escape hatch. Clears whatever canned
+                      line is in the box and puts the cursor in it. */}
+                  <Chip
+                    active={message.length > 0 && !NOTE_SUGGESTIONS.includes(message)}
+                    onClick={() => {
+                      if (NOTE_SUGGESTIONS.includes(message)) setMessage("");
+                      noteField.current?.focus();
+                    }}
+                    className="!h-8 !px-3 !text-caption"
+                  >
+                    Write your own
+                  </Chip>
                 </div>
                 <textarea
+                  ref={noteField}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={2}
-                  placeholder="Or write your own..."
-                  className="mt-2.5 w-full resize-none rounded-card border border-line bg-canvas px-3.5 py-2.5 text-body outline-none focus:border-ink/35"
+                  placeholder="Write your message…"
+                  className="mt-2 w-full resize-none rounded-card border border-line bg-canvas px-3.5 py-2.5 text-body outline-none focus:border-ink/35"
                 />
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <input
-                    value={noteTo}
-                    onChange={(e) => setNoteTo(e.target.value)}
-                    placeholder="To"
-                    className="rounded-card border border-line bg-canvas px-3.5 py-2.5 text-body outline-none focus:border-ink/35"
-                  />
-                  <input
-                    value={noteFrom}
-                    onChange={(e) => setNoteFrom(e.target.value)}
-                    placeholder="From"
-                    className="rounded-card border border-line bg-canvas px-3.5 py-2.5 text-body outline-none focus:border-ink/35"
-                  />
-                </div>
               </div>
             ) : null}
 
-            <label className="mt-3 flex cursor-pointer items-center gap-2.5 text-body">
+            <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-body">
               <input
                 type="checkbox"
                 checked={hidePrice}
                 onChange={(e) => setHidePrice(e.target.checked)}
-                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
+                className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
               />
               Hide the price from them
             </label>
           </div>
 
+          {/* Plain text, no heading. Two lines is what someone reads before
+              deciding; the rest of the story is the photo and the store. */}
           {product.description ? (
-            <div className="mt-6">
-              <h2 className="font-display text-h2">About this gift</h2>
-              <p className="mt-2 text-body text-muted">{product.description}</p>
-            </div>
+            <p className="mt-5 line-clamp-2 text-body text-muted">{product.description}</p>
           ) : null}
 
           <div className="mt-5 divide-y divide-line border-y border-line">
             <details className="group py-3">
               <summary className="cursor-pointer list-none text-body font-medium">Delivery &amp; returns</summary>
               <p className="mt-2 text-body text-muted">
-                Order before 4PM for same-day delivery across Lebanon. If something isn't right, contact us
-                with your order number and we'll sort it with the store.
+                Order before {CUTOFF_LABEL} for same-day delivery across Lebanon. If something isn't right,
+                contact us with your order number and we'll sort it with the store.
               </p>
             </details>
             {product.partner ? (

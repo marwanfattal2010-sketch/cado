@@ -40,13 +40,11 @@ export function Cart() {
     return Array.from(map.values());
   }, [visibleItems]);
 
+  // Price times quantity, nothing else. There is no wrap surcharge to add:
+  // CADO does not wrap, and the client must not invent a line the server
+  // will not charge.
   const subtotal = useMemo(
-    () =>
-      visibleItems.reduce((sum, item) => {
-        const c = item.customization as { gift_wrap?: boolean } | null;
-        const wrap = c?.gift_wrap ? item.product?.gift_wrap_price ?? 0 : 0;
-        return sum + ((item.product?.price ?? 0) + wrap) * item.quantity;
-      }, 0),
+    () => visibleItems.reduce((sum, item) => sum + (item.product?.price ?? 0) * item.quantity, 0),
     [visibleItems]
   );
 
@@ -101,8 +99,11 @@ export function Cart() {
             <div className="space-y-2">
               {group.items.map((item) => {
                 const uri = primaryImage(item.product?.product_images);
+                // What was chosen on the product page. note_to / note_from are
+                // no longer written but older cart rows still carry them, so
+                // they are still rendered rather than silently dropped.
                 const c = item.customization as
-                  | { message?: string; note_to?: string; note_from?: string }
+                  | { message?: string; note_to?: string; note_from?: string; hide_price?: boolean }
                   | null;
                 const note = [
                   c?.note_to ? `To ${c.note_to}` : null,
@@ -124,6 +125,9 @@ export function Cart() {
                       <p className="mt-0.5 text-price">{formatMoney(item.product?.price)}</p>
                       {note.length ? (
                         <p className="mt-1 line-clamp-2 text-caption text-muted">{note.join(" ")}</p>
+                      ) : null}
+                      {c?.hide_price ? (
+                        <p className="mt-1 text-caption text-muted">Price hidden from them</p>
                       ) : null}
                       <div className="mt-2 flex items-center gap-3">
                         <div className="inline-flex items-center rounded-pill bg-surface-sunk">

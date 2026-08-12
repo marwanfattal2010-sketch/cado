@@ -11,7 +11,11 @@ export function useCart() {
       const { data, error } = await supabase
         .from("cart_items")
         .select(
-          "id, quantity, customization, product:products(id, title, price, currency, gift_wrap_price, partner:partners(id, name), product_images(storage_path, is_primary))"
+          // gift_wrap_price is deliberately NOT selected. CADO does not offer
+          // wrapping, so no screen has a total to add it to. The column still
+          // exists and place_order still reads it, but only when
+          // customization.gift_wrap is true — and nothing sets that flag.
+          "id, quantity, customization, product:products(id, title, price, currency, partner:partners(id, name), product_images(storage_path, is_primary))"
         )
         .order("created_at");
       if (error) throw error;

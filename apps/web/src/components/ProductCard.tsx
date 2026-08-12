@@ -46,9 +46,10 @@ export function ProductCard({
   // Only promise same-day when it's genuinely deliverable — a badge the
   // business can't honour is worse than no badge at all. Three conditions,
   // all real: the store offers same-day, there is a positive stock count
-  // (an unknown null never earns the promise), and the 4PM cut-off hasn't
-  // passed. Without the last one the homepage said "Order now for tomorrow
-  // morning" directly above a row of cards each stamped "Today".
+  // (an unknown null never earns the promise), and the cut-off hasn't passed
+  // (midnight, with an overnight blackout — see lib/area). Without the last
+  // one the homepage said "Order now for tomorrow morning" directly above a
+  // row of cards each stamped as arriving today.
   const arrivesToday =
     same_day === true && stock_quantity != null && stock_quantity > 0 && !timeUntilCutoff().passed;
   const lowStock = inStock && stock_quantity != null && stock_quantity <= 3;
@@ -121,8 +122,10 @@ export function ProductCard({
         {onSale ? (
           <span className="text-caption text-muted line-through">{formatMoney(compare_at_price)}</span>
         ) : null}
+        {/* "Delivered today", not "Today" — on its own the bare word read as
+            a label on the price beside it rather than a delivery promise. */}
         {arrivesToday ? (
-          <span className="ml-auto shrink-0 text-caption font-semibold text-today">Today</span>
+          <span className="ml-auto shrink-0 text-caption font-semibold text-today">Delivered today</span>
         ) : null}
       </div>
     </Link>
