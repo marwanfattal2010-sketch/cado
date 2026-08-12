@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { formatMoney } from "../lib/money";
 import { RibbonBow } from "../components/ui";
 
 type ConfirmState = { recipientName?: string; paymentMethod?: string };
@@ -65,7 +66,7 @@ export function OrderConfirmed() {
           ? "Pay the driver when it arrives. We'll message you as the store confirms."
           : payment === "card"
             ? "We'll call you with a payment link, or you can pay the driver instead."
-            : `Send $${Number(o?.total ?? 0).toFixed(0)} to 81 900 002, then we'll get it moving.`}
+            : `Send ${formatMoney(o?.total)} to 81 900 002, then we'll get it moving.`}
       </p>
 
       {/* Ask once, at the only moment they're actually thinking about this

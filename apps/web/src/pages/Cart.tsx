@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { primaryImage } from "../lib/images";
+import { formatMoney } from "../lib/money";
 import { useCart, useRemoveCartItem, useUpdateCartQuantity } from "../hooks/useCart";
 import { RibbonEmpty } from "../components/ui";
 
@@ -120,7 +121,7 @@ export function Cart() {
                       <Link to={`/product/${item.product?.id}`} className="text-product-name">
                         {item.product?.title}
                       </Link>
-                      <p className="mt-0.5 text-price">${item.product?.price.toFixed(0)}</p>
+                      <p className="mt-0.5 text-price">{formatMoney(item.product?.price)}</p>
                       {note.length ? (
                         <p className="mt-1 line-clamp-2 text-caption text-muted">{note.join(" ")}</p>
                       ) : null}
@@ -167,15 +168,15 @@ export function Cart() {
       <div className="mt-6 rounded-card bg-surface p-4 shadow-rest">
         <div className="flex justify-between text-body text-muted">
           <span>Subtotal</span>
-          <span>${subtotal.toFixed(0)}</span>
+          <span>{formatMoney(subtotal)}</span>
         </div>
         <div className="mt-1 flex justify-between text-body text-muted">
           <span>Delivery</span>
-          <span>${DELIVERY_FEE.toFixed(0)}</span>
+          <span>{formatMoney(DELIVERY_FEE)}</span>
         </div>
         <div className="mt-2 flex justify-between border-t border-line pt-2 text-price">
           <span>Total</span>
-          <span>${(subtotal + DELIVERY_FEE).toFixed(0)}</span>
+          <span>{formatMoney(subtotal + DELIVERY_FEE)}</span>
         </div>
         <p className="mt-2 text-caption text-muted">Gift cards apply at checkout.</p>
       </div>
@@ -186,7 +187,7 @@ export function Cart() {
             onClick={() => navigate("/checkout")}
             className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-fast active:scale-[0.98]"
           >
-            Checkout — ${(subtotal + DELIVERY_FEE).toFixed(0)}
+            Checkout — {formatMoney(subtotal + DELIVERY_FEE)}
           </button>
         </div>
       </div>

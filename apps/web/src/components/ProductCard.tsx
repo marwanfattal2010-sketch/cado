@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { primaryImage } from "../lib/images";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
 import { timeUntilCutoff } from "../lib/area";
+import { formatMoney } from "../lib/money";
 import { HeartIcon } from "./Icons";
 
 type ProductCardProps = {
@@ -116,9 +117,9 @@ export function ProductCard({
           the type scale instead of hard-coding 39px. */}
       <p className="mt-0.5 line-clamp-2 min-h-[2.75em] text-product-name leading-snug">{title}</p>
       <div className={`${compact ? "mt-0.5" : "mt-1"} flex items-baseline gap-2`}>
-        <span className="text-price">${Number(price).toFixed(0)}</span>
+        <span className="text-price">{formatMoney(price)}</span>
         {onSale ? (
-          <span className="text-caption text-muted line-through">${Number(compare_at_price).toFixed(0)}</span>
+          <span className="text-caption text-muted line-through">{formatMoney(compare_at_price)}</span>
         ) : null}
         {arrivesToday ? (
           <span className="ml-auto shrink-0 text-caption font-semibold text-today">Today</span>

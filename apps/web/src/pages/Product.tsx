@@ -12,6 +12,7 @@ import { useToast, Chip, RibbonDivider } from "../components/ui";
 import { HeartIcon, ChevronLeftIcon } from "../components/Icons";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
 import { timeUntilCutoff } from "../lib/area";
+import { formatMoney } from "../lib/money";
 
 const NOTE_SUGGESTIONS = [
   "Happy birthday!",
@@ -190,7 +191,7 @@ export function Product() {
             </Link>
           ) : null}
           <h1 className="font-display text-h1">{product.title}</h1>
-          <p className="mt-2 text-[22px] font-bold">${Number(product.price).toFixed(0)}</p>
+          <p className="mt-2 text-[22px] font-bold">{formatMoney(product.price)}</p>
 
           {arrivesToday && !cutoff.passed ? (
             <p className="mt-3 inline-flex items-center gap-2 rounded-pill bg-today-tint px-3 py-1.5 text-caption font-medium text-today">
@@ -328,7 +329,7 @@ export function Product() {
           conversion, so it stays put. */}
       <div className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] z-30 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4">
-          <span className="text-price shrink-0">${Number(product.price).toFixed(0)}</span>
+          <span className="text-price shrink-0">{formatMoney(product.price)}</span>
           <button
             onClick={addToCart}
             disabled={adding || !inStock}

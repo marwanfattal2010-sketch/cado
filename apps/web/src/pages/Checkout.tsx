@@ -4,6 +4,7 @@ import { useAuth } from "../lib/auth";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
 import { getArea, getAddressDetails } from "../lib/area";
+import { formatMoney } from "../lib/money";
 import { Chip } from "../components/ui";
 
 const MESSAGES = ["Happy birthday!", "Congratulations!", "Thank you", "Get well soon"];
@@ -348,7 +349,7 @@ export function Checkout() {
             is would take money we can't charge. */}
         {payment === "whish" || payment === "omt" ? (
           <p className="mt-3 rounded-card bg-surface-sunk px-3 py-2 text-caption text-muted">
-            Place the order first, then send ${total.toFixed(0)}. We confirm the transfer before the store
+            Place the order first, then send {formatMoney(total)}. We confirm the transfer before the store
             dispatches.
           </p>
         ) : payment === "card" ? (
@@ -382,7 +383,7 @@ export function Checkout() {
         {giftCardError ? <p className="mt-2 text-caption text-alert">{giftCardError}</p> : null}
         {giftCardBalance !== null ? (
           <p className="mt-2 text-caption text-today">
-            Applied — ${giftCardBalance.toFixed(2)} available on this card
+            Applied — {formatMoney(giftCardBalance)} available on this card
           </p>
         ) : null}
       </Section>
@@ -390,21 +391,21 @@ export function Checkout() {
       <div className="mt-6 rounded-card bg-surface p-4 shadow-rest">
         <div className="flex justify-between text-body text-muted">
           <span>Subtotal</span>
-          <span>${subtotal.toFixed(0)}</span>
+          <span>{formatMoney(subtotal)}</span>
         </div>
         <div className="mt-1 flex justify-between text-body text-muted">
           <span>Delivery</span>
-          <span>${DELIVERY_FEE.toFixed(0)}</span>
+          <span>{formatMoney(DELIVERY_FEE)}</span>
         </div>
         {discount > 0 ? (
           <div className="mt-1 flex justify-between text-body text-today">
             <span>Gift card</span>
-            <span>−${discount.toFixed(0)}</span>
+            <span>−{formatMoney(discount)}</span>
           </div>
         ) : null}
         <div className="mt-2 flex justify-between border-t border-line pt-2 text-price">
           <span>Total</span>
-          <span>${total.toFixed(0)}</span>
+          <span>{formatMoney(total)}</span>
         </div>
       </div>
 
@@ -430,7 +431,7 @@ export function Checkout() {
             disabled={placeOrder.isPending}
             className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-fast active:scale-[0.98] disabled:opacity-40"
           >
-            {placeOrder.isPending ? "Placing order…" : `Place order — $${total.toFixed(0)}`}
+            {placeOrder.isPending ? "Placing order…" : `Place order — ${formatMoney(total)}`}
           </button>
         </div>
       </div>
