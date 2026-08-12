@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSearchProducts, useProductsByTag, useNeedItToday } from "../hooks/useProducts";
 import { useSearchStores, useTopStores } from "../hooks/useStores";
-import { BrandLogo } from "../components/BrandLogo";
 import { CategoryChips } from "../components/CategoryChips";
 import { CategoryFilterButton, CategoryInline, useCategoryBrowse } from "../components/CategoryInline";
 import { GiftCardBanner } from "../components/GiftCardBanner";
@@ -10,7 +9,7 @@ import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
 import { StoreCard, StoreCardSkeleton } from "../components/StoreCard";
 import { ProductGridSkeleton, ProductRowSkeleton } from "../components/Skeleton";
-import { SearchIcon, GiftIcon, TruckIcon } from "../components/Icons";
+import { SearchIcon } from "../components/Icons";
 import { BUDGETS, OCCASIONS, RECIPIENTS } from "../lib/filters";
 
 /**
@@ -46,17 +45,6 @@ function SectionHead({ title, to }: { title: string; to?: string }) {
         </Link>
       ) : null}
     </div>
-  );
-}
-
-/** A 44px footer row. These are genuinely taller rather than using .tap-44:
- *  the rows are stacked, so invisible overlays would overlap their
- *  neighbours and start stealing each other's taps. */
-function FooterLink({ to, children }: { to: string; children: ReactNode }) {
-  return (
-    <Link to={to} className="flex min-h-[44px] items-center">
-      {children}
-    </Link>
   );
 }
 
