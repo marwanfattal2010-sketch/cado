@@ -144,57 +144,22 @@ function PhotoCard({ to, img, label }: { to: string; img: string; label: string 
 }
 
 /**
- * A budget band as an actual gift tag: sliced top-left corner, a punched
- * hole with a string running out through the cut, the price in the serif
- * display face on cream inside a near-black hairline.
+ * A quiet pill, not a gift tag.
  *
- * The previous version had the hole alone, floating centred above the price,
- * on an ordinary rounded rectangle — at 375px that reads as an unselected
- * radio button, not as a tag. The corner and the string are what make the
- * hole mean something, so they arrive together or not at all.
- *
- * Built as two clipped layers rather than a border, because clip-path cuts
- * a border off with the corner and would leave the diagonal edge invisible
- * against the canvas page behind it: an outer layer in --primary, an inner
- * layer inset 1px in canvas, and the 1px that shows between them IS the
- * hairline. rounded-card still applies to the three untouched corners, so
- * this stays inside the three-radii rule and introduces no new colour.
+ * The tag version — angled corner, punched hole, string, big serif number —
+ * was three decorative ideas competing on a control whose only job is to say
+ * a price range. Marwan's word for what he wanted instead was "friendly":
+ * something small and ordinary that anyone recognises as tappable. So: the
+ * same chip language the category rail already uses, at the same 44px height
+ * as every other control on the page.
  */
-const TAG_CLIP = "polygon(18px 0, 100% 0, 100% 100%, 0 100%, 0 18px)";
-const TAG_CLIP_INNER = "polygon(17px 0, 100% 0, 100% 100%, 0 100%, 0 17px)";
-
 function BudgetTag({ to, label }: { to: string; label: string }) {
   return (
     <Link
       to={to}
-      /* 88px tall clears the 44px minimum twice over, and the fixed width
-         keeps all four tags the same size whether the label is "$100+" or
-         "$20 – $50". */
-      className="relative flex h-[88px] w-[128px] shrink-0 items-center justify-center px-3 text-center transition-all duration-press ease-out active:scale-[0.97]"
+      className="inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-pill border border-line bg-surface px-5 text-body font-medium text-ink shadow-rest transition-all duration-press ease-out active:scale-[0.97]"
     >
-      <span aria-hidden className="absolute inset-0 rounded-card bg-primary" style={{ clipPath: TAG_CLIP }} />
-      <span
-        aria-hidden
-        className="absolute inset-[1px] rounded-card bg-canvas"
-        style={{ clipPath: TAG_CLIP_INNER }}
-      />
-      {/* The hole and its string. Same clip as the tag, so the string is cut
-          off exactly at the diagonal and reads as continuing off the card
-          rather than stopping in the middle of it. */}
-      <svg
-        aria-hidden
-        viewBox="0 0 44 44"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        className="absolute left-0 top-0 h-11 w-11 text-primary/55"
-        style={{ clipPath: TAG_CLIP }}
-      >
-        <path d="M2 2 C 10 4, 12 8, 16.6 13" />
-        <circle cx="20" cy="13" r="3.4" />
-      </svg>
-      <span className="relative font-display text-h2 leading-tight text-ink">{label}</span>
+      {label}
     </Link>
   );
 }
