@@ -3,23 +3,27 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
-import { getArea, getAddressDetails } from "../lib/area";
+import { CUTOFF_LABEL, getArea, getAddressDetails, sameDayOpen } from "../lib/area";
 import { formatMoney } from "../lib/money";
-import { Chip } from "../components/ui";
 
-const MESSAGES = ["Happy birthday!", "Congratulations!", "Thank you", "Get well soon"];
-
-const PAYMENTS: { value: PaymentMethod; label: string; note?: string }[] = [
+const PAYMENTS: { value: PaymentMethod; label: string; note: string }[] = [
   // COD first and default: it's 60-70% of Lebanese e-commerce, and removing
   // it doesn't push people to cards, it loses the order.
   { value: "cod", label: "Cash on delivery", note: "Pay the driver when it arrives" },
-  { value: "whish", label: "Whish Money", note: "Transfer to 81 900 002" },
-  { value: "omt", label: "OMT" },
-  { value: "card", label: "Card" },
+  { value: "whish", label: "Whish Money", note: "Transfer to 81 900 002 after ordering" },
+  { value: "omt", label: "OMT", note: "Transfer at any OMT branch after ordering" },
+  { value: "card", label: "Card", note: "Not live yet — we'll call you with a link" },
 ];
 
 const DELIVERY_FEE = 5;
 
+/**
+ * Three steps and a total. Nothing else belongs on this page.
+ *
+ * The old version had four numbered sections plus a "Who's it for?" chip
+ * pair, and asked twice for things the product page had already collected —
+ * the gift message and hide-price were per item, then asked again per order.
+ */
 function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6">
@@ -34,6 +38,37 @@ function Section({ n, title, children }: { n: string; title: string; children: R
 const FIELD =
   "w-full rounded-card border border-line bg-surface px-4 py-3 text-body outline-none focus:border-ink/35";
 
+/** A label above a field, so nothing depends on a placeholder that vanishes
+ *  the moment you start typing. */
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  inputMode,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  inputMode?: "tel" | "text";
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1 block text-caption text-muted">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        className={FIELD}
+      />
+    </label>
+  );
+}
+
 export function Checkout() {
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -42,19 +77,39 @@ export function Checkout() {
   const createAddress = useCreateAddress();
   const placeOrder = usePlaceOrder();
 
-  const [isGift, setIsGift] = useState(true);
-  const [recipientName, setRecipientName] = useState("");
-  const [recipientPhone, setRecipientPhone] = useState("");
-  const [addressSource, setAddressSource] = useState<"buyer" | "recipient_whatsapp">("recipient_whatsapp");
-  const [hidePrice, setHidePrice] = useState(true);
-  const [message, setMessage] = useState("");
-  const [slot, setSlot] = useState("Today, 4–7pm");
+  const [isGift, setIsGift] = useState(false);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
   const [error, setError] = useState<string | null>(null);
   const [giftCardCode, setGiftCardCode] = useState("");
   const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
   const [giftCardError, setGiftCardError] = useState<string | null>(null);
+  const [giftCardOpen, setGiftCardOpen] = useState(false);
   const [checkingCard, setCheckingCard] = useState(false);
+
+  /**
+   * WHEN. Only two answers.
+   *
+   * "Now" is only truthful while the same-day window is open — before
+   * midnight, and not during the 00:00–08:00 overnight blackout (see
+   * lib/area). Outside it there is no same-day slot left to sell, so the
+   * date picker is the only option and the earliest date it allows is
+   * tomorrow.
+   */
+  const sameDayAvailable = sameDayOpen();
+  const [when, setWhen] = useState<"now" | "date">(sameDayAvailable ? "now" : "date");
+  const [deliveryDate, setDeliveryDate] = useState("");
+
+  /** Tomorrow, in the input's own yyyy-mm-dd format and in LOCAL time —
+   *  toISOString() would roll the date back for anyone east of UTC. */
+  const earliestDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  /** Whether to offer the saved address or the typed form. Repeat orders
+   *  should be two taps, so a saved address wins by default. */
+  const [useSaved, setUseSaved] = useState(true);
   // Prefilled from the header's area picker (city + any street details the
   // shopper saved there), so they don't retype an address they already gave.
   const [addressForm, setAddressForm] = useState(() => {
@@ -74,18 +129,45 @@ export function Checkout() {
   });
 
   const items = cart.data ?? [];
+  // Price times quantity. No wrap surcharge — CADO does not wrap, and a line
+  // the server will not charge must never appear in a client total.
   const subtotal = useMemo(
-    () =>
-      items.reduce((sum, i) => {
-        const c = i.customization as { gift_wrap?: boolean } | null;
-        const wrap = c?.gift_wrap ? i.product?.gift_wrap_price ?? 0 : 0;
-        return sum + ((i.product?.price ?? 0) + wrap) * i.quantity;
-      }, 0),
+    () => items.reduce((sum, i) => sum + (i.product?.price ?? 0) * i.quantity, 0),
     [items]
   );
   const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal + DELIVERY_FEE) : 0;
   const total = Math.max(subtotal + DELIVERY_FEE - discount, 0);
   const savedAddress = addresses.data?.[0];
+  const showSaved = !!savedAddress && useSaved;
+
+  /**
+   * The gift choices made per item on the product page, summarised for the
+   * order. Nothing here is a question — checkout must not ask again for
+   * something already answered, so these are derived, not typed.
+   *
+   * place_order takes one order-level message and one hide-price flag, while
+   * the per-item copies ride along in cart_items.customization and land on
+   * the order_item untouched.
+   */
+  /**
+   * When "this is a gift" is on, the one name and phone on the form ARE the
+   * recipient's — that is what the toggle changes. There is no second pair of
+   * fields, because asking for both the buyer's and the recipient's details
+   * is what made the old step long enough to abandon.
+   */
+  const recipientName = showSaved ? (savedAddress?.recipient_name ?? "") : addressForm.recipient_name;
+  const recipientPhone = showSaved ? (savedAddress?.phone ?? "") : addressForm.phone;
+
+  const giftNotes = useMemo(() => {
+    const messages: string[] = [];
+    let anyHidden = false;
+    for (const i of items) {
+      const c = i.customization as { message?: string; hide_price?: boolean } | null;
+      if (c?.message?.trim()) messages.push(c.message.trim());
+      if (c?.hide_price) anyHidden = true;
+    }
+    return { messages, anyHidden };
+  }, [items]);
 
   const applyGiftCard = async (code: string) => {
     setGiftCardError(null);
@@ -150,27 +232,37 @@ export function Checkout() {
   const submit = async () => {
     setError(null);
     try {
-      let addressId: string | null = savedAddress?.id ?? null;
+      let addressId: string | null = showSaved ? savedAddress!.id : null;
 
-      if (!isGift || addressSource === "buyer") {
-        if (!addressId) {
-          if (!addressForm.city.trim() || !addressForm.street.trim() || !addressForm.phone.trim()) {
-            return setError("Add a delivery address so we know where to bring it.");
-          }
-          const created = await createAddress.mutateAsync(addressForm);
-          addressId = (created as { id: string }).id;
+      if (!addressId) {
+        if (
+          !addressForm.recipient_name.trim() ||
+          !addressForm.phone.trim() ||
+          !addressForm.city.trim() ||
+          !addressForm.street.trim()
+        ) {
+          return setError("Fill in the name, phone, city and street so we know where to bring it.");
         }
+        const created = await createAddress.mutateAsync(addressForm);
+        addressId = (created as { id: string }).id;
+      }
+
+      if (when === "date" && !deliveryDate) {
+        return setError("Pick the delivery date.");
       }
 
       const orderId = await placeOrder.mutateAsync({
-        deliveryAddressId: !isGift || addressSource === "buyer" ? addressId : null,
-        addressSource: isGift ? addressSource : "buyer",
+        deliveryAddressId: addressId,
+        // Always "buyer" now: the address is typed or saved, never fetched
+        // from the recipient. The WhatsApp path is gone from the UI.
+        addressSource: "buyer",
         isGift,
         recipientName: isGift ? recipientName.trim() : undefined,
         recipientPhone: isGift ? recipientPhone.trim() : undefined,
-        hidePrice: isGift ? hidePrice : false,
-        giftMessage: isGift ? message.trim() : undefined,
-        deliverySlot: slot,
+        // Both derived from what was chosen per item on the product page.
+        hidePrice: giftNotes.anyHidden,
+        giftMessage: giftNotes.messages[0],
+        deliverySlot: when === "now" ? "Now" : `On ${deliveryDate}`,
         paymentMethod: payment,
         giftCardCode: giftCardBalance !== null ? giftCardCode.trim() : undefined,
       });
@@ -187,160 +279,169 @@ export function Checkout() {
     <div className="mx-auto max-w-lg px-4 py-6 pb-32">
       <h1 className="font-display text-h1">Checkout</h1>
 
-      <Section n="①" title="Who's it for?">
-        <div className="flex gap-2">
-          <Chip active={!isGift} onClick={() => setIsGift(false)}>
-            It's for me
-          </Chip>
-          <Chip active={isGift} onClick={() => setIsGift(true)}>
-            It's a gift
-          </Chip>
-        </div>
+      <Section n="①" title="Delivery address">
+        {/* One toggle, at the top, because it changes what the fields below
+            mean. No second set of recipient fields. */}
+        <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-body">
+          <input
+            type="checkbox"
+            checked={isGift}
+            onChange={(e) => setIsGift(e.target.checked)}
+            className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
+          />
+          This is a gift — deliver to someone else
+        </label>
 
-        {isGift ? (
-          <div className="mt-4 flex flex-col gap-3">
-            <input
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
-              placeholder="Their name"
-              className={FIELD}
-            />
-            <input
-              value={recipientPhone}
-              onChange={(e) => setRecipientPhone(e.target.value)}
-              placeholder="Their phone (+961…)"
-              inputMode="tel"
-              className={FIELD}
-            />
-
-            {/* You rarely know a friend's exact address — so don't require it. */}
-            <label className="flex cursor-pointer items-start gap-2.5 rounded-card bg-surface p-3 text-body shadow-rest">
-              <input
-                type="radio"
-                name="addr"
-                checked={addressSource === "recipient_whatsapp"}
-                onChange={() => setAddressSource("recipient_whatsapp")}
-                className="mt-1 h-4 w-4 accent-[color:rgb(var(--primary))]"
-              />
-              <span>
-                Ask them for their address by WhatsApp
-                <span className="mt-0.5 block text-caption text-muted">
-                  We'll message {recipientName.trim() || "them"} for it. You don't need to know where they live.
-                </span>
+        {showSaved ? (
+          /* A repeat order is two taps: this, then Place order. */
+          <div className="mt-3 rounded-card border border-line bg-surface p-3">
+            <p className="text-body font-medium">{savedAddress!.recipient_name}</p>
+            <p className="text-caption text-muted">
+              {[savedAddress!.street, savedAddress!.area, savedAddress!.city].filter(Boolean).join(", ")}
+            </p>
+            {savedAddress!.phone ? (
+              <p className="text-caption text-muted">{savedAddress!.phone}</p>
+            ) : null}
+            <div className="mt-3 flex items-center gap-3">
+              <span className="inline-flex h-11 items-center rounded-pill bg-primary px-5 text-caption font-medium text-inverse">
+                Deliver here
               </span>
-            </label>
-
-            <label className="flex cursor-pointer items-center gap-2.5 rounded-card bg-surface p-3 text-body shadow-rest">
-              <input
-                type="radio"
-                name="addr"
-                checked={addressSource === "buyer"}
-                onChange={() => setAddressSource("buyer")}
-                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
-              />
-              I'll enter the address myself
-            </label>
-
-            <label className="flex cursor-pointer items-center gap-2.5 text-body">
-              <input
-                type="checkbox"
-                checked={hidePrice}
-                onChange={(e) => setHidePrice(e.target.checked)}
-                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
-              />
-              Hide the price from them
-            </label>
-
-            <div>
-              <p className="text-body font-medium">Your message</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {MESSAGES.map((m) => (
-                  <Chip key={m} active={message === m} onClick={() => setMessage(m)} className="!h-8 !px-3 !text-caption">
-                    {m}
-                  </Chip>
-                ))}
-              </div>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={2}
-                placeholder="Write your own..."
-                className={`mt-2 resize-none ${FIELD}`}
-              />
+              <button
+                type="button"
+                onClick={() => setUseSaved(false)}
+                className="tap-44 text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
+              >
+                New address
+              </button>
             </div>
           </div>
-        ) : null}
-
-        {(!isGift || addressSource === "buyer") && !savedAddress ? (
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <input
-              className={FIELD}
-              placeholder="Phone"
-              value={addressForm.phone}
-              onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
-            />
-            <input
-              className={FIELD}
-              placeholder="City"
-              value={addressForm.city}
-              onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-            />
-            <input
-              className={FIELD}
-              placeholder="Area"
-              value={addressForm.area}
-              onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
-            />
-            <input
-              className={FIELD}
-              placeholder="Recipient name"
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Field
+              label={isGift ? "Their full name" : "Full name"}
+              className="col-span-2"
               value={addressForm.recipient_name}
-              onChange={(e) => setAddressForm({ ...addressForm, recipient_name: e.target.value })}
+              onChange={(v) => setAddressForm({ ...addressForm, recipient_name: v })}
             />
-            <input
-              className={`col-span-2 ${FIELD}`}
-              placeholder="Street / building"
+            <Field
+              label={isGift ? "Their phone" : "Phone"}
+              className="col-span-2"
+              placeholder="+961…"
+              inputMode="tel"
+              value={addressForm.phone}
+              onChange={(v) => setAddressForm({ ...addressForm, phone: v })}
+            />
+            <Field
+              label="City"
+              value={addressForm.city}
+              onChange={(v) => setAddressForm({ ...addressForm, city: v })}
+            />
+            <Field
+              label="Area"
+              value={addressForm.area}
+              onChange={(v) => setAddressForm({ ...addressForm, area: v })}
+            />
+            <Field
+              label="Street"
               value={addressForm.street}
-              onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+              onChange={(v) => setAddressForm({ ...addressForm, street: v })}
             />
+            <Field
+              label="Building"
+              value={addressForm.building}
+              onChange={(v) => setAddressForm({ ...addressForm, building: v })}
+            />
+            <Field
+              label="Floor / extra directions (optional)"
+              className="col-span-2"
+              value={addressForm.notes}
+              onChange={(v) => setAddressForm({ ...addressForm, notes: v })}
+            />
+            {savedAddress ? (
+              <button
+                type="button"
+                onClick={() => setUseSaved(true)}
+                className="tap-44 col-span-2 justify-self-start text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
+              >
+                Use my saved address
+              </button>
+            ) : null}
           </div>
-        ) : (!isGift || addressSource === "buyer") && savedAddress ? (
-          <div className="mt-4 rounded-card bg-surface p-3 text-body shadow-rest">
-            <p className="font-medium">{savedAddress.recipient_name}</p>
-            <p className="text-muted">
-              {savedAddress.street}, {savedAddress.area}, {savedAddress.city}
-            </p>
-          </div>
-        ) : null}
+        )}
       </Section>
 
       <Section n="②" title="When">
-        <div className="flex flex-wrap gap-2">
-          {["Today, 4–7pm", "Tomorrow", "Pick a date"].map((s) => (
-            <Chip key={s} active={slot === s} onClick={() => setSlot(s)}>
-              {s}
-            </Chip>
-          ))}
+        <div className="flex flex-col gap-2">
+          {/* "Now" disappears entirely outside the same-day window rather
+              than sitting there disabled — an option you cannot pick is a
+              question you should not have been asked. */}
+          {sameDayAvailable ? (
+            <label className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 text-body">
+              <input
+                type="radio"
+                name="when"
+                checked={when === "now"}
+                onChange={() => setWhen("now")}
+                className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
+              />
+              <span>
+                Now
+                <span className="mt-0.5 block text-caption text-muted">
+                  Today, if you order before {CUTOFF_LABEL}
+                </span>
+              </span>
+            </label>
+          ) : null}
+
+          <label className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 text-body">
+            <input
+              type="radio"
+              name="when"
+              checked={when === "date"}
+              onChange={() => setWhen("date")}
+              className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
+            />
+            <span>
+              Pick a date
+              {!sameDayAvailable ? (
+                <span className="mt-0.5 block text-caption text-muted">
+                  Same-day has closed for tonight — earliest is tomorrow.
+                </span>
+              ) : null}
+            </span>
+          </label>
+
+          {when === "date" ? (
+            <input
+              type="date"
+              min={earliestDate}
+              value={deliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
+              className={FIELD}
+            />
+          ) : null}
         </div>
       </Section>
 
       <Section n="③" title="Payment">
         <div className="flex flex-col gap-2">
+          {/* Plain rows on a hairline, not raised cards. Four shadowed
+              panels in a column read as four separate things to decide. */}
           {PAYMENTS.map((p) => (
             <label
               key={p.value}
-              className="flex cursor-pointer items-center gap-2.5 rounded-card bg-surface p-3 text-body shadow-rest"
+              className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 py-2 text-body"
             >
               <input
                 type="radio"
                 name="pay"
                 checked={payment === p.value}
                 onChange={() => setPayment(p.value)}
-                className="h-4 w-4 accent-[color:rgb(var(--primary))]"
+                className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
               />
               <span>
                 {p.label}
-                {p.note ? <span className="mt-0.5 block text-caption text-muted">{p.note}</span> : null}
+                <span className="mt-0.5 block text-caption text-muted">{p.note}</span>
               </span>
             </label>
           ))}
@@ -360,35 +461,70 @@ export function Checkout() {
         ) : null}
       </Section>
 
-      <Section n="④" title="Gift card">
-        <div className="flex gap-2">
-          <input
-            className={`${FIELD} uppercase tracking-wider`}
-            placeholder="XXXX-XXXX-XXXX"
-            value={giftCardCode}
-            onChange={(e) => {
-              setGiftCardCode(normalizeGiftCardCode(e.target.value));
-              setGiftCardBalance(null);
-              setGiftCardError(null);
-            }}
-          />
-          <button
-            onClick={() => applyGiftCard(giftCardCode)}
-            disabled={checkingCard || !giftCardCode.trim()}
-            className="shrink-0 rounded-card border border-line px-5 text-body font-medium disabled:opacity-40"
+      {/* What was already chosen on the product page, shown back rather than
+          asked again. This is a summary, not a form — the note and the
+          hide-price flag travel with the item in cart_items.customization. */}
+      {giftNotes.messages.length > 0 || giftNotes.anyHidden ? (
+        <div className="mt-6 rounded-card border border-line px-3 py-2.5">
+          {giftNotes.messages.map((m, i) => (
+            <p key={i} className="text-caption text-muted">
+              Note on your gift: “{m}”
+            </p>
+          ))}
+          {giftNotes.anyHidden ? (
+            <p className="text-caption text-muted">Price hidden from them.</p>
+          ) : null}
+          <Link
+            to="/cart"
+            className="tap-44 mt-1 inline-block text-caption font-medium text-ink underline underline-offset-4"
           >
-            {checkingCard ? "Checking…" : "Apply"}
-          </button>
+            Change in cart
+          </Link>
         </div>
+      ) : null}
+
+      {/* Not a fourth step. Most people do not have a gift card, and giving
+          the code field a number of its own made it look like something
+          everyone had to deal with. All the redemption logic is unchanged. */}
+      <div className="mt-6">
+        {!giftCardOpen && giftCardBalance === null ? (
+          <button
+            type="button"
+            onClick={() => setGiftCardOpen(true)}
+            className="tap-44 text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
+          >
+            Have a gift card?
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              className={`${FIELD} uppercase tracking-wider`}
+              placeholder="XXXX-XXXX-XXXX"
+              value={giftCardCode}
+              onChange={(e) => {
+                setGiftCardCode(normalizeGiftCardCode(e.target.value));
+                setGiftCardBalance(null);
+                setGiftCardError(null);
+              }}
+            />
+            <button
+              onClick={() => applyGiftCard(giftCardCode)}
+              disabled={checkingCard || !giftCardCode.trim()}
+              className="shrink-0 rounded-card border border-line px-5 text-body font-medium disabled:opacity-40"
+            >
+              {checkingCard ? "Checking…" : "Apply"}
+            </button>
+          </div>
+        )}
         {giftCardError ? <p className="mt-2 text-caption text-alert">{giftCardError}</p> : null}
         {giftCardBalance !== null ? (
           <p className="mt-2 text-caption text-today">
             Applied — {formatMoney(giftCardBalance)} available on this card
           </p>
         ) : null}
-      </Section>
+      </div>
 
-      <div className="mt-6 rounded-card bg-surface p-4 shadow-rest">
+      <div className="mt-3 rounded-card bg-surface p-4 shadow-rest">
         <div className="flex justify-between text-body text-muted">
           <span>Subtotal</span>
           <span>{formatMoney(subtotal)}</span>

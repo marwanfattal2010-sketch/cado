@@ -34,6 +34,9 @@ export function OrderConfirmed() {
   const o = order.data;
   const recipient = o?.recipient_name ?? state?.recipientName ?? "";
   const payment = o?.payment_method ?? state?.paymentMethod ?? "cod";
+  /* Only ever true for orders placed before the WhatsApp-address option was
+     taken out of checkout. The column and the backend still support it, so
+     historical orders keep telling the truth about what we're doing. */
   const willAskRecipient = o?.address_source === "recipient_whatsapp";
 
   return (
@@ -61,28 +64,40 @@ export function OrderConfirmed() {
         </p>
       ) : null}
 
+      {/* The exact amount, to the cent — this is the number they are about to
+          transfer, and a rounded one never reconciles. OMT and Whish are not
+          the same instruction: 81 900 002 is the Whish number, and sending
+          OMT customers to it was telling them to pay the wrong way. */}
       <p className="mt-4 text-body text-muted">
         {payment === "cod"
           ? "Pay the driver when it arrives. We'll message you as the store confirms."
           : payment === "card"
             ? "We'll call you with a payment link, or you can pay the driver instead."
-            : `Send ${formatMoney(o?.total)} to 81 900 002, then we'll get it moving.`}
+            : payment === "omt"
+              ? `Send ${formatMoney(o?.total)} at any OMT branch, then we'll get it moving.`
+              : `Send ${formatMoney(o?.total)} to 81 900 002 on Whish, then we'll get it moving.`}
       </p>
 
       {/* Ask once, at the only moment they're actually thinking about this
-          person. It's a real reminder, not a marketing opt-in. */}
+          person.
+
+          DO NOT restore "we'll remind you" here. Reminder sending is not
+          switched on — the Occasions screen says so plainly, and this screen
+          promising a message that will never arrive is exactly the thing that
+          teaches people to distrust the rest of it. Saving the date and the
+          live countdown are real; the message is not, yet. */}
       {o?.is_gift ? (
         <div className="mt-8 rounded-card bg-ink p-5 text-left text-inverse">
-          <p className="font-display text-h2">Want a nudge next year?</p>
+          <p className="font-display text-h2">Save the date for next year?</p>
           <p className="mt-1.5 text-body opacity-80">
-            We'll remind you a week before {recipient ? `${recipient}'s` : "their"} birthday — no other
-            messages.
+            We'll keep {recipient ? `${recipient}'s` : "their"} birthday with a live countdown. Reminder
+            messages aren't switched on yet.
           </p>
           <Link
             to={`/occasions?add=1&type=birthday${recipient ? `&name=${encodeURIComponent(recipient)}` : ""}`}
             className="mt-4 inline-flex h-11 items-center rounded-pill bg-canvas px-5 text-body font-medium text-ink"
           >
-            Remind me
+            Save the date
           </Link>
         </div>
       ) : null}
