@@ -36,9 +36,9 @@ import { Button, ButtonLink, RibbonDivider } from "../components/ui";
  * across Lebanon, handled by us").
  */
 const HOW_IT_WORKS = [
-  { n: "1", Icon: GiftIcon, title: "Pick a gift", desc: "From stores across Lebanon." },
+  { n: "1", Icon: GiftIcon, title: "Choose a gift", desc: "From stores across Lebanon." },
   { n: "2", Icon: BasketIcon, title: "We collect it", desc: "From the store, the same day." },
-  { n: "3", Icon: TruckIcon, title: "Delivered today", desc: "Order before midnight, arrives today." },
+  { n: "3", Icon: TruckIcon, title: "Arrives today", desc: "Order before midnight, arrives today." },
 ];
 
 /** Three, not four — the "Free gift wrapping" badge is gone with the

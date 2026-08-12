@@ -80,7 +80,7 @@ export function Orders() {
           <OrdersIcon className="mx-auto h-10 w-10 text-muted" />
           <p className="mt-4 text-body text-muted">No orders yet.</p>
           <ButtonLink to="/" className="mt-6">
-            Find a gift
+            Browse gifts
           </ButtonLink>
         </div>
       ) : (

@@ -122,10 +122,10 @@ export function ProductCard({
         {onSale ? (
           <span className="text-caption text-muted line-through">{formatMoney(compare_at_price)}</span>
         ) : null}
-        {/* "Delivered today", not "Today" — on its own the bare word read as
+        {/* "Arrives today", not a bare "Today" — on its own the word read as
             a label on the price beside it rather than a delivery promise. */}
         {arrivesToday ? (
-          <span className="ml-auto shrink-0 text-caption font-semibold text-today">Delivered today</span>
+          <span className="ml-auto shrink-0 text-caption font-semibold text-today">Arrives today</span>
         ) : null}
       </div>
     </Link>

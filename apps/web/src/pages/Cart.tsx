@@ -75,7 +75,7 @@ export function Cart() {
           to="/gift-finder"
           className="mt-6 inline-flex h-[52px] items-center rounded-pill bg-primary px-8 text-body font-medium text-inverse"
         >
-          Find a gift
+          Browse gifts
         </Link>
       </div>
     );

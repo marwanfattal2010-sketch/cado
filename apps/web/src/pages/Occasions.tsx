@@ -67,7 +67,7 @@ function OccasionRow({ o, onDelete }: { o: OccasionReminder; onDelete: () => voi
             to={`/gift-finder${recipient ? `?recipient=${recipient}` : ""}`}
             className="inline-flex h-9 items-center rounded-pill bg-primary px-4 text-caption font-medium text-inverse"
           >
-            Find a gift
+            Browse gifts
           </Link>
         ) : null}
         <button onClick={onDelete} className="text-caption text-muted underline">

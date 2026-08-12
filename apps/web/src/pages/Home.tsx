@@ -526,6 +526,14 @@ export function Home() {
                 </div>
               </section>
 
+              {/* 10 — TRENDING. A 2-column grid, not a strip: see
+                  TrendingGrid. Hides itself if there aren't enough real
+                  ones. "See all" goes to the unfiltered gift grid, not to
+                  /browse — /browse is the category index, and landing on a
+                  wall of categories after tapping "see all gifts" is a dead
+                  end. */}
+              <TrendingGrid query={trending} />
+
               {/* 12 — SHOP BY BUDGET. The blush band is gone: a pink stripe
                   was the one place on the page a hue filled a large surface,
                   and it fought the sage shelf directly above it. Plain canvas
@@ -542,13 +550,6 @@ export function Home() {
                 </div>
               </section>
 
-              {/* 10 — TRENDING. A 2-column grid, not a strip: see
-                  TrendingGrid. Hides itself if there aren't enough real
-                  ones. "See all" goes to the unfiltered gift grid, not to
-                  /browse — /browse is the category index, and landing on a
-                  wall of categories after tapping "see all gifts" is a dead
-                  end. */}
-              <TrendingGrid query={trending} />
 
               {/* 13 — NEW ON CADO. Restored. Newest first — this is the one
                   shelf on the page that is a plain fact about the catalogue

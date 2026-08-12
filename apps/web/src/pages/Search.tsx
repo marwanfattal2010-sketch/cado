@@ -364,7 +364,7 @@ function EmptyResult({ query, kind }: { query: string; kind: "gifts" | "stores" 
         to="/gift-finder"
         className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
       >
-        Find a gift
+        Browse gifts
       </Link>
     </div>
   );

@@ -31,7 +31,7 @@ export function Wishlist() {
           <HeartIcon className="mx-auto h-10 w-10 text-muted" />
           <p className="mt-4 text-body text-muted">Nothing saved yet — tap the heart on anything you like.</p>
           <ButtonLink to="/" className="mt-6">
-            Find a gift
+            Browse gifts
           </ButtonLink>
         </div>
       ) : (
