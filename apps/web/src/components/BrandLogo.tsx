@@ -43,7 +43,7 @@ export function BrandLogo({
         fontFamily="Jost, sans-serif"
         fontWeight="600"
         fontSize="40"
-        letterSpacing="2.5"
+        letterSpacing="0"
         fill={c}
       >
         CADO

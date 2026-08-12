@@ -5,5 +5,8 @@
     <line x1="0" y1="-8" x2="0" y2="15" stroke="#181611" stroke-width="2.8"/>
     <path d="M0,-8 C-6,-18 -17,-16 -11,-9 M0,-8 C6,-18 17,-16 11,-9" fill="none" stroke="#B08D4F" stroke-width="2.8" stroke-linecap="round"/>
   </g>
-  <text x="40" y="67" text-anchor="middle" font-family="Jost, sans-serif" font-weight="600" font-size="14" letter-spacing="2.4" fill="#181611">CADO</text>
+  <!-- Tracking is 0, not the master's 2.4. At favicon and app-icon sizes any
+       positive tracking on a four-letter word reads as "C A D O" — Marwan
+       flagged it twice. Jost's own sidebearings are generous enough. -->
+  <text x="40" y="67" text-anchor="middle" font-family="Jost, sans-serif" font-weight="600" font-size="14" letter-spacing="0" fill="#181611">CADO</text>
 </svg>
