@@ -52,7 +52,9 @@ export default function App() {
         <Route path="language" element={<Language />} />
         <Route path="browse" element={<Browse />} />
         <Route path="category/:slug" element={<Category />} />
-        <Route path="store/:id" element={<Store />} />
+        {/* :slug, but useStore also accepts a uuid — /store/<uuid> links
+            were shipped before the slug route existed. */}
+        <Route path="store/:slug" element={<Store />} />
         <Route path="product/:id" element={<Product />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />

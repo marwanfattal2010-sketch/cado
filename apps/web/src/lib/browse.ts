@@ -135,7 +135,7 @@ export function accentColor(token: string | null | undefined, alpha?: number) {
  * literal select.
  */
 export const PRODUCT_CARD_COLUMNS =
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, category_id, subcategory_id, partner_id, partner:partners(id, name), product_images(storage_path, is_primary)" as const;
+  "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
 
 export type FeedProduct = {
   id: string;
@@ -149,7 +149,7 @@ export type FeedProduct = {
   category_id: string;
   subcategory_id: string | null;
   partner_id: string;
-  partner: { id: string; name: string } | null;
+  partner: { id: string; name: string; slug: string | null } | null;
   product_images: { storage_path: string; is_primary: boolean }[] | null;
 };
 

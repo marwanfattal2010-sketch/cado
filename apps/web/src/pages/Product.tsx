@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProduct, useRelatedProducts, useOftenTogether } from "../hooks/useProducts";
 import { productImageUrl } from "../lib/images";
+import { storePath } from "../lib/routes";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { Skeleton } from "../components/Skeleton";
@@ -183,7 +184,7 @@ export function Product() {
                centred on 15px of text would reach down over the title, so
                tapping the product name would open the store instead. */
             <Link
-              to={`/store/${product.partner.id}`}
+              to={storePath(product.partner)}
               className="inline-flex min-h-[44px] items-center text-store text-muted underline-offset-2 hover:underline"
             >
               {product.partner.name}
@@ -290,7 +291,7 @@ export function Product() {
                 </summary>
                 <p className="mt-2 text-body text-muted">
                   A verified CADO partner store.{" "}
-                  <Link to={`/store/${product.partner.id}`} className="tap-44 font-medium text-ink underline">
+                  <Link to={storePath(product.partner)} className="tap-44 font-medium text-ink underline">
                     See everything they sell
                   </Link>
                 </p>

@@ -96,18 +96,40 @@ export function useTopStores() {
   });
 }
 
-export function useStore(storeId: string | undefined) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A store by its slug — or by its id, for links made before /store/:slug
+ * existed and for anything that only has the uuid to hand.
+ *
+ * Which column is queried is decided by the shape of the value, not by a
+ * caller-supplied flag: a uuid can only be an id, anything else can only be a
+ * slug. `maybeSingle` rather than `single` because a wrong slug is a 404 page,
+ * not a thrown query.
+ */
+export function useStore(slugOrId: string | undefined) {
   return useQuery({
-    queryKey: ["store", storeId],
-    enabled: !!storeId,
+    queryKey: ["store", slugOrId],
+    enabled: !!slugOrId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("partners").select("*").eq("id", storeId as string).single();
+      const key = slugOrId as string;
+      const column = UUID_RE.test(key) ? "id" : "slug";
+      const { data, error } = await supabase.from("partners").select("*").eq(column, key).maybeSingle();
       if (error) throw error;
       return data;
     },
   });
 }
 
+/**
+ * Everything one store sells, with the columns the filter panel needs.
+ *
+ * The extra columns over the old version — recipient_tags, color, the two
+ * category joins, created_at — are exactly what `productMatches` reads. The
+ * store page filters client-side on this one result for the same reason the
+ * category page does: ticking a box is then instant, with no refetch and no
+ * loading flash, and the panel can show real counts instead of estimates.
+ */
 export function useStoreProducts(storeId: string | undefined) {
   return useQuery({
     queryKey: ["store-products", storeId],
@@ -116,13 +138,14 @@ export function useStoreProducts(storeId: string | undefined) {
       const { data, error } = await supabase
         .from("products")
         // same_day + stock_quantity so the card's badges match what the same
-        // product shows on the homepage.
+        // product shows everywhere else.
         .select(
-          "id, title, price, compare_at_price, currency, same_day, stock_quantity, product_images(storage_path, is_primary)"
+          "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, recipient_tags, color, is_trending, partner:partners(id, name, slug), category:categories(slug, name), subcategory:subcategories(slug, name), product_images(storage_path, is_primary)"
         )
         .eq("partner_id", storeId as string)
         .eq("is_active", true)
-        .limit(100);
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) throw error;
       return data;
     },

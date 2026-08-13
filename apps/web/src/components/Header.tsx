@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
+import { useStore } from "../hooks/useStores";
 import { useAuth } from "../lib/auth";
 import { BrandLogo } from "./BrandLogo";
 import { BasketIcon, ChevronLeftIcon } from "./Icons";
@@ -35,7 +36,7 @@ const HEADER_COLLAPSED_H = 1;
 export function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { id: storeId } = useParams<{ id: string }>();
+  const { slug: storeSlug } = useParams<{ slug: string }>();
   const cart = useCart();
   const { session } = useAuth();
   const addresses = useAddresses();
@@ -73,6 +74,15 @@ export function Header() {
 
   const isHome = pathname === "/";
   const onStorePage = pathname.startsWith("/store/");
+
+  /**
+   * The route param is a slug now, and cart rows carry a partner uuid, so the
+   * two can no longer be compared directly. Resolving it here costs nothing:
+   * the store page itself runs the identical query under the same react-query
+   * key, so this is a cache read rather than a second request.
+   */
+  const storePartner = useStore(onStorePage ? storeSlug : undefined);
+  const storeId = storePartner.data?.id;
 
   // Inside a store, the basket only reflects that store's items.
   const items = cart.data ?? [];

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "../../../lib/supabase";
 import { primaryImage } from "../../../lib/images";
+import { storePath } from "../../../lib/routes";
 import { formatMoney } from "../../../lib/money";
 import { Img } from "../../Img";
 import { ProductGridSkeleton } from "../../Skeleton";
@@ -56,7 +57,7 @@ function useFeed({
  * the two columns. `aspect-ratio: auto` with a max is why the grid looks like
  * a feed rather than a spreadsheet.
  */
-function FeedCard({ product, onStore }: { product: FeedProduct; onStore: (id: string, name: string) => void }) {
+function FeedCard({ product }: { product: FeedProduct }) {
   const off =
     product.compare_at_price != null && Number(product.compare_at_price) > Number(product.price)
       ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
@@ -80,13 +81,12 @@ function FeedCard({ product, onStore }: { product: FeedProduct; onStore: (id: st
         </span>
       </Link>
       {product.partner ? (
-        <button
-          type="button"
-          onClick={() => onStore(product.partner!.id, product.partner!.name)}
+        <Link
+          to={storePath(product.partner)}
           className="mt-0.5 block max-w-full truncate text-left text-[11px] text-muted underline-offset-2 active:underline"
         >
           {product.partner.name}
-        </button>
+        </Link>
       ) : null}
     </div>
   );
@@ -105,13 +105,11 @@ export function ProductFeed({
   subcategoryId,
   filter,
   enabled = true,
-  onStore,
 }: {
   categoryId?: string;
   subcategoryId?: string;
   filter: FeedFilter;
   enabled?: boolean;
-  onStore: (id: string, name: string) => void;
 }) {
   const feed = useFeed({ categoryId, subcategoryId, filter, enabled });
   const sentinel = useRef<HTMLDivElement | null>(null);
@@ -153,7 +151,7 @@ export function ProductFeed({
     <div className="px-[var(--page-x)] pt-5">
       <div className="columns-2 gap-2">
         {products.map((p) => (
-          <FeedCard key={p.id} product={p} onStore={onStore} />
+          <FeedCard key={p.id} product={p} />
         ))}
       </div>
       <div ref={sentinel} aria-hidden className="h-px" />

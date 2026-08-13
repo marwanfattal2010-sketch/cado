@@ -4,6 +4,7 @@ import { primaryImage } from "../lib/images";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
 import { timeUntilCutoff } from "../lib/area";
 import { formatMoney } from "../lib/money";
+import { storePath } from "../lib/routes";
 import { HeartIcon } from "./Icons";
 
 type ProductCardProps = {
@@ -15,7 +16,7 @@ type ProductCardProps = {
   same_day?: boolean | null;
   stock_quantity?: number | null;
   product_images?: { storage_path: string; is_primary: boolean }[] | null;
-  partner?: { name: string } | null;
+  partner?: { name: string; slug?: string | null; id?: string | null } | null;
   /**
    * Tighter vertical rhythm under the photo, for dense grids like Trending.
    * Spacing only — the type tokens, the photo ratio and every badge stay
@@ -55,10 +56,20 @@ export function ProductCard({
   const lowStock = inStock && stock_quantity != null && stock_quantity <= 3;
   const onSale = compare_at_price != null && Number(compare_at_price) > Number(price);
 
+  /**
+   * The card is two links, not one.
+   *
+   * The store name has to open the store, and an interactive element nested
+   * inside an anchor is invalid markup that some browsers swallow the click
+   * on — so the photo/title/price anchor is split around it rather than
+   * wrapping it. `group` moves to the outer element so the image's hover
+   * zoom still fires from anywhere on the card.
+   */
   return (
+    <div className="group w-full">
     <Link
       to={`/product/${id}`}
-      className="group block w-full transition-transform duration-150 active:scale-[0.97]"
+      className="block w-full transition-transform duration-150 active:scale-[0.97]"
     >
       {/* Fixed aspect ratio + a tinted placeholder underneath means the card
           never changes height when the photo arrives (no layout shift). */}
@@ -103,13 +114,27 @@ export function ProductCard({
         ) : null}
       </div>
 
+    </Link>
+
       {/* Store first — it's the trust signal, and it lets the product name
-          take two lines without the card growing unpredictably. */}
+          take two lines without the card growing unpredictably.
+
+          `py-1.5 -my-1.5` grows the tap area by 12px without moving a single
+          pixel of the card. It is still short of 44px, and deliberately so:
+          a .tap-44 overlay here would reach over the photo above and the
+          title below, both of which are the other link. */}
       {partner?.name ? (
-        <p className={`${compact ? "mt-1.5" : "mt-2.5"} truncate text-store text-muted`}>
+        <Link
+          to={storePath(partner)}
+          className={`${
+            compact ? "mt-1.5" : "mt-2.5"
+          } -my-1.5 block truncate py-1.5 text-store text-muted underline-offset-2 hover:text-ink hover:underline`}
+        >
           {partner.name}
-        </p>
+        </Link>
       ) : null}
+
+    <Link to={`/product/${id}`} className="block w-full">
       {/* Always two lines tall, whether the name needs one or two.
           line-clamp-2 already caps the top; without a floor a one-line name
           made the card 19px shorter than its neighbours, so prices in a grid
@@ -129,5 +154,6 @@ export function ProductCard({
         ) : null}
       </div>
     </Link>
+    </div>
   );
 }

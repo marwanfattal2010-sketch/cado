@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { Img } from "./Img";
+import { storePath } from "../lib/routes";
 
 export type StoreCardStore = {
   id: string;
   name: string;
+  slug?: string | null;
   description?: string | null;
   logo_url?: string | null;
   cover_image_url?: string | null;
@@ -96,7 +98,7 @@ export function StoreCard({
   if (!interactive) return <div className={`${SHELL} shadow-rest`}>{body}</div>;
 
   return (
-    <Link to={`/store/${store.id}`} className={`group ${SHELL} shadow-rest`}>
+    <Link to={storePath(store)} className={`group ${SHELL} shadow-rest`}>
       {body}
     </Link>
   );

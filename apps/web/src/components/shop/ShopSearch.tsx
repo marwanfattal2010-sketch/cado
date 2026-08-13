@@ -6,6 +6,7 @@ import { ProductCard } from "../ProductCard";
 import { ProductGridSkeleton } from "../Skeleton";
 import { useSearchProducts } from "../../hooks/useProducts";
 import { useSearchStores } from "../../hooks/useStores";
+import { storePath } from "../../lib/routes";
 
 /**
  * The search bar from the old Home page, moved above the category tabs.
@@ -95,7 +96,7 @@ export function ShopSearchResults({ query }: { query: string }) {
             {stores.data.map((s) => (
               <Link
                 key={s.id}
-                to={`/store/${s.id}`}
+                to={storePath(s)}
                 className="flex items-center gap-4 rounded-card bg-surface p-3 shadow-rest"
               >
                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">

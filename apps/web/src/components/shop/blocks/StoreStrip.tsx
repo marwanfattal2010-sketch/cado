@@ -1,12 +1,15 @@
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../../lib/supabase";
 import { Img } from "../../Img";
+import { storePath } from "../../../lib/routes";
 
 const MIN_ITEMS = 3;
 
 type StripStore = {
   id: string;
   name: string;
+  slug: string | null;
   logo_url: string | null;
   cover_image_url: string | null;
 };
@@ -27,7 +30,7 @@ function useStripStores(categoryId: string | undefined) {
     queryFn: async () => {
       let q = supabase
         .from("partners")
-        .select("id, name, logo_url, cover_image_url, products!inner(id)")
+        .select("id, name, slug, logo_url, cover_image_url, products!inner(id)")
         .eq("status", "active")
         .eq("is_live", true)
         .eq("products.is_active", true)
@@ -54,21 +57,19 @@ function useStripStores(categoryId: string | undefined) {
 /**
  * The store rail. Rectangles, not circles — circles were tried and rejected.
  *
- * Tapping one narrows the feed below instead of leaving the page: the whole
- * point of the tab is that you stay in it.
+ * Tapping one opens that store's own page. It used to tick a filter on the
+ * feed below, which kept you on the tab but gave the shop nowhere of its own
+ * — no cover, no description, nothing to link to, and only the slice of its
+ * catalogue that matched the current tab.
  *
  * `minItems: 3` — two shops is not a rail, it is two cards with a gap.
  */
 export function StoreStrip({
   categoryId,
   title,
-  activePartnerId,
-  onSelect,
 }: {
   categoryId?: string;
   title: string | null;
-  activePartnerId?: string;
-  onSelect: (store: { id: string; name: string } | null) => void;
 }) {
   const stores = useStripStores(categoryId);
   const rows = stores.data ?? [];
@@ -80,31 +81,25 @@ export function StoreStrip({
         <h2 className="px-[var(--page-x)] pb-2 text-[15px] font-bold tracking-[-0.01em]">{title}</h2>
       ) : null}
       <div className="scroll-row" style={{ ["--row-gap" as string]: "8px" }}>
-        {rows.map((store) => {
-          const active = store.id === activePartnerId;
-          return (
-            <button
-              key={store.id}
-              type="button"
-              onClick={() => onSelect(active ? null : { id: store.id, name: store.name })}
-              className={`relative h-[110px] w-[160px] shrink-0 overflow-hidden rounded-[10px] bg-surface-sunk text-left transition-transform duration-press ease-out active:scale-[0.97] ${
-                active ? "ring-2 ring-ink" : ""
-              }`}
-            >
-              <Img
-                src={store.logo_url ?? store.cover_image_url}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <span
-                aria-hidden
-                className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"
-              />
-              <span className="absolute inset-x-0 bottom-0 truncate px-2.5 pb-2 text-[13px] font-bold text-inverse drop-shadow">
-                {store.name}
-              </span>
-            </button>
-          );
-        })}
+        {rows.map((store) => (
+          <Link
+            key={store.id}
+            to={storePath(store)}
+            className="relative block h-[110px] w-[160px] shrink-0 overflow-hidden rounded-[10px] bg-surface-sunk text-left transition-transform duration-press ease-out active:scale-[0.97]"
+          >
+            <Img
+              src={store.logo_url ?? store.cover_image_url}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <span
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"
+            />
+            <span className="absolute inset-x-0 bottom-0 truncate px-2.5 pb-2 text-[13px] font-bold text-inverse drop-shadow">
+              {store.name}
+            </span>
+          </Link>
+        ))}
       </div>
     </section>
   );

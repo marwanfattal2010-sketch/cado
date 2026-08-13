@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSearchProducts, useVariantOptionsForProducts } from "../hooks/useProducts";
 import { useSearchStores } from "../hooks/useStores";
+import { storePath } from "../lib/routes";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeleton";
 import { tidyCategory } from "../components/CategoryChips";
@@ -313,7 +314,7 @@ export function Search() {
           {storeList.map((s) => (
             <Link
               key={s.id}
-              to={`/store/${s.id}`}
+              to={storePath(s)}
               className="flex items-center gap-3 rounded-card bg-surface p-3 shadow-rest transition active:scale-[0.99]"
             >
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">

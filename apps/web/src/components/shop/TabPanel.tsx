@@ -163,16 +163,7 @@ export function TabPanel({
           case "stores":
             return (
               <div key={block.id}>
-                <StoreStrip
-                  categoryId={categoryId}
-                  title={block.title}
-                  activePartnerId={filter.partner_id}
-                  onSelect={(store) =>
-                    setFilter(
-                      store ? { partner_id: store.id, partner_name: store.name, label: store.name } : {}
-                    )
-                  }
-                />
+                <StoreStrip categoryId={categoryId} title={block.title} />
                 {/* The round row goes directly under the big cards, as the
                     second half of one "here are the shops" block. */}
                 {primary ? <StoreCirclesRow /> : null}
@@ -203,7 +194,6 @@ export function TabPanel({
                   // unresolved slug would briefly render the whole catalogue
                   // under a category heading.
                   enabled={!tab.filter.category_slug || !!categoryId}
-                  onStore={(id, name) => setFilter({ partner_id: id, partner_name: name, label: name })}
                 />
               </div>
             );

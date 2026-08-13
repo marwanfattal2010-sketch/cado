@@ -16,6 +16,7 @@ import {
 } from "../components/Icons";
 import { Button, ButtonLink, RibbonDivider } from "../components/ui";
 import { Img } from "../components/Img";
+import { storePath } from "../lib/routes";
 
 /**
  * The fuller "How CADO works" panel, recovered from the pre-redesign
@@ -319,7 +320,7 @@ export function Account() {
             {topStores.data.map((store) => (
               <Link
                 key={store.id}
-                to={`/store/${store.id}`}
+                to={storePath(store)}
                 className="flex w-28 shrink-0 flex-col items-center gap-2 rounded-card bg-surface p-3 text-center shadow-rest transition-transform duration-fast active:scale-[0.97]"
               >
                 <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill bg-surface-sunk">

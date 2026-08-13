@@ -5,6 +5,7 @@ import { SectionHead } from "../SectionHead";
 import { GiftCardBanner } from "../GiftCardBanner";
 import { useTopStores } from "../../hooks/useStores";
 import { OCCASIONS } from "../../lib/filters";
+import { storePath } from "../../lib/routes";
 
 /**
  * The three sections carried over from the old Home page when the Shop page
@@ -67,7 +68,7 @@ export function StoreCirclesRow() {
         {rest.map((store) => (
           <Link
             key={store.id}
-            to={`/store/${store.id}`}
+            to={storePath(store)}
             className="flex w-[64px] shrink-0 flex-col items-center gap-1.5 text-center transition-transform duration-press ease-out active:scale-[0.96]"
           >
             <span className="h-16 w-16 overflow-hidden rounded-pill bg-surface-sunk shadow-rest">

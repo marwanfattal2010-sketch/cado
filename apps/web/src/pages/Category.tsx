@@ -22,7 +22,6 @@ import {
   filterLabels,
   productMatches,
   removeFilter,
-  toggleFilter,
   type CategoryFilters,
   type FilterableProduct,
 } from "../components/CategoryFilterPanel";
@@ -275,38 +274,20 @@ export function Category() {
           </section>
         ) : null}
 
-        {/* 3 — STORES. Tapping one filters the grid below rather than
-            navigating away, so the comparison stays on one screen. */}
+        {/* 3 — STORES. Tapping one opens that store's own page.
+            It used to tick a storeId filter on the grid below, which kept the
+            comparison on one screen but meant a shop had nowhere of its own —
+            and showed only the slice of its catalogue that happened to sit in
+            this category. The storeId filter still exists in the panel, so
+            narrowing this grid by store is a tick away. */}
         {showStores ? (
           <section className="pt-7">
             <h2 className="mx-auto max-w-6xl px-4 pb-3 font-display text-h2">Stores for {categoryName}</h2>
             <div className="scroll-row">
               {stores.data?.map((store) => (
-                <button
-                  key={store.id}
-                  onClick={() => {
-                    setFilters((f) => toggleFilter(f, "storeId", store.id));
-                    document
-                      .getElementById("category-grid")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  aria-pressed={filters.storeId.includes(store.id)}
-                  className={`shrink-0 rounded-card ${
-                    filters.storeId.includes(store.id)
-                      ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas"
-                      : ""
-                  }`}
-                >
-                  {/* Non-linking variant on purpose: here the card filters the
-                      grid, and an <a> inside a <button> is invalid markup that
-                      swallows the click in some browsers. */}
-                  <StoreCard store={store} interactive={false} />
-                </button>
+                <StoreCard key={store.id} store={store} />
               ))}
             </div>
-            <p className="mx-auto max-w-6xl px-4 pt-2 text-caption text-muted">
-              Tap a store to filter the gifts below.
-            </p>
           </section>
         ) : null}
 
