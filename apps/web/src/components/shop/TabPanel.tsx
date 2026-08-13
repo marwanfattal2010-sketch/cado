@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCategories } from "../../hooks/useCategories";
+import { useSubcategories } from "../../hooks/useStores";
+import { useCategorySlides } from "../../hooks/useCategorySlides";
 import { useTileImages, type BrowseBlockWithContent } from "../../hooks/useBrowseConfig";
 import { productImageUrl } from "../../lib/images";
 import {
@@ -37,11 +39,14 @@ export function TabPanel({
   active,
   mounted,
   primary = false,
+  hrefForCategory,
 }: {
   tab: BrowseTab;
   blocks: BrowseBlockWithContent[];
   active: boolean;
   mounted: boolean;
+  /** Turns a category slug into the tab that shows it. */
+  hrefForCategory?: (slug: string) => string;
   /** The All tab — the landing page. Carries the three sections that came
    *  over from the old Home and belong to the page, not to a category. */
   primary?: boolean;
@@ -51,6 +56,10 @@ export function TabPanel({
   const images = useTileImages();
   const [filter, setFilter] = useState<FeedFilter>({});
   const [group, setGroup] = useState<string | null>(null);
+  /** The sub-category circle currently narrowing the grid, by slug. */
+  const [subcategory, setSubcategory] = useState<string | null>(null);
+  const subcategories = useSubcategories(tab.filter.category_slug);
+  const subcategoryId = subcategories.data?.find((s) => s.slug === subcategory)?.id;
 
   const categoryId = useMemo(() => {
     const slug = tab.filter.category_slug;
@@ -69,6 +78,9 @@ export function TabPanel({
     const path = slug ? images.byCategory.get(slug) : images.byCategory.values().next().value;
     return path ? productImageUrl(path) : null;
   }, [images, tab.filter.category_slug]);
+
+  const categoryName = categories.data?.find((c) => c.slug === tab.filter.category_slug)?.name;
+  const slides = useCategorySlides(categoryId, categoryName);
 
   const subTabsBlock = blocks.find((b) => b.type === "sub_tabs");
   const groups = useMemo(() => {
@@ -99,6 +111,7 @@ export function TabPanel({
                 banners={block.banners}
                 accentToken={tab.accent_token}
                 fallbackImage={bannerPhoto}
+                extraSlides={slides}
                 // SHOP NOW opens the gift finder. The seeded banner rows
                 // carry link_type 'filter' with an empty object, which is a
                 // no-op — so an explicit `url` link wins if one is ever set,
@@ -147,7 +160,14 @@ export function TabPanel({
             return (
               <div key={block.id + activeGroup}>
                 <div className="animate-fade-in">
-                  <CategoryCircles tiles={tiles} title={block.title} accentToken={tab.accent_token} />
+                  <CategoryCircles
+                    tiles={tiles}
+                    title={block.title}
+                    accentToken={tab.accent_token}
+                    activeValue={subcategory}
+                    onSelect={setSubcategory}
+                    hrefForCategory={hrefForCategory}
+                  />
                 </div>
                 {primary ? (
                   <>
@@ -155,6 +175,9 @@ export function TabPanel({
                     <GiftCardSection />
                   </>
                 ) : null}
+                {/* 4 — the sort + filter bar goes here, directly under the
+                    circles and above the grid. Left as a slot on purpose:
+                    it is its own piece of work. */}
               </div>
             );
           }
@@ -170,12 +193,18 @@ export function TabPanel({
             );
 
           case "stores":
+            // On a category page the strip is rendered INSIDE the feed, after
+            // the first eight products — see the product_feed case. Here it
+            // would sit above the grid, which is the ordering the brief
+            // explicitly rules out: products before stores, never the
+            // reverse. The All landing page keeps it in place.
+            if (!primary) return null;
             return (
               <div key={block.id}>
                 <StoreStrip categoryId={categoryId} title={block.title} />
                 {/* The round row goes directly under the big cards, as the
                     second half of one "here are the shops" block. */}
-                {primary ? <StoreCirclesRow /> : null}
+                <StoreCirclesRow />
               </div>
             );
 
@@ -197,7 +226,17 @@ export function TabPanel({
                 ) : null}
                 <ProductFeed
                   categoryId={categoryId}
+                  subcategoryId={subcategoryId}
                   filter={filter}
+                  // One store strip per category page, and it comes after the
+                  // products rather than before them.
+                  renderAfter={
+                    primary ? undefined : (
+                      <div className="pt-4">
+                        <StoreStrip categoryId={categoryId} title="Stores" />
+                      </div>
+                    )
+                  }
                   // The tab's own category has to be resolved before the feed
                   // can be honest about what it is showing; without this an
                   // unresolved slug would briefly render the whole catalogue

@@ -31,10 +31,20 @@ export function CategoryCircles({
   tiles,
   title,
   accentToken,
+  activeValue,
+  onSelect,
+  hrefForCategory,
 }: {
   tiles: BrowseTile[];
   title: string | null;
   accentToken: string;
+  /** The sub-category currently narrowing the grid, if any. */
+  activeValue?: string | null;
+  /** Sub-category tiles filter in place rather than navigating. */
+  onSelect?: (value: string | null) => void;
+  /** Where a top-level category tile goes. Injected rather than hardcoded so
+   *  the circles cannot drift from wherever categories actually live. */
+  hrefForCategory?: (slug: string) => string;
 }) {
   const navigate = useNavigate();
   const images = useTileImages();
@@ -62,9 +72,24 @@ export function CategoryCircles({
 
   if (tiles.length === 0) return null;
 
+  /**
+   * Three kinds of tile, three behaviours.
+   *
+   * `collection` is a sub-category and filters the grid below in place — it
+   * used to fall through this function and do nothing at all, which is why
+   * tapping Women or Cakes was a dead tap. `category` opens that category's
+   * own page. `url` goes wherever it says.
+   */
   const open = (tile: BrowseTile) => {
-    if (tile.link_type === "category") navigate(`/category/${tile.link_value}`);
-    else if (tile.link_type === "url") navigate(tile.link_value);
+    if (tile.link_type === "collection") {
+      onSelect?.(activeValue === tile.link_value ? null : tile.link_value);
+      return;
+    }
+    if (tile.link_type === "category") {
+      navigate(hrefForCategory ? hrefForCategory(tile.link_value) : `/?tab=${tile.link_value}`);
+      return;
+    }
+    if (tile.link_type === "url") navigate(tile.link_value);
   };
 
   /**
@@ -109,15 +134,19 @@ export function CategoryCircles({
             >
               {page.map((tile) => {
                 const src = imageFor(tile);
+                const on = !!activeValue && tile.link_value === activeValue;
                 return (
                   <button
                     key={tile.id}
                     type="button"
                     onClick={() => open(tile)}
+                    aria-pressed={tile.link_type === "collection" ? on : undefined}
                     className="flex flex-col items-center gap-1.5 px-0.5 text-center transition-transform duration-press ease-out active:scale-[0.94]"
                   >
                     <span
-                      className="flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-[24px]"
+                      className={`flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-[24px] ${
+                        on ? "ring-2 ring-[#F94E33] ring-offset-2 ring-offset-surface" : ""
+                      }`}
                       style={{ background: accentColor(accentToken, 0.1) }}
                     >
                       {src ? (

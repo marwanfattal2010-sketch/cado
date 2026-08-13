@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "../../../lib/supabase";
@@ -105,11 +105,21 @@ export function ProductFeed({
   subcategoryId,
   filter,
   enabled = true,
+  renderAfter,
+  afterIndex = 8,
 }: {
   categoryId?: string;
   subcategoryId?: string;
   filter: FeedFilter;
   enabled?: boolean;
+  /**
+   * Slotted into the page once this many cards have been laid out. The store
+   * strip goes here, which is the whole point: products come first, and the
+   * shops are something you meet on the way down rather than a wall you have
+   * to get past before seeing anything for sale.
+   */
+  renderAfter?: ReactNode;
+  afterIndex?: number;
 }) {
   const feed = useFeed({ categoryId, subcategoryId, filter, enabled });
   const sentinel = useRef<HTMLDivElement | null>(null);
@@ -147,13 +157,30 @@ export function ProductFeed({
     );
   }
 
+  /**
+   * The strip breaks the masonry into two runs rather than sitting inside it.
+   * A full-width child of a `columns-2` container is not a thing CSS
+   * multi-column can express — it would be treated as one more item in a
+   * column — so the grid is split at the slot instead.
+   */
+  const head = renderAfter ? products.slice(0, afterIndex) : products;
+  const tail = renderAfter ? products.slice(afterIndex) : [];
+
   return (
-    <div className="px-[var(--page-x)] pt-5">
-      <div className="columns-2 gap-2">
-        {products.map((p) => (
+    <div className="pt-5">
+      <div className="columns-2 gap-2 px-[var(--page-x)]">
+        {head.map((p) => (
           <FeedCard key={p.id} product={p} />
         ))}
       </div>
+      {renderAfter && products.length > afterIndex ? renderAfter : null}
+      {tail.length > 0 ? (
+        <div className="columns-2 gap-2 px-[var(--page-x)] pt-4">
+          {tail.map((p) => (
+            <FeedCard key={p.id} product={p} />
+          ))}
+        </div>
+      ) : null}
       <div ref={sentinel} aria-hidden className="h-px" />
       {isFetchingNextPage ? (
         <p className="py-4 text-center text-caption text-muted">Loading more…</p>

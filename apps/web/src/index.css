@@ -101,6 +101,7 @@
   --tab-flowers: 154 90 104;
   --tab-toys: 30 79 163;
   --tab-home: 58 55 48;
+  --tab-electronics: 22 48 92;
 
   /* Legacy aliases — retired names, no longer red. */
   --ribbon: var(--primary);

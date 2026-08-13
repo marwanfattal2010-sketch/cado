@@ -74,7 +74,22 @@ export function useBrowseConfig() {
     return byTab;
   }, [query.data]);
 
-  return { tabs, blocksFor, isLoading: query.isLoading, isError: query.isError };
+  /**
+   * A category slug to the tab that shows it.
+   *
+   * The two are not the same string — `jewelry-accessories` is the category,
+   * `jewelry` is the tab — so anything linking to a category has to go
+   * through this rather than guessing. Every active category has a tab, so a
+   * miss means the slug is wrong; falling back to the landing tab keeps that
+   * a wrong-looking page rather than a broken one.
+   */
+  const hrefForCategory = useMemo(() => {
+    const bySlug = new Map<string, string>();
+    for (const t of tabs) if (t.filter.category_slug) bySlug.set(t.filter.category_slug, t.slug);
+    return (categorySlug: string) => `/?tab=${bySlug.get(categorySlug) ?? "all"}`;
+  }, [tabs]);
+
+  return { tabs, blocksFor, hrefForCategory, isLoading: query.isLoading, isError: query.isError };
 }
 
 export type BrowseBlockWithContent = BrowseBlock & { tiles: BrowseTile[]; banners: BrowseBanner[] };

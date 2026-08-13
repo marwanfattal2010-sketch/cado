@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Sheet } from "../ui";
 import { Img } from "../Img";
 import { productImageUrl } from "../../lib/images";
-import { useTileImages, type BrowseBlockWithContent } from "../../hooks/useBrowseConfig";
+import { useBrowseConfig, useTileImages, type BrowseBlockWithContent } from "../../hooks/useBrowseConfig";
 import { accentColor, type BrowseTab, type BrowseTile } from "../../lib/browse";
 
 /**
@@ -32,6 +32,7 @@ export function AllCategoriesSheet({
 }) {
   const navigate = useNavigate();
   const images = useTileImages();
+  const { hrefForCategory } = useBrowseConfig();
   const [selected, setSelected] = useState(activeIndex);
 
   // Open on whatever tab you were looking at, not on whatever you last
@@ -46,7 +47,7 @@ export function AllCategoriesSheet({
 
   const openTile = (tile: BrowseTile) => {
     onClose();
-    if (tile.link_type === "category") navigate(`/category/${tile.link_value}`);
+    if (tile.link_type === "category") navigate(hrefForCategory(tile.link_value));
     else if (tile.link_type === "url") navigate(tile.link_value);
     else onSelectTab(selected);
   };

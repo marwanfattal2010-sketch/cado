@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "../components/Header";
 import { BottomNav } from "../components/BottomNav";
@@ -33,7 +33,7 @@ import { ShopSearchBar, ShopSearchResults } from "../components/shop/ShopSearch"
  * should not bury the page you arrived from under nine history entries.
  */
 export function Home() {
-  const { tabs, blocksFor, isLoading } = useBrowseConfig();
+  const { tabs, blocksFor, hrefForCategory, isLoading } = useBrowseConfig();
   const [params, setParams] = useSearchParams();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -63,24 +63,70 @@ export function Home() {
     });
   }, [index, tabs.length]);
 
-  // Land on the requested tab once the config is in. Once only: after that
-  // the pager owns the index and the URL follows it.
+  /**
+   * `?tab=` drives the pager, not just on arrival but whenever it changes.
+   *
+   * It used to run once and then hand ownership to the pager, which quietly
+   * broke tapping a category circle: the circle navigates to `/?tab=fashion`,
+   * but we are already on "/", so nothing remounted, the one-shot effect
+   * never fired, and the sync effect below immediately rewrote the URL back
+   * to the tab still on screen. The tap changed the address bar for a frame
+   * and nothing else.
+   *
+   * No loop: this only moves the pager when the URL names a different tab,
+   * and the effect below only writes the URL when it does not already say
+   * what the pager is showing.
+   */
+  /**
+   * Which tab the URL is currently steering us to, while the pager catches
+   * up. Null the rest of the time, which is when the pager is in charge.
+   *
+   * Both effects run in the same pass, and `setIndex` inside the first one
+   * does not update `index` for the second — so without this the sync effect
+   * below saw the new URL next to the OLD index and "corrected" the URL back.
+   * The tab moved and the address bar lied about it.
+   */
+  const drivingTo = useRef<number | null>(null);
+  const urlTab = params.get("tab");
   useEffect(() => {
-    if (deepLinked || tabs.length === 0) return;
-    const slug = params.get("tab");
-    const target = slug ? tabs.findIndex((t) => t.slug === slug) : 0;
-    if (target > 0) goTo(target, "auto");
-    setDeepLinked(true);
-  }, [deepLinked, params, tabs, goTo]);
+    if (tabs.length === 0) return;
+    const target = tabs.findIndex((t) => t.slug === urlTab);
+    if (target >= 0 && target !== index) {
+      drivingTo.current = target;
+      goTo(target, deepLinked ? "smooth" : "auto");
+    }
+    if (!deepLinked) setDeepLinked(true);
+    // `index` is deliberately not a dependency: this reacts to the URL, and
+    // reacting to its own result is the loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTab, tabs, goTo, deepLinked]);
 
+  /**
+   * The URL follows the pager — and ONLY when the pager moves.
+   *
+   * `params` is read through a ref rather than being a dependency, which is
+   * the whole fix. With it in the deps this effect also ran the instant a
+   * link changed the URL, at which point `index` was still the old tab, so it
+   * helpfully "corrected" `?tab=fashion` back to `?tab=all` a frame before
+   * the pager arrived at Fashion. The tab moved and the address bar lied.
+   */
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
   useEffect(() => {
     const tab = tabs[index];
     if (!tab || !deepLinked) return;
-    if (params.get("tab") === tab.slug) return;
-    const next = new URLSearchParams(params);
+    // A URL-driven move is still in flight; it owns the address bar until the
+    // pager arrives, and writing here would undo it.
+    if (drivingTo.current !== null) {
+      if (drivingTo.current !== index) return;
+      drivingTo.current = null;
+    }
+    const current = paramsRef.current;
+    if (current.get("tab") === tab.slug) return;
+    const next = new URLSearchParams(current);
     next.set("tab", tab.slug);
     setParams(next, { replace: true });
-  }, [index, tabs, deepLinked, params, setParams]);
+  }, [index, tabs, deepLinked, setParams]);
 
   return (
     <div className="shop-shell bg-canvas text-ink">
@@ -140,6 +186,7 @@ export function Home() {
                   // the only one that carries the sections inherited from the
                   // old Home page.
                   primary={!tab.filter.category_slug}
+                  hrefForCategory={hrefForCategory}
                 />
               ))}
             </Pager>

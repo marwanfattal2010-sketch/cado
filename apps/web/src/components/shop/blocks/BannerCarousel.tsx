@@ -19,6 +19,7 @@ export function BannerCarousel({
   banners,
   accentToken,
   fallbackImage,
+  extraSlides = [],
   onCta,
 }: {
   banners: BrowseBanner[];
@@ -26,6 +27,14 @@ export function BannerCarousel({
   /** A photo of something genuinely in this tab, used when the banner row has
    *  no uploaded artwork of its own. Borrowed, not invented. */
   fallbackImage?: string | null;
+  /**
+   * Slides built from live data rather than from a banner row — the newest
+   * arrival in this category, a shop that stocks it. Every word and every
+   * photo on them is a fact already in the database, which is why they can be
+   * generated rather than written: there is no second banner row to keep in
+   * step with the catalogue, and nothing on them can go stale into a lie.
+   */
+  extraSlides?: BrowseBanner[];
   onCta: (banner: BrowseBanner) => void;
 }) {
   const [active, setActive] = useState(0);
@@ -33,7 +42,9 @@ export function BannerCarousel({
   const paused = useRef(false);
   const frame = useRef<number | null>(null);
 
-  const count = banners.length;
+  /* One list. The seeded rows lead, the generated ones follow. */
+  const slides = [...banners, ...extraSlides];
+  const count = slides.length;
 
   // Auto-advance. Paused while a finger is down so it can never yank the
   // banner out from under a swipe, and skipped entirely for a single banner.
@@ -82,7 +93,7 @@ export function BannerCarousel({
           paused.current = false;
         }}
       >
-        {banners.map((banner) => {
+        {slides.map((banner) => {
           const photo = banner.image_url ?? fallbackImage ?? null;
           return (
           <div key={banner.id} className="relative w-full">
@@ -135,7 +146,7 @@ export function BannerCarousel({
 
       {count > 1 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2.5 flex items-center justify-center gap-1.5">
-          {banners.map((banner, i) => (
+          {slides.map((banner, i) => (
             <span
               key={banner.id}
               className={`h-1.5 rounded-full bg-white transition-all duration-200 ${
