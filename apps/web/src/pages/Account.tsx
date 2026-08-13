@@ -15,6 +15,7 @@ import {
   WalletIcon,
 } from "../components/Icons";
 import { Button, ButtonLink, RibbonDivider } from "../components/ui";
+import { Img } from "../components/Img";
 
 /**
  * The fuller "How CADO works" panel, recovered from the pre-redesign
@@ -141,6 +142,84 @@ const LINK_GROUPS: { heading: string; links: { to: string; label: string }[] }[]
   },
 ];
 
+/** Static photos from the account, each opening the profile. Hardcoded so
+ *  they're trivial to swap for real posts; no Instagram API, no embed. */
+const INSTAGRAM_IMAGES = [
+  "/instagram/1.jpg",
+  "/instagram/2.jpg",
+  "/instagram/3.jpg",
+  "/instagram/4.jpg",
+  "/instagram/5.jpg",
+  "/instagram/6.jpg",
+  "/instagram/7.jpg",
+  "/instagram/8.jpg",
+];
+
+/**
+ * The two blocks that came off the bottom of the old Home page when the Shop
+ * page replaced it. Both are unchanged — same copy, same photographs, same
+ * card.
+ *
+ * They belong here rather than on Home for the same reason the footer links
+ * did: a shopper scrolling for a birthday present is not the audience for
+ * "own a store?", and someone who has opened Account is at least looking at
+ * the company rather than the catalogue.
+ *
+ * The full partner pitch — no upfront cost, we deliver, new customers, email
+ * and WhatsApp — already lives on /partners, which this links to. Nothing was
+ * lost in the move.
+ */
+function OwnAStore() {
+  return (
+    <section className="mt-10">
+      <Link
+        to="/partners"
+        className="block rounded-card bg-primary px-5 py-4 text-inverse transition-transform duration-press ease-out active:scale-[0.99]"
+      >
+        {/* Title and call-to-action share the first row; the one line of copy
+            runs full width underneath. Side by side all three squeezed the
+            copy into a three-line column and the card back up to 120px,
+            which is not compact. */}
+        <span className="flex items-center justify-between gap-3">
+          <span className="font-display text-h2">Own a store?</span>
+          <span className="shrink-0 whitespace-nowrap text-caption font-medium text-gold">
+            Become a partner →
+          </span>
+        </span>
+        <span className="mt-1 block text-caption text-inverse/65">
+          Sell on CADO — no upfront cost, and we deliver.
+        </span>
+      </Link>
+    </section>
+  );
+}
+
+/** Real photographs from the account, each opening the profile. No embed, no
+ *  follower count, no faked post metadata — pictures and a link. */
+function InstagramStrip() {
+  return (
+    <section className="mt-8">
+      <h2 className="mb-3 font-display text-h2">@cado.lb on Instagram</h2>
+      {/* Negative margin so the strip runs to both screen edges while its
+          first photo still starts on the page margin, the same as every
+          other rail on the site. */}
+      <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {INSTAGRAM_IMAGES.map((src) => (
+          <a
+            key={src}
+            href="https://instagram.com/cado.lb"
+            target="_blank"
+            rel="noreferrer"
+            className="block aspect-square w-[128px] shrink-0 overflow-hidden rounded-card bg-surface-sunk"
+          >
+            <Img src={src} className="h-full w-full object-cover" />
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function SiteLinks() {
   return (
     <div className="mt-8">
@@ -201,9 +280,12 @@ export function Account() {
         </div>
 
         {/* Signed out is exactly when someone is still deciding, so the
-            explainer belongs here too. */}
+            explainer belongs here too — and so does the partner pitch, since
+            a store owner looking at CADO has no account either. */}
         <div className="text-left">
           <HowCadoWorks />
+          <OwnAStore />
+          <InstagramStrip />
         </div>
       </div>
     );
@@ -285,6 +367,10 @@ export function Account() {
       <HowCadoWorks />
 
       <SiteLinks />
+
+      <OwnAStore />
+
+      <InstagramStrip />
 
       <p className="mt-10 text-center text-eyebrow uppercase text-muted">Cado — gifts, delivered. Lebanon.</p>
     </div>

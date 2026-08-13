@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Browse } from "./pages/Browse";
@@ -28,19 +28,21 @@ import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { TermsOfService } from "./pages/TermsOfService";
 import { DeliveryReturns } from "./pages/DeliveryReturns";
 import { Partners } from "./pages/Partners";
-import { Shop } from "./pages/Shop";
 
 export default function App() {
   return (
     <Routes>
-      {/* Outside Layout on purpose. /shop owns its whole viewport: the shell
+      {/* Outside Layout on purpose. Home owns its whole viewport: the shell
           is 100dvh with each tab panel scrolling independently, which cannot
           work inside Layout's single window scroll — and Layout's page
           transition applies a transform, which would unpin the bottom nav
           and the sheet backdrop inside the pager. */}
-      <Route path="shop" element={<Shop />} />
+      <Route path="/" element={<Home />} />
+      {/* The page shipped here first, so links to it are already out in the
+          world. Replace, not push: it must not sit in history as a step to
+          go "back" to. */}
+      <Route path="shop" element={<Navigate to="/" replace />} />
       <Route element={<Layout />}>
-        <Route index element={<Home />} />
         <Route path="search" element={<Search />} />
         <Route path="orders" element={<Orders />} />
         <Route path="account" element={<Account />} />

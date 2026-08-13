@@ -4,70 +4,20 @@ import { supabase } from "../lib/supabase";
 /**
  * The one shape every product card reads. Kept in a single constant so a
  * card can never be rendered from a differently-shaped query — which is how
- * the same product ended up with three different prices on the homepage.
+ * the same product ended up with three different prices on the home page.
  */
 const CARD_FIELDS =
   "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, product_images(storage_path, is_primary), partner:partners(id, name)";
 
-export type ProductTag = "trending" | "most-gifted" | "new" | "staff-pick";
-
-/**
- * Homepage rows are filters over the product table, never separate arrays.
- * One product = one row = one price, wherever it appears.
+/*
+ * Removed with the old Home page: useProductsByTag, useNeedItToday,
+ * useTrendingProducts, useFeaturedProducts and the ProductTag type.
+ *
+ * They existed to fill "Most gifted for birthdays", "Need it today", "New on
+ * CADO" and "Trending this week", and every one of those sections is gone.
+ * The `tags` and `is_featured` columns they read are untouched — nothing was
+ * dropped from the database, only the dead queries against it.
  */
-export function useProductsByTag(tag: ProductTag, limit = 12) {
-  return useQuery({
-    queryKey: ["products", "tag", tag, limit],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(CARD_FIELDS)
-        .eq("is_active", true)
-        .contains("tags", [tag])
-        .limit(limit);
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
-/** Same-day, in stock — powers the "Need It Today" section. */
-export function useNeedItToday(limit = 12) {
-  return useQuery({
-    queryKey: ["products", "need-it-today", limit],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(CARD_FIELDS)
-        .eq("is_active", true)
-        .eq("same_day", true)
-        .gt("stock_quantity", 0)
-        .limit(limit);
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
-export function useTrendingProducts() {
-  return useProductsByTag("trending");
-}
-
-export function useFeaturedProducts() {
-  return useQuery({
-    queryKey: ["products", "featured"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, title, price, currency, is_featured, is_trending, product_images(storage_path, is_primary)")
-        .eq("is_active", true)
-        .eq("is_featured", true)
-        .limit(10);
-      if (error) throw error;
-      return data;
-    },
-  });
-}
 
 /**
  * Shared with the hook below and with the category rail's prefetching, so

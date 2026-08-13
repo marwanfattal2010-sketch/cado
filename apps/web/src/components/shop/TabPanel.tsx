@@ -16,6 +16,7 @@ import { SubTabs } from "./blocks/SubTabs";
 import { DealPair } from "./blocks/DealPair";
 import { StoreStrip } from "./blocks/StoreStrip";
 import { ProductFeed } from "./blocks/ProductFeed";
+import { GiftCardSection, OccasionRail, StoreCirclesRow } from "./HomeSections";
 
 /**
  * One tab's page: its own scroll container, its own filter state.
@@ -34,11 +35,15 @@ export function TabPanel({
   blocks,
   active,
   mounted,
+  primary = false,
 }: {
   tab: BrowseTab;
   blocks: BrowseBlockWithContent[];
   active: boolean;
   mounted: boolean;
+  /** The All tab — the landing page. Carries the three sections that came
+   *  over from the old Home and belong to the page, not to a category. */
+  primary?: boolean;
 }) {
   const categories = useCategories();
   const images = useTileImages();
@@ -120,6 +125,10 @@ export function TabPanel({
             );
 
           case "category_circles": {
+            // Shop by occasion and the gift-card banner sit directly under
+            // the circles, and only here. They are a page-level pitch — nine
+            // copies of them, one per category tab, is the same argument made
+            // nine times.
             // When a sub_tabs block is present the circles belong to the
             // selected group; the crossfade is keyed on the group so React
             // remounts the grid rather than diffing tiles into each other.
@@ -127,8 +136,16 @@ export function TabPanel({
               ? block.tiles.filter((t) => !t.group_key || t.group_key === activeGroup)
               : block.tiles;
             return (
-              <div key={block.id + activeGroup} className="animate-fade-in">
-                <CategoryCircles tiles={tiles} title={block.title} accentToken={tab.accent_token} />
+              <div key={block.id + activeGroup}>
+                <div className="animate-fade-in">
+                  <CategoryCircles tiles={tiles} title={block.title} accentToken={tab.accent_token} />
+                </div>
+                {primary ? (
+                  <>
+                    <OccasionRail />
+                    <GiftCardSection />
+                  </>
+                ) : null}
               </div>
             );
           }
@@ -145,17 +162,21 @@ export function TabPanel({
 
           case "stores":
             return (
-              <StoreStrip
-                key={block.id}
-                categoryId={categoryId}
-                title={block.title}
-                activePartnerId={filter.partner_id}
-                onSelect={(store) =>
-                  setFilter(
-                    store ? { partner_id: store.id, partner_name: store.name, label: store.name } : {}
-                  )
-                }
-              />
+              <div key={block.id}>
+                <StoreStrip
+                  categoryId={categoryId}
+                  title={block.title}
+                  activePartnerId={filter.partner_id}
+                  onSelect={(store) =>
+                    setFilter(
+                      store ? { partner_id: store.id, partner_name: store.name, label: store.name } : {}
+                    )
+                  }
+                />
+                {/* The round row goes directly under the big cards, as the
+                    second half of one "here are the shops" block. */}
+                {primary ? <StoreCirclesRow /> : null}
+              </div>
             );
 
           case "product_feed":
