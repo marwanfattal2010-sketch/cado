@@ -14,13 +14,12 @@ import {
 } from "../components/Icons";
 import { Button, RemovableChip, RibbonEmpty } from "../components/ui";
 import {
-  FilterBar,
-  SortSheet,
-  sortProducts,
-  type SortValue,
-} from "../components/FilterBar";
+  BrowseFilterBar,
+  BrowseFilterPanel,
+  sortBrowse,
+  type BrowseSort,
+} from "../components/BrowseFilters";
 import {
-  CategoryFilterPanel,
   NO_FILTERS,
   countActive,
   filterLabels,
@@ -289,8 +288,7 @@ function Results({
    */
   const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
-  const [sort, setSort] = useState<SortValue>("suggested");
+  const [sort, setSort] = useState<BrowseSort>("recommended");
 
   const items = useMemo(() => (results.data?.items ?? []) as Row[], [results.data]);
   const totalBeforeBudget = results.data?.totalBeforeBudget ?? 0;
@@ -304,7 +302,7 @@ function Results({
     // straight into the refine filters, so it lands as a removable chip like
     // every other answer — loosening it is one tap, not a restart.
     setFilters(categoryParam ? { ...NO_FILTERS, category: [categoryParam] } : NO_FILTERS);
-    setSort("suggested");
+    setSort("recommended");
   }, [occasion?.value, recipient, budget?.slug, categoryParam]);
 
   /**
@@ -327,7 +325,7 @@ function Results({
   const variants = useVariantOptionsForProducts(useMemo(() => rows.map((p) => p.id), [rows]));
 
   const visible = useMemo(
-    () => sortProducts(rows.filter((p) => productMatches(p, filters, variants.data?.byProduct)), sort),
+    () => sortBrowse(rows.filter((p) => productMatches(p, filters, variants.data?.byProduct)), sort),
     [rows, filters, sort, variants.data]
   );
 
@@ -358,6 +356,17 @@ function Results({
   );
 
   const refineCount = countActive(filters);
+
+  /** The bar and the panel take {value,label}; filterLabels takes {id,name}.
+   *  One reshape here rather than two shapes floating around the page. */
+  const browseOptions = useMemo(
+    () => ({
+      categories: categoryOptions,
+      stores: partnerOptions.map((p) => ({ value: p.id, label: p.name })),
+      sizes: variants.data?.options ?? [],
+    }),
+    [categoryOptions, partnerOptions, variants.data]
+  );
   const clearRefine = () => setFilters(NO_FILTERS);
 
   // Only claim the occasion in the headline when the results actually honour
@@ -421,11 +430,14 @@ function Results({
         </div>
       ) : (
         <div className="mt-4">
-          <FilterBar
-            activeCount={refineCount}
+          <BrowseFilterBar
+            rows={rows}
+            filters={filters}
+            options={browseOptions}
             sort={sort}
-            onOpenFilter={() => setFilterOpen(true)}
-            onOpenSort={() => setSortOpen(true)}
+            onSort={setSort}
+            onFilters={setFilters}
+            onOpenPanel={() => setFilterOpen(true)}
           />
         </div>
       )}
@@ -547,18 +559,15 @@ function Results({
           panel does offer the Category group. Price is offered only when the
           gifts in view actually straddle more than one band, so entering
           from a budget chip does not get a group restating that budget. */}
-      <CategoryFilterPanel
+      <BrowseFilterPanel
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
         rows={rows}
-        stores={partnerOptions}
-        categories={categoryOptions}
-        variants={variants.data}
+        options={browseOptions}
         filters={filters}
         onApply={setFilters}
+        sizesByProduct={variants.data?.byProduct}
       />
-
-      <SortSheet open={sortOpen} onClose={() => setSortOpen(false)} sort={sort} onChange={setSort} />
     </div>
   );
 }

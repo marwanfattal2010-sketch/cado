@@ -8,17 +8,15 @@ import { ProductGridSkeleton } from "../components/Skeleton";
 import { tidyCategory } from "../components/CategoryChips";
 import { SearchIcon } from "../components/Icons";
 import { Button, RibbonEmpty } from "../components/ui";
+import { ActiveFilterChips } from "../components/FilterBar";
 import {
-  ActiveFilterChips,
-  FilterBar,
-  SortSheet,
-  sortProducts,
-  type SortValue,
-} from "../components/FilterBar";
+  BrowseFilterBar,
+  BrowseFilterPanel,
+  sortBrowse,
+  type BrowseSort,
+} from "../components/BrowseFilters";
 import {
-  CategoryFilterPanel,
   NO_FILTERS,
-  countActive,
   filterLabels,
   productMatches,
   removeFilter,
@@ -48,8 +46,7 @@ export function Search() {
   const [shown, setShown] = useState(PAGE);
   const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
-  const [sort, setSort] = useState<SortValue>("suggested");
+  const [sort, setSort] = useState<BrowseSort>("recommended");
   const input = useRef<HTMLInputElement>(null);
 
   // Debounce so results settle as you pause typing rather than firing a
@@ -82,7 +79,7 @@ export function Search() {
   /** Filter and sort happen over the response already in memory — no
    *  refetch, so a tick is instant and the panel's counts are exact. */
   const visible = useMemo(
-    () => sortProducts(productList.filter((p) => productMatches(p, filters, variants.data?.byProduct)), sort),
+    () => sortBrowse(productList.filter((p) => productMatches(p, filters, variants.data?.byProduct)), sort),
     [productList, filters, sort, variants.data]
   );
 
@@ -112,12 +109,22 @@ export function Search() {
     [filters, partnerOptions, categoryOptions]
   );
 
+  /** The bar and the panel take {value,label}; filterLabels takes {id,name}. */
+  const browseOptions = useMemo(
+    () => ({
+      categories: categoryOptions,
+      stores: partnerOptions.map((p) => ({ value: p.id, label: p.name })),
+      sizes: variants.data?.options ?? [],
+    }),
+    [categoryOptions, partnerOptions, variants.data]
+  );
+
   // A filter that survives into a different search is how a screen ends up
   // mysteriously empty — "Under $20" carried over from a term that had cheap
   // gifts into one that doesn't.
   useEffect(() => {
     setFilters(NO_FILTERS);
-    setSort("suggested");
+    setSort("recommended");
   }, [query]);
 
   useEffect(() => setShown(PAGE), [query, tab, filters, sort]);
@@ -261,11 +268,14 @@ export function Search() {
         ) : productList.length > 0 ? (
           <>
             <div className="mt-6">
-              <FilterBar
-                activeCount={countActive(filters)}
+              <BrowseFilterBar
+                rows={productList}
+                filters={filters}
+                options={browseOptions}
                 sort={sort}
-                onOpenFilter={() => setFilterOpen(true)}
-                onOpenSort={() => setSortOpen(true)}
+                onSort={setSort}
+                onFilters={setFilters}
+                onOpenPanel={() => setFilterOpen(true)}
               />
               <ActiveFilterChips
                 chips={activeChips}
@@ -337,18 +347,15 @@ export function Search() {
 
       {/* Search spans every category, so unlike /category/:slug this panel
           DOES offer the Category group. */}
-      <CategoryFilterPanel
+      <BrowseFilterPanel
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
         rows={productList}
-        stores={partnerOptions}
-        categories={categoryOptions}
-        variants={variants.data}
+        options={browseOptions}
         filters={filters}
         onApply={setFilters}
+        sizesByProduct={variants.data?.byProduct}
       />
-
-      <SortSheet open={sortOpen} onClose={() => setSortOpen(false)} sort={sort} onChange={setSort} />
     </div>
   );
 }
