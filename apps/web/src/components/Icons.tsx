@@ -11,6 +11,19 @@ export function HomeIcon({ className = base, filled }: IconProps) {
   );
 }
 
+/** The Shop tab. A shopfront awning rather than another bag — BasketIcon is
+ *  already the cart in the header, and two bags in one screen read as one
+ *  control that moved. */
+export function ShopIcon({ className = base, filled }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 9h17l-1 11a1 1 0 0 1-1 .9H5.5a1 1 0 0 1-1-.9L3.5 9Z" fill={filled ? "currentColor" : "none"} />
+      <path d="M3 9l1.6-4.4A1 1 0 0 1 5.5 4h13a1 1 0 0 1 .9.6L21 9" />
+      <path d="M9 13c0 1.7 1.3 3 3 3s3-1.3 3-3" stroke={filled ? "rgb(var(--canvas))" : "currentColor"} />
+    </svg>
+  );
+}
+
 export function CalendarIcon({ className = base, filled }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
