@@ -8,17 +8,15 @@ import { ProductGridSkeleton } from "../components/Skeleton";
 import { Img } from "../components/Img";
 import { Button, ButtonLink, RibbonEmpty } from "../components/ui";
 import { ChevronLeftIcon, HeartIcon, SearchIcon } from "../components/Icons";
+import { ActiveFilterChips } from "../components/FilterBar";
 import {
-  ActiveFilterChips,
-  FilterBar,
-  SortSheet,
-  sortProducts,
-  type SortValue,
-} from "../components/FilterBar";
+  BrowseFilterBar,
+  BrowseFilterPanel,
+  sortBrowse,
+  type BrowseSort,
+} from "../components/BrowseFilters";
 import {
-  CategoryFilterPanel,
   NO_FILTERS,
-  countActive,
   filterLabels,
   productMatches,
   removeFilter,
@@ -59,8 +57,7 @@ export function Store() {
 
   const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
-  const [sort, setSort] = useState<SortValue>("suggested");
+  const [sort, setSort] = useState<BrowseSort>("recommended");
   const [shown, setShown] = useState(PAGE);
   const [tab, setTab] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -76,7 +73,7 @@ export function Store() {
   // a page ends up mysteriously empty.
   useEffect(() => {
     setFilters(NO_FILTERS);
-    setSort("suggested");
+    setSort("recommended");
     setTab(null);
     setQuery("");
     setSearchOpen(false);
@@ -129,7 +126,7 @@ export function Store() {
     let list = rows.filter((p) => matches(p, filters));
     if (tab) list = list.filter((p) => (p.category as { slug?: string } | null)?.slug === tab);
     if (term) list = list.filter((p) => p.title.toLowerCase().includes(term));
-    return sortProducts(list, sort);
+    return sortBrowse(list, sort);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, filters, sort, tab, term, sizes]);
 
@@ -150,6 +147,13 @@ export function Store() {
   const activeChips = useMemo(
     () => filterLabels(filters, { subcategories, categories: categoryOptions }),
     [filters, subcategories, categoryOptions]
+  );
+
+  /** Option lists for the bar and the panel, built from what this store
+   *  actually sells. Sizes come from real product_variants rows. */
+  const filterOptions = useMemo(
+    () => ({ categories: categoryOptions, sizes: variants.data?.options ?? [] }),
+    [categoryOptions, variants.data]
   );
 
   useEffect(() => setShown(PAGE), [slug, filters, sort, tab, term]);
@@ -332,11 +336,14 @@ export function Store() {
 
       {/* 4 + 5 — the shared filter bar, then the grid. */}
       <div className="mx-auto max-w-6xl px-4 pt-5">
-        <FilterBar
-          activeCount={countActive(filters)}
+        <BrowseFilterBar
+          rows={rows as unknown as FilterableProduct[]}
+          filters={filters}
+          options={filterOptions}
           sort={sort}
-          onOpenFilter={() => setSheetOpen(true)}
-          onOpenSort={() => setSortOpen(true)}
+          onSort={setSort}
+          onFilters={setFilters}
+          onOpenPanel={() => setSheetOpen(true)}
         />
 
         <ActiveFilterChips
@@ -391,20 +398,17 @@ export function Store() {
         </div>
       </div>
 
-      {/* No `stores` group: this page is already one store, so it would offer
-          exactly one option and filter nothing. */}
-      <CategoryFilterPanel
+      {/* No Store group in `filterOptions`: this page is already one store, so
+          it would offer exactly one option and filter nothing. */}
+      <BrowseFilterPanel
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         rows={rows as unknown as FilterableProduct[]}
-        categories={categoryOptions}
-        subcategories={subcategories}
-        variants={variants.data}
+        options={filterOptions}
         filters={filters}
         onApply={setFilters}
+        sizesByProduct={sizes}
       />
-
-      <SortSheet open={sortOpen} onClose={() => setSortOpen(false)} sort={sort} onChange={setSort} />
     </div>
   );
 }

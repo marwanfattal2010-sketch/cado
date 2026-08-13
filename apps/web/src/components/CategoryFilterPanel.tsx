@@ -36,7 +36,13 @@ export type CategoryFilters = {
   /** Top-level category slug. Only offered outside a category page. */
   category: string[];
   subcategory: string[];
+  /** products.occasion_tags — the Occasion group. */
+  occasion: string[];
   sameDayOnly: boolean;
+  /** A real compare_at_price above the price. */
+  onSale: boolean;
+  /** A real stock_quantity above zero. */
+  inStock: boolean;
 };
 
 export const NO_FILTERS: CategoryFilters = {
@@ -47,7 +53,10 @@ export const NO_FILTERS: CategoryFilters = {
   storeId: [],
   category: [],
   subcategory: [],
+  occasion: [],
   sameDayOnly: false,
+  onSale: false,
+  inStock: false,
 };
 
 /** The array-valued keys, in the order their chips should read. */
@@ -55,6 +64,7 @@ const LIST_KEYS = [
   "audience",
   "category",
   "subcategory",
+  "occasion",
   "color",
   "budget",
   "size",
@@ -67,6 +77,8 @@ export type FilterableProduct = {
   id: string;
   price: number | string;
   recipient_tags?: string[] | null;
+  occasion_tags?: string[] | null;
+  compare_at_price?: number | string | null;
   color?: string | null;
   same_day?: boolean | null;
   stock_quantity?: number | null;
@@ -140,11 +152,25 @@ export function productMatches(
   // Same rule as the card badge: the store offers same-day AND there is
   // stock. An unknown stock count never earns the promise.
   if (f.sameDayOnly && !(p.same_day === true && (p.stock_quantity ?? 0) > 0)) return false;
+  if (f.occasion.length) {
+    const occ = (p.occasion_tags as string[] | null) ?? [];
+    if (!f.occasion.some((o) => occ.includes(o))) return false;
+  }
+  // Both toggles read a real column: a compare_at_price genuinely above the
+  // price, and a stock count genuinely above zero. Neither invents a state.
+  if (f.onSale && !(p.compare_at_price != null && Number(p.compare_at_price) > Number(p.price)))
+    return false;
+  if (f.inStock && !((p.stock_quantity ?? 0) > 0)) return false;
   return true;
 }
 
 export function countActive(f: CategoryFilters): number {
-  return LIST_KEYS.reduce((n, k) => n + f[k].length, 0) + (f.sameDayOnly ? 1 : 0);
+  return (
+    LIST_KEYS.reduce((n, k) => n + f[k].length, 0) +
+    (f.sameDayOnly ? 1 : 0) +
+    (f.onSale ? 1 : 0) +
+    (f.inStock ? 1 : 0)
+  );
 }
 
 /** Add or drop one value inside one group. */
@@ -165,6 +191,8 @@ export function removeFilter(
   value?: string
 ): CategoryFilters {
   if (key === "sameDayOnly") return { ...f, sameDayOnly: false };
+  if (key === "onSale") return { ...f, onSale: false };
+  if (key === "inStock") return { ...f, inStock: false };
   const list = f[key as ListKey];
   return { ...f, [key]: value == null ? [] : list.filter((v) => v !== value) };
 }
