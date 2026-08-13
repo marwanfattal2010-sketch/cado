@@ -31,6 +31,28 @@ export function Shop() {
   const { ref, index, goTo } = usePagerSync(tabs.length);
   const [deepLinked, setDeepLinked] = useState(false);
 
+  /**
+   * Which panels have had their contents mounted. Grows to cover the active
+   * panel and its neighbours, and never shrinks.
+   *
+   * The never-shrinking part is the whole point. Unmounting a panel you
+   * swiped away from empties its scroll container, so coming back put you at
+   * the top again — the one behaviour the tabs are supposed to have is
+   * remembering where you were. Keeping a visited panel mounted preserves
+   * that for free, and the cost is bounded: at most nine panels, and only the
+   * ones actually opened.
+   */
+  const [everMounted, setEverMounted] = useState<Set<number>>(() => new Set([0, 1]));
+  useEffect(() => {
+    setEverMounted((prev) => {
+      const next = new Set(prev);
+      for (const i of [index - 1, index, index + 1]) {
+        if (i >= 0 && i < tabs.length) next.add(i);
+      }
+      return next.size === prev.size ? prev : next;
+    });
+  }, [index, tabs.length]);
+
   // Land on the requested tab once the config is in. Once only: after that
   // the pager owns the index and the URL follows it.
   useEffect(() => {
@@ -78,9 +100,10 @@ export function Shop() {
                 tab={tab}
                 blocks={blocksFor.get(tab.id) ?? []}
                 active={i === index}
-                // Neighbours stay mounted so a swipe lands on a painted page
-                // rather than a spinner; everything further away is a spacer.
-                mounted={Math.abs(i - index) <= 1}
+                // Neighbours mount ahead of time so a swipe lands on a
+                // painted page rather than a spinner; a tab never visited is
+                // still just a spacer.
+                mounted={everMounted.has(i)}
               />
             ))}
           </Pager>

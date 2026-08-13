@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useCategories } from "../../hooks/useCategories";
-import type { BrowseBlockWithContent } from "../../hooks/useBrowseConfig";
+import { useTileImages, type BrowseBlockWithContent } from "../../hooks/useBrowseConfig";
+import { productImageUrl } from "../../lib/images";
 import {
   isFeedFiltered,
   parseFilterValue,
@@ -40,6 +41,7 @@ export function TabPanel({
   mounted: boolean;
 }) {
   const categories = useCategories();
+  const images = useTileImages();
   const [filter, setFilter] = useState<FeedFilter>({});
   const [group, setGroup] = useState<string | null>(null);
 
@@ -48,6 +50,18 @@ export function TabPanel({
     if (!slug) return undefined;
     return categories.data?.find((c) => c.slug === slug)?.id;
   }, [categories.data, tab.filter.category_slug]);
+
+  /**
+   * The banner has no uploaded artwork yet, so it borrows a photo of
+   * something genuinely on sale in this tab. On All, that is whichever
+   * category answers first — every option is a real CADO product either way,
+   * which is the whole point of not reaching for a stock image.
+   */
+  const bannerPhoto = useMemo(() => {
+    const slug = tab.filter.category_slug;
+    const path = slug ? images.byCategory.get(slug) : images.byCategory.values().next().value;
+    return path ? productImageUrl(path) : null;
+  }, [images, tab.filter.category_slug]);
 
   const subTabsBlock = blocks.find((b) => b.type === "sub_tabs");
   const groups = useMemo(() => {
@@ -77,6 +91,7 @@ export function TabPanel({
                 key={block.id}
                 banners={block.banners}
                 accentToken={tab.accent_token}
+                fallbackImage={bannerPhoto}
                 onCta={() => setFilter({})}
               />
             );
@@ -87,6 +102,7 @@ export function TabPanel({
                 key={block.id}
                 tiles={block.tiles}
                 accentToken={tab.accent_token}
+                categoryId={categoryId}
                 onTile={applyTile}
               />
             );

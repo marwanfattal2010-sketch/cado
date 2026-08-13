@@ -7,7 +7,9 @@ import { accentColor, type BrowseTile } from "../../../lib/browse";
 
 const ROWS = 3;
 const COLUMNS_PER_PAGE = 5;
-const MIN_ITEMS = 5;
+/** Columns visible at rest. The .6 is the peek — the sliver of the next
+ *  column that tells anyone the grid scrolls sideways. */
+const PEEK_COLUMNS = 4.6;
 
 /**
  * The card of small squircle subcategory tiles.
@@ -20,8 +22,10 @@ const MIN_ITEMS = 5;
  * next column is visibly cut off, which is the only thing that tells anyone
  * the grid scrolls.
  *
- * `minItems: 5`. Under five real tiles it degrades to one row and does not
- * pad; under one it does not render at all.
+ * The "under five tiles, one row not three" rule falls out of the row maths
+ * rather than being a separate branch: rows is however many are needed at
+ * five across. Nothing is ever padded to fill a row, and with no tiles at all
+ * the block does not render.
  */
 export function CategoryCircles({
   tiles,
@@ -35,15 +39,26 @@ export function CategoryCircles({
   const navigate = useNavigate();
   const images = useTileImages();
 
-  const rows = tiles.length < MIN_ITEMS ? 1 : ROWS;
+  const perPage = ROWS * COLUMNS_PER_PAGE;
+  /**
+   * Everything fits on one page until a category has more than fifteen
+   * subcategories, and none does. In that case the grid is a plain
+   * full-width block that wraps five to a row — reserving five tracks and a
+   * peek for nine tiles left two empty columns of white and made the card
+   * look broken. Paging (and with it column-major fill, which is what keeps
+   * rows full when you scroll) only switches on once there is a second page
+   * to scroll to.
+   */
+  const paged = tiles.length > perPage;
+  const rows = paged ? ROWS : Math.ceil(tiles.length / COLUMNS_PER_PAGE);
+  const columns = paged ? COLUMNS_PER_PAGE : Math.min(tiles.length, COLUMNS_PER_PAGE);
 
-  /** Column-major within a page: index 0,1,2 fill column one top to bottom. */
   const pages = useMemo(() => {
-    const perPage = rows * COLUMNS_PER_PAGE;
+    if (!paged) return [tiles];
     const out: BrowseTile[][] = [];
     for (let i = 0; i < tiles.length; i += perPage) out.push(tiles.slice(i, i + perPage));
     return out;
-  }, [tiles, rows]);
+  }, [tiles, paged, perPage]);
 
   if (tiles.length === 0) return null;
 
@@ -69,10 +84,15 @@ export function CategoryCircles({
           {pages.map((page, pageIndex) => (
             <div
               key={pageIndex}
-              className="grid w-[calc(100%/4.6*5)] shrink-0 grid-flow-col gap-y-3"
+              className={`grid shrink-0 gap-y-3 ${paged ? "grid-flow-col" : "grid-flow-row"}`}
               style={{
+                // Inline, not a Tailwind arbitrary value: Tailwind treats the
+                // last `/` in `w-[calc(100%/4.6*5)]` as an opacity modifier,
+                // so the utility compiles to nothing and the tracks silently
+                // fall back to content width.
+                width: paged ? `calc(100% / ${PEEK_COLUMNS} * ${COLUMNS_PER_PAGE})` : "100%",
                 gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-                gridTemplateColumns: `repeat(${COLUMNS_PER_PAGE}, minmax(0, 1fr))`,
+                gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
               }}
             >
               {page.map((tile) => {

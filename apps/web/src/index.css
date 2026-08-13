@@ -93,11 +93,14 @@
      pass had, and there is no --tab-women at all: those tabs are not built.
      ------------------------------------------------------------------ */
   --tab-all: var(--accent-brand);
+  --tab-fashion: 45 42 56;
   --tab-jewelry: 91 42 94;
   --tab-shoes: 140 74 47;
   --tab-perfumes: 74 82 51;
   --tab-chocolate: 74 46 31;
   --tab-flowers: 154 90 104;
+  --tab-toys: 30 79 163;
+  --tab-home: 58 55 48;
 
   /* Legacy aliases — retired names, no longer red. */
   --ribbon: var(--primary);

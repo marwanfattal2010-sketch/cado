@@ -8,11 +8,15 @@
 -- is the ordered list of sections inside one tab; `browse_tiles` and
 -- `browse_banners` are the contents of the blocks that have contents.
 --
--- Phase 1 seeds six tabs: All, Jewelry & Accessories, Shoes, Perfumes,
--- Chocolate, Flowers. Men and Women are deliberately NOT seeded (Marwan,
--- 2026-08: "dont add men and woman"). Their audience-tab machinery is not
--- built either — there is no `audience` column on products, so an audience
--- tab could not be filled with anything real today.
+-- Nine tabs are seeded — every category that has stock today: All, Fashion,
+-- Jewelry & Accessories, Shoes, Perfumes, Chocolate, Flowers, Toys and
+-- Home & Gifts. Electronics is a live category row with zero products, so it
+-- gets no tab; add the row when a partner stocks it.
+--
+-- Men and Women are deliberately NOT tabs (Marwan, 2026-08: "dont add men and
+-- woman"). There is no `audience` column on products, so an audience tab
+-- could not be filled with anything real anyway. Men's, women's and kids'
+-- clothes are reachable as real subcategory circles inside Fashion.
 --
 -- Every seeded tile points at a category or subcategory row that already
 -- exists. No banner is seeded with an image URL: a banner row with only
@@ -129,11 +133,14 @@ create policy "admin writes browse banners" on browse_banners
 
 insert into browse_tabs (slug, label, position, accent_token, filter) values
   ('all',       'All',                    1, 'tab-all',       '{}'::jsonb),
-  ('jewelry',   'Jewelry & Accessories',  2, 'tab-jewelry',   '{"category_slug":"jewelry-accessories"}'::jsonb),
-  ('shoes',     'Shoes',                  3, 'tab-shoes',     '{"category_slug":"shoes"}'::jsonb),
-  ('perfumes',  'Perfumes',               4, 'tab-perfumes',  '{"category_slug":"perfumes"}'::jsonb),
-  ('chocolate', 'Chocolate',              5, 'tab-chocolate', '{"category_slug":"chocolate"}'::jsonb),
-  ('flowers',   'Flowers',                6, 'tab-flowers',   '{"category_slug":"flowers-gifts"}'::jsonb)
+  ('fashion',   'Fashion',                2, 'tab-fashion',   '{"category_slug":"fashion"}'::jsonb),
+  ('jewelry',   'Jewelry & Accessories',  3, 'tab-jewelry',   '{"category_slug":"jewelry-accessories"}'::jsonb),
+  ('shoes',     'Shoes',                  4, 'tab-shoes',     '{"category_slug":"shoes"}'::jsonb),
+  ('perfumes',  'Perfumes',               5, 'tab-perfumes',  '{"category_slug":"perfumes"}'::jsonb),
+  ('chocolate', 'Chocolate',              6, 'tab-chocolate', '{"category_slug":"chocolate"}'::jsonb),
+  ('flowers',   'Flowers',                7, 'tab-flowers',   '{"category_slug":"flowers-gifts"}'::jsonb),
+  ('toys',      'Toys',                   8, 'tab-toys',      '{"category_slug":"toys"}'::jsonb),
+  ('home',      'Home & Gifts',           9, 'tab-home',      '{"category_slug":"home-gifts"}'::jsonb)
 on conflict (slug) do nothing;
 
 -- Every tab gets the same six sections in the same order. A section that has
@@ -211,11 +218,14 @@ from browse_blocks bl
 join browse_tabs t on t.id = bl.tab_id
 join (values
   ('all',       'Chosen now, there by tonight', 'Gifts from real Lebanese stores.'),
+  ('fashion',   'Wear it tonight',              'Women, men and kids — ordered today.'),
   ('jewelry',   'Something that lasts',         'Rings, necklaces, watches — delivered today.'),
   ('shoes',     'Step out today',               'Ordered this morning, worn tonight.'),
   ('perfumes',  'A scent they keep',            'Perfume, skincare and makeup, same-day.'),
   ('chocolate', 'Sweet, and on time',           'Boxes, cakes and baskets across Lebanon.'),
-  ('flowers',   'Flowers that arrive fresh',    'Bouquets and plants, delivered the same day.')
+  ('flowers',   'Flowers that arrive fresh',    'Bouquets and plants, delivered the same day.'),
+  ('toys',      'Something to open',            'Toys and games, at the door today.'),
+  ('home',      'For the house they love',      'Home pieces and gifts, delivered same-day.')
 ) as v(slug, headline, subcopy) on v.slug = t.slug
 where bl.type = 'banner_carousel'
 on conflict (block_id, position) do nothing;

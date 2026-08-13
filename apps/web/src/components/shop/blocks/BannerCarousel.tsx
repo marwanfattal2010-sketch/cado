@@ -18,10 +18,14 @@ const ADVANCE_MS = 4500;
 export function BannerCarousel({
   banners,
   accentToken,
+  fallbackImage,
   onCta,
 }: {
   banners: BrowseBanner[];
   accentToken: string;
+  /** A photo of something genuinely in this tab, used when the banner row has
+   *  no uploaded artwork of its own. Borrowed, not invented. */
+  fallbackImage?: string | null;
   onCta: (banner: BrowseBanner) => void;
 }) {
   const [active, setActive] = useState(0);
@@ -78,17 +82,31 @@ export function BannerCarousel({
           paused.current = false;
         }}
       >
-        {banners.map((banner) => (
+        {banners.map((banner) => {
+          const photo = banner.image_url ?? fallbackImage ?? null;
+          return (
           <div key={banner.id} className="relative w-full">
             <div className="relative aspect-[2/1] w-full overflow-hidden">
-              {banner.image_url ? (
+              {/* Accent underneath either way, so the headline has something
+                  solid behind it for the frame before the photo decodes. */}
+              <div aria-hidden className="absolute inset-0" style={{ background: accentColor(accentToken) }} />
+              {photo ? (
                 <>
-                  <Img src={banner.image_url} className="absolute inset-0 h-full w-full object-cover" eager />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/55 to-transparent" />
+                  <Img src={photo} className="absolute inset-0 h-full w-full object-cover" eager />
+                  {/* Dark enough on the left for white type over any photo,
+                      clear on the right so the product is still visible. */}
+                  <div
+                    aria-hidden
+                    className="absolute inset-0"
+                    style={{
+                      background: `linear-gradient(90deg, ${accentColor(accentToken, 0.94)} 0%, ${accentColor(
+                        accentToken,
+                        0.7
+                      )} 42%, transparent 88%)`,
+                    }}
+                  />
                 </>
-              ) : (
-                <div aria-hidden className="absolute inset-0" style={{ background: accentColor(accentToken) }} />
-              )}
+              ) : null}
 
               <div className="relative flex h-full w-[68%] flex-col justify-center gap-2 px-[var(--page-x)]">
                 {banner.headline ? (
@@ -111,7 +129,8 @@ export function BannerCarousel({
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {count > 1 ? (
