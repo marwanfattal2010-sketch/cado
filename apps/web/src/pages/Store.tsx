@@ -350,7 +350,7 @@ export function Store() {
             <ProductGridSkeleton count={6} />
           ) : visible.length > 0 ? (
             <>
-              <div className="grid animate-fade-in grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="animate-fade-in columns-2 gap-3 md:columns-4">
                 {visible.slice(0, shown).map((p) => (
                   <ProductCard key={p.id} {...(p as Parameters<typeof ProductCard>[0])} />
                 ))}

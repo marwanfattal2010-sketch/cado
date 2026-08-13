@@ -1,12 +1,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "../../../lib/supabase";
-import { primaryImage } from "../../../lib/images";
-import { storePath } from "../../../lib/routes";
-import { formatMoney } from "../../../lib/money";
-import { Img } from "../../Img";
 import { ProductGridSkeleton } from "../../Skeleton";
+import { ProductCard } from "../../ProductCard";
 import {
   applyFeedFilters,
   PRODUCT_CARD_COLUMNS,
@@ -44,52 +40,6 @@ function useFeed({
       return (data ?? []) as FeedProduct[];
     },
   });
-}
-
-/**
- * One card in the staggered feed.
- *
- * Deliberately bare: photo, title, price, store. No star rating, no "N sold",
- * no bestseller rank — CADO has no review system and no public sales counts,
- * and a placeholder rating is a lie that happens to look like a feature.
- *
- * The photo keeps its natural shape, capped at 3:4, which is what staggers
- * the two columns. `aspect-ratio: auto` with a max is why the grid looks like
- * a feed rather than a spreadsheet.
- */
-function FeedCard({ product }: { product: FeedProduct }) {
-  const off =
-    product.compare_at_price != null && Number(product.compare_at_price) > Number(product.price)
-      ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
-      : null;
-
-  return (
-    <div className="mb-2 break-inside-avoid">
-      <Link to={`/product/${product.id}`} className="block">
-        <span className="block w-full overflow-hidden rounded-[8px] bg-surface-sunk">
-          <Img
-            src={primaryImage(product.product_images)}
-            className="h-auto max-h-[min(74vw,340px)] w-full object-cover"
-          />
-        </span>
-        <span className="mt-1.5 line-clamp-2 block text-[13px] leading-snug text-ink">{product.title}</span>
-        <span className="mt-1 flex items-baseline gap-1.5">
-          <span className="text-[15px] font-extrabold tracking-[-0.01em]">{formatMoney(product.price)}</span>
-          {off != null && off > 0 ? (
-            <span className="text-[11px] font-semibold text-alert">-{off}%</span>
-          ) : null}
-        </span>
-      </Link>
-      {product.partner ? (
-        <Link
-          to={storePath(product.partner)}
-          className="mt-0.5 block max-w-full truncate text-left text-[11px] text-muted underline-offset-2 active:underline"
-        >
-          {product.partner.name}
-        </Link>
-      ) : null}
-    </div>
-  );
 }
 
 /**
@@ -170,14 +120,14 @@ export function ProductFeed({
     <div className="pt-5">
       <div className="columns-2 gap-2 px-[var(--page-x)]">
         {head.map((p) => (
-          <FeedCard key={p.id} product={p} />
+          <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
         ))}
       </div>
       {renderAfter && products.length > afterIndex ? renderAfter : null}
       {tail.length > 0 ? (
         <div className="columns-2 gap-2 px-[var(--page-x)] pt-4">
           {tail.map((p) => (
-            <FeedCard key={p.id} product={p} />
+            <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
           ))}
         </div>
       ) : null}

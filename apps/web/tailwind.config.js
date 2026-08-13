@@ -50,6 +50,8 @@ export default {
         },
         // Hero accent only. One token, one place to change it.
         "accent-brand": token("--accent-brand"),
+        // Product-card accent. See the note in index.css.
+        persimmon: token("--persimmon"),
         today: {
           DEFAULT: token("--today"),
           tint: token("--today-tint"),

@@ -276,7 +276,7 @@ export function Search() {
 
             {visible.length > 0 ? (
               <>
-                <div className="mt-5 grid animate-fade-in grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                <div className="mt-5 animate-fade-in columns-2 gap-3 sm:columns-3 md:columns-4">
                   {visible.slice(0, shown).map((p) => (
                     <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
                   ))}

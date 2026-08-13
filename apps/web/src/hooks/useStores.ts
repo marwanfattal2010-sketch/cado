@@ -140,7 +140,7 @@ export function useStoreProducts(storeId: string | undefined) {
         // same_day + stock_quantity so the card's badges match what the same
         // product shows everywhere else.
         .select(
-          "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, recipient_tags, color, is_trending, partner:partners(id, name, slug), category:categories(slug, name), subcategory:subcategories(slug, name), product_images(storage_path, is_primary)"
+          "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, recipient_tags, occasion_tags, color, is_trending, partner:partners(id, name, slug), category:categories(slug, name), subcategory:subcategories(slug, name), product_images(storage_path, is_primary)"
         )
         .eq("partner_id", storeId as string)
         .eq("is_active", true)

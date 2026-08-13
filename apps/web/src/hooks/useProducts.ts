@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
  * the same product ended up with three different prices on the home page.
  */
 const CARD_FIELDS =
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, product_images(storage_path, is_primary), partner:partners(id, name)";
+  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, created_at, occasion_tags, recipient_tags, product_images(storage_path, is_primary), partner:partners(id, name, slug)";
 
 /*
  * Removed with the old Home page: useProductsByTag, useNeedItToday,

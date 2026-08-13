@@ -35,7 +35,7 @@ export function Wishlist() {
           </ButtonLink>
         </div>
       ) : (
-        <div className="mt-6 grid animate-fade-in grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        <div className="mt-6 animate-fade-in columns-2 gap-3 sm:columns-3 md:columns-4">
           {items.map((f) => (f.product ? <ProductCard key={f.id} {...f.product} /> : null))}
         </div>
       )}

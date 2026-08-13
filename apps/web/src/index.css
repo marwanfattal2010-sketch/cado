@@ -80,6 +80,11 @@
      one-line change. Never hardcode #E8542A at a usage site. */
   --accent-brand: 232 84 42;
 
+  /* Persimmon. The brand accent on product cards: the discount badge, the
+     sale percentage, tag chips and active states. Nothing else — the pages
+     stay cream and near-black, and gold is off cards entirely. */
+  --persimmon: 249 78 51;
+
   /* ------------------------------------------------------------------
      /shop tab accents. One colour per tab, all in one place so they can be
      retuned without touching a component. Which one a tab uses is a database

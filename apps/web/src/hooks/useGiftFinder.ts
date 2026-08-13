@@ -8,7 +8,7 @@ import { budgetBySlug, inBudgetRange, occasionByValue } from "../lib/filters";
 // hardcoded list that would offer filters matching nothing. Both are plain
 // reads on columns the storefront already exposes elsewhere.
 const FIELDS =
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, created_at, is_trending, recipient_tags, color, category:categories(slug, name), subcategory:subcategories(slug, name), product_images(storage_path, is_primary), partner:partners(id, name)";
+  "id, title, price, compare_at_price, currency, same_day, stock_quantity, tags, created_at, is_trending, recipient_tags, occasion_tags, color, category:categories(slug, name), subcategory:subcategories(slug, name), product_images(storage_path, is_primary), partner:partners(id, name)";
 
 export type Row = {
   id: string;
