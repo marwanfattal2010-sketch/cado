@@ -67,7 +67,7 @@ export function ShopSearchBar({
       </form>
       {/* A way out for someone who's stuck, not a gate. */}
       <Link
-        to="/gift-finder"
+        to="/find"
         className="tap-44 shrink-0 whitespace-nowrap text-caption font-medium text-ink underline underline-offset-4"
       >
         Help me choose
@@ -124,7 +124,7 @@ export function ShopSearchResults({ query }: { query: string }) {
       ) : (
         <p className="text-body text-muted">
           Nothing matches “{query}” yet — try a category above, or{" "}
-          <Link to="/gift-finder" className="font-medium text-ink underline underline-offset-4">
+          <Link to="/find" className="font-medium text-ink underline underline-offset-4">
             let us help you choose
           </Link>
           .

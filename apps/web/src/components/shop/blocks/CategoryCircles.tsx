@@ -67,13 +67,25 @@ export function CategoryCircles({
     else if (tile.link_type === "url") navigate(tile.link_value);
   };
 
+  /**
+   * Three sources, in order of how specific they are: artwork uploaded for
+   * this tile, then a photo of something genuinely inside it, then the
+   * project's own category image.
+   *
+   * That last one is what fixes Electronics. It is a real category with zero
+   * products, so there is no product photo to borrow and it was rendering as
+   * a grey letter tile — but /public/categories already holds the same
+   * photograph the category cards elsewhere in the app use, so it is a file
+   * this project owns rather than a stock image pulled in to fill a hole.
+   */
   const imageFor = (tile: BrowseTile) => {
     if (tile.image_url) return tile.image_url;
     const path =
       tile.link_type === "category"
         ? images.byCategory.get(tile.link_value)
         : images.bySubcategory.get(tile.link_value);
-    return path ? productImageUrl(path) : null;
+    if (path) return productImageUrl(path);
+    return tile.link_type === "category" ? `/categories/${tile.link_value}.jpg` : null;
   };
 
   return (

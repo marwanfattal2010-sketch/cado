@@ -28,6 +28,7 @@ import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { TermsOfService } from "./pages/TermsOfService";
 import { DeliveryReturns } from "./pages/DeliveryReturns";
 import { Partners } from "./pages/Partners";
+import { Find } from "./pages/Find";
 
 export default function App() {
   return (
@@ -61,6 +62,8 @@ export default function App() {
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="order-confirmed/:id" element={<OrderConfirmed />} />
+        {/* The quiz. /gift-finder is the results grid it hands off to. */}
+        <Route path="find" element={<Find />} />
         <Route path="gift-finder" element={<GiftFinder />} />
         <Route path="occasions" element={<Occasions />} />
         <Route path="gift-cards" element={<GiftCards />} />

@@ -105,8 +105,15 @@ export function EntryCards({
     }
     if (f.sort === "new") return rows[0] ? primaryImage(rows[0].product_images) : null;
 
-    // A link out of the feed — /browse, /occasions. The stores shortcut gets
-    // a shop's own logo; the rest borrow a product, offset so they differ.
+    // A link out of the feed — /browse, /occasions, or a budget band handed
+    // to the results grid. A band still gets a product that genuinely sits
+    // inside it, so "Under $50" is never illustrated by a $200 gift.
+    const band = tile.link_value.match(/[?&]budget=under-(\d+)/);
+    if (band) {
+      const ceiling = Number(band[1]);
+      const m = rows.find((p) => Number(p.price) < ceiling);
+      return m ? primaryImage(m.product_images) : null;
+    }
     const logos = storeLogos.data ?? [];
     if (tile.link_value === "/browse" && logos.length > 0) return logos[0];
     const pick = rows[(position * 3) % Math.max(rows.length, 1)];

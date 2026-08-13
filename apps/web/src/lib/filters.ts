@@ -18,17 +18,25 @@ export type Budget = {
  * in all three at once, which is the point.
  */
 export const BUDGETS: Budget[] = [
-  { slug: "under-20", label: "Under $20", min: 0, max: 20 },
-  { slug: "20-50", label: "$20 – $50", min: 20, max: 50 },
+  { slug: "under-50", label: "Under $50", min: 0, max: 50 },
   { slug: "50-100", label: "$50 – $100", min: 50, max: 100 },
-  { slug: "100-plus", label: "$100+", min: 100, max: null },
+  { slug: "100-200", label: "$100 – $200", min: 100, max: 200 },
+  { slug: "200-plus", label: "$200+", min: 200, max: null },
 ];
 
-/** The old five-band scheme split $100+ in two. Links that were already
- *  shared (or bookmarked) still have to land somewhere sensible. */
+/**
+ * Every band slug this app has ever shipped, pointed at its nearest current
+ * band. Shared links and bookmarks have to land somewhere sensible.
+ *
+ * "100-plus" was open-ended and now splits in two; it maps to $100–$200,
+ * which is where all but one product in that range actually sits. The two
+ * cheap bands both fold into Under $50 — that is the change Marwan asked for
+ * (2026-08), on the grounds that the bottom of the catalogue is thin.
+ */
 const LEGACY_BUDGET_SLUGS: Record<string, string> = {
-  "100-200": "100-plus",
-  "200-plus": "100-plus",
+  "under-20": "under-50",
+  "20-50": "under-50",
+  "100-plus": "100-200",
 };
 
 export function budgetBySlug(slug: string | null | undefined): Budget | null {

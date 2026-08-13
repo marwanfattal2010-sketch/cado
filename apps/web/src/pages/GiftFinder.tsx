@@ -177,8 +177,12 @@ export function GiftFinder() {
   const occasion = occasionByValue(params.get("occasion"));
   const budget = budgetBySlug(params.get("budget"));
   const step = params.get("step");
+  /** Set by /find. It is a filter like any other, so it also counts as an
+   *  answer — arriving with only a category must not re-ask question one. */
+  const categoryParam = params.get("category");
 
-  const answered = !!recipient || !!occasion || !!budget || params.get("skip") === "1";
+  const answered =
+    !!recipient || !!occasion || !!budget || !!categoryParam || params.get("skip") === "1";
 
   const go = (next: Record<string, string | null>) => {
     const p = new URLSearchParams(params);
@@ -250,6 +254,7 @@ export function GiftFinder() {
     <Results
       results={results}
       occasion={occasion}
+      categoryParam={categoryParam}
       recipient={recipient}
       budget={budget}
       onClear={(key) => go({ [key]: null })}
@@ -260,12 +265,14 @@ export function GiftFinder() {
 function Results({
   results,
   occasion,
+  categoryParam,
   recipient,
   budget,
   onClear,
 }: {
   results: ReturnType<typeof useGiftResults>;
   occasion: Occasion | null;
+  categoryParam: string | null;
   recipient: string | null;
   budget: Budget | null;
   onClear: (key: string) => void;
@@ -293,9 +300,12 @@ function Results({
   // ends up mysteriously empty — "Toys" carried over from a budget band that
   // had toys into one that doesn't.
   useEffect(() => {
-    setFilters(NO_FILTERS);
+    // The category answer from /find arrives as a URL parameter and is seeded
+    // straight into the refine filters, so it lands as a removable chip like
+    // every other answer — loosening it is one tap, not a restart.
+    setFilters(categoryParam ? { ...NO_FILTERS, category: [categoryParam] } : NO_FILTERS);
     setSort("suggested");
-  }, [occasion?.value, recipient, budget?.slug]);
+  }, [occasion?.value, recipient, budget?.slug, categoryParam]);
 
   /**
    * PRICE. Filtered once, through inBudgetRange() — in useGiftResults for the

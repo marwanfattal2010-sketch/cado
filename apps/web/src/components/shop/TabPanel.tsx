@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCategories } from "../../hooks/useCategories";
 import { useTileImages, type BrowseBlockWithContent } from "../../hooks/useBrowseConfig";
 import { productImageUrl } from "../../lib/images";
@@ -45,6 +46,7 @@ export function TabPanel({
    *  over from the old Home and belong to the page, not to a category. */
   primary?: boolean;
 }) {
+  const navigate = useNavigate();
   const categories = useCategories();
   const images = useTileImages();
   const [filter, setFilter] = useState<FeedFilter>({});
@@ -97,7 +99,14 @@ export function TabPanel({
                 banners={block.banners}
                 accentToken={tab.accent_token}
                 fallbackImage={bannerPhoto}
-                onCta={() => setFilter({})}
+                // SHOP NOW opens the gift finder. The seeded banner rows
+                // carry link_type 'filter' with an empty object, which is a
+                // no-op — so an explicit `url` link wins if one is ever set,
+                // and everything else falls through to the quiz rather than
+                // to a button that does nothing.
+                onCta={(banner) =>
+                  navigate(banner.link_type === "url" && banner.link_value ? banner.link_value : "/find")
+                }
               />
             );
 

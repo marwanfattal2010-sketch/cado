@@ -53,7 +53,17 @@ async function fetchByTags(recipient?: string | null, occasion?: string | null) 
   let q = supabase.from("products").select(FIELDS).eq("is_active", true);
   if (recipient) q = q.contains("recipient_tags", [recipient]);
   if (occasion) q = q.contains("occasion_tags", [occasion]);
-  const { data, error } = await q.order("created_at", { ascending: false }).limit(60);
+  /**
+   * 200, not 60.
+   *
+   * Everything below this — the budget band, the category answer, every
+   * refine chip — is applied client-side to whatever this returns, so the cap
+   * silently decided the answer: with 72 active products, "Under $50" showed
+   * 21 of the real 23, and "Under $50 + Chocolate" showed 1 of the real 3,
+   * because the missing rows were simply not among the newest 60. A count
+   * that disagrees with the catalogue is worse than a slightly larger fetch.
+   */
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(200);
   if (error) throw error;
   return (data ?? []) as unknown as Row[];
 }
