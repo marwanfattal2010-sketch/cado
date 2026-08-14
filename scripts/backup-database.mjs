@@ -264,6 +264,30 @@ console.log(`Done: ${total} rows, ${TABLES.length - failed} tables OK, ${failed}
  * line deep in a log nobody opens. This writes one file at the top of the
  * backup folder that says, in words, whether the last run worked and when.
  * ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------
+ * How full Supabase is getting.
+ *
+ * Nobody is watching this. The free plan's storage cap is not a cliff you
+ * are warned about in advance — uploads simply start failing — and the
+ * person who would notice is the one who never opens the Supabase
+ * dashboard. Since this job already walks every file to back it up, it
+ * knows the exact number for free, so it may as well say it out loud.
+ *
+ * Storage is the only limit measured here, because it is the only one this
+ * script can count exactly. Database size and bandwidth need the dashboard;
+ * bandwidth is realistically the first one a busy site would hit.
+ * ------------------------------------------------------------------ */
+const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; // 1 GB on the free plan
+const usedPct = (fileBytes / STORAGE_LIMIT_BYTES) * 100;
+const storageLine =
+  usedPct >= 90
+    ? `*** URGENT: Supabase storage is ${usedPct.toFixed(0)}% full (${mb} MB of 1024 MB).\n` +
+      `    Uploads will start failing. Upgrade to Pro ($25/mo, 100 GB) at supabase.com.`
+    : usedPct >= 70
+      ? `*** WARNING: Supabase storage is ${usedPct.toFixed(0)}% full (${mb} MB of 1024 MB).\n` +
+        `    Plan the Pro upgrade before it fills.`
+      : `Storage: ${usedPct.toFixed(1)}% of the free 1 GB used. Plenty of room.`;
+
 const ok = failed === 0 && fileFailures === 0;
 try {
   writeFileSync(
@@ -273,6 +297,8 @@ try {
       `When:   ${new Date().toString()}`,
       `Data:   ${total} rows across ${TABLES.length - failed} tables (${failed} failed)`,
       `Photos: ${fileCount} files, ${mb} MB (${fileFailures} failed)`,
+      ``,
+      storageLine,
       `Folder: ${outDir}`,
       "",
       ok
