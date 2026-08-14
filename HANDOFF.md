@@ -71,8 +71,51 @@ is precisely why the fake-store shortcut is tempting, and it is banned.
    breaks before writing anything — the dashboard order list, the driver
    flow, and the order confirmation screen all read sub_orders today.
 
-**Open question for Marwan, still unanswered:** his instruction ended
-mid-sentence at "and how that". Ask before building.
+**Marwan's three additions, answered 2026-08-14. Plan approved otherwise.**
+
+7. **Cancelling voids the card.** Most of this already exists in 0014 and
+   must be reused, not rewritten: `cancel_unpaid_gift_card` (refuses unless
+   the card is still `pending_payment`) and `refund_gift_card` (refuses if
+   `current_balance <> original_amount`, i.e. if a single dollar has been
+   spent, and does the check and the cancel inside one locked statement so a
+   redemption cannot sneak between them). `gift_cards.status` already has
+   `cancelled`. The ONLY missing piece is knowing which cards an order
+   minted — which is the new order-to-card table above. So cancelling an
+   order means looking up its cards and calling the existing function for
+   each. A partly-spent card will be refused, and that is correct: the money
+   is already at a store. That case goes to a human, like the pool refund
+   list. Never write a new voiding path.
+
+8. **Double-tap cannot mint twice.** The risk is not two cards on one order
+   — it is two ORDERS. Today's accidental protection is that place_order
+   deletes the cart in the same transaction, so a second, later tap finds an
+   empty cart and stops. But two SIMULTANEOUS taps both read the cart before
+   either commits, and both succeed: two orders, two cards, one payment. Fix
+   is a `select ... for update` on the cart lines at the very top of
+   place_order — the second transaction waits, then finds nothing, then
+   stops on the existing "cart is empty". Small and surgical. Prove it by
+   firing two concurrent calls and confirming exactly one order and one card.
+
+9. **Never mix a gift card with store items, enforced in the database.**
+   Same shape as 0046: a trigger on the new order-to-card table rejecting an
+   insert when that order already has sub_orders, and the sub_orders trigger
+   extended to reject when that order already has gift cards. Symmetrical,
+   so neither order of insertion can slip through. A check at the top of
+   place_order too, only so the message is a sentence rather than a
+   constraint name.
+
+10. **What breaks between the migration running and the new code deploying:
+    nothing, for this change** — but only because of three deliberate
+    choices, each of which must hold. Every new column is nullable or
+    defaulted. The new CHECK is already satisfied by every existing cart row
+    (verify against the real rows BEFORE adding it). The new place_order
+    argument has a default, so old calls still resolve. The old deployed
+    frontend cannot create a gift-card cart line at all, so it cannot trip
+    any of the new rules. The lesson from 0046 is precise and worth keeping:
+    a migration is only dangerous in that window when it makes the database
+    STRICTER than the deployed frontend expects. 0046 did (it started
+    refusing "Now" after 9pm while the live site still offered it until
+    midnight). Nothing here does.
 
 ## Session of 2026-08-14 — the gift-card design pass
 
