@@ -47,6 +47,17 @@ import { join } from "node:path";
 const SECRET_FILE = "C:\\Users\\Marwan\\cado-secrets\\supabase-db-url.txt";
 const OUT_ROOT = "C:\\Users\\Marwan\\cado-backups\\dumps";
 
+/**
+ * pg_dump 17.6, matching the server exactly. An older pg_dump refuses to
+ * dump a newer server outright, so this is pinned rather than picked up off
+ * PATH — where a different version could appear later and break the backup
+ * silently.
+ *
+ * The Supabase CLI is deliberately not used: `supabase db dump` shells out
+ * to pg_dump inside a Docker container, and this machine has no Docker.
+ */
+const BIN = "C:\\Users\\Marwan\\pgtools\\extracted\\pgsql\\bin";
+
 function connectionString() {
   const fromEnv = process.env.SUPABASE_DB_URL?.trim();
   if (fromEnv) return fromEnv;
@@ -80,13 +91,53 @@ function connectionString() {
  * means replaying them in this order.
  */
 const PARTS = [
-  { file: "1-roles.sql", args: ["--role-only"], label: "roles" },
-  { file: "2-schema.sql", args: [], label: "schema (tables, functions, policies, triggers)" },
-  { file: "3-data.sql", args: ["--data-only", "--use-copy"], label: "data" },
+  {
+    file: "1-roles.sql",
+    exe: "pg_dumpall.exe",
+    args: ["--roles-only", "--no-role-passwords"],
+    label: "roles",
+    // Supabase does not hand out superuser, so pg_dumpall may be refused.
+    // That is not a reason to abandon the backup: roles on a managed project
+    // are Supabase's to recreate, and schema-snapshot.mjs records the grants
+    // and policies that actually matter to this app.
+    optional: true,
+  },
+  {
+    file: "2-schema.sql",
+    exe: "pg_dump.exe",
+    args: ["--schema-only", "--no-owner", "--no-privileges", "--schema=public"],
+    label: "schema (tables, functions, policies, triggers)",
+  },
+  {
+    file: "3-data.sql",
+    exe: "pg_dump.exe",
+    args: ["--data-only", "--no-owner", "--schema=public"],
+    label: "data",
+  },
 ];
+
+/**
+ * pg_dump does not understand DATABASE_URL, and putting the whole URI on the
+ * command line would expose the password to anything that can list
+ * processes. So the URI is taken apart here: host, port, user and database
+ * become ordinary flags, and only the password travels by environment.
+ */
+function connectionParts(uri) {
+  const u = new URL(uri);
+  return {
+    password: decodeURIComponent(u.password),
+    connArgs: [
+      "-h", u.hostname,
+      "-p", u.port || "5432",
+      "-U", decodeURIComponent(u.username),
+      "-d", u.pathname.replace(/^\//, "") || "postgres",
+    ],
+  };
+}
 
 function main() {
   const dbUrl = connectionString();
+  const { password, connArgs } = connectionParts(dbUrl);
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const outDir = join(OUT_ROOT, stamp);
   mkdirSync(outDir, { recursive: true });
@@ -97,20 +148,25 @@ function main() {
     const target = join(outDir, part.file);
     process.stdout.write(`  ${part.label}... `);
     try {
-      execFileSync(
-        "npx",
-        ["--yes", "supabase", "db", "dump", "--db-url", dbUrl, "-f", target, ...part.args],
-        { stdio: ["ignore", "pipe", "pipe"], shell: true }
-      );
+      // The connection string goes in via the environment, never on the
+      // command line, so the password cannot leak into a process list, a
+      // shell history or an error message that echoes its own arguments.
+      execFileSync(join(BIN, part.exe), [...part.args, ...connArgs, "-f", target], {
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env, PGCONNECT_TIMEOUT: "30", PGPASSWORD: password },
+      });
     } catch (e) {
-      // The connection string is in the command line, so the CLI's own error
-      // text can echo it back. Print only the last line, and never the args.
       const detail = String(e.stderr ?? e.message ?? "")
         .split(/\r?\n/)
         .filter(Boolean)
-        .pop();
+        .slice(-2)
+        .join(" ");
+      if (part.optional) {
+        console.log(`skipped — ${detail || "not permitted on a managed project"}`);
+        continue;
+      }
       console.log("FAILED");
-      console.error(`\n  ${detail ?? "unknown error"}`);
+      console.error(`\n  ${detail || "unknown error"}`);
       console.error("\nNothing further was dumped. The database was only read from, never written to.");
       process.exit(1);
     }
