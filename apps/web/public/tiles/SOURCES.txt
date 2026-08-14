@@ -1,0 +1,6 @@
+under-50.jpg   https://unsplash.com/photos/1549465220-1a8b9238cd48
+jewelry.jpg    https://unsplash.com/photos/1515562141207-7a88fb7ce338
+gift-sets.jpg  https://unsplash.com/photos/1513885535751-8b9238bd345a
+
+Unsplash licence: free for commercial use, no attribution required.
+Not yet wired to browse_tiles.image_url, and not deployed.
