@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+
 import { useAuth } from "../lib/auth";
-import { usePurchaseGiftCard, type DeliveryMethod } from "../hooks/useGiftCards";
+import { type DeliveryMethod } from "../hooks/useGiftCards";
+import { useAddGiftCardToCart } from "../hooks/useCart";
 import { formatMoney } from "../lib/money";
-import { QrCode } from "../components/QrCode";
-import { Button, ButtonLink, Chip } from "../components/ui";
+
+import { Button, ButtonLink, Chip, useToast } from "../components/ui";
 import { DigitalCardMock, EnvelopeCardArt } from "../components/giftcard/GiftCardArt";
 import { GiftNoteBlock, OCCASIONS, suggestionFor, type NoteValue, type Occasion } from "../components/giftcard/GiftNote";
 
 const AMOUNTS = [25, 50, 100, 150];
-const WHISH_NUMBER = "81 900 002";
 
 /** One input style, so a field never looks slightly different page to page. */
 const FIELD =
@@ -59,7 +59,8 @@ function DeliveryOption({
 
 export function GiftCardSend() {
   const { session, profile } = useAuth();
-  const purchase = usePurchaseGiftCard();
+  const addToCart = useAddGiftCardToCart();
+  const toast = useToast();
 
   const [amount, setAmount] = useState(50);
   const [customAmount, setCustomAmount] = useState("");
@@ -71,8 +72,6 @@ export function GiftCardSend() {
   });
   const [delivery, setDelivery] = useState<DeliveryMethod>("digital");
   const [error, setError] = useState<string | null>(null);
-  const [card, setCard] = useState<{ code: string; original_amount: number } | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const finalAmount = customAmount ? Number(customAmount) : amount;
 
@@ -88,82 +87,28 @@ export function GiftCardSend() {
     );
   }
 
-  if (card) {
-    const shareUrl = `${window.location.origin}/gift-cards/redeem?code=${encodeURIComponent(card.code)}`;
-    const shareText = `You've got a CADO gift card${note.from ? ` from ${note.from}` : ""}! Open this to redeem it: ${shareUrl}`;
-
-    const onShare = async () => {
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: "CADO gift card", text: shareText, url: shareUrl });
-          return;
-        } catch {
-          // user cancelled the share sheet — fall through to copy
-        }
-      }
-      await navigator.clipboard?.writeText(shareText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    };
-
-    return (
-      <div className="mx-auto max-w-md px-5 py-6 text-center">
-        <div className="rounded-sheet bg-ink p-6 text-inverse">
-          <p className="text-eyebrow uppercase text-gold">Cado gift card</p>
-          <p className="mt-4 font-display text-display">{formatMoney(card.original_amount)}</p>
-          <p className="mt-4 break-all font-display text-h1 tracking-[0.15em]">{card.code}</p>
-        </div>
-
-        <p className="mt-5 text-body text-muted">Gift card reserved</p>
-
-        {/* The card genuinely cannot be spent yet. Saying so here is the whole
-            point — the screen must not imply money has moved. */}
-        <div className="mt-3 rounded-card bg-surface-sunk p-4 text-left text-body">
-          <span className="font-medium">Not active yet.</span> It becomes spendable once we confirm your Whish
-          transfer to <span className="font-medium">{WHISH_NUMBER}</span>.
-        </div>
-
-        {delivery === "digital" ? (
-          <div className="mt-6 rounded-sheet bg-surface p-6 shadow-rest">
-            <p className="text-body font-medium">Share it{note.to ? ` with ${note.to}` : ""}</p>
-            <QrCode value={shareUrl} alt="Gift card QR code" className="mx-auto mt-4 h-[220px] w-[220px]" />
-            <p className="mt-3 text-caption text-muted">
-              Whoever opens the link goes straight to CADO and sees they've received this card.
-            </p>
-            <Button onClick={onShare} variant="dark" fullWidth className="mt-4">
-              {copied ? "Copied" : "Share"}
-            </Button>
-          </div>
-        ) : (
-          <div className="mt-6 rounded-sheet bg-surface p-6 text-body text-muted shadow-rest">
-            We'll deliver the printed card to your address, with your note inside the envelope.
-          </div>
-        )}
-
-        <Link to="/" className="mt-8 inline-block min-h-[44px] px-4 py-3 text-body text-muted underline">
-          Back to home
-        </Link>
-      </div>
-    );
-  }
-
+  /**
+   * A gift card is bought like anything else now: it goes in the bag, and
+   * the card itself is only created when the order is placed. Nothing here
+   * mints a card or moves any money.
+   */
   const submit = async () => {
     setError(null);
     if (!finalAmount || finalAmount <= 0) return setError("Choose an amount.");
-    // Match the server's limits (purchase_gift_card, migration 0021) so a
-    // custom amount fails here with a friendly line instead of a raw error.
+    // Match the database's own bound so a custom amount fails here with a
+    // friendly line instead of a raw constraint name.
     if (finalAmount < 10 || finalAmount > 500) {
       return setError("Gift cards can be $10 to $500.");
     }
     try {
-      const result = await purchase.mutateAsync({
+      await addToCart.mutateAsync({
         amount: finalAmount,
-        recipientName: note.to.trim() || undefined,
-        message: note.message.trim() || undefined,
         deliveryMethod: delivery,
-        buyerName: note.from.trim() || undefined,
+        noteTo: note.to,
+        noteFrom: note.from,
+        noteMessage: note.message,
       });
-      setCard(result);
+      toast("Gift card added", { label: "View cart", to: "/cart" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     }
@@ -244,11 +189,11 @@ export function GiftCardSend() {
         </p>
       ) : null}
 
-      <Button onClick={submit} disabled={purchase.isPending} fullWidth className="mt-8">
-        {purchase.isPending ? "Creating your card…" : `Pay ${formatMoney(finalAmount || 0)}`}
+      <Button onClick={submit} disabled={addToCart.isPending} variant="accent" fullWidth className="mt-8">
+        {addToCart.isPending ? "Adding…" : "Add to cart"}
       </Button>
       <p className="mt-3 text-center text-caption text-muted">
-        Pay by Whish transfer to {WHISH_NUMBER}. Gift cards are valid for 2 years from purchase.
+        Paid for at checkout, like anything else. Gift cards are valid for 2 years.
       </p>
       <div className="h-40" />
     </div>

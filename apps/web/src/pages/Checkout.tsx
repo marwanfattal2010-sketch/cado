@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useAddresses, useCart, useCreateAddress, usePlaceOrder, type PaymentMethod } from "../hooks/useCart";
+import { useAddresses, useCart, useCreateAddress, usePlaceOrder, usePlaceGiftCardOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
 import { CUTOFF_LABEL, getArea, getAddressDetails, sameDayOpen } from "../lib/area";
 import { useCadoHours, closedLabel } from "../hooks/useCadoHours";
@@ -77,6 +77,7 @@ export function Checkout() {
   const addresses = useAddresses();
   const createAddress = useCreateAddress();
   const placeOrder = usePlaceOrder();
+  const placeGiftCardOrder = usePlaceGiftCardOrder();
   const [params] = useSearchParams();
 
   const [isGift, setIsGift] = useState(false);
@@ -159,19 +160,50 @@ export function Checkout() {
    * any older link or bookmark working.
    */
   const storeFilter = params.get("store");
+
+  /**
+   * `?gift-cards=1` checks out the gift card cart instead of a store's.
+   * It goes to a different server function, because a gift card has no
+   * store, no stock and nobody to pay out — and the database refuses to let
+   * the two share an order at all.
+   */
+  const giftCardCheckout = !!params.get("gift-cards");
+
   const items = useMemo(() => {
     const all = cart.data ?? [];
-    return storeFilter ? all.filter((i) => i.product?.partner?.id === storeFilter) : all;
-  }, [cart.data, storeFilter]);
+    if (giftCardCheckout) return all.filter((i) => i.gift_card_amount_cents != null);
+    const store = all.filter((i) => i.gift_card_amount_cents == null);
+    return storeFilter ? store.filter((i) => i.product?.partner?.id === storeFilter) : store;
+  }, [cart.data, storeFilter, giftCardCheckout]);
 
   // Price times quantity. No wrap surcharge — CADO does not wrap, and a line
   // the server will not charge must never appear in a client total.
   const subtotal = useMemo(
-    () => items.reduce((sum, i) => sum + (i.product?.price ?? 0) * i.quantity, 0),
+    () =>
+      items.reduce(
+        (sum, i) =>
+          sum + (i.gift_card_amount_cents != null ? i.gift_card_amount_cents / 100 : (i.product?.price ?? 0)) * i.quantity,
+        0
+      ),
     [items]
   );
-  const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal + DELIVERY_FEE) : 0;
-  const total = Math.max(subtotal + DELIVERY_FEE - discount, 0);
+
+  /**
+   * A digital card is a link and a QR code — there is nothing to drive
+   * anywhere, so there is nothing to charge for driving it. This mirrors
+   * exactly what place_gift_card_order works out server-side, so the number
+   * on screen is the number charged.
+   */
+  const deliveryFee = useMemo(() => {
+    if (!giftCardCheckout) return DELIVERY_FEE;
+    const anyPhysical = items.some(
+      (i) => (i.customization as { delivery_method?: string } | null)?.delivery_method === "physical"
+    );
+    return anyPhysical ? DELIVERY_FEE : 0;
+  }, [giftCardCheckout, items]);
+
+  const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal + deliveryFee) : 0;
+  const total = Math.max(subtotal + deliveryFee - discount, 0);
   const savedAddress = addresses.data?.[0];
   // Going straight to the recipient means their address, so the saved one is
   // not offered — it is the wrong address by definition.
@@ -302,6 +334,22 @@ export function Checkout() {
 
       if (when === "preorder" && !preorderAt) {
         return setError("Choose when we should bring it.");
+      }
+
+      if (giftCardCheckout) {
+        const giftOrderId = await placeGiftCardOrder.mutateAsync({
+          deliveryAddressId: addressId,
+          addressSource: "buyer",
+          isGift,
+          recipientName: isGift ? recipientName.trim() : undefined,
+          recipientPhone: isGift ? recipientPhone.trim() : undefined,
+          deliverySlot: when === "now" ? "Now" : `Preorder ${preorderAt}`,
+          paymentMethod: payment,
+        });
+        navigate(`/order-confirmed/${giftOrderId}`, {
+          state: { recipientName: isGift ? recipientName.trim() : "", paymentMethod: payment },
+        });
+        return;
       }
 
       const orderId = await placeOrder.mutateAsync({
@@ -597,7 +645,7 @@ export function Checkout() {
         </div>
         <div className="mt-1 flex justify-between text-body text-muted">
           <span>Delivery</span>
-          <span>{formatMoney(DELIVERY_FEE)}</span>
+          <span>{formatMoney(deliveryFee)}</span>
         </div>
         {discount > 0 ? (
           <div className="mt-1 flex justify-between text-body text-today">
@@ -611,9 +659,13 @@ export function Checkout() {
         </div>
       </div>
 
+      {/* A gift card has no store behind it, so the store-confirmation
+          promise would be a lie here. What IS true of a card is that it
+          cannot be spent until we have seen the money. */}
       <p className="mt-4 text-caption text-muted">
-        We confirm every order with the store before dispatch. If something's unavailable we'll call you with
-        options, or refund immediately.
+        {giftCardCheckout
+          ? "The card becomes spendable once we've confirmed your payment. Until then it's reserved, not active."
+          : "We confirm every order with the store before dispatch. If something's unavailable we'll call you with options, or refund immediately."}
       </p>
 
       {/* Buyers abandon gifting checkouts out of fear they'll send it to

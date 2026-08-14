@@ -17,11 +17,98 @@ export function useCart() {
           // customization.gift_wrap is true — and nothing sets that flag.
           // The partner's slug and logo are here for the "Your carts" screen,
           // which shows one card per store with its real logo.
-          "id, quantity, customization, product:products(id, title, price, currency, partner:partners(id, name, slug, logo_url), product_images(storage_path, is_primary))"
+          //
+          // gift_card_amount_cents is null on every store line and set on
+          // every gift card line — that one column is what separates the two
+          // kinds of cart. A gift card line has no product and no store, by
+          // design: there is no shop that sells it.
+          "id, quantity, customization, gift_card_amount_cents, product:products(id, title, price, currency, partner:partners(id, name, slug, logo_url), product_images(storage_path, is_primary))"
         )
         .order("created_at");
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/**
+ * Put a gift card in the cart.
+ *
+ * The amount is written as cents into its own column, not into the free-text
+ * customization blob, because the database enforces a range on it and a
+ * CHECK guarantees a line is either a product or a gift card — never both.
+ * The note travels in `customization` exactly like a product's gift message
+ * does, and `place_gift_card_order` reads it back out when it mints the card.
+ *
+ * Nothing here creates a card or touches a balance. This only records what
+ * the shopper wants; the card itself is minted server-side at checkout.
+ */
+export function useAddGiftCardToCart() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      amount: number;
+      quantity?: number;
+      deliveryMethod: "digital" | "physical";
+      noteTo?: string;
+      noteFrom?: string;
+      noteMessage?: string;
+    }) => {
+      if (!session) throw new Error("Not signed in");
+      const { data, error } = await supabase
+        .from("cart_items")
+        .insert({
+          profile_id: session.user.id,
+          product_id: null,
+          gift_card_amount_cents: Math.round(input.amount * 100),
+          quantity: input.quantity ?? 1,
+          customization: {
+            delivery_method: input.deliveryMethod,
+            note_to: input.noteTo?.trim() || null,
+            note_from: input.noteFrom?.trim() || null,
+            note_message: input.noteMessage?.trim() || null,
+          },
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart"] }),
+  });
+}
+
+/** Checkout for the gift card cart. Store carts go through place_order. */
+export function usePlaceGiftCardOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      deliveryAddressId?: string | null;
+      notes?: string;
+      paymentMethod: PaymentMethod;
+      isGift?: boolean;
+      recipientName?: string;
+      recipientPhone?: string;
+      addressSource?: "buyer" | "recipient_whatsapp";
+      deliverySlot?: string;
+    }) => {
+      const { data, error } = await supabase.rpc("place_gift_card_order", {
+        p_delivery_address_id: input.deliveryAddressId ?? null,
+        p_notes: input.notes ?? null,
+        p_payment_method: input.paymentMethod,
+        p_is_gift: input.isGift ?? false,
+        p_recipient_name: input.recipientName ?? null,
+        p_recipient_phone: input.recipientPhone ?? null,
+        p_address_source: input.addressSource ?? "buyer",
+        p_delivery_time_slot: input.deliverySlot ?? null,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
   });
 }

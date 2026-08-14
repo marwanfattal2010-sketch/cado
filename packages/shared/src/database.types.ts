@@ -336,24 +336,27 @@ export type Database = {
         Row: {
           created_at: string
           customization: Json
+          gift_card_amount_cents: number | null
           id: string
-          product_id: string
+          product_id: string | null
           profile_id: string
           quantity: number
         }
         Insert: {
           created_at?: string
           customization?: Json
+          gift_card_amount_cents?: number | null
           id?: string
-          product_id: string
+          product_id?: string | null
           profile_id: string
           quantity?: number
         }
         Update: {
           created_at?: string
           customization?: Json
+          gift_card_amount_cents?: number | null
           id?: string
-          product_id?: string
+          product_id?: string | null
           profile_id?: string
           quantity?: number
         }
@@ -986,6 +989,45 @@ export type Database = {
             columns: ["sub_order_id"]
             isOneToOne: false
             referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_gift_cards: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          gift_card_id: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          gift_card_id: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          gift_card_id?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_gift_cards_gift_card_id_fkey"
+            columns: ["gift_card_id"]
+            isOneToOne: true
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_gift_cards_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -2127,6 +2169,19 @@ export type Database = {
           recipient_phone: string
         }[]
       }
+      place_gift_card_order: {
+        Args: {
+          p_address_source?: string
+          p_delivery_address_id?: string
+          p_delivery_time_slot?: string
+          p_is_gift?: boolean
+          p_notes?: string
+          p_payment_method?: string
+          p_recipient_name?: string
+          p_recipient_phone?: string
+        }
+        Returns: string
+      }
       place_order: {
         Args: {
           p_address_source?: string
@@ -2192,6 +2247,13 @@ export type Database = {
       refund_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      void_order_gift_cards: {
+        Args: { p_order_id: string }
+        Returns: {
+          gift_card_id: string
+          outcome: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

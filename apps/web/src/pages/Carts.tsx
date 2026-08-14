@@ -7,6 +7,8 @@ import { getArea, getAddressDetails } from "../lib/area";
 import { primaryImage } from "../lib/images";
 import { formatMoney } from "../lib/money";
 import { ButtonLink, RibbonEmpty } from "../components/ui";
+import { GiftIcon } from "../components/Icons";
+import { DigitalCardMock } from "../components/giftcard/GiftCardArt";
 
 type CartItem = NonNullable<ReturnType<typeof useCart>["data"]>[number];
 
@@ -204,6 +206,18 @@ export function Carts() {
   const hours = useCadoHours();
   const deliveryLine = useDeliveryLine();
 
+  /**
+   * The gift card cart. It is its own card because a gift card is not sold
+   * by anybody — there is no shop to drive to — so it can never share an
+   * order with store items. The database refuses that outright; this is
+   * just the screen agreeing with it.
+   */
+  const giftCards = useMemo(() => {
+    const lines = (cart.data ?? []).filter((i) => i.gift_card_amount_cents != null);
+    const total = lines.reduce((sum, i) => sum + ((i.gift_card_amount_cents ?? 0) / 100) * i.quantity, 0);
+    return { lines, total };
+  }, [cart.data]);
+
   const carts = useMemo<StoreCart[]>(() => {
     const map = new Map<string, StoreCart>();
     for (const item of cart.data ?? []) {
@@ -247,7 +261,7 @@ export function Carts() {
     );
   }
 
-  if (carts.length === 0) {
+  if (carts.length === 0 && giftCards.lines.length === 0) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <RibbonEmpty className="mx-auto h-14 w-14" />
@@ -272,6 +286,62 @@ export function Carts() {
       </p>
 
       <div className="mt-5 space-y-4">
+        {giftCards.lines.length > 0 ? (
+          <div className="overflow-hidden rounded-[16px] border border-line bg-surface">
+            {/* Always open: a digital card is not delivered by anybody, and
+                a printed one is posted with the next round. Neither waits on
+                a shop opening. */}
+            <div className="bg-persimmon/10 px-4 py-2 text-caption font-medium text-persimmon">Open</div>
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-pill bg-persimmon/10">
+                  <GiftIcon className="h-6 w-6 text-persimmon" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-display text-h2">CADO gift card</p>
+                  <p className="mt-0.5 truncate text-caption text-muted">
+                    {giftCards.lines.length === 1
+                      ? "Spendable at every store on CADO"
+                      : `${giftCards.lines.length} cards · spendable at every store on CADO`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                {giftCards.lines.slice(0, 4).map((line) => (
+                  <span key={line.id} className="h-12 w-[68px] shrink-0 overflow-hidden rounded-card">
+                    <DigitalCardMock
+                      amount={formatMoney((line.gift_card_amount_cents ?? 0) / 100)}
+                      className="h-full w-full"
+                    />
+                  </span>
+                ))}
+                {giftCards.lines.length > 4 ? (
+                  <span className="flex h-12 min-w-12 shrink-0 items-center justify-center rounded-card bg-persimmon px-2 text-caption font-semibold text-white">
+                    +{giftCards.lines.length - 4}
+                  </span>
+                ) : null}
+                <span className="ml-auto text-price">{formatMoney(giftCards.total)}</span>
+              </div>
+
+              <div className="mt-4 flex items-center gap-3">
+                <Link
+                  to="/gift-cards/send"
+                  className="flex min-h-[44px] flex-1 items-center justify-center text-body font-medium text-ink underline underline-offset-4"
+                >
+                  Add another
+                </Link>
+                <Link
+                  to="/cart?gift-cards=1"
+                  className="flex min-h-[44px] flex-1 items-center justify-center rounded-card bg-persimmon text-body font-medium text-white transition-transform duration-press ease-out active:scale-[0.98]"
+                >
+                  View cart
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {carts.map((c) => (
           <CartCard
             key={c.partnerId}

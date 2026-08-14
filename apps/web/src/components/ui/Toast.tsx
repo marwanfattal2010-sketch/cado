@@ -1,10 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 
-type Toast = { id: number; message: string };
+/** An optional way to act on what just happened — "Gift card added · View cart". */
+type ToastAction = { label: string; to: string };
+type Toast = { id: number; message: string; action?: ToastAction };
 
-const ToastContext = createContext<(message: string) => void>(() => {});
+const ToastContext = createContext<(message: string, action?: ToastAction) => void>(() => {});
 
-/** Call this from anywhere to confirm an action: toast("Added to cart"). */
+/** Call this from anywhere to confirm an action: toast("Added to cart").
+ *  Pass an action to offer somewhere to go: toast("Gift card added",
+ *  { label: "View cart", to: "/cart" }). */
 export function useToast() {
   return useContext(ToastContext);
 }
@@ -12,9 +17,9 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const toast = useCallback((message: string) => {
+  const toast = useCallback((message: string, action?: ToastAction) => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, message }]);
+    setToasts((t) => [...t, { id, message, action }]);
   }, []);
 
   return (
@@ -32,16 +37,30 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 2500);
+    // A toast carrying an action stays a little longer — it is offering
+    // something to tap, and 2.5s is not long enough to read it and reach it.
+    const t = setTimeout(onDone, toast.action ? 5000 : 2500);
     return () => clearTimeout(t);
-  }, [onDone]);
+  }, [onDone, toast.action]);
 
   return (
     <div
       role="status"
-      className="animate-toast-in rounded-pill bg-ink px-5 py-3 text-body text-inverse shadow-lift"
+      className="animate-toast-in flex items-center gap-3 rounded-pill bg-ink px-5 py-3 text-body text-inverse shadow-lift"
     >
       {toast.message}
+      {toast.action ? (
+        // pointer-events-auto: the container above is deliberately
+        // click-through so a toast never blocks the page, so the one thing
+        // meant to be tapped has to opt back in.
+        <Link
+          to={toast.action.to}
+          onClick={onDone}
+          className="pointer-events-auto shrink-0 font-medium text-gold underline underline-offset-4"
+        >
+          {toast.action.label}
+        </Link>
+      ) : null}
     </div>
   );
 }

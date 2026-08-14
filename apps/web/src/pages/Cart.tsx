@@ -4,7 +4,8 @@ import { useAuth } from "../lib/auth";
 import { primaryImage } from "../lib/images";
 import { formatMoney } from "../lib/money";
 import { useCart, useRemoveCartItem, useUpdateCartQuantity } from "../hooks/useCart";
-import { RibbonEmpty } from "../components/ui";
+import { ButtonLink, RibbonEmpty } from "../components/ui";
+import { DigitalCardMock } from "../components/giftcard/GiftCardArt";
 import { Carts } from "./Carts";
 
 const DELIVERY_FEE = 5;
@@ -215,5 +216,129 @@ function StoreCartView() {
  */
 export function Cart() {
   const [params] = useSearchParams();
+  if (params.get("gift-cards")) return <GiftCardCartView />;
   return params.get("store") ? <StoreCartView /> : <Carts />;
+}
+
+/**
+ * The gift card cart.
+ *
+ * Deliberately its own small screen rather than a branch inside the store
+ * cart: there is no store, no stock, no per-item gift note to summarise, and
+ * the thumbnail is the card itself rather than a photograph.
+ */
+function GiftCardCartView() {
+  const { session } = useAuth();
+  const navigate = useNavigate();
+  const cart = useCart();
+  const removeItem = useRemoveCartItem();
+  const updateQuantity = useUpdateCartQuantity();
+
+  const lines = useMemo(
+    () => (cart.data ?? []).filter((i) => i.gift_card_amount_cents != null),
+    [cart.data]
+  );
+  const total = useMemo(
+    () => lines.reduce((sum, i) => sum + ((i.gift_card_amount_cents ?? 0) / 100) * i.quantity, 0),
+    [lines]
+  );
+
+  if (!session) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16 text-center">
+        <h1 className="font-display text-h1">Your gift cards</h1>
+        <ButtonLink to="/login" variant="accent" className="mt-6">
+          Log in
+        </ButtonLink>
+      </div>
+    );
+  }
+
+  if (lines.length === 0) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16 text-center">
+        <h1 className="font-display text-h1">No gift cards in your bag</h1>
+        <ButtonLink to="/gift-cards/send" variant="accent" className="mt-6">
+          Choose an amount
+        </ButtonLink>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-6 pb-32">
+      <h1 className="font-display text-h1">CADO gift card</h1>
+      <p className="mt-1 text-caption text-muted">
+        Spendable at every store on CADO. Checked out on its own, because it doesn't come from a shop.
+      </p>
+
+      <div className="mt-5 space-y-2">
+        {lines.map((line) => {
+          const amount = (line.gift_card_amount_cents ?? 0) / 100;
+          const c = line.customization as { delivery_method?: string; note_to?: string | null } | null;
+          return (
+            <div key={line.id} className="flex gap-3 rounded-card border border-line bg-surface p-3">
+              <span className="h-20 w-[120px] shrink-0 overflow-hidden rounded-card">
+                <DigitalCardMock amount={formatMoney(amount)} className="h-full w-full" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-product-name">CADO gift card — {formatMoney(amount)}</p>
+                <p className="mt-0.5 text-caption text-muted">
+                  {c?.delivery_method === "physical" ? "Real card, delivered" : "Digital card"}
+                  {c?.note_to ? ` · for ${c.note_to}` : ""}
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="inline-flex items-center rounded-pill bg-surface-sunk">
+                    <button
+                      aria-label="Decrease quantity"
+                      onClick={() =>
+                        line.quantity > 1
+                          ? updateQuantity.mutate({ id: line.id, quantity: line.quantity - 1 })
+                          : removeItem.mutate(line.id)
+                      }
+                      className="h-8 w-8 text-body"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-6 text-center text-caption font-medium">{line.quantity}</span>
+                    <button
+                      aria-label="Increase quantity"
+                      onClick={() => updateQuantity.mutate({ id: line.id, quantity: Math.min(20, line.quantity + 1) })}
+                      className="h-8 w-8 text-body"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button onClick={() => removeItem.mutate(line.id)} className="text-caption text-muted underline">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 rounded-card border border-line bg-surface p-4">
+        <div className="flex justify-between text-price">
+          <span>Total</span>
+          <span>{formatMoney(total)}</span>
+        </div>
+        <p className="mt-2 text-caption text-muted">
+          Digital cards have no delivery fee. A printed card is delivered like any other order.
+        </p>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] z-30 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur">
+        <div className="mx-auto max-w-2xl">
+          <button
+            onClick={() => navigate("/checkout?gift-cards=1")}
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-persimmon text-body font-medium text-white transition-all duration-fast active:scale-[0.98]"
+          >
+            Checkout — {formatMoney(total)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
