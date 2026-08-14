@@ -33,7 +33,34 @@ Branch everything is on: `prompt-10-storefront` (also pushed to `main` and
 
 ---
 
-## NEXT SESSION — one job only: a gift card in the cart (spec 9.1 / 9.2)
+## ⚠ TASK 1 — DOUBLE-TAP CAN CREATE TWO ORDERS. THIS IS LIVE NOW.
+
+Not a footnote. This is the worst thing in this batch and it is already on
+the live site, independent of the gift card work.
+
+**What happens:** `place_order` reads the cart, writes the order, then
+deletes the cart — all in one transaction. A second tap a moment later finds
+an empty cart and stops, which is why this has not been noticed. But two
+SIMULTANEOUS calls — a double-tap, or a phone retrying on bad signal — both
+read the cart before either commits. Both succeed. **Two orders, two
+charges, one payment.** Once gift cards are minted at checkout it becomes
+two cards for one payment as well.
+
+**The fix, and it is small:** take a row lock on the cart lines at the very
+top of `place_order`, before anything else:
+
+    perform 1 from cart_items where profile_id = auth.uid() for update;
+
+The second transaction then blocks until the first commits, finds no rows,
+and stops on the "cart is empty" check that is already there. No new error
+path, no new state.
+
+**Prove it:** fire two identical `place_order` calls concurrently against a
+one-item cart and confirm exactly one order exists afterwards. Do not accept
+"the button is disabled while pending" as the fix — that is the browser, and
+the browser is not the boundary.
+
+## TASK 2 — a gift card in the cart (spec 9.1 / 9.2)
 
 Start fresh. Do not touch anything else. Marwan's rule, in his words: no
 fake product row and no fake store to stand in for a gift card. No fake data
