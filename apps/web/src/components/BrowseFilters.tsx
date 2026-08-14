@@ -135,9 +135,18 @@ function inBand(p: FilterableProduct, slug: string) {
 /* The bar                                                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Filter controls are solid rectangles, not pills: 4px corners, cream with a
+ * near-black hairline when off, a solid Persimmon fill with white text when
+ * on. Height and padding are unchanged from the pill version — only the
+ * shape and the colour moved.
+ *
+ * The round chips on Home are a different control and stay round; nothing
+ * here is shared with them.
+ */
 const PILL =
-  "inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-pill border px-3.5 text-[13px] font-medium transition-colors";
-const PILL_OFF = "border-line bg-surface text-ink";
+  "inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-[4px] border px-3.5 text-[13px] font-medium transition-colors";
+const PILL_OFF = "border-ink bg-canvas text-ink";
 const PILL_ON = "border-persimmon bg-persimmon text-white";
 
 export function BrowseFilterBar({
@@ -322,7 +331,7 @@ export function BrowseFilterPanel({
         onApply(draft);
         onClose();
       }}
-      className="h-[52px] w-full rounded-pill bg-persimmon text-body font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-surface-sunk disabled:text-muted"
+      className="h-[52px] w-full rounded-[4px] bg-persimmon text-body font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-surface-sunk disabled:text-muted"
     >
       {count === 0 ? "No matches" : `Show ${count} item${count === 1 ? "" : "s"}`}
     </button>
@@ -345,9 +354,9 @@ export function BrowseFilterPanel({
         <button
           type="button"
           onClick={() => setDraft(NO_FILTERS)}
-          className="flex h-11 items-center px-2 text-caption font-medium text-persimmon"
+          className="flex h-11 items-center px-2 text-caption font-medium text-ink"
         >
-          Clear
+          Clear all
         </button>
       </div>
 

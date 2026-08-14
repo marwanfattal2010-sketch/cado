@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
+import { formatMoney } from "../lib/money";
 
 const STORAGE_KEY = "cado-gift-card";
 
@@ -74,7 +75,7 @@ export function GiftCardRedeem() {
           <p className="text-eyebrow uppercase text-gold">
             {result.fromName ? `A gift from ${result.fromName}` : "Gift card ready"}
           </p>
-          <p className="mt-4 font-display text-display">USD {result.balance.toFixed(2)}</p>
+          <p className="mt-4 font-display text-display">{formatMoney(result.balance)}</p>
           {result.message ? <p className="mt-3 text-body text-inverse/70">"{result.message}"</p> : null}
         </div>
         <p className="mx-auto mt-6 max-w-xs text-body text-muted">

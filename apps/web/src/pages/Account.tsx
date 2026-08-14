@@ -59,7 +59,7 @@ function HowCadoWorks() {
       <div className="mt-4 grid grid-cols-3 gap-2">
         {HOW_IT_WORKS.map((s) => (
           <div key={s.n} className="rounded-card bg-surface p-3 text-center shadow-rest">
-            <s.Icon className="mx-auto h-5 w-5 text-muted" />
+            <s.Icon className="mx-auto h-5 w-5 text-persimmon" />
             <p className="mt-1.5 text-caption font-semibold">{s.title}</p>
             <p className="mt-0.5 text-[11px] leading-snug text-muted">{s.desc}</p>
           </div>
@@ -72,13 +72,31 @@ function HowCadoWorks() {
             key={w.label}
             className="flex flex-col items-center gap-2 rounded-card bg-surface py-5 text-center shadow-rest"
           >
-            <w.Icon className="h-6 w-6 text-muted" />
+            <w.Icon className="h-6 w-6 text-persimmon" />
             <span className="text-caption font-medium text-muted">{w.label}</span>
           </div>
         ))}
       </div>
     </section>
   );
+}
+
+/**
+ * Up to two initials. A full name gives first + last, one word gives one
+ * letter, and an email address falls back to its first letter — which is
+ * what someone who signed up without a name actually has.
+ */
+function initialsOf(name: string | null | undefined): string {
+  // Letters and digits only. The demo admin is stored as "[DEMO] CADO Admin",
+  // which by first-character-of-each-word gives "[A" — a bracket is not an
+  // initial, and any punctuation someone puts in their name would do the same.
+  const words = (name ?? "")
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ""))
+    .filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].charAt(0).toUpperCase();
+  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
 }
 
 /** Every row in the account list is the same shape, so the 52px height and
@@ -91,7 +109,7 @@ function Row({ to, Icon, label, first }: { to: string; Icon: typeof HelpIcon; la
         first ? "" : "border-t border-line"
       }`}
     >
-      <Icon className="h-5 w-5 text-muted" />
+      <Icon className="h-5 w-5 text-persimmon" />
       <span className="flex-1 text-body">{label}</span>
       <span aria-hidden className="text-muted">
         ›
@@ -260,7 +278,7 @@ export function Account() {
         <h1 className="mt-4 font-display text-h1">Your account</h1>
         <p className="mt-2 text-body text-muted">Log in to manage your orders and details.</p>
         <div className="mt-6 flex flex-col gap-3">
-          <ButtonLink to="/login" fullWidth>
+          <ButtonLink to="/login" variant="accent" fullWidth>
             Log in
           </ButtonLink>
           <ButtonLink to="/signup" variant="secondary" fullWidth>
@@ -296,13 +314,17 @@ export function Account() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-6">
-      <div className="flex items-center gap-4 rounded-sheet bg-ink px-6 py-7 text-inverse">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-pill bg-gold font-display text-h1 text-ink">
-          {(name ?? "?").charAt(0).toUpperCase()}
+      {/* The black block is gone. It was the heaviest thing on a cream page
+          and it made the account screen read as a different app. Cream card,
+          hairline, and the only colour is the Persimmon monogram. Nothing
+          else lives in this card. */}
+      <div className="flex items-center gap-4 rounded-[16px] border border-line bg-surface px-6 py-6">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-pill bg-persimmon/10 font-display text-h2 text-persimmon">
+          {initialsOf(name)}
         </div>
         <div className="min-w-0">
-          <p className="truncate font-display text-h2">{name}</p>
-          <p className="truncate text-body text-inverse/60">{session.user.email}</p>
+          <p className="truncate font-display text-[20px] leading-tight text-ink">{name}</p>
+          <p className="truncate text-[13px] text-muted">{session.user.email}</p>
         </div>
       </div>
 
@@ -349,14 +371,14 @@ export function Account() {
           to="/orders"
           className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
         >
-          <OrdersIcon className="h-4 w-4 text-muted" />
+          <OrdersIcon className="h-4 w-4 text-persimmon" />
           My orders
         </Link>
         <Link
           to="/gift-cards"
           className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
         >
-          <GiftIcon className="h-4 w-4 text-muted" />
+          <GiftIcon className="h-4 w-4 text-persimmon" />
           Gift cards
         </Link>
       </div>

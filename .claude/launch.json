@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "apps/web"],
       "port": 5173
+    },
+    {
+      "name": "cado-web-verify",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "apps/web", "--", "--port", "5199", "--strictPort"],
+      "port": 5199
     }
   ]
 }

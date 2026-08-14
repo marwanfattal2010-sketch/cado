@@ -66,8 +66,10 @@ export function RemovableChip({ onRemove, children }: { onRemove: () => void; ch
     <button
       type="button"
       onClick={onRemove}
-      /* h-[32px], not h-8: this project's spacing scale maps 8 to 64px. */
-      className="tap-44 inline-flex h-[32px] shrink-0 items-center gap-1.5 rounded-pill border border-primary bg-primary px-3 text-caption font-medium text-inverse transition-all duration-press ease-out active:scale-[0.97]"
+      /* h-[32px], not h-8: this project's spacing scale maps 8 to 64px.
+         Square-cornered and Persimmon: one of these only exists because a
+         filter IS applied, so it is always the active state. */
+      className="tap-44 inline-flex h-[32px] shrink-0 items-center gap-1.5 rounded-[4px] bg-persimmon px-3 text-caption font-medium text-white transition-all duration-press ease-out active:scale-[0.97]"
     >
       {children}
       <span aria-hidden className="text-[13px] leading-none opacity-70">

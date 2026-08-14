@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
 import { CUTOFF_LABEL, getArea, getAddressDetails, sameDayOpen } from "../lib/area";
+import { useCadoHours, closedLabel } from "../hooks/useCadoHours";
 import { formatMoney } from "../lib/money";
 
 const PAYMENTS: { value: PaymentMethod; label: string; note: string }[] = [
@@ -76,6 +77,7 @@ export function Checkout() {
   const addresses = useAddresses();
   const createAddress = useCreateAddress();
   const placeOrder = usePlaceOrder();
+  const [params] = useSearchParams();
 
   const [isGift, setIsGift] = useState(false);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
@@ -87,25 +89,44 @@ export function Checkout() {
   const [checkingCard, setCheckingCard] = useState(false);
 
   /**
-   * WHEN. Only two answers.
+   * WHEN. There is no date picker any more, and no "pick a date".
    *
-   * "Now" is only truthful while the same-day window is open — before
-   * midnight, and not during the 00:00–08:00 overnight blackout (see
-   * lib/area). Outside it there is no same-day slot left to sell, so the
-   * date picker is the only option and the earliest date it allows is
-   * tomorrow.
+   * CADO has one opening window for every store, decided in Postgres in
+   * Beirut time (app_settings, migration 0045). While it is open, "Now" is
+   * the only honest answer — there is nothing else to offer. While it is
+   * closed, everything is a preorder and the earliest moment we can promise
+   * is the next opening time, so that is where the picker starts.
+   *
+   * The device clock is never the authority here: `place_order` rejects a
+   * "Now" order placed outside the window whatever the browser believed.
+   * Until 0045 is applied the window is unknown, and the old same-day rule
+   * in lib/area stands in — it is stricter, never looser.
    */
-  const sameDayAvailable = sameDayOpen();
-  const [when, setWhen] = useState<"now" | "date">(sameDayAvailable ? "now" : "date");
-  const [deliveryDate, setDeliveryDate] = useState("");
+  const hours = useCadoHours();
+  const hoursWindow = hours.data ?? { known: false as const };
+  const isOpenNow = hoursWindow.known ? hoursWindow.isOpen : sameDayOpen();
+  const nextOpen = hoursWindow.known ? hoursWindow.nextOpenAt : null;
 
-  /** Tomorrow, in the input's own yyyy-mm-dd format and in LOCAL time —
-   *  toISOString() would roll the date back for anyone east of UTC. */
-  const earliestDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }, []);
+  const [when, setWhen] = useState<"now" | "preorder">("now");
+  const [preorderAt, setPreorderAt] = useState("");
+
+  // Whenever the window closes under the shopper — they left the page open
+  // past 9pm — "Now" stops being offered and this follows it.
+  useEffect(() => {
+    if (!isOpenNow) setWhen("preorder");
+  }, [isOpenNow]);
+
+  /**
+   * The earliest bookable moment, in the format datetime-local wants
+   * (yyyy-MM-ddTHH:mm) and in LOCAL time — toISOString() would shift it by
+   * the timezone offset and offer a slot before we open.
+   */
+  const earliestSlot = useMemo(() => {
+    const d = nextOpen ? new Date(nextOpen) : new Date(Date.now() + 60 * 60 * 1000);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }, [nextOpen]);
 
   /** Whether to offer the saved address or the typed form. Repeat orders
    *  should be two taps, so a saved address wins by default. */
@@ -128,7 +149,21 @@ export function Checkout() {
     };
   });
 
-  const items = cart.data ?? [];
+  /**
+   * Checkout is per store. `?store=<partner id>` scopes this page to one
+   * cart, and the same id is handed to place_order so the server orders and
+   * empties that store only — the shopper's other carts are untouched and
+   * still there when they come back.
+   *
+   * Without the parameter this behaves exactly as it always did, which keeps
+   * any older link or bookmark working.
+   */
+  const storeFilter = params.get("store");
+  const items = useMemo(() => {
+    const all = cart.data ?? [];
+    return storeFilter ? all.filter((i) => i.product?.partner?.id === storeFilter) : all;
+  }, [cart.data, storeFilter]);
+
   // Price times quantity. No wrap surcharge — CADO does not wrap, and a line
   // the server will not charge must never appear in a client total.
   const subtotal = useMemo(
@@ -138,7 +173,25 @@ export function Checkout() {
   const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal + DELIVERY_FEE) : 0;
   const total = Math.max(subtotal + DELIVERY_FEE - discount, 0);
   const savedAddress = addresses.data?.[0];
-  const showSaved = !!savedAddress && useSaved;
+  // Going straight to the recipient means their address, so the saved one is
+  // not offered — it is the wrong address by definition.
+  const showSaved = !!savedAddress && useSaved && !isGift;
+
+  /**
+   * Cash on delivery disappears when the gift goes straight to the person
+   * receiving it. Asking someone to pay for their own present at the door is
+   * the one thing this option must never do.
+   *
+   * Whish and OMT stay: both are manual transfers the buyer makes before
+   * delivery, which is exactly how gift cards are already paid for.
+   */
+  const payments = useMemo(() => PAYMENTS.filter((p) => !(isGift && p.value === "cod")), [isGift]);
+
+  useEffect(() => {
+    // If they had already chosen cash and then switched the destination, move
+    // them off it rather than silently sending an order we would refuse.
+    if (isGift && payment === "cod") setPayment("whish");
+  }, [isGift, payment]);
 
   /**
    * The gift choices made per item on the product page, summarised for the
@@ -247,8 +300,8 @@ export function Checkout() {
         addressId = (created as { id: string }).id;
       }
 
-      if (when === "date" && !deliveryDate) {
-        return setError("Pick the delivery date.");
+      if (when === "preorder" && !preorderAt) {
+        return setError("Choose when we should bring it.");
       }
 
       const orderId = await placeOrder.mutateAsync({
@@ -262,9 +315,11 @@ export function Checkout() {
         // Both derived from what was chosen per item on the product page.
         hidePrice: giftNotes.anyHidden,
         giftMessage: giftNotes.messages[0],
-        deliverySlot: when === "now" ? "Now" : `On ${deliveryDate}`,
+        // "Now" is the exact word the server-side window check looks for.
+        deliverySlot: when === "now" ? "Now" : `Preorder ${preorderAt}`,
         paymentMethod: payment,
         giftCardCode: giftCardBalance !== null ? giftCardCode.trim() : undefined,
+        partnerId: storeFilter,
       });
       sessionStorage.removeItem("cado-gift-card");
       navigate(`/order-confirmed/${orderId}`, {
@@ -280,17 +335,42 @@ export function Checkout() {
       <h1 className="font-display text-h1">Checkout</h1>
 
       <Section n="①" title="Delivery address">
-        {/* One toggle, at the top, because it changes what the fields below
-            mean. No second set of recipient fields. */}
-        <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-body">
-          <input
-            type="checkbox"
-            checked={isGift}
-            onChange={(e) => setIsGift(e.target.checked)}
-            className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
-          />
-          This is a gift — deliver to someone else
-        </label>
+        {/* One question, not a checkbox with a sentence hanging off it. It
+            changes what every field below means, so it is asked plainly and
+            first. */}
+        <p className="mb-2 text-body font-medium">Where should it go?</p>
+        <div className="mb-3 flex flex-col gap-2">
+          <label className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 text-body">
+            <input
+              type="radio"
+              name="destination"
+              checked={!isGift}
+              onChange={() => setIsGift(false)}
+              className="h-4 w-4 shrink-0 accent-[color:rgb(var(--persimmon))]"
+            />
+            <span>
+              To me
+              <span className="mt-0.5 block text-caption text-muted">
+                We deliver it to your address and you hand it over.
+              </span>
+            </span>
+          </label>
+          <label className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 text-body">
+            <input
+              type="radio"
+              name="destination"
+              checked={isGift}
+              onChange={() => setIsGift(true)}
+              className="h-4 w-4 shrink-0 accent-[color:rgb(var(--persimmon))]"
+            />
+            <span>
+              Straight to them
+              <span className="mt-0.5 block text-caption text-muted">
+                We deliver it to the person receiving the gift.
+              </span>
+            </span>
+          </label>
+        </div>
 
         {showSaved ? (
           /* A repeat order is two taps: this, then Place order. */
@@ -375,51 +455,37 @@ export function Checkout() {
           {/* "Now" disappears entirely outside the same-day window rather
               than sitting there disabled — an option you cannot pick is a
               question you should not have been asked. */}
-          {sameDayAvailable ? (
-            <label className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 text-body">
-              <input
-                type="radio"
-                name="when"
-                checked={when === "now"}
-                onChange={() => setWhen("now")}
-                className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
-              />
+          {/* While CADO is open, Now is the only option — so it is the only
+              thing on screen, not a radio pair with one dead half. */}
+          {isOpenNow ? (
+            <div className="flex min-h-[52px] items-center gap-2.5 rounded-card border border-persimmon bg-surface px-3 text-body">
+              <span aria-hidden className="text-persimmon">
+                ●
+              </span>
               <span>
                 Now
                 <span className="mt-0.5 block text-caption text-muted">
                   Today, if you order before {CUTOFF_LABEL}
                 </span>
               </span>
-            </label>
-          ) : null}
-
-          <label className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 text-body">
-            <input
-              type="radio"
-              name="when"
-              checked={when === "date"}
-              onChange={() => setWhen("date")}
-              className="h-4 w-4 shrink-0 accent-[color:rgb(var(--primary))]"
-            />
-            <span>
-              Pick a date
-              {!sameDayAvailable ? (
-                <span className="mt-0.5 block text-caption text-muted">
-                  Same-day has closed for tonight — earliest is tomorrow.
-                </span>
-              ) : null}
-            </span>
-          </label>
-
-          {when === "date" ? (
-            <input
-              type="date"
-              min={earliestDate}
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-              className={FIELD}
-            />
-          ) : null}
+            </div>
+          ) : (
+            <>
+              <div className="flex min-h-[52px] items-center gap-2.5 rounded-card border border-line bg-surface-sunk px-3 text-body text-muted">
+                {closedLabel(hoursWindow) ?? "Closed right now — this will be a preorder."}
+              </div>
+              <label className="mt-1 block">
+                <span className="mb-1 block text-caption text-muted">Preorder for</span>
+                <input
+                  type="datetime-local"
+                  min={earliestSlot}
+                  value={preorderAt}
+                  onChange={(e) => setPreorderAt(e.target.value)}
+                  className={FIELD}
+                />
+              </label>
+            </>
+          )}
         </div>
       </Section>
 
@@ -427,7 +493,7 @@ export function Checkout() {
         <div className="flex flex-col gap-2">
           {/* Plain rows on a hairline, not raised cards. Four shadowed
               panels in a column read as four separate things to decide. */}
-          {PAYMENTS.map((p) => (
+          {payments.map((p) => (
             <label
               key={p.value}
               className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 py-2 text-body"

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useAdminMoneySummary, useReconcileGiftCards } from "../hooks/useAdminMoney";
+import { formatMoney } from "../lib/money";
 
 // Server-side is_admin() is the real gate (see admin_money_summary /
 // reconcile_gift_cards) — this page just hides the UI for everyone else.
@@ -44,7 +45,7 @@ export function AdminMoney() {
       <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-card bg-ink p-5 text-cream">
           <p className="text-xs text-cream/60">Outstanding gift card liability</p>
-          <p className="mt-2 font-display text-2xl font-semibold">USD {Number(liability).toFixed(2)}</p>
+          <p className="mt-2 font-display text-2xl font-semibold">{formatMoney(liability)}</p>
           <p className="mt-1 text-xs text-cream/50">{activeCount} active cards — money customers can still spend</p>
         </div>
         {/* ring-ink/[0.08], not ring-ink/8: Tailwind's opacity scale only has
@@ -52,7 +53,7 @@ export function AdminMoney() {
             arbitrary value keeps the 8% that was intended here. */}
         <div className="rounded-card bg-white p-5 ring-1 ring-ink/[0.08]">
           <p className="text-xs text-ink/50">Awaiting payment confirmation</p>
-          <p className="mt-2 font-display text-2xl font-semibold">USD {Number(pending).toFixed(2)}</p>
+          <p className="mt-2 font-display text-2xl font-semibold">{formatMoney(pending)}</p>
           <p className="mt-1 text-xs text-ink/40">Not spendable yet, not counted as liability yet</p>
         </div>
         <div className={`rounded-card p-5 ring-1 ${mismatches.length ? "bg-red-50 ring-red-200" : "bg-emerald-50 ring-emerald-200"}`}>
@@ -94,11 +95,11 @@ export function AdminMoney() {
             {rows.map((r) => (
               <tr key={r.store_id} className="border-b border-ink/5 last:border-0">
                 <td className="px-4 py-3 font-medium">{r.store_name}</td>
-                <td className="px-4 py-3">USD {Number(r.store_gross_total).toFixed(2)}</td>
-                <td className="px-4 py-3 text-ink/50">USD {Number(r.store_commission_total).toFixed(2)}</td>
-                <td className="px-4 py-3">USD {Number(r.store_net_owed_total).toFixed(2)}</td>
-                <td className="px-4 py-3 text-emerald-700">USD {Number(r.store_net_paid_total).toFixed(2)}</td>
-                <td className="px-4 py-3 font-medium text-red-600">USD {Number(r.store_net_unpaid_total).toFixed(2)}</td>
+                <td className="px-4 py-3">{formatMoney(r.store_gross_total)}</td>
+                <td className="px-4 py-3 text-ink/50">{formatMoney(r.store_commission_total)}</td>
+                <td className="px-4 py-3">{formatMoney(r.store_net_owed_total)}</td>
+                <td className="px-4 py-3 text-emerald-700">{formatMoney(r.store_net_paid_total)}</td>
+                <td className="px-4 py-3 font-medium text-red-600">{formatMoney(r.store_net_unpaid_total)}</td>
               </tr>
             ))}
           </tbody>

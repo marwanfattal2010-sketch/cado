@@ -15,7 +15,9 @@ export function useCart() {
           // wrapping, so no screen has a total to add it to. The column still
           // exists and place_order still reads it, but only when
           // customization.gift_wrap is true — and nothing sets that flag.
-          "id, quantity, customization, product:products(id, title, price, currency, partner:partners(id, name), product_images(storage_path, is_primary))"
+          // The partner's slug and logo are here for the "Your carts" screen,
+          // which shows one card per store with its real logo.
+          "id, quantity, customization, product:products(id, title, price, currency, partner:partners(id, name, slug, logo_url), product_images(storage_path, is_primary))"
         )
         .order("created_at");
       if (error) throw error;
@@ -143,6 +145,13 @@ export function usePlaceOrder() {
       hidePrice?: boolean;
       giftMessage?: string;
       deliverySlot?: string;
+      /**
+       * Which store's cart is being checked out. Omitted, the server orders
+       * the whole cart exactly as it always did; set, it orders and empties
+       * only that store — see p_partner_id in migration 0047. One order is
+       * one store because one delivery is one trip.
+       */
+      partnerId?: string | null;
     }) => {
       const { data, error } = await supabase.rpc("place_order", {
         p_delivery_address_id: input.deliveryAddressId ?? null,
@@ -156,6 +165,7 @@ export function usePlaceOrder() {
         p_hide_price: input.hidePrice ?? false,
         p_gift_message: input.giftMessage ?? null,
         p_delivery_time_slot: input.deliverySlot ?? null,
+        p_partner_id: input.partnerId ?? null,
       });
       if (error) throw error;
       return data as string;

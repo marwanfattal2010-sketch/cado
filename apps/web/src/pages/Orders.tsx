@@ -3,6 +3,7 @@ import { useOrders } from "../hooks/useOrders";
 import { OrdersIcon } from "../components/Icons";
 import { Skeleton } from "../components/Skeleton";
 import { ButtonLink } from "../components/ui";
+import { formatMoney } from "../lib/money";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",
@@ -112,7 +113,7 @@ export function Orders() {
                         <span className="truncate">
                           {item.quantity} × {item.product_title_snapshot}
                         </span>
-                        <span className="shrink-0 pl-3">USD {Number(item.line_total).toFixed(2)}</span>
+                        <span className="shrink-0 pl-3">{formatMoney(item.line_total)}</span>
                       </li>
                     ))}
                   </ul>
@@ -121,7 +122,7 @@ export function Orders() {
 
               <div className="mt-3 flex justify-between border-t border-line pt-3 text-body font-semibold">
                 <span>Total</span>
-                <span>USD {Number(order.total).toFixed(2)}</span>
+                <span>{formatMoney(order.total)}</span>
               </div>
             </div>
           ))}

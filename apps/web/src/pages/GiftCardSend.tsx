@@ -2,16 +2,60 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { usePurchaseGiftCard, type DeliveryMethod } from "../hooks/useGiftCards";
+import { formatMoney } from "../lib/money";
 import { QrCode } from "../components/QrCode";
 import { Button, ButtonLink, Chip } from "../components/ui";
+import { DigitalCardMock, EnvelopeCardArt } from "../components/giftcard/GiftCardArt";
+import { GiftNoteBlock, OCCASIONS, suggestionFor, type NoteValue, type Occasion } from "../components/giftcard/GiftNote";
 
 const AMOUNTS = [25, 50, 100, 150];
-const SUGGESTED = ["Happy birthday!", "Congratulations!", "Best wishes", "Thinking of you"];
 const WHISH_NUMBER = "81 900 002";
 
 /** One input style, so a field never looks slightly different page to page. */
 const FIELD =
   "w-full rounded-card border border-line bg-surface px-4 py-3.5 text-body outline-none transition focus:border-ink/35";
+
+/**
+ * One delivery option. Selected is a 2px Persimmon edge and a filled tick,
+ * not a solid fill — filling it would drown the drawing that is the whole
+ * reason the tile is this size.
+ */
+function DeliveryOption({
+  selected,
+  onSelect,
+  title,
+  desc,
+  children,
+}: {
+  selected: boolean;
+  onSelect: () => void;
+  title: string;
+  desc: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={`relative w-full rounded-[12px] bg-surface p-4 text-left transition-transform duration-press ease-out active:scale-[0.98] ${
+        selected ? "border-2 border-persimmon" : "border border-line"
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-pill text-[13px] font-bold text-white ${
+          selected ? "bg-persimmon" : "hidden"
+        }`}
+      >
+        ✓
+      </span>
+      <span className="block">{children}</span>
+      <span className="mt-3 block font-display text-h2">{title}</span>
+      <span className="mt-1 block text-caption leading-snug text-muted">{desc}</span>
+    </button>
+  );
+}
 
 export function GiftCardSend() {
   const { session, profile } = useAuth();
@@ -19,10 +63,13 @@ export function GiftCardSend() {
 
   const [amount, setAmount] = useState(50);
   const [customAmount, setCustomAmount] = useState("");
-  const [message, setMessage] = useState("");
+  const [occasion, setOccasion] = useState<Occasion>("birthday");
+  const [note, setNote] = useState<NoteValue>({
+    to: "",
+    from: profile?.full_name ?? "",
+    message: suggestionFor("birthday", ""),
+  });
   const [delivery, setDelivery] = useState<DeliveryMethod>("digital");
-  const [fromName, setFromName] = useState(profile?.full_name ?? "");
-  const [recipientName, setRecipientName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [card, setCard] = useState<{ code: string; original_amount: number } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -43,7 +90,7 @@ export function GiftCardSend() {
 
   if (card) {
     const shareUrl = `${window.location.origin}/gift-cards/redeem?code=${encodeURIComponent(card.code)}`;
-    const shareText = `You've got a CADO gift card${fromName ? ` from ${fromName}` : ""}! Open this to redeem it: ${shareUrl}`;
+    const shareText = `You've got a CADO gift card${note.from ? ` from ${note.from}` : ""}! Open this to redeem it: ${shareUrl}`;
 
     const onShare = async () => {
       if (navigator.share) {
@@ -63,7 +110,7 @@ export function GiftCardSend() {
       <div className="mx-auto max-w-md px-5 py-6 text-center">
         <div className="rounded-sheet bg-ink p-6 text-inverse">
           <p className="text-eyebrow uppercase text-gold">Cado gift card</p>
-          <p className="mt-4 font-display text-display">USD {Number(card.original_amount).toFixed(2)}</p>
+          <p className="mt-4 font-display text-display">{formatMoney(card.original_amount)}</p>
           <p className="mt-4 break-all font-display text-h1 tracking-[0.15em]">{card.code}</p>
         </div>
 
@@ -78,7 +125,7 @@ export function GiftCardSend() {
 
         {delivery === "digital" ? (
           <div className="mt-6 rounded-sheet bg-surface p-6 shadow-rest">
-            <p className="text-body font-medium">Share it{recipientName ? ` with ${recipientName}` : ""}</p>
+            <p className="text-body font-medium">Share it{note.to ? ` with ${note.to}` : ""}</p>
             <QrCode value={shareUrl} alt="Gift card QR code" className="mx-auto mt-4 h-[220px] w-[220px]" />
             <p className="mt-3 text-caption text-muted">
               Whoever opens the link goes straight to CADO and sees they've received this card.
@@ -89,7 +136,7 @@ export function GiftCardSend() {
           </div>
         ) : (
           <div className="mt-6 rounded-sheet bg-surface p-6 text-body text-muted shadow-rest">
-            We'll deliver the printed card to your address, with the code on it.
+            We'll deliver the printed card to your address, with your note inside the envelope.
           </div>
         )}
 
@@ -111,10 +158,10 @@ export function GiftCardSend() {
     try {
       const result = await purchase.mutateAsync({
         amount: finalAmount,
-        recipientName: recipientName.trim() || undefined,
-        message: message.trim() || undefined,
+        recipientName: note.to.trim() || undefined,
+        message: note.message.trim() || undefined,
         deliveryMethod: delivery,
-        buyerName: fromName.trim() || undefined,
+        buyerName: note.from.trim() || undefined,
       });
       setCard(result);
     } catch (e) {
@@ -137,10 +184,10 @@ export function GiftCardSend() {
                 setCustomAmount("");
               }}
               className={`min-h-[52px] rounded-card text-body font-semibold transition-all duration-fast active:scale-[0.97] ${
-                !customAmount && amount === a ? "bg-ink text-inverse" : "bg-surface shadow-rest"
+                !customAmount && amount === a ? "bg-persimmon text-white" : "border border-line bg-surface"
               }`}
             >
-              ${a}
+              {formatMoney(a)}
             </button>
           ))}
         </div>
@@ -151,84 +198,45 @@ export function GiftCardSend() {
           value={customAmount}
           onChange={(e) => setCustomAmount(e.target.value)}
           placeholder="Or another amount ($10–$500)"
-          aria-label="Custom gift card amount in US dollars"
+          aria-label="Custom gift card amount in dollars"
           className={`mt-3 ${FIELD}`}
         />
       </section>
 
       <section className="mt-7">
-        <p className="text-body font-medium">Message</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SUGGESTED.map((s) => (
-            <Chip key={s} active={message === s} onClick={() => setMessage(s)}>
-              {s}
+        <p className="text-body font-medium">What's the occasion?</p>
+        <div className="scroll-row mt-3" style={{ ["--row-gap" as string]: "8px" }}>
+          {OCCASIONS.map((o) => (
+            <Chip key={o.value} active={occasion === o.value} onClick={() => setOccasion(o.value)}>
+              {o.label}
             </Chip>
           ))}
         </div>
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          rows={3}
-          placeholder="Or write your own..."
-          aria-label="Gift card message"
-          className={`mt-3 resize-none ${FIELD}`}
-        />
       </section>
 
       <section className="mt-7">
         <p className="text-body font-medium">How should it arrive?</p>
         <div className="mt-3 flex flex-col gap-3">
-          <button
-            onClick={() => setDelivery("digital")}
-            className={`rounded-card p-4 text-left transition-all duration-fast ${
-              delivery === "digital" ? "bg-ink text-inverse" : "bg-surface shadow-rest"
-            }`}
+          <DeliveryOption
+            selected={delivery === "digital"}
+            onSelect={() => setDelivery("digital")}
+            title="Digital card"
+            desc="They get a link and a QR code. Arrives instantly."
           >
-            <p className="text-body font-semibold">Send a QR code</p>
-            <p className={`mt-0.5 text-caption ${delivery === "digital" ? "text-inverse/60" : "text-muted"}`}>
-              Share it any way you like — the balance is added the moment it's redeemed.
-            </p>
-          </button>
-          <button
-            onClick={() => setDelivery("physical")}
-            className={`rounded-card p-4 text-left transition-all duration-fast ${
-              delivery === "physical" ? "bg-ink text-inverse" : "bg-surface shadow-rest"
-            }`}
+            <DigitalCardMock amount={formatMoney(finalAmount || 0)} className="w-full max-w-[260px]" />
+          </DeliveryOption>
+          <DeliveryOption
+            selected={delivery === "physical"}
+            onSelect={() => setDelivery("physical")}
+            title="Real card, delivered"
+            desc="A real CADO card in an envelope, hand-delivered with a small note."
           >
-            <p className="text-body font-semibold">Deliver a real card</p>
-            <p className={`mt-0.5 text-caption ${delivery === "physical" ? "text-inverse/60" : "text-muted"}`}>
-              We bring a printed gift card to your address.
-            </p>
-          </button>
+            <EnvelopeCardArt className="w-full max-w-[260px]" />
+          </DeliveryOption>
         </div>
       </section>
 
-      <section className="mt-7">
-        <p className="text-body font-medium">From</p>
-        <input
-          value={fromName}
-          onChange={(e) => setFromName(e.target.value)}
-          placeholder="Your name"
-          aria-label="Your name"
-          className={`mt-3 ${FIELD}`}
-        />
-        <p className="mt-1.5 text-caption text-muted">
-          Shown to whoever opens the card: "You've received a gift from ___".
-        </p>
-      </section>
-
-      <section className="mt-7">
-        <p className="text-body font-medium">
-          Who is it for? <span className="font-normal text-muted">(optional)</span>
-        </p>
-        <input
-          value={recipientName}
-          onChange={(e) => setRecipientName(e.target.value)}
-          placeholder="Their name"
-          aria-label="Recipient name"
-          className={`mt-3 ${FIELD}`}
-        />
-      </section>
+      <GiftNoteBlock occasion={occasion} value={note} onChange={setNote} />
 
       {error ? (
         <p role="alert" className="mt-6 text-body text-alert">
@@ -237,7 +245,7 @@ export function GiftCardSend() {
       ) : null}
 
       <Button onClick={submit} disabled={purchase.isPending} fullWidth className="mt-8">
-        {purchase.isPending ? "Creating your card…" : `Pay USD ${finalAmount || 0}`}
+        {purchase.isPending ? "Creating your card…" : `Pay ${formatMoney(finalAmount || 0)}`}
       </Button>
       <p className="mt-3 text-center text-caption text-muted">
         Pay by Whish transfer to {WHISH_NUMBER}. Gift cards are valid for 2 years from purchase.

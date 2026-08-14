@@ -31,8 +31,11 @@ export function BottomNav() {
               // width, but wrapping is what grew the bar from 64px to 81px
               // and shoved every page's bottom padding out of step, so it is
               // cheap insurance against the next label.
+              // The active tab is Persimmon. The nav is one control, so this
+              // applies to every tab in it — a bar where some tabs go orange
+              // and others go black reads as a bug, not as restraint.
               `flex min-h-[56px] flex-1 flex-col items-center gap-1 whitespace-nowrap py-2.5 text-[11px] font-medium tracking-wide transition-all duration-150 active:scale-90 ${
-                isActive ? "text-ink" : "text-muted"
+                isActive ? "text-persimmon" : "text-muted"
               }`
             }
           >

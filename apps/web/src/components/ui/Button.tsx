@@ -1,19 +1,24 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-export type ButtonVariant = "primary" | "secondary" | "dark" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "dark" | "ghost" | "accent";
 export type ButtonSize = "md" | "lg";
 
 /**
- * Accent discipline lives here so it can't drift. The primary action is a
- * charcoal fill with cream text — never a coloured one. `dark` is now the
- * same thing and is kept only so existing callers don't have to change.
+ * Accent discipline lives here so it can't drift. `primary` is a charcoal
+ * fill with cream text and is what the shopping side of the app uses.
+ *
+ * `accent` is the Persimmon fill, and it is deliberately opt-in rather than
+ * the default: it belongs to the account side — Account, Orders, Favorites,
+ * Gift Cards — where it marks the one action on the screen. Making primary
+ * itself Persimmon would repaint Home, which is explicitly out of scope.
  */
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-primary text-inverse hover:bg-primary-deep active:bg-primary-deep shadow-rest",
   secondary: "bg-surface text-ink ring-1 ring-line hover:bg-surface-sunk",
   dark: "bg-primary text-inverse hover:bg-primary-deep",
   ghost: "bg-transparent text-ink underline underline-offset-4 hover:bg-surface-sunk",
+  accent: "bg-persimmon text-white hover:brightness-95 active:brightness-95 shadow-rest",
 };
 
 // 52px on primary actions per spec; md is for inline/secondary placements.

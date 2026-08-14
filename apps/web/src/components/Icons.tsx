@@ -236,6 +236,31 @@ export function SortIcon({ className = base }: IconProps) {
   );
 }
 
+/** Three heads — the group gift card, where several people chip in on one
+ *  card. Drawn as one front figure and two behind so it still reads as
+ *  "several people" at 24px, where a crowd turns to mush. */
+export function GroupIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="9" r="3.2" />
+      <path d="M6.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="M5.2 12.2a2.6 2.6 0 1 1 1.6-4.6M2.5 17.4a4.2 4.2 0 0 1 2.6-3.6" />
+      <path d="M18.8 12.2a2.6 2.6 0 1 0-1.6-4.6M21.5 17.4a4.2 4.2 0 0 0-2.6-3.6" />
+    </svg>
+  );
+}
+
+/** A ticket/card with a scan line — "enter the code you were given". Kept
+ *  distinct from GiftIcon so the three gift-card options never share art. */
+export function TicketIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h15A1.5 1.5 0 0 1 21 8.5v2a2 2 0 0 0 0 3.9v2A1.5 1.5 0 0 1 19.5 18h-15A1.5 1.5 0 0 1 3 16.5v-2a2 2 0 0 0 0-3.9v-2Z" />
+      <path d="M14 10.5v4" strokeDasharray="1.6 2.2" />
+    </svg>
+  );
+}
+
 /** The stacked-lines / sliders filter glyph. Three tracks with a handle on
  *  each — it reads as "adjust" at 20px, which a plain funnel does not. */
 export function SlidersIcon({ className = base }: IconProps) {

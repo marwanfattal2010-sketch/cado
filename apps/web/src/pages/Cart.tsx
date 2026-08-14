@@ -5,6 +5,7 @@ import { primaryImage } from "../lib/images";
 import { formatMoney } from "../lib/money";
 import { useCart, useRemoveCartItem, useUpdateCartQuantity } from "../hooks/useCart";
 import { RibbonEmpty } from "../components/ui";
+import { Carts } from "./Carts";
 
 const DELIVERY_FEE = 5;
 
@@ -13,7 +14,13 @@ const DELIVERY_FEE = 5;
  * gift options, payment — lives on one checkout page, so this screen never
  * makes anyone read two sets of the same fields.
  */
-export function Cart() {
+/**
+ * One store's cart: the list you edit before checking out.
+ *
+ * Reached as /cart?store=<partner id>. Without that parameter /cart is the
+ * "Your carts" screen instead — see the wrapper at the bottom of this file.
+ */
+function StoreCartView() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -188,8 +195,8 @@ export function Cart() {
       <div className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] z-30 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto max-w-2xl">
           <button
-            onClick={() => navigate("/checkout")}
-            className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-fast active:scale-[0.98]"
+            onClick={() => navigate(storeFilter ? `/checkout?store=${storeFilter}` : "/checkout")}
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-persimmon text-body font-medium text-white transition-all duration-fast active:scale-[0.98]"
           >
             Checkout — {formatMoney(subtotal + DELIVERY_FEE)}
           </button>
@@ -197,4 +204,16 @@ export function Cart() {
       </div>
     </div>
   );
+}
+
+/**
+ * /cart is the list of carts; /cart?store=<id> is one of them.
+ *
+ * Kept as one route because the basket icon in the header points at /cart
+ * from everywhere, and inside a store it already points at that store's
+ * cart — so the same URL naturally means "the cart you were looking at".
+ */
+export function Cart() {
+  const [params] = useSearchParams();
+  return params.get("store") ? <StoreCartView /> : <Carts />;
 }

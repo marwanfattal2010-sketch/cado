@@ -22,6 +22,9 @@ import { Occasions } from "./pages/Occasions";
 import { GiftCards } from "./pages/GiftCards";
 import { GiftCardSend } from "./pages/GiftCardSend";
 import { GiftCardRedeem } from "./pages/GiftCardRedeem";
+import { GiftCardGroupCreate } from "./pages/GiftCardGroupCreate";
+import { GiftCardGroupPool } from "./pages/GiftCardGroupPool";
+import { GiftCardGroupChipIn } from "./pages/GiftCardGroupChipIn";
 import { AdminMoney } from "./pages/AdminMoney";
 import { About } from "./pages/About";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
@@ -71,6 +74,12 @@ export default function App() {
         <Route path="gift-cards" element={<GiftCards />} />
         <Route path="gift-cards/send" element={<GiftCardSend />} />
         <Route path="gift-cards/redeem" element={<GiftCardRedeem />} />
+        {/* The group pages are deliberately outside any auth gate: the whole
+            point of the slug is that it opens for someone who has never used
+            CADO. Only creating one needs an account. */}
+        <Route path="gift-cards/group/new" element={<GiftCardGroupCreate />} />
+        <Route path="gift-cards/group/:slug" element={<GiftCardGroupPool />} />
+        <Route path="gift-cards/group/:slug/chip-in" element={<GiftCardGroupChipIn />} />
         <Route path="admin/money" element={<AdminMoney />} />
         <Route path="about" element={<About />} />
         <Route path="privacy" element={<PrivacyPolicy />} />

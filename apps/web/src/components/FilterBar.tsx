@@ -37,9 +37,9 @@ export function ActiveFilterChips({
         <button
           type="button"
           onClick={onClear}
-          className="tap-44 inline-flex h-[32px] items-center rounded-pill px-2 text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
+          className="tap-44 inline-flex h-[32px] items-center px-2 text-caption font-medium text-ink underline underline-offset-4"
         >
-          Clear
+          Clear all
         </button>
       ) : null}
     </div>

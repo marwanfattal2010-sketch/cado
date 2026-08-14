@@ -33,9 +33,56 @@ Branch everything is on: `prompt-10-storefront` (also pushed to `main` and
 
 ---
 
+## Session of 2026-08-14 — the gift-card design pass
+
+Built and verified against a local dev server (Parts 1, 3, 4, 5, 6, 7 and the
+group screens of Part 2 from Marwan's 12-part spec):
+
+- Gift Cards tab is three cards — Send, Group (with a "New" pill), Redeem.
+- Group gift card: create form, public pool page at
+  `/gift-cards/group/:slug`, and the chip-in flow with the OMT reference.
+  All three screens exist and render; **none of them can work until 0045 and
+  0047 are applied**, because every pool function lives in those migrations.
+- Delivery choice is two stacked cards with drawn artwork — a Persimmon card
+  face showing `XXXX-XXXX-XXXX`, and the printed card in a cream envelope.
+  Both in `components/giftcard/GiftCardArt.tsx`.
+- The little note (To / From / one-line message, 120 chars) with an
+  occasion-based suggestion and a live preview, shared by the single and
+  group flows: `components/giftcard/GiftNote.tsx`.
+- Account header is a cream card with a 56px Persimmon monogram — the black
+  block is gone. Persimmon pass over Account's icons and buttons via a new
+  `accent` Button variant. Home is untouched.
+- Filter chips are 4px rectangles: cream with a near-black hairline when
+  off, solid Persimmon with white text when on. Home's round chips untouched.
+- Every customer-facing amount now goes through `formatMoney` — "$50", never
+  "USD 50".
+
+**Parts 8 and 9 are NOT built.** Separate carts, the "Your carts" screen, the
+gift-card cart line, and the checkout rework ("Where should it go?", the
+delivery window, hiding cash-on-delivery for a gift going straight to the
+recipient) are all still to do. `Checkout.tsx:405` still says "Pick a date".
+The database half of both — the per-store `place_order` and the trigger that
+rejects a two-store order — is written in 0046/0047 and waiting.
+
 ## Written but NOT applied — do not apply without asking Marwan
 
-Two migration files exist and are committed. They are inert until run.
+Three migration files exist. They are inert until run. Apply in order:
+0045, then 0046, then 0047.
+
+- `supabase/migrations/0047_per_store_checkout_and_beauty.sql`
+  - Renames the category and tab label to "Perfume & Beauty" and creates the
+    four sub-categories (Perfume / Skincare / Makeup / Bath & Body) empty —
+    the chips are already DB-driven, so each appears as products are tagged
+    into it. Slug stays `perfumes`.
+  - `get_pool_by_slug` returns first names only, on a public page.
+  - `issue_pool_gift_card` takes a delivery method instead of assuming
+    digital.
+  - `place_order` gains a last argument `p_partner_id`. Null behaves exactly
+    as today; set, it orders and empties one store's cart only.
+  - **One statement is not additive**: `drop function place_order(...)`
+    followed immediately by a create with the extra argument. Postgres
+    cannot add a parameter in place, and two overloads would make every
+    checkout call ambiguous. No data is touched.
 
 - `supabase/migrations/0045_group_gift_cards_and_hours.sql`
   - `gift_card_pools` + `gift_card_pool_contributions` tables

@@ -84,10 +84,20 @@ export function Header() {
   const storePartner = useStore(onStorePage ? storeSlug : undefined);
   const storeId = storePartner.data?.id;
 
-  // Inside a store, the basket only reflects that store's items.
+  /**
+   * Inside a store the basket shows that store's items; everywhere else it
+   * shows how many CARTS there are, not how many things are in them.
+   *
+   * That is the whole point of separate carts: a driver goes to one shop, so
+   * three items from one shop is one journey and one number worth knowing,
+   * while one item each from three shops is three separate deliveries to
+   * check out one at a time.
+   */
   const items = cart.data ?? [];
   const relevant = onStorePage ? items.filter((i) => i.product?.partner?.id === storeId) : items;
-  const count = relevant.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
+  const count = onStorePage
+    ? relevant.reduce((sum, i) => sum + (i.quantity ?? 0), 0)
+    : new Set(items.map((i) => i.product?.partner?.id).filter(Boolean)).size;
 
   /**
    * COLLAPSE ON SCROLL DOWN, REAPPEAR ON SCROLL UP.
@@ -265,14 +275,18 @@ export function Header() {
 
             <Link
               to={onStorePage ? `/cart?store=${storeId}` : "/cart"}
-              aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
+              aria-label={
+                onStorePage
+                  ? `Cart, ${count} item${count === 1 ? "" : "s"}`
+                  : `Your carts, ${count} cart${count === 1 ? "" : "s"}`
+              }
               className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted transition-all duration-fast hover:bg-surface-sunk hover:text-ink active:scale-90"
             >
               <BasketIcon className="h-[22px] w-[22px]" />
               {count > 0 ? (
                 <span
                   key={count}
-                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-primary px-1 text-[10px] font-semibold text-inverse"
+                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-semibold text-white"
                 >
                   {count}
                 </span>
