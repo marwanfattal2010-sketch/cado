@@ -433,3 +433,34 @@ app but Marwan, delivery is not set up, and every partner store is a
 placeholder to be swapped for real shops later. Demo data is expected and
 correct here. Everything invented is flagged `price_is_placeholder = true`
 and comes out with one query.
+
+## TASK C — Surprise Gifts Shop is a REAL partner now
+
+Marwan closed the deal by phone on 2026-08-15. They said CADO can use
+anything from their Instagram.
+
+- Handle: **@surprisegiftsshop** — 2,533 posts, 23K followers
+- Real shop: Maarad Street, Tripoli. Phone 03 128044
+- Bio: "Curated gifts & décor for every celebration"
+- Highlights worth mining: **Mugs**, Gifts for her, Men gifts, Candles,
+  Number Balloons, "🎂topper &candles", Gadgets
+
+**Their photos are exactly the style Marwan has been asking for all night** —
+half-open gift boxes with a printed mug, chocolates and a plush inside,
+wrapped in cellophane. Unsplash does not have this; three separate searches
+turned up nothing close. Theirs is the right answer.
+
+**How to get them:** their profile renders fine in the browser pane and the
+post images are readable from the DOM (`main img`, src on
+instagram.f*.fbcdn.net). Scroll the grid, collect srcs, download, then upload
+to Supabase Storage with scripts/seed-product-photos.mjs as the model —
+product photos are storage objects, not repo files.
+
+**Do NOT paste their photos onto the invented demo products.** Surprise is a
+real shop: add them as a partner and list their real boxes, replacing the
+placeholder "The Gift Atelier" stock in Gift Sets. Ask Marwan for their real
+prices before inventing any.
+
+**Check each image before attaching it.** Several stock photos tonight turned
+out to be the wrong thing entirely — SALE tags, a dog at a laptop, an Indian
+festival card. A filename or an alt tag is not proof of what is in the file.
