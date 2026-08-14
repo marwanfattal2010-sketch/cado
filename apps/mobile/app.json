@@ -15,7 +15,7 @@
     "android": {
       "package": "com.cado.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F6F1E7",
+        "backgroundColor": "#F94E33",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
@@ -38,7 +38,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#F6F1E7"
+          "backgroundColor": "#F94E33"
         }
       ]
     ]
