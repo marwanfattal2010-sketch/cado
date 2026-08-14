@@ -33,6 +33,60 @@ Branch everything is on: `prompt-10-storefront` (also pushed to `main` and
 
 ---
 
+## TASK 0 — the Android app: new icon, then build
+
+Marwan wants the app icon to be **the Persimmon one with just the CADO
+wordmark** — no gift box, no bow. Persimmon `#F94E33` background, cream
+`#F6F1E7` wordmark in Jost 600, which is the same face the real logo uses.
+
+**The icon must be made BEFORE the build.** The app icon is baked in at build
+time; everything else about the app is not (see below).
+
+**How to render it — do NOT shuttle base64 through the chat.** That was
+tried and it is slow and fragile. The wordmark needs real Jost, which only a
+browser has, so:
+  1. Write `scripts/make-icons.mjs` that drives a headless browser to
+     `https://cado-web.vercel.app` (where Jost 600 is already loaded and
+     verified available), draws on a canvas, and writes the PNG straight to
+     disk with `fs.writeFileSync`.
+  2. `playwright-core` is NOT installed at the repo root — install it, or use
+     any headless Chromium already on the machine.
+  3. Two files: `apps/mobile/assets/icon.png` (1024x1024, Persimmon fill,
+     wordmark ~55% of width) and `apps/mobile/assets/android-icon-foreground.png`
+     (1024x1024, transparent, wordmark ~55% so it clears Android's circular
+     mask — the safe zone is the middle ~66%).
+  4. In `apps/mobile/app.json`, change `android.adaptiveIcon.backgroundColor`
+     from `#F6F1E7` to `#F94E33`.
+
+The canvas recipe that was verified working: `letterSpacing = '14px'`,
+`font = '600 <size>px Jost'`, measure "CADO", scale the size so the measured
+width hits the target, then centre using the actual bounding box ascent and
+descent (not the baseline — it sits visibly low without that).
+
+**Then build:**
+
+    cd apps/mobile
+    EXPO_TOKEN=<token> npx eas-cli build --platform android --profile preview
+
+The `preview` profile is already configured to produce an **APK**, which is
+the installable file Marwan wants a link for. `production` makes an app
+bundle for the Play Store instead — not what he asked for. The build runs on
+Expo's servers and takes 10-20 minutes; it ends with a URL.
+
+**Marwan's Expo account is `marwanfattal`** and his token worked. It is
+almost certainly revoked by now — ask for a fresh one from
+https://expo.dev/settings/access-tokens.
+
+**Worth telling him again, because it is the good news:** the app is a
+WebView wrapping `https://cado-web.vercel.app` (see `apps/mobile/app/index.tsx`).
+So every page, price, product and feature changes without any rebuild — only
+the icon, name, splash and permissions are baked in.
+
+**Also still not done:** the site has NO web app manifest. Adding one would
+let anyone install the site from Chrome's "Add to Home screen" and have it
+open full-screen with the right icon, with no APK at all. Cheap, and worth
+doing whether or not the APK ships.
+
 ## ✅ TASK 1 — DONE 2026-08-14. Double-tap can no longer create two orders.
 
 Fixed in `0050_one_payment_one_order.sql`, **applied to production and
