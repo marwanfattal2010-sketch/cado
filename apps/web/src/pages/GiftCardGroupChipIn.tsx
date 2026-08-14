@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { formatMoney } from "../lib/money";
 import { useAuth } from "../lib/auth";
 import { useContribute, usePool } from "../hooks/useGiftCardPools";
-import { Button, ButtonLink, Chip } from "../components/ui";
+import { Button, ButtonLink } from "../components/ui";
 
 const QUICK = [25, 50, 100];
 const OMT_NUMBER = "81 900 002";

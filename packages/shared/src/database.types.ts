@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -107,47 +107,65 @@ export type Database = {
           },
         ]
       }
-      cart_items: {
+      app_settings: {
         Row: {
-          created_at: string
-          customization: Json
-          id: string
-          product_id: string
-          profile_id: string
-          quantity: number
+          closes_at: string
+          id: boolean
+          opens_at: string
+          timezone: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string
-          customization?: Json
-          id?: string
-          product_id: string
-          profile_id: string
-          quantity?: number
+          closes_at?: string
+          id?: boolean
+          opens_at?: string
+          timezone?: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string
-          customization?: Json
-          id?: string
-          product_id?: string
-          profile_id?: string
-          quantity?: number
+          closes_at?: string
+          id?: boolean
+          opens_at?: string
+          timezone?: string
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "cart_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cart_items_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
       }
       browse_banners: {
         Row: {
@@ -314,6 +332,48 @@ export type Database = {
           },
         ]
       }
+      cart_items: {
+        Row: {
+          created_at: string
+          customization: Json
+          id: string
+          product_id: string
+          profile_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          customization?: Json
+          id?: string
+          product_id: string
+          profile_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          customization?: Json
+          id?: string
+          product_id?: string
+          profile_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           icon_name: string | null
@@ -338,6 +398,30 @@ export type Database = {
           name?: string
           slug?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      dashboard_seed_registry: {
+        Row: {
+          batch: string
+          created_at: string
+          id: number
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          batch: string
+          created_at?: string
+          id?: number
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          batch?: string
+          created_at?: string
+          id?: number
+          record_id?: string
+          table_name?: string
         }
         Relationships: []
       }
@@ -377,76 +461,152 @@ export type Database = {
           },
         ]
       }
-      gift_cards: {
+      gift_card_pool_contributions: {
         Row: {
-          buyer_email: string | null
-          buyer_id: string | null
-          buyer_name: string | null
-          code: string
+          amount_cents: number
+          contributor_id: string | null
+          contributor_name: string
           created_at: string
-          currency: string
-          current_balance: number
-          delivery_method: string
-          expires_at: string | null
-          failed_pin_attempts: number
+          hide_amount: boolean
           id: string
-          locked_until: string | null
           message: string | null
-          original_amount: number
-          pin_hash: string
-          recipient_email: string | null
-          recipient_name: string
-          status: string
+          payment_ref: string | null
+          payment_status: string
+          pool_id: string
         }
         Insert: {
-          buyer_email?: string | null
-          buyer_id?: string | null
-          buyer_name?: string | null
-          code: string
+          amount_cents: number
+          contributor_id?: string | null
+          contributor_name: string
           created_at?: string
-          currency?: string
-          current_balance: number
-          delivery_method?: string
-          expires_at?: string | null
-          failed_pin_attempts?: number
+          hide_amount?: boolean
           id?: string
-          locked_until?: string | null
           message?: string | null
-          original_amount: number
-          pin_hash: string
-          recipient_email?: string | null
-          recipient_name: string
-          status?: string
+          payment_ref?: string | null
+          payment_status?: string
+          pool_id: string
         }
         Update: {
-          buyer_email?: string | null
-          buyer_id?: string | null
-          buyer_name?: string | null
-          code?: string
+          amount_cents?: number
+          contributor_id?: string | null
+          contributor_name?: string
           created_at?: string
-          currency?: string
-          current_balance?: number
-          delivery_method?: string
-          expires_at?: string | null
-          failed_pin_attempts?: number
+          hide_amount?: boolean
           id?: string
-          locked_until?: string | null
           message?: string | null
-          original_amount?: number
-          pin_hash?: string
-          recipient_email?: string | null
-          recipient_name?: string
-          status?: string
+          payment_ref?: string | null
+          payment_status?: string
+          pool_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "gift_cards_buyer_id_fkey"
-            columns: ["buyer_id"]
+            foreignKeyName: "gift_card_pool_contributions_contributor_id_fkey"
+            columns: ["contributor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_card_pool_contributions_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "gift_card_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_card_pools: {
+        Row: {
+          allow_extra: boolean
+          created_at: string
+          deadline: string | null
+          gift_card_id: string | null
+          goal_cents: number
+          id: string
+          note_from: string | null
+          note_message: string | null
+          note_to: string | null
+          occasion: string
+          organizer_id: string
+          recipient_name: string
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allow_extra?: boolean
+          created_at?: string
+          deadline?: string | null
+          gift_card_id?: string | null
+          goal_cents: number
+          id?: string
+          note_from?: string | null
+          note_message?: string | null
+          note_to?: string | null
+          occasion: string
+          organizer_id: string
+          recipient_name: string
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_extra?: boolean
+          created_at?: string
+          deadline?: string | null
+          gift_card_id?: string | null
+          goal_cents?: number
+          id?: string
+          note_from?: string | null
+          note_message?: string | null
+          note_to?: string | null
+          occasion?: string
+          organizer_id?: string
+          recipient_name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_card_pools_gift_card_id_fkey"
+            columns: ["gift_card_id"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_card_pools_organizer_id_fkey"
+            columns: ["organizer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      gift_card_rate_limit: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: number
+          ip_address: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: number
+          ip_address: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: number
+          ip_address?: string
+          subject?: string | null
+        }
+        Relationships: []
       }
       gift_card_transactions: {
         Row: {
@@ -500,95 +660,146 @@ export type Database = {
           },
         ]
       }
-      store_payables: {
+      gift_cards: {
         Row: {
-          commission_amount: number
-          commission_rate: number
+          buyer_email: string | null
+          buyer_id: string | null
+          buyer_name: string | null
+          code: string
           created_at: string
-          gross_amount: number
+          currency: string
+          current_balance: number
+          delivery_method: string
+          expires_at: string | null
+          failed_pin_attempts: number
           id: string
-          net_owed: number
-          order_id: string | null
-          paid_at: string | null
+          locked_until: string | null
+          message: string | null
+          original_amount: number
+          pin_hash: string | null
+          recipient_email: string | null
+          recipient_name: string | null
           status: string
-          store_id: string
         }
         Insert: {
-          commission_amount: number
-          commission_rate: number
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          code: string
           created_at?: string
-          gross_amount: number
+          currency?: string
+          current_balance: number
+          delivery_method?: string
+          expires_at?: string | null
+          failed_pin_attempts?: number
           id?: string
-          net_owed: number
-          order_id?: string | null
-          paid_at?: string | null
+          locked_until?: string | null
+          message?: string | null
+          original_amount: number
+          pin_hash?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
           status?: string
-          store_id: string
         }
         Update: {
-          commission_amount?: number
-          commission_rate?: number
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          code?: string
           created_at?: string
-          gross_amount?: number
+          currency?: string
+          current_balance?: number
+          delivery_method?: string
+          expires_at?: string | null
+          failed_pin_attempts?: number
           id?: string
-          net_owed?: number
-          order_id?: string | null
-          paid_at?: string | null
+          locked_until?: string | null
+          message?: string | null
+          original_amount?: number
+          pin_hash?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
           status?: string
-          store_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "store_payables_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: "gift_cards_buyer_id_fkey"
+            columns: ["buyer_id"]
             isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "store_payables_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      audit_log: {
+      notifications: {
         Row: {
-          action: string
-          actor: string
+          body: string | null
+          channel: string
           created_at: string
+          destination: string | null
+          error: string | null
           id: string
-          ip_address: string | null
-          new_value: Json | null
-          old_value: Json | null
-          record_id: string | null
-          table_name: string
+          partner_id: string | null
+          recipient_id: string | null
+          sent_at: string | null
+          status: string
+          sub_order_id: string | null
+          subject: string | null
+          template: string
         }
         Insert: {
-          action: string
-          actor: string
+          body?: string | null
+          channel: string
           created_at?: string
+          destination?: string | null
+          error?: string | null
           id?: string
-          ip_address?: string | null
-          new_value?: Json | null
-          old_value?: Json | null
-          record_id?: string | null
-          table_name: string
+          partner_id?: string | null
+          recipient_id?: string | null
+          sent_at?: string | null
+          status?: string
+          sub_order_id?: string | null
+          subject?: string | null
+          template: string
         }
         Update: {
-          action?: string
-          actor?: string
+          body?: string | null
+          channel?: string
           created_at?: string
+          destination?: string | null
+          error?: string | null
           id?: string
-          ip_address?: string | null
-          new_value?: Json | null
-          old_value?: Json | null
-          record_id?: string | null
-          table_name?: string
+          partner_id?: string | null
+          recipient_id?: string | null
+          sent_at?: string | null
+          status?: string
+          sub_order_id?: string | null
+          subject?: string | null
+          template?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_sub_order_id_fkey"
+            columns: ["sub_order_id"]
+            isOneToOne: false
+            referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       occasion_events: {
         Row: {
@@ -702,36 +913,134 @@ export type Database = {
         }
         Relationships: []
       }
+      order_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: string
+          message: string | null
+          order_id: string | null
+          order_item_id: string | null
+          partner_id: string | null
+          payload: Json
+          sub_order_id: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          partner_id?: string | null
+          payload?: Json
+          sub_order_id?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          partner_id?: string | null
+          payload?: Json
+          sub_order_id?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_events_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_events_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_events_sub_order_id_fkey"
+            columns: ["sub_order_id"]
+            isOneToOne: false
+            referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
+          commission_amount_snapshot: number | null
+          commission_rate_snapshot: number | null
+          confirmation_status: string
+          confirmed_at: string | null
           customization: Json
           id: string
           line_total: number
           product_id: string | null
           product_title_snapshot: string
           quantity: number
+          rejection_reason: string | null
           sub_order_id: string
           unit_price_snapshot: number
+          variant_id: string | null
+          variant_name_snapshot: string | null
         }
         Insert: {
+          commission_amount_snapshot?: number | null
+          commission_rate_snapshot?: number | null
+          confirmation_status?: string
+          confirmed_at?: string | null
           customization?: Json
           id?: string
           line_total: number
           product_id?: string | null
           product_title_snapshot: string
           quantity: number
+          rejection_reason?: string | null
           sub_order_id: string
           unit_price_snapshot: number
+          variant_id?: string | null
+          variant_name_snapshot?: string | null
         }
         Update: {
+          commission_amount_snapshot?: number | null
+          commission_rate_snapshot?: number | null
+          confirmation_status?: string
+          confirmed_at?: string | null
           customization?: Json
           id?: string
           line_total?: number
           product_id?: string | null
           product_title_snapshot?: string
           quantity?: number
+          rejection_reason?: string | null
           sub_order_id?: string
           unit_price_snapshot?: number
+          variant_id?: string | null
+          variant_name_snapshot?: string | null
         }
         Relationships: [
           {
@@ -746,6 +1055,13 @@ export type Database = {
             columns: ["sub_order_id"]
             isOneToOne: false
             referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -874,19 +1190,13 @@ export type Database = {
             referencedRelation: "addresses"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "orders_gift_card_code_fkey"
-            columns: ["gift_card_code"]
-            isOneToOne: false
-            referencedRelation: "gift_cards"
-            referencedColumns: ["code"]
-          },
         ]
       }
       partners: {
         Row: {
           city: string | null
           commission_rate: number
+          confirmation_timeout_minutes: number
           country: string
           cover_image_url: string | null
           created_at: string
@@ -896,6 +1206,7 @@ export type Database = {
           is_live: boolean
           logo_url: string | null
           name: string
+          offers_gift_wrap: boolean
           phone: string | null
           slug: string
           status: string
@@ -903,6 +1214,7 @@ export type Database = {
         Insert: {
           city?: string | null
           commission_rate?: number
+          confirmation_timeout_minutes?: number
           country?: string
           cover_image_url?: string | null
           created_at?: string
@@ -912,6 +1224,7 @@ export type Database = {
           is_live?: boolean
           logo_url?: string | null
           name: string
+          offers_gift_wrap?: boolean
           phone?: string | null
           slug: string
           status?: string
@@ -919,6 +1232,7 @@ export type Database = {
         Update: {
           city?: string | null
           commission_rate?: number
+          confirmation_timeout_minutes?: number
           country?: string
           cover_image_url?: string | null
           created_at?: string
@@ -928,11 +1242,68 @@ export type Database = {
           is_live?: boolean
           logo_url?: string | null
           name?: string
+          offers_gift_wrap?: boolean
           phone?: string | null
           slug?: string
           status?: string
         }
         Relationships: []
+      }
+      payout_periods: {
+        Row: {
+          closed_at: string | null
+          commission_total: number
+          created_at: string
+          gross_total: number
+          id: string
+          net_total: number
+          note: string | null
+          paid_at: string | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          reference: string | null
+          status: string
+        }
+        Insert: {
+          closed_at?: string | null
+          commission_total?: number
+          created_at?: string
+          gross_total?: number
+          id?: string
+          net_total?: number
+          note?: string | null
+          paid_at?: string | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          reference?: string | null
+          status?: string
+        }
+        Update: {
+          closed_at?: string | null
+          commission_total?: number
+          created_at?: string
+          gross_total?: number
+          id?: string
+          net_total?: number
+          note?: string | null
+          paid_at?: string | null
+          partner_id?: string
+          period_end?: string
+          period_start?: string
+          reference?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_periods_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_images: {
         Row: {
@@ -1024,9 +1395,9 @@ export type Database = {
         Row: {
           avg_rating: number | null
           category_id: string
-          compare_at_price: number | null
           color: string | null
           color_is_placeholder: boolean
+          compare_at_price: number | null
           country: string
           created_at: string
           currency: string
@@ -1040,22 +1411,23 @@ export type Database = {
           occasion_tags: string[]
           partner_id: string
           price: number
+          price_is_placeholder: boolean
           recipient_tags: string[]
           same_day: boolean
-          tags: string[]
           sku: string | null
           slug: string
           stock_quantity: number
           subcategory_id: string | null
+          tags: string[]
           title: string
           updated_at: string
         }
         Insert: {
           avg_rating?: number | null
           category_id: string
-          compare_at_price?: number | null
           color?: string | null
           color_is_placeholder?: boolean
+          compare_at_price?: number | null
           country?: string
           created_at?: string
           currency?: string
@@ -1069,22 +1441,23 @@ export type Database = {
           occasion_tags?: string[]
           partner_id: string
           price: number
+          price_is_placeholder?: boolean
           recipient_tags?: string[]
           same_day?: boolean
-          tags?: string[]
           sku?: string | null
           slug: string
           stock_quantity?: number
           subcategory_id?: string | null
+          tags?: string[]
           title: string
           updated_at?: string
         }
         Update: {
           avg_rating?: number | null
           category_id?: string
-          compare_at_price?: number | null
           color?: string | null
           color_is_placeholder?: boolean
+          compare_at_price?: number | null
           country?: string
           created_at?: string
           currency?: string
@@ -1098,13 +1471,14 @@ export type Database = {
           occasion_tags?: string[]
           partner_id?: string
           price?: number
+          price_is_placeholder?: boolean
           recipient_tags?: string[]
           same_day?: boolean
-          tags?: string[]
           sku?: string | null
           slug?: string
           stock_quantity?: number
           subcategory_id?: string | null
+          tags?: string[]
           title?: string
           updated_at?: string
         }
@@ -1167,6 +1541,177 @@ export type Database = {
           {
             foreignKeyName: "profiles_partner_id_fkey"
             columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_metrics: {
+        Row: {
+          avg_confirm_seconds: number | null
+          cancelled_count: number
+          commission_amount: number
+          day: string
+          delivered_count: number
+          gross_revenue: number
+          items_count: number
+          net_revenue: number
+          orders_count: number
+          partner_id: string
+          units_count: number
+          updated_at: string
+        }
+        Insert: {
+          avg_confirm_seconds?: number | null
+          cancelled_count?: number
+          commission_amount?: number
+          day: string
+          delivered_count?: number
+          gross_revenue?: number
+          items_count?: number
+          net_revenue?: number
+          orders_count?: number
+          partner_id: string
+          units_count?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_confirm_seconds?: number | null
+          cancelled_count?: number
+          commission_amount?: number
+          day?: string
+          delivered_count?: number
+          gross_revenue?: number
+          items_count?: number
+          net_revenue?: number
+          orders_count?: number
+          partner_id?: string
+          units_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_metrics_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_owner_invites: {
+        Row: {
+          accepted_at: string | null
+          auth_user_id: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          note: string | null
+          partner_id: string
+          revoked_at: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          note?: string | null
+          partner_id: string
+          revoked_at?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          note?: string | null
+          partner_id?: string
+          revoked_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_owner_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_owner_invites_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payables: {
+        Row: {
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          gross_amount: number
+          id: string
+          net_owed: number
+          order_id: string | null
+          paid_at: string | null
+          payout_period_id: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_rate: number
+          created_at?: string
+          gross_amount: number
+          id?: string
+          net_owed: number
+          order_id?: string | null
+          paid_at?: string | null
+          payout_period_id?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          gross_amount?: number
+          id?: string
+          net_owed?: number
+          order_id?: string | null
+          paid_at?: string | null
+          payout_period_id?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payables_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payables_payout_period_id_fkey"
+            columns: ["payout_period_id"]
+            isOneToOne: false
+            referencedRelation: "payout_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_payables_store_id_fkey"
+            columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "partners"
             referencedColumns: ["id"]
@@ -1324,50 +1869,140 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_admins: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          since: string
+          user_id: string
+        }[]
+      }
+      admin_money_summary: {
+        Args: never
+        Returns: {
+          gift_cards_active_count: number
+          gift_cards_outstanding_liability: number
+          gift_cards_pending_payment_total: number
+          store_commission_total: number
+          store_gross_total: number
+          store_id: string
+          store_name: string
+          store_net_owed_total: number
+          store_net_paid_total: number
+          store_net_unpaid_total: number
+        }[]
+      }
+      admin_orders: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          customer_name: string
+          delivery_fee: number
+          discount: number
+          order_id: string
+          order_number: string
+          payment_method: string
+          payment_status: string
+          placed_at: string
+          sub_orders: Json
+          subtotal: number
+          total: number
+        }[]
+      }
+      admin_overview_stats: {
+        Args: never
+        Returns: {
+          commission_all_time: number
+          commission_this_month: number
+          delivery_fees_all_time: number
+          orders_all_time: number
+          orders_this_month: number
+          orders_today: number
+          revenue_all_time: number
+          revenue_this_month: number
+          revenue_today: number
+          sub_orders_by_status: Json
+        }[]
+      }
+      admin_partner_totals: {
+        Args: never
+        Returns: {
+          city: string
+          commission: number
+          commission_rate: number
+          gross_revenue: number
+          name: string
+          orders_count: number
+          owner_email: string
+          partner_id: string
+          payable_pending: number
+          status: string
+        }[]
+      }
+      admin_set_role_admin: {
+        Args: { p_email: string; p_make_admin: boolean }
+        Returns: string
+      }
+      admin_set_sub_order_status: {
+        Args: { p_status: string; p_sub_order_id: string }
+        Returns: undefined
+      }
+      cado_is_open: { Args: never; Returns: boolean }
+      cado_next_open_at: { Args: never; Returns: string }
+      cancel_gift_card_pool: { Args: { p_pool_id: string }; Returns: undefined }
+      cancel_unpaid_gift_card: {
+        Args: { p_gift_card_id: string }
+        Returns: undefined
+      }
       check_gift_card_balance: {
         Args: { p_code: string }
         Returns: {
+          card_message: string
           currency: string
+          from_name: string
           remaining_balance: number
-          from_name: string | null
-          card_message: string | null
         }[]
       }
       check_rate_limit: {
         Args: { p_endpoint: string; p_max_per_minute?: number }
         Returns: undefined
       }
+      confirm_gift_card_payment: {
+        Args: { p_gift_card_id: string }
+        Returns: undefined
+      }
+      confirm_pool_contribution: {
+        Args: { p_contribution_id: string }
+        Returns: undefined
+      }
+      contribute_to_pool: {
+        Args: {
+          p_amount_cents: number
+          p_contributor_name: string
+          p_hide_amount?: boolean
+          p_message?: string
+          p_payment_ref?: string
+          p_slug: string
+        }
+        Returns: string
+      }
+      create_gift_card_pool: {
+        Args: {
+          p_allow_extra?: boolean
+          p_deadline?: string
+          p_goal_cents: number
+          p_note_from?: string
+          p_note_message?: string
+          p_note_to?: string
+          p_occasion: string
+          p_recipient_name: string
+        }
+        Returns: string
+      }
       current_client_ip: { Args: never; Returns: string }
       generate_gift_card_code: { Args: never; Returns: string }
       generate_gift_card_pin: { Args: never; Returns: string }
-      confirm_gift_card_payment: { Args: { p_gift_card_id: string }; Returns: undefined }
-      cancel_unpaid_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
-      refund_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
-      reconcile_gift_cards: {
-        Args: never
-        Returns: {
-          gift_card_id: string
-          code: string
-          expected_spent: number
-          actual_spent: number
-          discrepancy: number
-        }[]
-      }
-      admin_money_summary: {
-        Args: never
-        Returns: {
-          gift_cards_outstanding_liability: number
-          gift_cards_pending_payment_total: number
-          gift_cards_active_count: number
-          store_id: string
-          store_name: string
-          store_gross_total: number
-          store_commission_total: number
-          store_net_owed_total: number
-          store_net_paid_total: number
-          store_net_unpaid_total: number
-        }[]
-      }
+      generate_pool_slug: { Args: never; Returns: string }
       get_gift_recommendations: {
         Args: {
           p_budget_max: number
@@ -1378,6 +2013,8 @@ export type Database = {
         Returns: {
           avg_rating: number | null
           category_id: string
+          color: string | null
+          color_is_placeholder: boolean
           compare_at_price: number | null
           country: string
           created_at: string
@@ -1392,13 +2029,14 @@ export type Database = {
           occasion_tags: string[]
           partner_id: string
           price: number
+          price_is_placeholder: boolean
           recipient_tags: string[]
           same_day: boolean
-          tags: string[]
           sku: string | null
           slug: string
           stock_quantity: number
           subcategory_id: string | null
+          tags: string[]
           title: string
           updated_at: string
         }[]
@@ -1409,22 +2047,101 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_pool_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          confirmed_cents: number
+          contributor_count: number
+          contributors: Json
+          deadline: string
+          goal_cents: number
+          is_organizer: boolean
+          occasion: string
+          pending_cents: number
+          recipient_name: string
+          slug: string
+          status: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
+      is_store_owner: { Args: never; Returns: boolean }
+      is_valid_contact: { Args: { p_contact: string }; Returns: boolean }
+      is_valid_email: { Args: { p_email: string }; Returns: boolean }
+      issue_gift_card_internal: {
+        Args: {
+          p_amount: number
+          p_buyer_email?: string
+          p_buyer_id: string
+          p_buyer_name?: string
+          p_delivery_method?: string
+          p_message?: string
+          p_recipient_email?: string
+          p_recipient_name?: string
+        }
+        Returns: {
+          code: string
+          id: string
+          original_amount: number
+        }[]
+      }
+      issue_pool_gift_card: {
+        Args: { p_delivery_method?: string; p_pool_id: string }
+        Returns: {
+          code: string
+          id: string
+          original_amount: number
+        }[]
+      }
+      list_refunds_required: {
+        Args: never
+        Returns: {
+          amount_cents: number
+          contribution_id: string
+          contributor_name: string
+          created_at: string
+          payment_ref: string
+          pool_slug: string
+          recipient_name: string
+        }[]
+      }
       my_partner_id: { Args: never; Returns: string }
+      partner_order_context: {
+        Args: { p_sub_order_id: string }
+        Returns: {
+          address_apartment: string
+          address_area: string
+          address_building: string
+          address_city: string
+          address_floor: string
+          address_notes: string
+          address_street: string
+          delivery_slot: string
+          gift_message: string
+          hide_price: boolean
+          is_gift: boolean
+          order_number: string
+          payment_method: string
+          payment_status: string
+          placed_at: string
+          recipient_name: string
+          recipient_phone: string
+        }[]
+      }
       place_order: {
         Args: {
           p_address_source?: string
-          p_delivery_address_id?: string | null
-          p_delivery_date?: string | null
-          p_delivery_time_slot?: string | null
-          p_gift_card_code?: string | null
-          p_gift_message?: string | null
+          p_delivery_address_id?: string
+          p_delivery_date?: string
+          p_delivery_time_slot?: string
+          p_gift_card_code?: string
+          p_gift_message?: string
           p_hide_price?: boolean
           p_is_gift?: boolean
-          p_notes?: string | null
+          p_notes?: string
+          p_partner_id?: string
           p_payment_method?: string
-          p_recipient_name?: string | null
-          p_recipient_phone?: string | null
+          p_recipient_name?: string
+          p_recipient_phone?: string
         }
         Returns: string
       }
@@ -1444,6 +2161,35 @@ export type Database = {
           original_amount: number
         }[]
       }
+      rebuild_store_metrics: {
+        Args: { p_from?: string; p_partner_id: string; p_to?: string }
+        Returns: number
+      }
+      reconcile_gift_cards: {
+        Args: never
+        Returns: {
+          actual_spent: number
+          code: string
+          discrepancy: number
+          expected_spent: number
+          gift_card_id: string
+        }[]
+      }
+      record_order_event: {
+        Args: {
+          p_event_type: string
+          p_from_status?: string
+          p_message?: string
+          p_order_id: string
+          p_order_item_id: string
+          p_partner_id: string
+          p_payload?: Json
+          p_sub_order_id: string
+          p_to_status?: string
+        }
+        Returns: undefined
+      }
+      refund_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
