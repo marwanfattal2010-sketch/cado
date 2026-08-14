@@ -71,7 +71,14 @@ one-item cart and confirm exactly one order exists afterwards. Do not accept
 "the button is disabled while pending" as the fix — that is the browser, and
 the browser is not the boundary.
 
-## TASK 2 — a gift card in the cart (spec 9.1 / 9.2)
+## ✅ TASK 2 — DONE 2026-08-14. A gift card goes in the cart.
+
+Built, applied (0051, 0052), verified and deployed. Checks 14 and 15 pass.
+The design notes below were the plan and still describe what was built.
+
+---
+
+## TASK 2 (original plan) — a gift card in the cart (spec 9.1 / 9.2)
 
 Start fresh. Do not touch anything else. Marwan's rule, in his words: no
 fake product row and no fake store to stand in for a gift card. No fake data
