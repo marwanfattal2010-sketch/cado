@@ -33,6 +33,47 @@ Branch everything is on: `prompt-10-storefront` (also pushed to `main` and
 
 ---
 
+## TASK A — homepage batch: tiles, Gift Sets, Sport, splash pattern
+
+Marwan's spec is the "CADO homepage — tile row, category row, Gift Sets,
+Sport, photos" message plus a section 8 on the splash. Decisions he has
+ALREADY made — do not re-ask:
+
+- **GS's eleven Home & Gifts products: DEACTIVATE, never delete.** They are
+  NOT seed data. Checked against dashboard_seed_registry: none seeded, none
+  with placeholder prices, all belong to GS, a real partner, with real stock.
+  Deleting them would wipe a live store's catalogue. `is_active = false` is
+  reversible in one update; deletion is not. He chose this himself (option 3).
+- **Draw the eighteen splash icons by hand**, no icon dependency. Already
+  done — `apps/web/src/components/SplashPattern.tsx`, house style matching
+  components/Icons.tsx, flat line only, offset rows, radial mask so the
+  wordmark stays readable. Not yet wired to anything.
+- **Placeholder photos are allowed for now**, but only reuse images already
+  in the project. A mismatched photo on a product listing (a teacup on a
+  football boot) causes refunds — prefer no photo on seed products and use
+  stand-ins only for the three tile images.
+
+**Where the homepage actually lives — this is the answer to his section 5:**
+almost none of it is code.
+- the tile row (Stores / New on CADO / Under $50 / Same-day / Occasions) is
+  rows in `browse_tiles`
+- the top chip row and the Shop-by-category row both read `categories` and
+  `browse_tabs`, which is why they cannot currently disagree
+- the hero headline, subcopy and CTA are rows in `browse_banners`
+So sections 1-5 are a migration plus seed products, not a React change.
+
+**Android 12+ and the splash, already settled:** the system splash on
+Android 12+ is locked to a centred icon on a solid colour — a full-bleed
+tiled pattern is impossible there. Route: keep the system splash plain
+persimmon with the wordmark, and show the patterned screen as a brief in-app
+launch screen after it. Keep it UNDER ONE SECOND: the previous in-app splash
+was 4.8 seconds and Marwan reported it as a bug tonight.
+
+**Still to do:** the migration itself (deactivate GS's products, create Gift
+Sets and Sport, retile the entry row, drop Gift Cards from the category row),
+seed products for both new categories, the three photo swaps, wiring the
+splash pattern, then verify at 375px and deploy.
+
 ## TASK 0 — the Android app: new icon, then build
 
 Marwan wants the app icon to be **the Persimmon one with just the CADO
