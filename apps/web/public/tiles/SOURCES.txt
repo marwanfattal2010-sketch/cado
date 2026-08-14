@@ -4,3 +4,10 @@ gift-sets.jpg  https://unsplash.com/photos/1513885535751-8b9238bd345a
 
 Unsplash licence: free for commercial use, no attribution required.
 Not yet wired to browse_tiles.image_url, and not deployed.
+gift-cards.jpg https://unsplash.com/photos/1512909006721-3d6018887383
+group-gift.jpg https://unsplash.com/photos/1511632765486-a01980e01a18
+occasions.jpg  https://unsplash.com/photos/1464349095431-e9a21285b5f3
+
+First gift-cards.jpg pull was a set of SALE tags - wrong, replaced. Every one
+of these was opened and looked at before wiring; a filename is not proof of
+what is in the file.
