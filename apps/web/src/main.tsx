@@ -6,6 +6,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { AuthProvider } from "./lib/auth";
 import { ToastProvider } from "./components/ui";
+import { I18nProvider } from "./lib/i18n";
 
 // There is no server in front of Supabase, so every uncached query is a
 // PostgREST round trip that a real visitor pays for and the database serves.
@@ -33,11 +34,15 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </AuthProvider>
+        {/* Language sits outside auth and toasts: it decides the page's
+            direction and typeface, which everything below inherits. */}
+        <I18nProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </AuthProvider>
+        </I18nProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>
