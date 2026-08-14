@@ -33,6 +33,47 @@ Branch everything is on: `prompt-10-storefront` (also pushed to `main` and
 
 ---
 
+## NEXT SESSION — one job only: a gift card in the cart (spec 9.1 / 9.2)
+
+Start fresh. Do not touch anything else. Marwan's rule, in his words: no
+fake product row and no fake store to stand in for a gift card. No fake data
+in the database, ever.
+
+**The constraint that decides the design:** `sub_orders.partner_id` is NOT
+NULL. Every sub-order must name a real store, and a gift card has none. That
+is precisely why the fake-store shortcut is tempting, and it is banned.
+
+**The shape that follows:**
+
+1. `cart_items.product_id` becomes nullable, and the table gains
+   `gift_card_amount_cents` plus the note fields. A CHECK enforces exactly
+   one of the two: either it points at a product, or it is a gift card for
+   an amount. A row can never be both or neither, so no existing cart row
+   changes meaning and nothing needs backfilling.
+2. Gift card lines have no `partner_id`, so they group into their own cart
+   on the Your carts screen. Everything already groups by
+   `product.partner.id`, which is null for these — that is the separation,
+   with no extra flag.
+3. `place_order` gains a way to say "the gift card cart" rather than a store
+   id. Today `p_partner_id = null` means "everything", so a third state is
+   needed — most likely a separate argument, because overloading null would
+   silently change what existing callers get.
+4. The card is minted inside `place_order`, by calling
+   `issue_gift_card_internal` (0045) — the one place that writes a gift card
+   row. It is created `pending_payment`, exactly like a card bought today,
+   so no card becomes spendable until an admin confirms the money arrived.
+   The client never mints anything and never sets a balance.
+5. Gift card lines cannot be `order_items`, because those hang off a
+   sub_order which needs a store. They need their own table linking the
+   order to the cards it created. Store payables stay untouched, which is
+   correct: CADO owes no partner anything for its own gift card.
+6. A gift-card-only order therefore has zero sub_orders. Check what that
+   breaks before writing anything — the dashboard order list, the driver
+   flow, and the order confirmation screen all read sub_orders today.
+
+**Open question for Marwan, still unanswered:** his instruction ended
+mid-sentence at "and how that". Ask before building.
+
 ## Session of 2026-08-14 — the gift-card design pass
 
 Built and verified against a local dev server (Parts 1, 3, 4, 5, 6, 7 and the
