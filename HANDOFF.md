@@ -486,3 +486,22 @@ into `apps/web/public/surprise/` which takes him two minutes.
 Grid indexes worth taking (alt text calls hampers "laundry basket"):
 0 = ready gift boxes with printed mugs (the exact style he wants),
 3, 9, 15, 22, 27 = hampers, chocolate boxes, toy boxes.
+
+## The Android APK — the link already exists, do NOT rebuild
+
+Built 2026-08-14, Persimmon CADO icon, 92 MB. The link is permanent and
+lives on Expo's servers:
+
+https://expo.dev/artifacts/eas/beVupGEBdAjW-AmpALeFR6umMuNa8ztds38ECky0oZk.apk
+
+Build page:
+https://expo.dev/accounts/cado222222222222222222/projects/cadolebanon/builds/0bcdc58b-988c-47c0-8005-9d9ba1632f96
+
+If Marwan asks for "the app link", send that URL. A rebuild takes 10-20
+minutes and is only needed when the ICON, NAME, SPLASH or Android permissions
+change — never for shop content. The app is a WebView wrapping
+cado-web.vercel.app, so products, prices, categories and features all update
+by themselves.
+
+Past builds are also listable with `EXPO_TOKEN=... npx eas-cli build:list
+--platform android`, account `marwanfattal`.
