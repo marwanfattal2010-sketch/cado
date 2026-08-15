@@ -1172,6 +1172,7 @@ export type Database = {
           recipient_phone: string | null
           subtotal: number
           total: number
+          wallet_amount: number | null
         }
         Insert: {
           address_source?: string
@@ -1194,6 +1195,7 @@ export type Database = {
           recipient_phone?: string | null
           subtotal: number
           total: number
+          wallet_amount?: number | null
         }
         Update: {
           address_source?: string
@@ -1216,6 +1218,7 @@ export type Database = {
           recipient_phone?: string | null
           subtotal?: number
           total?: number
+          wallet_amount?: number | null
         }
         Relationships: [
           {
@@ -1906,6 +1909,102 @@ export type Database = {
           },
         ]
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          gift_card_id: string | null
+          id: string
+          kind: string
+          note: string | null
+          order_id: string | null
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          gift_card_id?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          order_id?: string | null
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          gift_card_id?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          order_id?: string | null
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_gift_card_id_fkey"
+            columns: ["gift_card_id"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number
+          card_number: string
+          created_at: string
+          currency: string
+          id: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          card_number: string
+          created_at?: string
+          currency?: string
+          id?: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          card_number?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2042,6 +2141,7 @@ export type Database = {
         Returns: string
       }
       current_client_ip: { Args: never; Returns: string }
+      generate_card_number: { Args: never; Returns: string }
       generate_gift_card_code: { Args: never; Returns: string }
       generate_gift_card_pin: { Args: never; Returns: string }
       generate_pool_slug: { Args: never; Returns: string }
@@ -2147,6 +2247,14 @@ export type Database = {
         }[]
       }
       my_partner_id: { Args: never; Returns: string }
+      my_wallet: {
+        Args: never
+        Returns: {
+          balance: number
+          card_number: string
+          currency: string
+        }[]
+      }
       partner_order_context: {
         Args: { p_sub_order_id: string }
         Returns: {
@@ -2200,6 +2308,25 @@ export type Database = {
         }
         Returns: string
       }
+      place_order_with_wallet: {
+        Args: {
+          p_address_source?: string
+          p_delivery_address_id?: string
+          p_delivery_date?: string
+          p_delivery_time_slot?: string
+          p_gift_card_code?: string
+          p_gift_message?: string
+          p_hide_price?: boolean
+          p_is_gift?: boolean
+          p_notes?: string
+          p_partner_id?: string
+          p_payment_method?: string
+          p_recipient_name?: string
+          p_recipient_phone?: string
+          p_use_balance?: boolean
+        }
+        Returns: string
+      }
       purchase_gift_card: {
         Args: {
           p_amount: number
@@ -2244,54 +2371,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      redeem_gift_card_to_wallet: {
+        Args: { p_code: string; p_pin?: string }
+        Returns: {
+          new_balance: number
+          redeemed: number
+        }[]
+      }
       refund_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
+      refund_wallet_balance: { Args: { p_order_id: string }; Returns: number }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      spend_wallet_balance: {
+        Args: { p_amount: number; p_order_id: string; p_profile_id: string }
+        Returns: number
+      }
       void_order_gift_cards: {
         Args: { p_order_id: string }
         Returns: {
           gift_card_id: string
           outcome: string
         }[]
-      }
-      // --- CADO wallet (migrations 0063 / 0064) ---
-      // Hand-written because this file is GENERATED from the live schema and
-      // these functions do not exist there yet. Regenerate this file once
-      // 0063 and 0064 are applied, and delete this block rather than keeping
-      // two sources of truth.
-      my_wallet: {
-        Args: Record<string, never>
-        Returns: {
-          card_number: string
-          balance: number
-          currency: string
-        }[]
-      }
-      redeem_gift_card_to_wallet: {
-        Args: { p_code: string; p_pin?: string | null }
-        Returns: {
-          redeemed: number
-          new_balance: number
-        }[]
-      }
-      place_order_with_wallet: {
-        Args: {
-          p_delivery_address_id?: string | null
-          p_delivery_date?: string | null
-          p_delivery_time_slot?: string | null
-          p_notes?: string | null
-          p_gift_card_code?: string | null
-          p_payment_method?: string
-          p_is_gift?: boolean
-          p_recipient_name?: string | null
-          p_recipient_phone?: string | null
-          p_address_source?: string
-          p_hide_price?: boolean
-          p_gift_message?: string | null
-          p_partner_id?: string | null
-          p_use_balance?: boolean
-        }
-        Returns: string
       }
     }
     Enums: {

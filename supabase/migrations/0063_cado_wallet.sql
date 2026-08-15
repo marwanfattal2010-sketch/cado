@@ -271,9 +271,15 @@ begin
 
   -- Empty the card and close it in the same statement that credits the
   -- wallet. Both or neither.
+  --
+  -- 'depleted', NOT 'redeemed'. gift_cards.status has a CHECK constraint
+  -- allowing pending_payment / active / depleted / expired / cancelled /
+  -- fraud_hold, and 'depleted' is this project's existing word for a card
+  -- with nothing left on it. Inventing a seventh status would have failed
+  -- every redemption — which is exactly what the first race test did.
   update gift_cards
      set current_balance = 0,
-         status = 'redeemed'
+         status = 'depleted'
    where id = v_card.id;
 
   v_new := v_wallet.balance + v_amount;
