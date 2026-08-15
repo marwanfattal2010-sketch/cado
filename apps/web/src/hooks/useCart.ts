@@ -109,6 +109,9 @@ export function usePlaceGiftCardOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      // The balance may have just been spent, so the card must not keep
+      // showing the old figure.
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
     },
   });
 }
@@ -239,7 +242,38 @@ export function usePlaceOrder() {
        * one store because one delivery is one trip.
        */
       partnerId?: string | null;
+      /**
+       * Spend the CADO wallet balance on this order.
+       *
+       * A BOOLEAN, never an amount. How much the wallet covers is decided by
+       * the database from `orders.total` inside the same transaction that
+       * writes the order — see place_order_with_wallet in 0064. An amount
+       * sent from here would be an amount someone could edit in a console.
+       */
+      useBalance?: boolean;
     }) => {
+      // Routed to the wrapper only when the wallet is actually being used, so
+      // an ordinary checkout keeps calling exactly the function it always has.
+      if (input.useBalance) {
+        const { data, error } = await supabase.rpc("place_order_with_wallet", {
+          p_delivery_address_id: input.deliveryAddressId ?? null,
+          p_notes: input.notes ?? null,
+          p_gift_card_code: input.giftCardCode ?? null,
+          p_payment_method: input.paymentMethod,
+          p_is_gift: input.isGift ?? true,
+          p_recipient_name: input.recipientName ?? null,
+          p_recipient_phone: input.recipientPhone ?? null,
+          p_address_source: input.addressSource ?? "buyer",
+          p_hide_price: input.hidePrice ?? false,
+          p_gift_message: input.giftMessage ?? null,
+          p_delivery_time_slot: input.deliverySlot ?? null,
+          p_partner_id: input.partnerId ?? null,
+          p_use_balance: true,
+        });
+        if (error) throw error;
+        return data as string;
+      }
+
       const { data, error } = await supabase.rpc("place_order", {
         p_delivery_address_id: input.deliveryAddressId ?? null,
         p_notes: input.notes ?? null,
@@ -260,6 +294,9 @@ export function usePlaceOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      // The balance may have just been spent, so the card must not keep
+      // showing the old figure.
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
     },
   });
 }

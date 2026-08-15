@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, usePlaceGiftCardOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
+import { useWallet } from "../hooks/useWallet";
 import { CUTOFF_LABEL, getArea, getAddressDetails, sameDayOpen } from "../lib/area";
 import { useCadoHours, closedLabel } from "../hooks/useCadoHours";
 import { formatMoney } from "../lib/money";
@@ -82,6 +83,8 @@ export function Checkout() {
 
   const [isGift, setIsGift] = useState(false);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
+  const wallet = useWallet();
+  const [useBalance, setUseBalance] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [giftCardCode, setGiftCardCode] = useState("");
   const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
@@ -204,6 +207,22 @@ export function Checkout() {
 
   const discount = giftCardBalance !== null ? Math.min(giftCardBalance, subtotal + deliveryFee) : 0;
   const total = Math.max(subtotal + deliveryFee - discount, 0);
+
+  /**
+   * The CADO balance.
+   *
+   * Everything below is DISPLAY ONLY. The real arithmetic happens inside
+   * place_order_with_wallet, in the same transaction as the order, from the
+   * total the database computed. These figures exist so the screen can say
+   * what will happen; if they ever disagreed with the server, the server is
+   * right and this is a rendering bug, not a money bug.
+   */
+  const walletBalance = wallet.data?.balance ?? 0;
+  const canUseBalance = !!session && walletBalance > 0 && total > 0;
+  const balanceApplied = useBalance ? Math.min(walletBalance, total) : 0;
+  const dueAfterBalance = Math.max(total - balanceApplied, 0);
+  /** Covered in full means there is no second payment to choose. */
+  const fullyCovered = useBalance && dueAfterBalance === 0;
   const savedAddress = addresses.data?.[0];
   // Going straight to the recipient means their address, so the saved one is
   // not offered — it is the wrong address by definition.
@@ -368,6 +387,9 @@ export function Checkout() {
         paymentMethod: payment,
         giftCardCode: giftCardBalance !== null ? giftCardCode.trim() : undefined,
         partnerId: storeFilter,
+        // A yes/no. How much it covers is the database's decision, made from
+        // the total it computed — see place_order_with_wallet.
+        useBalance: canUseBalance && useBalance,
       });
       sessionStorage.removeItem("cado-gift-card");
       navigate(`/order-confirmed/${orderId}`, {
@@ -538,6 +560,40 @@ export function Checkout() {
       </Section>
 
       <Section n="③" title="Payment">
+        {/*
+          The CADO balance sits ABOVE the payment methods, and is a checkbox
+          rather than one of the radios, because it is not an alternative to
+          them — it is money already paid that comes off first. When it covers
+          everything the radios disappear, since there is nothing left to
+          collect and offering a method would be asking for money twice.
+        */}
+        {canUseBalance ? (
+          <label className="mb-3 flex min-h-[56px] cursor-pointer items-start gap-2.5 rounded-card border border-persimmon/40 bg-persimmon/5 px-3 py-2.5 text-body">
+            <input
+              type="checkbox"
+              checked={useBalance}
+              onChange={(e) => setUseBalance(e.target.checked)}
+              className="mt-1 h-5 w-5 shrink-0 accent-[color:rgb(var(--persimmon))]"
+            />
+            <span className="min-w-0">
+              <span className="block font-medium">Pay with CADO balance</span>
+              <span className="mt-0.5 block text-caption text-muted">
+                {useBalance
+                  ? fullyCovered
+                    ? `${formatMoney(balanceApplied)} covers this order in full.`
+                    : `${formatMoney(balanceApplied)} off — ${formatMoney(dueAfterBalance)} left to pay.`
+                  : `You have ${formatMoney(walletBalance)} on your card.`}
+              </span>
+            </span>
+          </label>
+        ) : null}
+
+        {fullyCovered ? (
+          <p className="text-caption text-muted">
+            Nothing left to pay — your balance covers it.
+          </p>
+        ) : (
+        <>
         <div className="flex flex-col gap-2">
           {/* Plain rows on a hairline, not raised cards. Four shadowed
               panels in a column read as four separate things to decide. */}
@@ -564,8 +620,11 @@ export function Checkout() {
             is would take money we can't charge. */}
         {payment === "whish" || payment === "omt" ? (
           <p className="mt-3 rounded-card bg-surface-sunk px-3 py-2 text-caption text-muted">
-            Place the order first, then send {formatMoney(total)}. We confirm the transfer before the store
-            dispatches.
+            {/* The amount to transfer is what's left AFTER the balance, not
+                the order total. Quoting the total here would have people
+                sending money they no longer owe. */}
+            Place the order first, then send {formatMoney(dueAfterBalance)}. We confirm the transfer before
+            the store dispatches.
           </p>
         ) : payment === "card" ? (
           <p className="mt-3 rounded-card bg-surface-sunk px-3 py-2 text-caption text-muted">
@@ -573,6 +632,8 @@ export function Checkout() {
             to cash on delivery.
           </p>
         ) : null}
+        </>
+        )}
       </Section>
 
       {/* What was already chosen on the product page, shown back rather than

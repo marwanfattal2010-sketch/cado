@@ -2254,6 +2254,45 @@ export type Database = {
           outcome: string
         }[]
       }
+      // --- CADO wallet (migrations 0063 / 0064) ---
+      // Hand-written because this file is GENERATED from the live schema and
+      // these functions do not exist there yet. Regenerate this file once
+      // 0063 and 0064 are applied, and delete this block rather than keeping
+      // two sources of truth.
+      my_wallet: {
+        Args: Record<string, never>
+        Returns: {
+          card_number: string
+          balance: number
+          currency: string
+        }[]
+      }
+      redeem_gift_card_to_wallet: {
+        Args: { p_code: string; p_pin?: string | null }
+        Returns: {
+          redeemed: number
+          new_balance: number
+        }[]
+      }
+      place_order_with_wallet: {
+        Args: {
+          p_delivery_address_id?: string | null
+          p_delivery_date?: string | null
+          p_delivery_time_slot?: string | null
+          p_notes?: string | null
+          p_gift_card_code?: string | null
+          p_payment_method?: string
+          p_is_gift?: boolean
+          p_recipient_name?: string | null
+          p_recipient_phone?: string | null
+          p_address_source?: string
+          p_hide_price?: boolean
+          p_gift_message?: string | null
+          p_partner_id?: string | null
+          p_use_balance?: boolean
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

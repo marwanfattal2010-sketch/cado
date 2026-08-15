@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { GiftIcon, GroupIcon, TicketIcon } from "../components/Icons";
+import { WalletCard } from "../components/giftcard/WalletCard";
+import { RedeemToWallet } from "../components/giftcard/RedeemToWallet";
 
 type Option = {
   to: string;
@@ -74,6 +76,13 @@ export function GiftCards() {
       <p className="mt-2 max-w-sm text-body text-muted">
         Not sure what to pick? Let them choose — a CADO gift card works at every store on the app.
       </p>
+
+      {/* The person's own card first, then how to top it up, then the three
+          ways to give one away. Your money before other people's. */}
+      <div className="mt-5">
+        <WalletCard />
+        <RedeemToWallet />
+      </div>
 
       <div className="mt-6 flex flex-col gap-3">
         {OPTIONS.map((o) => (

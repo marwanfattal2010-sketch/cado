@@ -273,3 +273,23 @@ export function SlidersIcon({ className = base }: IconProps) {
     </svg>
   );
 }
+
+/** Shown / hidden, for the wallet balance toggle. Same 1.7 stroke as the rest. */
+export function EyeIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon({ className = base }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 6.5C2.9 8.4 2 12 2 12s3.6 6.5 10 6.5c1.8 0 3.4-.5 4.8-1.2M9.6 5.7A9.9 9.9 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a19 19 0 0 1-3.2 4" />
+      <path d="M9.9 9.9a2.6 2.6 0 0 0 3.6 3.7" />
+      <path d="m3 3 18 18" />
+    </svg>
+  );
+}
