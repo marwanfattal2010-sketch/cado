@@ -46,6 +46,8 @@ export function Search() {
   const [shown, setShown] = useState(PAGE);
   const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  /** Which group the sheet opens on, set by whichever chip was tapped. */
+  const [panelGroup, setPanelGroup] = useState<Parameters<typeof BrowseFilterPanel>[0]["initialGroup"]>(null);
   const [sort, setSort] = useState<BrowseSort>("recommended");
   const input = useRef<HTMLInputElement>(null);
 
@@ -274,8 +276,10 @@ export function Search() {
                 options={browseOptions}
                 sort={sort}
                 onSort={setSort}
-                onFilters={setFilters}
-                onOpenPanel={() => setFilterOpen(true)}
+                onOpenPanel={(g) => {
+                  setPanelGroup(g ?? null);
+                  setFilterOpen(true);
+                }}
               />
               <ActiveFilterChips
                 chips={activeChips}
@@ -354,6 +358,7 @@ export function Search() {
         options={browseOptions}
         filters={filters}
         onApply={setFilters}
+        initialGroup={panelGroup}
         sizesByProduct={variants.data?.byProduct}
       />
     </div>

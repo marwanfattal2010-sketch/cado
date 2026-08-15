@@ -336,6 +336,8 @@ function Results({
   };
 
   const [filterOpen, setFilterOpen] = useState(false);
+  /** Which group the sheet opens on, set by whichever chip was tapped. */
+  const [panelGroup, setPanelGroup] = useState<Parameters<typeof BrowseFilterPanel>[0]["initialGroup"]>(null);
 
   const items = useMemo(() => (results.data?.items ?? []) as Row[], [results.data]);
   const totalBeforeBudget = results.data?.totalBeforeBudget ?? 0;
@@ -477,8 +479,10 @@ function Results({
             options={browseOptions}
             sort={sort}
             onSort={setSort}
-            onFilters={setFilters}
-            onOpenPanel={() => setFilterOpen(true)}
+            onOpenPanel={(g) => {
+              setPanelGroup(g ?? null);
+              setFilterOpen(true);
+            }}
           />
         </div>
       )}
@@ -607,6 +611,7 @@ function Results({
         options={browseOptions}
         filters={filters}
         onApply={setFilters}
+        initialGroup={panelGroup}
         sizesByProduct={variants.data?.byProduct}
       />
     </div>

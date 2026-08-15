@@ -1,4 +1,5 @@
 import { AUDIENCES, budgetBySlug, inBudgetRange } from "../lib/filters";
+import { formatMoney } from "../lib/money";
 
 /**
  * One filter model, one matcher, one panel — shared by the category page, the
@@ -29,6 +30,20 @@ export type CategoryFilters = {
   color: string[];
   /** Budget band slugs. Always resolved through inBudgetRange(). */
   budget: string[];
+  /**
+   * A typed-in price range, independent of the preset bands.
+   *
+   * Deliberately a separate pair rather than a synthetic band: the bands are
+   * a fixed published vocabulary that the chips, the quiz and the URL all
+   * share, and inventing "band" slugs at runtime would break every one of
+   * them. Bands and a typed range AND together — asking for "Under $50" and
+   * then typing 20-30 means 20-30, not both lists merged.
+   *
+   * Upper bound EXCLUSIVE, matching inBudgetRange(), so a $50 item is never
+   * in two ranges at once.
+   */
+  priceMin: number | null;
+  priceMax: number | null;
   storeId: string[];
   /** Top-level category slug. Only offered outside a category page. */
   category: string[];
@@ -51,6 +66,8 @@ export const NO_FILTERS: CategoryFilters = {
   category: [],
   subcategory: [],
   occasion: [],
+  priceMin: null,
+  priceMax: null,
   sameDayOnly: false,
   onSale: false,
   inStock: false,
@@ -100,6 +117,16 @@ export function filtersToParams(f: CategoryFilters, into: URLSearchParams): void
   for (const key of FLAG_KEYS) {
     if (f[key]) into.set(FILTER_PREFIX + key, "1");
   }
+  if (f.priceMin != null) into.set(FILTER_PREFIX + "priceMin", String(f.priceMin));
+  if (f.priceMax != null) into.set(FILTER_PREFIX + "priceMax", String(f.priceMax));
+}
+
+/** A price out of the URL. Rejects junk rather than letting NaN reach the grid. */
+function priceParam(params: URLSearchParams, key: string): number | null {
+  const raw = params.get(FILTER_PREFIX + key);
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 export function filtersFromParams(params: URLSearchParams): CategoryFilters {
@@ -111,6 +138,8 @@ export function filtersFromParams(params: URLSearchParams): CategoryFilters {
   for (const key of FLAG_KEYS) {
     if (params.get(FILTER_PREFIX + key) === "1") f[key] = true;
   }
+  f.priceMin = priceParam(params, "priceMin");
+  f.priceMax = priceParam(params, "priceMax");
   return f;
 }
 
@@ -167,6 +196,10 @@ export function productMatches(
   // Never replace this with a raw min/max comparison.
   if (f.budget.length && !f.budget.some((b) => inBudgetRange(Number(p.price), budgetBySlug(b))))
     return false;
+  // A typed range ANDs with the bands rather than joining them, and keeps the
+  // same exclusive upper bound so the two cannot disagree about a $50 item.
+  if (f.priceMin != null && Number(p.price) < f.priceMin) return false;
+  if (f.priceMax != null && Number(p.price) >= f.priceMax) return false;
   if (f.storeId.length && !(p.partner?.id && f.storeId.includes(p.partner.id))) return false;
   if (f.category.length && !(p.category?.slug && f.category.includes(p.category.slug))) return false;
   if (f.subcategory.length && !(p.subcategory?.slug && f.subcategory.includes(p.subcategory.slug)))
@@ -189,6 +222,9 @@ export function productMatches(
 export function countActive(f: CategoryFilters): number {
   return (
     LIST_KEYS.reduce((n, k) => n + f[k].length, 0) +
+    // A typed range counts once however many ends were filled in — "20 to 60"
+    // is one decision to the person who made it, not two.
+    (f.priceMin != null || f.priceMax != null ? 1 : 0) +
     (f.sameDayOnly ? 1 : 0) +
     (f.onSale ? 1 : 0) +
     (f.inStock ? 1 : 0)
@@ -209,12 +245,15 @@ export function toggleFilter(
  *  one boolean group. */
 export function removeFilter(
   f: CategoryFilters,
-  key: keyof CategoryFilters,
+  key: keyof CategoryFilters | "priceRange",
   value?: string
 ): CategoryFilters {
   if (key === "sameDayOnly") return { ...f, sameDayOnly: false };
   if (key === "onSale") return { ...f, onSale: false };
   if (key === "inStock") return { ...f, inStock: false };
+  // One chip carries both ends, so removing it clears both.
+  if (key === "priceRange" || key === "priceMin" || key === "priceMax")
+    return { ...f, priceMin: null, priceMax: null };
   const list = f[key as ListKey];
   return { ...f, [key]: value == null ? [] : list.filter((v) => v !== value) };
 }
@@ -222,7 +261,8 @@ export function removeFilter(
 export type ActiveFilterChip = {
   /** Stable across renders so React keys don't collide between groups. */
   id: string;
-  key: keyof CategoryFilters;
+  /** `priceRange` is not a field — it is the pair, removed together. */
+  key: keyof CategoryFilters | "priceRange";
   value?: string;
   label: string;
 };
@@ -249,6 +289,15 @@ export function filterLabels(
   for (const v of f.size) push("size", v, v);
   for (const v of f.storeId)
     push("storeId", v, ctx.stores?.find((s) => s.id === v)?.name ?? "Store");
+  if (f.priceMin != null || f.priceMax != null) {
+    const lo = f.priceMin != null ? formatMoney(f.priceMin) : null;
+    const hi = f.priceMax != null ? formatMoney(f.priceMax) : null;
+    out.push({
+      id: "priceRange",
+      key: "priceRange",
+      label: lo && hi ? `${lo} – ${hi}` : lo ? `${lo}+` : `Under ${hi}`,
+    });
+  }
   if (f.sameDayOnly) out.push({ id: "sameDayOnly", key: "sameDayOnly", label: "Arrives today" });
   return out;
 }

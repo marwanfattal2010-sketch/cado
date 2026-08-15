@@ -156,11 +156,39 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: PERSIMMON },
   safe: { flex: 1, backgroundColor: PERSIMMON },
   web: { flex: 1, backgroundColor: PERSIMMON },
-  splash: { backgroundColor: PERSIMMON, alignItems: "center", justifyContent: "center" },
+  /**
+   * elevation + zIndex are the whole reason this screen was invisible.
+   *
+   * On Android a WebView is a real native view, and native views are composited
+   * ABOVE React Native views regardless of JSX order unless the RN view is
+   * given an elevation. So this overlay was mounting, running its timers and
+   * fading out exactly as designed — underneath the WebView, where nobody
+   * could ever see it. The pattern was in the APK every time; it was drawn
+   * behind the website.
+   *
+   * elevation is the Android half, zIndex the iOS half. Both, or it breaks on
+   * one platform and looks fine on the other.
+   */
+  splash: {
+    backgroundColor: PERSIMMON,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 24,
+    zIndex: 24,
+  },
   // The 100% is not redundant with absoluteFill. Left to itself an Image falls
   // back to the picture's own 1242x2688, and the pattern comes out about three
   // times too big with two icons across the screen instead of six. Percentages
   // resolve against the parent everywhere, so this is unambiguous.
   pattern: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },
-  wordmark: { width: 200, height: 200 },
+  /**
+   * 280, and app.json's `imageWidth` MUST be the same number.
+   *
+   * These two draw the same wordmark on two different screens — Android's
+   * native splash and this one — and the handover between them is only
+   * invisible while they are identical. At 200 Marwan could see the swap
+   * happen ("I get the old one, then after 2 seconds the good one"), which is
+   * the tell that the two sizes had drifted apart. Change one, change both.
+   */
+  wordmark: { width: 280, height: 280 },
 });

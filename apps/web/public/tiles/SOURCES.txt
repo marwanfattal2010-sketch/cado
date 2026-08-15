@@ -7,6 +7,17 @@ Not yet wired to browse_tiles.image_url, and not deployed.
 group-gift.jpg https://unsplash.com/photos/1543269865-cbf427effbad
 occasions.jpg  https://unsplash.com/photos/1519225421980-715cb0215aed
 
+Fashion "Shop by category" tiles, reordered Men / Women / Kids and rephotographed:
+fashion-men.jpg    https://unsplash.com/photos/1618886614638-80e3c103d31a
+fashion-women.jpg  https://unsplash.com/photos/1657373307141-349a3393d4d9
+fashion-kids.jpg   https://unsplash.com/photos/1675183713626-81e6de4552e1
+
+The Men tile used to be a brown duffel bag — an accessory standing in for
+menswear. Every one of these three was downloaded and opened before being
+wired up. Rejected along the way: a CGI render of floating gift boxes, a
+wrapping-paper-and-scissors shot, and two pairs of shoes with the maker's
+name legible on the insole ("BARKER", "REDTAPE").
+
 gift-cards.jpg is NOT a stock photo any more.
 
 It was black gift boxes with gold bows — the retired black-and-gold branding,

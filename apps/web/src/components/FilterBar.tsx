@@ -22,7 +22,8 @@ export function ActiveFilterChips({
   onClear,
 }: {
   chips: ActiveFilterChip[];
-  onRemove: (key: keyof CategoryFilters, value?: string) => void;
+  /** `priceRange` is the typed min/max pair, which clears as one chip. */
+  onRemove: (key: keyof CategoryFilters | "priceRange", value?: string) => void;
   onClear: () => void;
 }) {
   if (!chips.length) return null;

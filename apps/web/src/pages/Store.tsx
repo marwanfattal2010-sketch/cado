@@ -57,6 +57,8 @@ export function Store() {
 
   const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
+  /** Which group the sheet opens on, set by whichever chip was tapped. */
+  const [panelGroup, setPanelGroup] = useState<Parameters<typeof BrowseFilterPanel>[0]["initialGroup"]>(null);
   const [sort, setSort] = useState<BrowseSort>("recommended");
   const [shown, setShown] = useState(PAGE);
   const [tab, setTab] = useState<string | null>(null);
@@ -342,8 +344,10 @@ export function Store() {
           options={filterOptions}
           sort={sort}
           onSort={setSort}
-          onFilters={setFilters}
-          onOpenPanel={() => setSheetOpen(true)}
+          onOpenPanel={(g) => {
+            setPanelGroup(g ?? null);
+            setSheetOpen(true);
+          }}
         />
 
         <ActiveFilterChips
@@ -407,6 +411,7 @@ export function Store() {
         options={filterOptions}
         filters={filters}
         onApply={setFilters}
+        initialGroup={panelGroup}
         sizesByProduct={sizes}
       />
     </div>
