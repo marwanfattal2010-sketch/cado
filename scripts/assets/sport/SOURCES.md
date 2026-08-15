@@ -105,3 +105,34 @@ than shot against a backdrop, so they sit small in the frame. There is a faint
 maker's marking on the glove itself, illegible at any size the app displays.
 If he wants tighter product-style shots across Sport, that is a photography
 job for the real shop, not something stock can solve.
+
+## 2026-08-15 — Sport became an equipment shop, not a clothing rail
+
+Marwan: "I don't mean sports clothes, I mean balls, water bottles, dumbbells."
+
+That call fixed a problem that had resisted three attempts. Ten Sport products
+had no photograph and every one of them was apparel. Seventeen sportswear
+candidates were downloaded and OPENED on this date and all seventeen were
+rejected for visible branding:
+
+  Nike x2 (a Free running shoe sold as an indoor trainer, and boots)
+  Sergio Tacchini x2, Champion, Puma, Asics
+  Barker and Redtape (both legible on the insole)
+  a duffel bag covered in Getty / iStock / Unsplash's own logos
+  a skipping rope whose handles are sausages — a conceptual art piece, and
+    the alt text said only "orange skipping rope"
+
+Free sportswear photography is almost entirely of branded gear. Equipment is
+not: a dumbbell is a lump of iron and a bottle is a bottle.
+
+Seven apparel products were DEACTIVATED, not deleted — reversible in one
+update if real photography ever arrives — and equipment added in their place:
+
+dumbbell-pair.jpg     https://unsplash.com/photos/1685633224688-6a77675eb119
+insulated-bottle.jpg  https://unsplash.com/photos/1602143407151-7111542de6e8
+
+Both were opened and checked for logos before being attached.
+
+STILL WITHOUT A PHOTO: Shin Pads, Skipping Rope, Tube of Tennis Balls. All
+three are equipment and should be findable; they simply were not found yet.
+A missing photo reads as "not shot yet", which is true.
