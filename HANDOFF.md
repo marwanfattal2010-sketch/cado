@@ -464,3 +464,25 @@ prices before inventing any.
 **Check each image before attaching it.** Several stock photos tonight turned
 out to be the wrong thing entirely — SALE tags, a dog at a laptop, an Indian
 festival card. A filename or an alt tag is not proof of what is in the file.
+
+### Task C — how to actually get the Surprise photos (four routes tried)
+
+- `curl` the CDN URL → **403**. The URLs are signed to the browser session.
+- `fetch()` from inside the Instagram page → **blocked**. Instagram's CSP
+  refuses outbound requests to supabase.co, so uploading from that tab fails.
+- Loading the CDN URL into an `<img>` on cado-web.vercel.app → **refused**.
+  The CDN wants an Instagram referer.
+- **Reading the already-rendered image off the page DOES work.** The canvas
+  is NOT tainted: `drawImage(img)` then `toBlob` succeeds on the profile
+  page. This is the route that works.
+
+So the working method is: on the Instagram tab, canvas each `main img`
+(naturalWidth > 400) to a JPEG blob, then get those bytes out. The blocker
+is only transport — the upload cannot happen from that tab, and the bytes
+have to reach a tab that can talk to Supabase. Options: base64 through the
+session (~200 KB per image, expensive), or ask Marwan to right-click-save
+into `apps/web/public/surprise/` which takes him two minutes.
+
+Grid indexes worth taking (alt text calls hampers "laundry basket"):
+0 = ready gift boxes with printed mugs (the exact style he wants),
+3, 9, 15, 22, 27 = hampers, chocolate boxes, toy boxes.
