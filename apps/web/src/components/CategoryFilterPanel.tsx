@@ -69,6 +69,60 @@ const LIST_KEYS = [
 ] as const;
 type ListKey = (typeof LIST_KEYS)[number];
 
+/**
+ * THE URL IS THE FILTER STATE.
+ *
+ * Refinements used to live in useState, and the report that killed that was
+ * precise: "selecting an occasion and then navigating or coming back loses
+ * the selection". Open a product, come back — the component remounted and
+ * every tick was gone. So the selection now round-trips through the query
+ * string: back restores it, reload restores it, and a filtered view is a
+ * shareable link for free.
+ *
+ * Every key is prefixed `f.` so this namespace can never collide with the
+ * entry params other pages already own (`occasion`, `budget`, `tab`, ...).
+ * Empty groups are simply absent — an unfiltered page keeps a clean URL.
+ */
+const FILTER_PREFIX = "f.";
+const FLAG_KEYS = ["sameDayOnly", "onSale", "inStock"] as const;
+
+export function filtersToParams(f: CategoryFilters, into: URLSearchParams): void {
+  // Clear the namespace first so a removed tick does not linger in the URL.
+  // forEach, not .keys(): this tsconfig's lib predates the iterator typings.
+  const stale: string[] = [];
+  into.forEach((_v, key) => {
+    if (key.startsWith(FILTER_PREFIX)) stale.push(key);
+  });
+  for (const key of stale) into.delete(key);
+  for (const key of LIST_KEYS) {
+    if (f[key].length) into.set(FILTER_PREFIX + key, f[key].join(","));
+  }
+  for (const key of FLAG_KEYS) {
+    if (f[key]) into.set(FILTER_PREFIX + key, "1");
+  }
+}
+
+export function filtersFromParams(params: URLSearchParams): CategoryFilters {
+  const f: CategoryFilters = { ...NO_FILTERS };
+  for (const key of LIST_KEYS) {
+    const v = params.get(FILTER_PREFIX + key);
+    if (v) f[key] = v.split(",").filter(Boolean);
+  }
+  for (const key of FLAG_KEYS) {
+    if (params.get(FILTER_PREFIX + key) === "1") f[key] = true;
+  }
+  return f;
+}
+
+/** True when any `f.`-namespaced key is present at all. */
+export function hasFilterParams(params: URLSearchParams): boolean {
+  let found = false;
+  params.forEach((_v, key) => {
+    if (key.startsWith(FILTER_PREFIX)) found = true;
+  });
+  return found;
+}
+
 /** The minimum a product row has to look like to be filterable. */
 export type FilterableProduct = {
   id: string;

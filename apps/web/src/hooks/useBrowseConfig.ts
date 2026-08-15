@@ -114,9 +114,15 @@ export function useTileImages() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("categories(slug), subcategories(slug), product_images(storage_path, is_primary)")
+        .select("categories(slug), subcategories(slug), is_featured, product_images(storage_path, is_primary)")
         .eq("is_active", true)
         .gt("stock_quantity", 0)
+        // Featured first, so a tile and a hero borrow the product someone
+        // CHOSE for that category rather than whichever row came back first.
+        // Without this, Flowers led with a gift box: it was simply the first
+        // Flowers row the database returned. Same column, same reason, as the
+        // hero slides in useCategorySlides.
+        .order("is_featured", { ascending: false })
         .limit(400);
       if (error) throw error;
       return data ?? [];

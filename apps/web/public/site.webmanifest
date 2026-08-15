@@ -1,0 +1,27 @@
+{
+  "name": "CADO — Gifts, Delivered",
+  "short_name": "CADO",
+  "description": "Lebanon's gift marketplace — delivered same-day.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F94E33",
+  "theme_color": "#F94E33",
+  "icons": [
+    {
+      "src": "/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

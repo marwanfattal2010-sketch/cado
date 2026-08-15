@@ -1,19 +1,20 @@
 /**
- * The official horizontal logo, inlined as a component rather than an <img>
- * pointing at the SVG file: an SVG loaded via <img> can't pull webfonts, so
- * the CADO wordmark would silently render in a fallback font. Inline, the
- * Jost 600 loaded in index.html applies. Geometry and colors are copied
- * verbatim from packages/shared/brand/logo-horizontal(.-cream).svg — do not
- * tweak them here; regenerate the masters instead.
+ * The official logo: the CADO wordmark, nothing else.
  *
- * The one deliberate departure from the master is the wordmark's tracking.
- * The brand SVG specifies letter-spacing 6, and at the size the header
- * actually renders it, the gap after the A reads as a word break — "CA DO"
- * rather than CADO. Tightened to 2.5, which keeps the airy feel without
- * looking like two words. The master SVGs are unchanged for print/export.
+ * The previous version drew a gift box with a gold bow beside the word. That
+ * mark is retired — Marwan's direction for the rebrand was explicit: "just
+ * the CADO wordmark — no gift box, no bow", and the app icon, the splash and
+ * the favicons already follow it. This was the last place the box appeared.
+ *
+ * Still inlined as a component rather than an <img> pointing at an SVG file:
+ * an SVG loaded via <img> can't pull webfonts, so the wordmark would silently
+ * render in a fallback font. Inline, the Jost 600 loaded in index.html
+ * applies.
+ *
+ * letterSpacing 2.5, not the brand SVG's 6: at header size the gap after the
+ * A reads as a word break — "CA DO". The master SVGs keep 6 for print.
  */
 const TEXT_COLORS = { ink: "#181611", cream: "#F6F1E7" } as const;
-const GOLD = "#B08D4F";
 
 export function BrandLogo({
   variant = "ink",
@@ -23,28 +24,17 @@ export function BrandLogo({
   variant?: "ink" | "cream";
   className?: string;
 }) {
-  const c = TEXT_COLORS[variant];
   return (
-    <svg viewBox="0 0 320 110" role="img" aria-label="CADO" className={className}>
-      <g transform="translate(48,55)">
-        <rect x="-24" y="-14" width="48" height="38" rx="5" fill="none" stroke={c} strokeWidth="3.6" />
-        <line x1="0" y1="-14" x2="0" y2="24" stroke={c} strokeWidth="3.6" />
-        <path
-          d="M0,-14 C-9,-30 -26,-26 -18,-16 M0,-14 C9,-30 26,-26 18,-16"
-          fill="none"
-          stroke={GOLD}
-          strokeWidth="3.6"
-          strokeLinecap="round"
-        />
-      </g>
+    <svg viewBox="0 0 200 110" role="img" aria-label="CADO" className={className}>
       <text
-        x="95"
+        x="100"
         y="68"
+        textAnchor="middle"
         fontFamily="Jost, sans-serif"
         fontWeight="600"
-        fontSize="40"
-        letterSpacing="0"
-        fill={c}
+        fontSize="44"
+        letterSpacing="2.5"
+        fill={TEXT_COLORS[variant]}
       >
         CADO
       </text>

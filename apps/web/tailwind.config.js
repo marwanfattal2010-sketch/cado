@@ -67,6 +67,16 @@ export default {
           blush: token("--tint-blush"),
           sand: token("--tint-sand"),
         },
+        // Text for the tints above, one per hue, ONLY on its own tint —
+        // see the measured contrast note in index.css.
+        deep: {
+          sage: token("--deep-sage"),
+          blush: token("--deep-blush"),
+          sand: token("--deep-sand"),
+        },
+        // The store name on a card: its own colour, so "who is this from"
+        // is scannable without reading the title.
+        "store-name": token("--store-name"),
       },
       fontFamily: {
         display: ['"Fraunces"', "Georgia", "serif"],

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCategories } from "../../hooks/useCategories";
 import { useSubcategories } from "../../hooks/useStores";
@@ -54,6 +54,8 @@ export function TabPanel({
   const navigate = useNavigate();
   const categories = useCategories();
   const images = useTileImages();
+  /** Where SHOP NOW lands on a category tab — see the onCta note below. */
+  const feedRef = useRef<HTMLDivElement | null>(null);
   const [filter, setFilter] = useState<FeedFilter>({});
   const [group, setGroup] = useState<string | null>(null);
   /** The sub-category circle currently narrowing the grid, by slug. */
@@ -80,7 +82,9 @@ export function TabPanel({
   }, [images, tab.filter.category_slug]);
 
   const categoryName = categories.data?.find((c) => c.slug === tab.filter.category_slug)?.name;
-  const slides = useCategorySlides(categoryId, categoryName);
+  // Hand slide 1's photo down so slide 2 can pick a different product — see
+  // the note on `avoidImage`.
+  const slides = useCategorySlides(categoryId, categoryName, bannerPhoto);
 
   const subTabsBlock = blocks.find((b) => b.type === "sub_tabs");
   const groups = useMemo(() => {
@@ -112,14 +116,35 @@ export function TabPanel({
                 accentToken={tab.accent_token}
                 fallbackImage={bannerPhoto}
                 extraSlides={slides}
-                // SHOP NOW opens the gift finder. The seeded banner rows
-                // carry link_type 'filter' with an empty object, which is a
-                // no-op — so an explicit `url` link wins if one is ever set,
-                // and everything else falls through to the quiz rather than
-                // to a button that does nothing.
-                onCta={(banner) =>
-                  navigate(banner.link_type === "url" && banner.link_value ? banner.link_value : "/find")
-                }
+                /*
+                 * SHOP NOW means two different things, and which one depends
+                 * entirely on whether we already know what they came for.
+                 *
+                 * On All we know nothing, so the three questions earn their
+                 * place. On a category tab the answer to "what kind of gift?"
+                 * is the tab they are standing on — asking it again is asking
+                 * a shopper to re-state what they just told us. So it drops
+                 * straight to the goods instead: this panel already holds the
+                 * hero, this category's stores and the full grid, so there is
+                 * nowhere to navigate to. Scrolling to the feed IS arriving.
+                 *
+                 * An explicit `url` on the banner row still wins either way —
+                 * that is an editor overriding on purpose. The seeded rows
+                 * carry link_type 'filter' with an empty object, which is a
+                 * no-op, so everything else falls through to the rules above
+                 * rather than to a button that does nothing.
+                 */
+                onCta={(banner) => {
+                  if (banner.link_type === "url" && banner.link_value) {
+                    navigate(banner.link_value);
+                    return;
+                  }
+                  if (primary) {
+                    navigate("/find");
+                    return;
+                  }
+                  feedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
               />
             );
 
@@ -210,7 +235,7 @@ export function TabPanel({
 
           case "product_feed":
             return (
-              <div key={block.id}>
+              <div key={block.id} ref={feedRef}>
                 {isFeedFiltered(filter) ? (
                   <div className="flex items-center gap-2 px-[var(--page-x)] pt-5">
                     <span className="text-[13px] text-muted">Showing</span>

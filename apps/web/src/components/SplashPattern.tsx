@@ -15,6 +15,12 @@
  * The icon set is deliberately CADO's own categories plus gift objects, so
  * the launch screen is a preview of what is actually in the shop rather than
  * generic decoration.
+ *
+ * THIS FILE IS THE SOURCE OF TRUTH FOR THE ARTWORK.
+ * `scripts/make-splash-pattern.mjs` reads the arrays and the numbered
+ * constants straight out of this file and renders the PNG the Android app
+ * actually ships. Keep the declarations below on one line each and in the
+ * `const NAME = value;` shape, because that is what the script looks for.
  */
 
 /** Every glyph is drawn inside the same 24x24 box so the grid stays even. */
@@ -57,26 +63,68 @@ const ICONS: string[] = [
   "M3 6h18v12H3zM3 6l9 7 9-7M8 18l4-3 4 3",
 ];
 
-/** How far apart the icons sit, in the pattern's own units. */
-const CELL = 88;
-const ICON = 26;
+/**
+ * How far apart the icons sit, in the pattern's own units, and how big.
+ *
+ * Measured against the Trendyol screen this is modelled on: there the icons
+ * are big enough to be recognised at a glance and sit close together, so the
+ * screen reads as a printed wrapping paper rather than as a few marks on a
+ * plain field. The first pass had the icon at 43% of its cell, which left so
+ * much air the eye read it as empty orange.
+ */
+const CELL = 72;
+const ICON = 46;
+
+/**
+ * One line weight for every glyph, and how visible the pattern is.
+ *
+ * The brief said "~10-15% white", and at 13% on a Persimmon field the icons
+ * were effectively invisible on a phone — the pattern was there and could not
+ * be seen. The reference screen is nearer a fifth. This is the number to turn
+ * DOWN if the pattern ever competes with the wordmark, and it is deliberately
+ * the only place that decision lives.
+ */
+const STROKE = 1.5;
+const OPACITY = 0.22;
+
+/**
+ * The tile is six icons wide and eighteen tall.
+ *
+ * Eighteen rows is not decoration: at the size this renders on a phone the
+ * whole screen is roughly one tile tall, so the tile never visibly repeats
+ * down the screen. Six columns keeps the icons about 30dp with sensible air
+ * around them.
+ */
+const COLS = 6;
+const ROWS = 18;
+
+/**
+ * Which glyph lands in which cell: `(row * STRIDE_ROW + col * STRIDE_COL) %
+ * 18`. Both strides are coprime with eighteen, so every icon appears — the
+ * previous 4x4 tile only ever showed the first sixteen and silently dropped
+ * the headphones and the gift card envelope. Stepping by 5 down and 7 across
+ * also means no glyph is ever next to or directly above a copy of itself.
+ *
+ * `scripts/make-splash-pattern.mjs` repeats this one line. If you change it,
+ * change it in both places.
+ */
+const STRIDE_ROW = 5;
+const STRIDE_COL = 7;
 
 /**
  * Rows are offset by half a cell so the eye reads a scatter rather than
  * vertical columns — the single thing that makes a tiled grid stop looking
- * like a spreadsheet.
+ * like a spreadsheet. ROWS is even, so that alternation survives the tile
+ * repeating and there is no seam where one tile meets the next.
  */
 function cells() {
   const out: { x: number; y: number; icon: string }[] = [];
-  const cols = 4;
-  const rows = 4;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const i = (r * cols + c) % ICONS.length;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
       out.push({
         x: c * CELL + (r % 2 ? CELL / 2 : 0),
         y: r * CELL,
-        icon: ICONS[i],
+        icon: ICONS[(r * STRIDE_ROW + c * STRIDE_COL) % ICONS.length],
       });
     }
   }
@@ -86,23 +134,30 @@ function cells() {
 /**
  * The pattern on its own, as an SVG that tiles seamlessly.
  *
- * The tile is one CELL wider than it draws so the half-cell offset on odd
- * rows has somewhere to go; anything that overflows is repeated by the
- * pattern, which is what keeps the seam invisible.
+ * Every icon is drawn at the same x pitch on every row — the half-cell offset
+ * on odd rows lines up exactly with the next tile along, because the tile is
+ * a whole number of cells wide. That is what keeps the seam invisible.
  */
 export function SplashPattern({ className = "" }: { className?: string }) {
-  const size = CELL * 4;
+  const w = COLS * CELL;
+  const h = ROWS * CELL;
   return (
-    <svg className={className} viewBox={`0 0 ${size} ${size}`} aria-hidden focusable="false">
+    <svg
+      className={className}
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden
+      focusable="false"
+    >
       <defs>
-        <pattern id="cado-splash-tile" width={size} height={size} patternUnits="userSpaceOnUse">
+        <pattern id="cado-splash-tile" width={w} height={h} patternUnits="userSpaceOnUse">
           <g
             fill="none"
             stroke="#FFFFFF"
-            strokeWidth="1.6"
+            strokeWidth={STROKE}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.13"
+            opacity={OPACITY}
           >
             {cells().map((cell, i) => (
               <g key={i} transform={`translate(${cell.x} ${cell.y}) scale(${ICON / 24})`}>
@@ -114,18 +169,47 @@ export function SplashPattern({ className = "" }: { className?: string }) {
 
         {/* The wordmark has to stay the first thing read, so the pattern is
             faded out through the middle rather than sitting at one opacity
-            across the whole screen. */}
-        <radialGradient id="cado-splash-clear" cx="50%" cy="50%" r="52%">
-          <stop offset="0%" stopColor="#000" stopOpacity="0" />
-          <stop offset="55%" stopColor="#000" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#000" stopOpacity="1" />
+            across the whole screen.
+
+            The stops are WHITE, not black. A mask is read by luminance, so
+            black stops evaluate to zero everywhere and the pattern renders as
+            nothing at all — which is what this did before, and nobody caught
+            it because the component was never mounted anywhere. */}
+        {/* A CLEARING, NOT A HOLE.
+
+            The first version faded to fully transparent at the centre and was
+            still only 15% of the way back at 38% of the radius, which erased
+            the whole middle third of the screen. On a phone that is a large
+            empty field with a pattern around the edges — the opposite of the
+            reference, where the icons carry right across and the wordmark
+            simply sits on top of them.
+
+            So the centre now dips rather than disappears: the icons stay
+            faintly present behind the wordmark, and the wordmark wins on
+            weight and contrast instead of on emptiness. */}
+        {/* The clearing is now shallow.
+
+            Two rounds of this were still invisible on a real phone, and the
+            reason is where the eye lands: it goes to the middle of the screen,
+            which is exactly the area this gradient was dimming most. A pattern
+            that is strongest in the corners and faintest where you are looking
+            reads as no pattern at all.
+
+            The wordmark does not need the help. It is cream on Persimmon at
+            200dp — it wins on contrast and weight regardless of what is behind
+            it, which is precisely how the reference screen works. */}
+        <radialGradient id="cado-splash-clear" cx="50%" cy="50%" r="62%">
+          <stop offset="0%" stopColor="#FFF" stopOpacity="0.62" />
+          <stop offset="30%" stopColor="#FFF" stopOpacity="0.78" />
+          <stop offset="62%" stopColor="#FFF" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#FFF" stopOpacity="1" />
         </radialGradient>
         <mask id="cado-splash-mask">
-          <rect width={size} height={size} fill="url(#cado-splash-clear)" />
+          <rect width={w} height={h} fill="url(#cado-splash-clear)" />
         </mask>
       </defs>
 
-      <rect width={size} height={size} fill="url(#cado-splash-tile)" mask="url(#cado-splash-mask)" />
+      <rect width={w} height={h} fill="url(#cado-splash-tile)" mask="url(#cado-splash-mask)" />
     </svg>
   );
 }

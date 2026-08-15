@@ -151,7 +151,16 @@ export function Product() {
           <button
             onClick={() => navigate(-1)}
             aria-label="Go back"
-            className="tap-44 absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
+            /*
+             * Direction-explicit, and it has to be.
+             * CADO runs in Arabic as well as English, and in RTL a plain
+             * `left-3` / `right-3` pair stopped being opposite corners —
+             * the two controls ended up on the same side, stacked, with one
+             * hanging off the screen edge. Back follows the reading
+             * direction (the corner you came from), the heart takes the
+             * other. Written out per direction so neither can drift.
+             */
+            className="tap-44 absolute top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur ltr:left-3 rtl:right-3"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
@@ -160,7 +169,8 @@ export function Product() {
           <button
             onClick={() => toggleFavorite.mutate({ productId: product.id, isFavorite })}
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            className="tap-44 absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur"
+            /* The opposite corner from Back, in both directions — see above. */
+            className="tap-44 absolute top-3 flex h-9 w-9 items-center justify-center rounded-pill bg-surface/80 text-ink backdrop-blur ltr:right-3 rtl:left-3"
           >
             <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
           </button>

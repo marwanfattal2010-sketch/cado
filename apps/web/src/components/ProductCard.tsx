@@ -6,6 +6,7 @@ import { timeUntilCutoff } from "../lib/area";
 import { formatMoney } from "../lib/money";
 import { storePath } from "../lib/routes";
 import { occasionByValue, recipientByValue } from "../lib/filters";
+import { useCategories } from "../hooks/useCategories";
 import { HeartIcon } from "./Icons";
 
 /** A product is "new" for a fortnight after it is listed. */
@@ -28,6 +29,10 @@ type ProductCardProps = {
   created_at?: string | null;
   occasion_tags?: string[] | null;
   recipient_tags?: string[] | null;
+  /** Resolved to a name and a tab slug for the category chip. */
+  category_id?: string | null;
+  /** Filled in by the card from `category_id`; never passed by callers. */
+  category_slug?: string | null;
   product_images?: ProductImage[] | null;
   partner?: { name: string; slug?: string | null; id?: string | null } | null;
   /**
@@ -75,6 +80,18 @@ function badgeFor(p: ProductCardProps): { label: string; className: string } | n
     return { label: "Bestseller", className: "bg-ink text-inverse" };
   }
 
+  // The same three conditions the delivery promise is made on everywhere
+  // else: the store offers it, stock is known and positive, and the midnight
+  // cut-off has not passed.
+  //
+  // This is deliberately ABOVE "New". A whole category seeded in the same
+  // week makes every card in it say New, which is true and tells a shopper
+  // nothing — and it was hiding the one badge that actually changes a
+  // decision. "New" now only surfaces where there is no better claim to make.
+  const arrivesToday =
+    p.same_day === true && p.stock_quantity != null && p.stock_quantity > 0 && !timeUntilCutoff().passed;
+  if (arrivesToday) return { label: "Arrives today", className: "bg-today text-white" };
+
   if (p.created_at) {
     const age = Date.now() - new Date(p.created_at).getTime();
     if (age >= 0 && age < NEW_DAYS * 24 * 60 * 60 * 1000) {
@@ -82,30 +99,75 @@ function badgeFor(p: ProductCardProps): { label: string; className: string } | n
     }
   }
 
-  // The same three conditions the delivery promise is made on everywhere
-  // else: the store offers it, stock is known and positive, and the midnight
-  // cut-off has not passed.
-  const arrivesToday =
-    p.same_day === true && p.stock_quantity != null && p.stock_quantity > 0 && !timeUntilCutoff().passed;
-  if (arrivesToday) return { label: "Arrives today", className: "bg-today text-white" };
-
   return null;
 }
 
-/** Up to two chips, from tag columns that really hold those values. */
-function chipsFor(p: ProductCardProps): { label: string; to: string }[] {
-  const out: { label: string; to: string }[] = [];
-  for (const value of p.occasion_tags ?? []) {
-    const o = occasionByValue(value);
-    if (o) out.push({ label: `#${o.label.replace(/\s+/g, "")}`, to: `/gift-finder?occasion=${o.value}` });
-    if (out.length === 2) return out;
+type Chip = { label: string; to: string; className: string };
+
+/**
+ * The colour of a tag says what KIND of tag it is.
+ *
+ * Three hues, one per kind, each a soft tint with a darker version of its own
+ * hue for the letters — so "#Birthday" and "#ForKids" are legibly different
+ * things at a glance rather than the same red hashtag repeated. Contrast for
+ * every pairing is measured in the note beside the tokens in index.css.
+ *
+ * Quiet on purpose: these sit under the price and must not out-shout it.
+ */
+const CHIP_STYLE = {
+  occasion: "bg-tint-blush text-deep-blush",
+  recipient: "bg-tint-sage text-deep-sage",
+  category: "bg-tint-sand text-deep-sand",
+} as const;
+
+/**
+ * Up to three chips, from tag columns that really hold those values.
+ *
+ * One of each kind first, then backfill — a card wearing three occasions
+ * would be three blush chips and would waste the colour coding entirely.
+ * Nothing here invents a tag: an untagged product simply shows fewer chips,
+ * which is the same rule the occasion filters run on.
+ */
+function chipsFor(p: ProductCardProps, categoryName?: string | null): Chip[] {
+  const occasions = (p.occasion_tags ?? [])
+    .map(occasionByValue)
+    .filter((o): o is NonNullable<typeof o> => !!o)
+    .map((o) => ({
+      label: `#${o.label.replace(/\s+/g, "")}`,
+      to: `/gift-finder?occasion=${o.value}`,
+      className: CHIP_STYLE.occasion,
+    }));
+
+  const recipients = (p.recipient_tags ?? [])
+    .map(recipientByValue)
+    .filter((r): r is NonNullable<typeof r> => !!r)
+    .map((r) => ({
+      label: `#${r.label.replace(/\s+/g, "")}`,
+      to: `/gift-finder?recipient=${r.value}`,
+      className: CHIP_STYLE.recipient,
+    }));
+
+  const category: Chip[] = categoryName
+    ? [
+        {
+          label: `#${categoryName.replace(/\s*&\s*/g, "").replace(/\s+/g, "")}`,
+          to: `/?tab=${p.category_slug ?? ""}`,
+          className: CHIP_STYLE.category,
+        },
+      ]
+    : [];
+
+  const out: Chip[] = [];
+  // One of each kind, in the order a shopper cares about them.
+  for (const list of [occasions, recipients, category]) if (list[0]) out.push(list[0]);
+  // Then backfill from whatever is left over, still capped at three.
+  for (const list of [occasions, recipients]) {
+    for (const c of list.slice(1)) {
+      if (out.length >= 3) break;
+      out.push(c);
+    }
   }
-  for (const value of p.recipient_tags ?? []) {
-    const r = recipientByValue(value);
-    if (r) out.push({ label: `#${r.label.replace(/\s+/g, "")}`, to: `/gift-finder?recipient=${r.value}` });
-    if (out.length === 2) return out;
-  }
-  return out;
+  return out.slice(0, 3);
 }
 
 /**
@@ -131,12 +193,17 @@ export function ProductCard(props: ProductCardProps) {
   const isFavorite = favoriteIds.has(id);
   const [loaded, setLoaded] = useState(false);
 
+  // One shared, cached query however many cards are on screen — every card
+  // asks for the same key, so this is a map lookup after the first.
+  const categories = useCategories();
+  const category = categories.data?.find((c) => c.id === props.category_id) ?? null;
+
   const inStock = stock_quantity == null || stock_quantity > 0;
   const lowStock = inStock && stock_quantity != null && stock_quantity <= LOW_STOCK;
   const onSale = compare_at_price != null && Number(compare_at_price) > Number(price);
   const off = onSale ? Math.round((1 - Number(price) / Number(compare_at_price)) * 100) : null;
   const badge = badgeFor(props);
-  const chips = chipsFor(props);
+  const chips = chipsFor({ ...props, category_slug: category?.slug ?? null }, category?.name);
 
   return (
     <div className="group mb-3 w-full break-inside-avoid">
@@ -172,12 +239,18 @@ export function ProductCard(props: ProductCardProps) {
               toggleFavorite.mutate({ productId: id, isFavorite });
             }}
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            /* 44px hit area, 32px visible circle — a 32px target is under the
-               minimum and this sits on top of a whole-card link. */
-            className="absolute right-[2px] top-[2px] flex h-11 w-11 items-center justify-center transition active:scale-90"
+            /* The heart is 28px of ink inside a 40px invisible hit area.
+               Both numbers matter: at 32px it dominated the photo, and at a
+               32px TARGET it would be under the minimum for a control sitting
+               on top of a whole-card link, where a near-miss opens the
+               product instead. So the circle shrank and the target did not. */
+            className="absolute right-0 top-0 flex h-[40px] w-[40px] items-center justify-center transition active:scale-90"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-surface/90 text-muted shadow-rest transition hover:text-ink">
-              <HeartIcon className="h-[18px] w-[18px]" filled={isFavorite} />
+            {/* Explicit px, not the spacing scale: this project's scale is
+                bespoke — `h-7` is 48px here, not the 28px it is by default —
+                and the whole point of this control is its exact size. */}
+            <span className="flex h-[28px] w-[28px] items-center justify-center rounded-pill bg-white/85 text-ink/70 backdrop-blur-[2px] transition hover:text-ink">
+              <HeartIcon className="h-4 w-4" filled={isFavorite} />
             </span>
           </button>
 
@@ -195,42 +268,46 @@ export function ProductCard(props: ProductCardProps) {
         </div>
       </Link>
 
-      {/* Store first — the trust signal, and its own link. */}
+      {/* Store first — the trust signal, and its own link. Its own colour
+          too, so "who is this from" is scannable without reading the title. */}
       {partner?.name ? (
         <Link
           to={storePath(partner)}
           className={`${
-            compact ? "mt-1.5" : "mt-2"
-          } -my-1.5 block truncate py-1.5 text-store text-muted underline-offset-2 hover:text-ink hover:underline`}
+            compact ? "mt-1" : "mt-1.5"
+          } -my-1 block truncate py-1 text-[11px] font-medium leading-tight tracking-[0.01em] text-store-name underline-offset-2 hover:underline`}
         >
           {partner.name}
         </Link>
       ) : null}
 
       <Link to={`/product/${id}`} className="block w-full">
-        <p className="mt-1.5 line-clamp-2 text-product-name leading-snug">{title}</p>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        {/* ONE line, ellipsed. Two lines of bold set every card to a
+            different height for no information gained — the full title is on
+            the product page, which is one tap away. */}
+        <p className="mt-0.5 truncate text-[13px] font-normal leading-snug text-ink">{title}</p>
+        <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
           <span className="text-price">{formatMoney(price)}</span>
           {onSale ? (
             <>
-              <span className="text-caption text-muted line-through">{formatMoney(compare_at_price)}</span>
-              <span className="text-caption font-semibold text-persimmon">-{off}%</span>
+              <span className="text-[11px] text-muted line-through">{formatMoney(compare_at_price)}</span>
+              <span className="text-[11px] font-semibold text-persimmon">-{off}%</span>
             </>
           ) : null}
         </div>
         {/* Only where stock is genuinely tracked and genuinely low. */}
         {lowStock ? (
-          <p className="mt-0.5 text-caption font-semibold text-persimmon">Only {stock_quantity} left</p>
+          <p className="mt-0.5 text-[11px] font-semibold text-persimmon">Only {stock_quantity} left</p>
         ) : null}
       </Link>
 
       {chips.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap gap-1">
+        <div className="mt-1 flex flex-wrap gap-1">
           {chips.map((c) => (
             <Link
-              key={c.to}
+              key={`${c.className}-${c.to}`}
               to={c.to}
-              className="rounded-[6px] bg-persimmon/10 px-1.5 py-0.5 text-[11px] font-medium text-persimmon"
+              className={`rounded-[4px] px-1.5 py-[3px] text-[10px] font-medium leading-none ${c.className}`}
             >
               {c.label}
             </Link>

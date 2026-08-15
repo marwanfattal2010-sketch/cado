@@ -69,6 +69,37 @@ persimmon with the wordmark, and show the patterned screen as a brief in-app
 launch screen after it. Keep it UNDER ONE SECOND: the previous in-app splash
 was 4.8 seconds and Marwan reported it as a bug tonight.
 
+### ✅ The splash pattern is BUILT and wired — 2026-08-15
+
+Done exactly on the route above, and it lives in the ANDROID APP, not on the
+website. Layout.tsx still has no splash and should keep none — the web is not
+where this belongs.
+
+- `scripts/make-splash-pattern.mjs` renders the artwork. It reads the eighteen
+  glyphs straight out of `apps/web/src/components/SplashPattern.tsx`, so that
+  file stays the one place they are drawn, and writes
+  `apps/mobile/assets/splash-pattern.png` (1242x2688) and
+  `splash-wordmark.png` (1024, transparent). Re-run it after any edit to the
+  component. It also drops the SVG and three phone-shaped previews in
+  `scripts/assets/` and prints an ink-density check.
+- `apps/mobile/app/index.tsx` shows the patterned screen over the WebView and
+  takes it away after **700ms plus a 200ms fade — 900ms worst case**, or
+  sooner if the site has painted. Timings are the three constants at the top.
+- The wordmark is the same picture at the same 200dp in both screens, so the
+  handover from the system splash is invisible.
+- The mobile shell's background was `#17140F`. That near-black WAS the black
+  flash in TASK B item 1.4 — it is persimmon now.
+
+**Two real bugs were found in SplashPattern.tsx while wiring it**, both
+invisible until something rendered it: the mask stops were black, and a mask
+is read by luminance, so the whole pattern drew as nothing; and the 4x4 tile
+only ever used the first sixteen glyphs, silently dropping the headphones and
+the gift card envelope. Tile is 6x18 now and every icon appears.
+
+**Not verified on a real handset.** It was proved by rendering the actual
+React Native tree at three phone shapes (16:9, 19.5:9, 20:9) and timing the
+dismissal, not by installing an APK.
+
 **Still to do:** the migration itself (deactivate GS's products, create Gift
 Sets and Sport, retile the entry row, drop Gift Cards from the category row),
 seed products for both new categories, the three photo swaps, wiring the
@@ -109,6 +140,12 @@ descent (not the baseline — it sits visibly low without that).
     cd apps/mobile
     EXPO_TOKEN=<token> npx eas-cli build --platform android --profile preview
 
+**Run it from `apps/mobile`, never from the repo root.** There is a stray
+untracked `app.json` at the root containing nothing but `{"expo": {}}` — junk
+from an Expo command run in the wrong folder. Building from the root would
+pick that up instead of the real config and produce a nameless, iconless app.
+Deleting it is safe.
+
 The `preview` profile is already configured to produce an **APK**, which is
 the installable file Marwan wants a link for. `production` makes an app
 bundle for the Play Store instead — not what he asked for. The build runs on
@@ -125,8 +162,17 @@ the icon, name, splash and permissions are baked in.
 
 **Also still not done:** the site has NO web app manifest. Adding one would
 let anyone install the site from Chrome's "Add to Home screen" and have it
-open full-screen with the right icon, with no APK at all. Cheap, and worth
-doing whether or not the APK ships.
+open full-screen with the right icon, with no APK at all.
+
+**But it is NOT the ten-minute job it looks like, checked 2026-08-15.** The
+manifest itself is one small file plus two lines in `apps/web/index.html`, and
+`public/brand/logo-icon-192.png` and `-512.png` already exist — but they are
+the OLD branding: cream background, gift box with a gold bow, serif CADO. So
+are the favicons and the apple-touch icon. Ship a manifest today and the old
+logo goes onto people's home screens, which is TASK B item 1.4 made worse.
+Order of work: regenerate 192, 512, 180, 32 and 16 as the persimmon wordmark
+first (`scripts/make-app-icons.mjs` is the model — it already draws exactly
+that), then the manifest is genuinely quick.
 
 ## ✅ TASK 1 — DONE 2026-08-14. Double-tap can no longer create two orders.
 
@@ -487,6 +533,36 @@ Grid indexes worth taking (alt text calls hampers "laundry basket"):
 0 = ready gift boxes with printed mugs (the exact style he wants),
 3, 9, 15, 22, 27 = hampers, chocolate boxes, toy boxes.
 
+## ✅ TASK D — DONE 2026-08-15. Sport is a real tab now.
+
+Applied to production with the service-role key by
+`node scripts/seed-sport-category.mjs`. Written up for the record as
+`supabase/migrations/0059_sport_tab_blocks_stores_and_photos.sql`, which is
+marked DO NOT RUN — it has already been applied.
+
+What was wrong and what it is now:
+
+- **The Sport tab rendered COMPLETELY EMPTY.** A tab's sections are rows in
+  `browse_blocks` and Sport had none. It now has the same four Electronics
+  has: banner_carousel, category_circles (empty, correct — Sport has no
+  sub-categories), stores, product_feed.
+- **`--tab-sport` was never defined** in `apps/web/src/index.css`, so the
+  hero's accent computed to transparent. Added as a deep pitch green,
+  `26 82 58`. **This is the ONE part not yet live** — it is a stylesheet
+  change and needs a deploy. Everything else is database rows and is live now.
+- **Sport had one store**, and `StoreStrip.tsx` hides itself below three.
+  Added **Pace Athletics** (running/fitness, 4 items) and **Courtside Sports**
+  (basketball/racket, 4 items). All three shops now have cover images;
+  Baseline Sports previously had none and showed as a grey rectangle.
+- **All ten Sport product photos were wrong** — deleted, rows and storage
+  objects both. Seven products across the category now have a photo that was
+  opened and checked; **eight are deliberately left with none** because no
+  clean unbranded shot exists. Reasons per product are in
+  `scripts/assets/sport/SOURCES.md`, along with every source URL and a list of
+  what was rejected so nobody re-tries the same images.
+
+Every invented price is flagged `price_is_placeholder = true`, as before.
+
 ## The Android APK — the link already exists, do NOT rebuild
 
 Built 2026-08-14, Persimmon CADO icon, 92 MB. The link is permanent and
@@ -505,3 +581,37 @@ by themselves.
 
 Past builds are also listable with `EXPO_TOKEN=... npx eas-cli build:list
 --platform android`, account `marwanfattal`.
+
+## ✅ Electronics — stocked, photographed, hero'd. 2026-08-15.
+
+Electronics had ZERO products, no store and no sub-categories, so "photos and
+a hero" meant stocking it first. Applied to production with the service-role
+key by `scripts/seed-electronics.mjs`; recorded as
+`supabase/migrations/0062_seed_electronics_and_hero.sql` — **already applied,
+do not run it again**.
+
+- One placeholder store, **Bright Spark Electronics**, modelled on how 0054
+  made Baseline Sports.
+- Eight giftable products. **Every price is invented** and flagged
+  `price_is_placeholder = true`.
+- **Six photos, from Unsplash, every one opened and looked at** — and the
+  finalists fetched again zoomed in on the product, which is how a JBL emboss
+  on an ear cup got caught. Sources in `scripts/assets/electronics/SOURCES.md`.
+- **Two listings have NO photo on purpose**: Instant Print Camera (every free
+  instant-camera shot on Unsplash is a branded Instax or Polaroid with the
+  wordmark readable) and Digital Photo Frame (Unsplash has none at all).
+- **The banner is the first `browse_banners` row in the database with its own
+  `image_url`.** The JPEG lives in the `product-images` Storage bucket, not on
+  a third-party host. Copy went from the honest empty state "Electronics,
+  coming soon" to "Unboxed tonight" / "Ordered this morning, plugged in by
+  dinner." / SHOP NOW.
+
+Two things still read as empty on that tab, both correctly: the **Stores**
+strip (StoreStrip has `MIN_ITEMS = 3` and Electronics has one shop — it will
+appear on its own when a third real partner arrives) and **Shop by category**
+(Electronics has no sub-categories). Neither was faked to fill the space.
+
+Useful pattern learned here, worth reusing: `plus.unsplash.com/premium_photo-…`
+results are **Unsplash+ paid licence**, not free. They 404 when downloaded
+server-side, which is a handy accident, but they should be filtered out on
+licence grounds — match only `images.unsplash.com/photo-…`.

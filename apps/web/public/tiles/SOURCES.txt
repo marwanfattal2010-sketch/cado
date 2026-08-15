@@ -4,9 +4,21 @@ gift-sets.jpg  https://unsplash.com/photos/1513885535751-8b9238bd345a
 
 Unsplash licence: free for commercial use, no attribution required.
 Not yet wired to browse_tiles.image_url, and not deployed.
-gift-cards.jpg https://unsplash.com/photos/1513201099705-a9746e1e201f
 group-gift.jpg https://unsplash.com/photos/1543269865-cbf427effbad
 occasions.jpg  https://unsplash.com/photos/1519225421980-715cb0215aed
+
+gift-cards.jpg is NOT a stock photo any more.
+
+It was black gift boxes with gold bows — the retired black-and-gold branding,
+and the tile sat between Under $50 and Group Gift looking heavier than
+everything around it. Marwan picked its replacement himself off the live site:
+the Birthstone Pendant, a REAL product photograph already in the catalogue
+(Maison Zahra Jewellers, storage product-images/95bf5cee-.../84ad8ab5-.../real.jpg).
+
+A real product beats stock here for the same reason the hero carousels use
+real products: it is a thing someone can actually buy, and it cannot go stale
+into a lie. The previous file is not deleted from history — it is simply no
+longer used.
 
 First gift-cards.jpg pull was a set of SALE tags - wrong, replaced. Every one
 of these was opened and looked at before wiring; a filename is not proof of

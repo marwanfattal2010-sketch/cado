@@ -127,11 +127,18 @@ export type Occasion = {
    * uses this to say plainly that there is nothing tagged for it yet instead
    * of quietly showing unrelated gifts as if they matched.
    *
-   * Checked against the live catalogue on 2026-08-11. Tags actually present:
-   * birthday 35, anniversary 11, graduation 9, housewarming 7, newborn 6,
-   * mothers-day 5, valentine 5, eid 2, wedding 2. Nothing carries
-   * "visiting-someone", "get-well" or "engagement", so those are false and
-   * the results screen says so rather than pretending.
+   * Re-checked against the live catalogue on 2026-08-15, after
+   * `scripts/tag-catalogue.mjs` tagged it properly. Every occasion CADO
+   * offers now carries real stock: birthday 126, visiting-someone 50,
+   * housewarming 29, anniversary 31, get-well 27, graduation 20,
+   * valentine 17, newborn 8, mothers-day 5, engagement 3, eid 2, wedding 2.
+   *
+   * Before that pass, 112 of 159 products had no occasion tag at all and
+   * three occasions — Visiting Someone, Get Well Soon, Engagement — were
+   * carried by nothing, which is why every chip returned the same count and
+   * then apologised for having nothing tagged. The field stays because it is
+   * the honest mechanism for the next occasion added ahead of its stock, not
+   * because anything is currently empty.
    */
   tagged: boolean;
 };
@@ -146,14 +153,14 @@ export type Occasion = {
  * the rest trail.
  */
 export const OCCASIONS: Occasion[] = [
-  { value: "visiting-someone", label: "Visiting Someone", img: "/occasions/visiting-someone.jpg", tagged: false },
+  { value: "visiting-someone", label: "Visiting Someone", img: "/occasions/visiting-someone.jpg", tagged: true },
   { value: "anniversary", label: "Anniversary", img: "/occasions/anniversary.jpg", tagged: true },
-  { value: "get-well", label: "Get Well Soon", img: "/occasions/get-well-soon.jpg", tagged: false },
+  { value: "get-well", label: "Get Well Soon", img: "/occasions/get-well-soon.jpg", tagged: true },
   { value: "birthday", label: "Birthday", img: "/occasions/birthday-banner.jpg", tagged: true },
   { value: "graduation", label: "Graduation", img: "/occasions/graduation.jpg", tagged: true },
   { value: "newborn", label: "New Baby", img: "/occasions/new-baby.jpg", tagged: true },
   { value: "wedding", label: "Wedding", img: "/occasions/wedding.jpg", tagged: true },
-  { value: "engagement", label: "Engagement", img: "/occasions/engagement.jpg", tagged: false },
+  { value: "engagement", label: "Engagement", img: "/occasions/engagement.jpg", tagged: true },
 ];
 
 export function occasionByValue(value: string | null | undefined): Occasion | null {

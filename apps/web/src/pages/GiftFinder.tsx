@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ProductCard } from "../components/ProductCard";
 import { ProductGridSkeleton } from "../components/Skeleton";
@@ -14,6 +14,7 @@ import {
 } from "../components/Icons";
 import { Button, RemovableChip, RibbonEmpty } from "../components/ui";
 import {
+  BROWSE_SORTS,
   BrowseFilterBar,
   BrowseFilterPanel,
   sortBrowse,
@@ -23,6 +24,9 @@ import {
   NO_FILTERS,
   countActive,
   filterLabels,
+  filtersFromParams,
+  filtersToParams,
+  hasFilterParams,
   productMatches,
   removeFilter,
   type CategoryFilters,
@@ -189,6 +193,18 @@ export function GiftFinder() {
       if (v == null) p.delete(k);
       else p.set(k, v);
     }
+    // Changing an ENTRY answer moves to a different result set, and a
+    // refinement that survives into a different result set is how a screen
+    // ends up mysteriously empty — "Toys" carried over from a budget band
+    // that had toys into one that doesn't. The refinements live in the URL
+    // now (see Results), so the reset is: drop their namespace here, in the
+    // same history entry as the change that invalidated them.
+    const stale: string[] = [];
+    p.forEach((_v, key) => {
+      if (key.startsWith("f.")) stale.push(key);
+    });
+    for (const key of stale) p.delete(key);
+    p.delete("sort");
     setParams(p);
   };
 
@@ -280,30 +296,55 @@ function Results({
    * Refine filters, applied in place over the gifts already fetched. No
    * refetch, no navigation, no loading flash — applying the sheet re-renders
    * the grid from the array that is already in memory, which is what makes it
-   * feel instant. The URL keeps holding the *entry* filters (occasion /
-   * recipient / budget) so a shared link still lands where it did.
+   * feel instant.
+   *
+   * They live in the URL (`f.*` and `sort`), not in useState, and the reason
+   * is the bug report: "selecting an occasion and then navigating or coming
+   * back loses the selection". State died with the component; the query
+   * string doesn't. Back restores it, reload restores it, and a refined view
+   * is a shareable link. Writes use `replace` so ticking five boxes is not
+   * five history entries to click back through.
    *
    * Same model, same panel and same bar as the category page and search —
    * see components/CategoryFilterPanel.
    */
-  const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
+  const [params, setParams] = useSearchParams();
+  const filters = useMemo(() => {
+    if (hasFilterParams(params)) return filtersFromParams(params);
+    // First arrival: the category answer from /find is seeded as a removable
+    // chip like every other answer — loosening it is one tap, not a restart.
+    return categoryParam ? { ...NO_FILTERS, category: [categoryParam] } : NO_FILTERS;
+  }, [params, categoryParam]);
+  // Validated, not cast: the URL is user-editable input, and an unknown value
+  // must degrade to the default rather than flow into the sort switch.
+  const sortParam = params.get("sort");
+  const sort: BrowseSort = BROWSE_SORTS.some((s) => s.value === sortParam)
+    ? (sortParam as BrowseSort)
+    : "recommended";
+
+  const setFilters = (next: CategoryFilters | ((f: CategoryFilters) => CategoryFilters)) => {
+    const resolved = typeof next === "function" ? next(filters) : next;
+    const p = new URLSearchParams(params);
+    filtersToParams(resolved, p);
+    setParams(p, { replace: true });
+  };
+  const setSort = (next: BrowseSort) => {
+    const p = new URLSearchParams(params);
+    if (next === "recommended") p.delete("sort");
+    else p.set("sort", next);
+    setParams(p, { replace: true });
+  };
+
   const [filterOpen, setFilterOpen] = useState(false);
-  const [sort, setSort] = useState<BrowseSort>("recommended");
 
   const items = useMemo(() => (results.data?.items ?? []) as Row[], [results.data]);
   const totalBeforeBudget = results.data?.totalBeforeBudget ?? 0;
   const relaxed = results.data?.relaxed ?? null;
 
-  // A refinement that survives into a different result set is how a screen
-  // ends up mysteriously empty — "Toys" carried over from a budget band that
-  // had toys into one that doesn't.
-  useEffect(() => {
-    // The category answer from /find arrives as a URL parameter and is seeded
-    // straight into the refine filters, so it lands as a removable chip like
-    // every other answer — loosening it is one tap, not a restart.
-    setFilters(categoryParam ? { ...NO_FILTERS, category: [categoryParam] } : NO_FILTERS);
-    setSort("recommended");
-  }, [occasion?.value, recipient, budget?.slug, categoryParam]);
+  // No reset effect here any more. "A refinement must not survive into a
+  // different result set" is enforced where the result set changes: go()
+  // strips the `f.*` namespace and `sort` in the same history entry as the
+  // entry-filter change that invalidated them.
 
   /**
    * PRICE. Filtered once, through inBudgetRange() — in useGiftResults for the

@@ -107,6 +107,13 @@
   --tab-toys: 30 79 163;
   --tab-home: 58 55 48;
   --tab-electronics: 22 48 92;
+  /* Deep pitch green. Sport's tab existed with accent_token 'tab-sport' but
+     this variable did not, so accentColor() emitted rgb(var(--tab-sport)) —
+     an undefined name — and the banner had no field colour at all. Green
+     rather than red (house rule above) and darker than --tab-perfumes' olive
+     so the two tabs do not read as the same colour. White type on it is
+     about 9:1. */
+  --tab-sport: 26 82 58;
 
   /* Legacy aliases — retired names, no longer red. */
   --ribbon: var(--primary);
@@ -127,6 +134,30 @@
   --tint-sage: 232 239 233;
   --tint-blush: 247 235 230;
   --tint-sand: 244 234 216;
+
+  /* Ink for the three tints above, one per hue.
+     These are the ONE exception to the backgrounds-only rule, and only for
+     text sitting on its OWN tint: the product card's tags are colour-coded by
+     what kind of tag they are, and a tag reads as a set with its background
+     only if the letters are a darker version of the same colour rather than
+     the same charcoal on three different pillows.
+     Measured on their own tint at 11px:
+       deep-sage on sage   8.9 : 1
+       deep-blush on blush 7.6 : 1
+       deep-sand on sand   7.2 : 1
+     All far past AA for small text. Do not use these on canvas or charcoal —
+     they are only measured against their own tint. */
+  --deep-sage: 31 77 45;
+  --deep-blush: 124 52 34;
+  --deep-sand: 103 74 26;
+
+  /* The store name on a product card.
+     It needs to be legible as its own thing — not the near-black of the
+     product title, and not one of the three tag hues, so a shopper can scan
+     "who is this from" without reading anything else. A cool slate does that
+     precisely because everything else on the card is warm. 6.6 : 1 on
+     canvas. */
+  --store-name: 74 88 104;
 
   /* Semantic */
   --today: 31 107 74;
