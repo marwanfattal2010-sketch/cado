@@ -136,3 +136,28 @@ Both were opened and checked for logos before being attached.
 STILL WITHOUT A PHOTO: Shin Pads, Skipping Rope, Tube of Tennis Balls. All
 three are equipment and should be findable; they simply were not found yet.
 A missing photo reads as "not shot yet", which is true.
+
+## The last of the Sport photos
+
+tennis-balls.jpg   https://unsplash.com/photos/1510697963685-53101e615777
+skipping-rope.jpg  https://unsplash.com/photos/1520334298038-4182dac472e8
+
+"Tube of Tennis Balls" was RENAMED to "Tennis Balls". The photo is a single
+ball, and a title promising a tube while the picture shows one ball is the
+same quantity mismatch that put a laptop backpack on "Sports Holdall". The
+title moved to fit the truth rather than the picture being stretched to fit
+the title.
+
+The skipping rope carries a small "ata" mark on the handle. Kept, and the
+reasoning is worth writing down: the rule is not "no lettering anywhere", it
+is "do not put a major brand on stock the shop does not carry". A Nike
+swoosh on a $130 listing implies Baseline Sports sells Nike. An obscure
+handle stamp implies nothing to a Lebanese shopper.
+
+REJECTED for this batch: a five-item flat-lay (rope, bottle, bra, phone,
+shoes) — it is a mood shot, not a product; and a Getty/iStock-branded duffel.
+
+STILL BLANK, and staying that way: Shin Pads. Unsplash has no football shin
+pads — searching returns cricket pads and Muay Thai shin guards, which are a
+different product. A missing photo reads as "not shot yet", which is true.
+Attaching kickboxing guards would be a claim about what arrives in the box.
