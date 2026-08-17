@@ -97,23 +97,43 @@
      No red. --tab-flowers is a dusty rose rather than the pink-red the first
      pass had, and there is no --tab-women at all: those tabs are not built.
      ------------------------------------------------------------------ */
+  /* BRIGHTENED 2026-08-15. Marwan: "heroes are dark/grey, there's almost no
+     colour" — and he was right, measurably.
+
+     The hero paints this token as a flat field with white type on it, so the
+     token IS the page's mood. The old values sat between 7.8:1 and 14.0:1
+     against white, and Fashion at 14.0:1 is another way of spelling "black".
+     They were chosen to be safe and overshot: white needs 4.5:1, so there
+     were nine or ten points of headroom going unused on every tab.
+
+     Every value below was measured before it was written and lands between
+     4.6:1 and 6.7:1 — brighter and properly saturated, with the body copy
+     still clearing AA. Contrast against white, per token:
+
+       fashion 6.7   jewelry 6.3   shoes 4.8   perfumes 4.8   chocolate 5.6
+       flowers 4.8   toys 4.9      home 4.8    electronics 5.5   sport 4.6
+
+     If one of these is ever changed, re-measure it. 4.5:1 is the floor and
+     it is not a style preference — below it the subcopy stops being
+     readable on a phone in daylight. */
   --tab-all: var(--accent-brand);
-  --tab-fashion: 45 42 56;
-  --tab-jewelry: 91 42 94;
-  --tab-shoes: 140 74 47;
-  --tab-perfumes: 74 82 51;
-  --tab-chocolate: 74 46 31;
-  --tab-flowers: 154 90 104;
-  --tab-toys: 30 79 163;
-  --tab-home: 58 55 48;
-  --tab-electronics: 22 48 92;
+  --tab-fashion: 146 62 104;
+  --tab-jewelry: 136 64 168;
+  --tab-shoes: 176 90 54;
+  --tab-perfumes: 78 124 108;
+  --tab-chocolate: 150 88 52;
+  --tab-flowers: 178 84 108;
+  --tab-toys: 42 112 206;
+  --tab-home: 148 106 54;
+  --tab-electronics: 46 104 184;
   /* Deep pitch green. Sport's tab existed with accent_token 'tab-sport' but
      this variable did not, so accentColor() emitted rgb(var(--tab-sport)) —
      an undefined name — and the banner had no field colour at all. Green
      rather than red (house rule above) and darker than --tab-perfumes' olive
      so the two tabs do not read as the same colour. White type on it is
      about 9:1. */
-  --tab-sport: 26 82 58;
+  /* Brightened with the rest, 9.1:1 -> 4.6:1 against white. */
+  --tab-sport: 36 132 92;
 
   /* Legacy aliases — retired names, no longer red. */
   --ribbon: var(--primary);

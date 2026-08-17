@@ -17,6 +17,7 @@ import { EntryCards } from "./blocks/EntryCards";
 import { CategoryCircles } from "./blocks/CategoryCircles";
 import { SubTabs } from "./blocks/SubTabs";
 import { DealPair } from "./blocks/DealPair";
+import { TopOfCategory } from "./blocks/TopOfCategory";
 import { StoreStrip } from "./blocks/StoreStrip";
 import { ProductFeed } from "./blocks/ProductFeed";
 import { GiftCardSection, OccasionRail, StoreCirclesRow } from "./HomeSections";
@@ -209,12 +210,27 @@ export function TabPanel({
 
           case "deal_pair":
             return (
-              <DealPair
-                key={block.id}
-                categoryId={categoryId}
-                accentToken={tab.accent_token}
-                onSelect={(next) => setFilter(next)}
-              />
+              <div key={block.id}>
+                <DealPair
+                  categoryId={categoryId}
+                  accentToken={tab.accent_token}
+                  onSelect={(next) => setFilter(next)}
+                />
+                {/* Sits with the deals rather than being its own database
+                    block: the brief's order is Super Deals, then Top of, then
+                    New Arrivals, and DealPair already owns the first and
+                    third. Rendering it here keeps that sequence in one place
+                    instead of depending on two block rows staying adjacent.
+                    Not on All — "Top of CADO" is the whole shop, which the
+                    grid below already is. */}
+                {!primary ? (
+                  <TopOfCategory
+                    categoryId={categoryId}
+                    categoryName={categoryName}
+                    accentToken={tab.accent_token}
+                  />
+                ) : null}
+              </div>
             );
 
           case "stores":

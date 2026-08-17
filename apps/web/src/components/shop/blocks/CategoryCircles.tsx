@@ -116,7 +116,7 @@ export function CategoryCircles({
   return (
     <section className="px-[var(--page-x)] pt-4">
       <div className="rounded-[12px] bg-surface p-3 shadow-rest">
-        {title ? <h2 className="mb-2 px-0.5 text-[15px] font-bold tracking-[-0.01em]">{title}</h2> : null}
+        {title ? <h2 className="mb-2 px-0.5 text-[15px] font-bold tracking-[-0.01em]" style={{ color: accentColor(accentToken) }}>{title}</h2> : null}
         <div className="scroll-row scroll-row-flush" style={{ ["--row-gap" as string]: "0px" }}>
           {pages.map((page, pageIndex) => (
             <div

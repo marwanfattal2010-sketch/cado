@@ -78,7 +78,7 @@ export function StoreStrip({
   return (
     <section className="pt-5">
       {title ? (
-        <h2 className="px-[var(--page-x)] pb-2 text-[15px] font-bold tracking-[-0.01em]">{title}</h2>
+        <h2 className="px-[var(--page-x)] pb-2 text-[15px] font-bold tracking-[-0.01em] text-persimmon">{title}</h2>
       ) : null}
       <div className="scroll-row" style={{ ["--row-gap" as string]: "8px" }}>
         {rows.map((store) => (
