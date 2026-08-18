@@ -11,6 +11,7 @@ import { ProductCard } from "../components/ProductCard";
 import { useToast, Chip, RibbonDivider } from "../components/ui";
 import { HeartIcon, ChevronLeftIcon } from "../components/Icons";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
+import { recordRecentlyViewed } from "../hooks/useRecentlyViewed";
 import { CUTOFF_LABEL, timeUntilCutoff } from "../lib/area";
 import { formatMoney } from "../lib/money";
 
@@ -42,6 +43,12 @@ function Row({
 
 export function Product() {
   const { id } = useParams<{ id: string }>();
+
+  // Feeds the home page's "Recently viewed" row. Device-local localStorage
+  // only — no server write, nothing anyone else can see.
+  useEffect(() => {
+    if (id) recordRecentlyViewed(id);
+  }, [id]);
   const { data: product, isLoading } = useProduct(id);
   const { session } = useAuth();
   const navigate = useNavigate();

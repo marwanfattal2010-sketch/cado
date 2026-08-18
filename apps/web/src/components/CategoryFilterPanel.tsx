@@ -299,6 +299,11 @@ export function filterLabels(
     });
   }
   if (f.sameDayOnly) out.push({ id: "sameDayOnly", key: "sameDayOnly", label: "Arrives today" });
+  // The two toggles read real columns and deserve real chips — without these
+  // the Deals "See all" landed on a filtered grid with no visible way to
+  // unfilter it.
+  if (f.onSale) out.push({ id: "onSale", key: "onSale", label: "On sale" });
+  if (f.inStock) out.push({ id: "inStock", key: "inStock", label: "In stock" });
   return out;
 }
 

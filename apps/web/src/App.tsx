@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Browse } from "./pages/Browse";
+import { Stores } from "./pages/Stores";
 import { CategoryRedirect } from "./pages/CategoryRedirect";
 import { Store } from "./pages/Store";
 import { Product } from "./pages/Product";
@@ -55,6 +56,8 @@ export default function App() {
         <Route path="help" element={<HelpCenter />} />
         <Route path="language" element={<Language />} />
         <Route path="browse" element={<Browse />} />
+        {/* Every live store, one card each — the See-all behind "Stores on CADO". */}
+        <Route path="stores" element={<Stores />} />
         {/* One category page, and it is a tab on "/". This only keeps old
             links alive. */}
         <Route path="category/:slug" element={<CategoryRedirect />} />

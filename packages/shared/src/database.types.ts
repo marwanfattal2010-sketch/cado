@@ -1249,6 +1249,9 @@ export type Database = {
           email: string | null
           id: string
           is_live: boolean
+          is_featured: boolean
+          featured_rank: number | null
+          tagline: string | null
           logo_url: string | null
           name: string
           offers_gift_wrap: boolean
@@ -1267,6 +1270,9 @@ export type Database = {
           email?: string | null
           id?: string
           is_live?: boolean
+          is_featured?: boolean
+          featured_rank?: number | null
+          tagline?: string | null
           logo_url?: string | null
           name: string
           offers_gift_wrap?: boolean
@@ -1285,6 +1291,9 @@ export type Database = {
           email?: string | null
           id?: string
           is_live?: boolean
+          is_featured?: boolean
+          featured_rank?: number | null
+          tagline?: string | null
           logo_url?: string | null
           name?: string
           offers_gift_wrap?: boolean
@@ -1435,6 +1444,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      // --- endless home (migration 0065): regenerate types after applying and delete these hand-written blocks ---
+      homepage_config: {
+        Row: {
+          id: boolean
+          store_of_week_partner_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          store_of_week_partner_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          store_of_week_partner_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -2247,6 +2275,14 @@ export type Database = {
         }[]
       }
       my_partner_id: { Args: never; Returns: string }
+      home_product_signals: {
+        Args: { p_days?: number }
+        Returns: {
+          product_id: string
+          recent_orders: number
+          favorites: number
+        }[]
+      }
       my_wallet: {
         Args: never
         Returns: {

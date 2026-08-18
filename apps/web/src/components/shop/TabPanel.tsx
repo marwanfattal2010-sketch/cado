@@ -19,6 +19,8 @@ import { SubTabs } from "./blocks/SubTabs";
 import { DealPair } from "./blocks/DealPair";
 import { TopOfCategory } from "./blocks/TopOfCategory";
 import { StoreStrip } from "./blocks/StoreStrip";
+import { FeaturedStores } from "./FeaturedStores";
+import { HomeLower } from "./HomeLower";
 import { ProductFeed } from "./blocks/ProductFeed";
 import { GiftCardSection, OccasionRail, StoreCirclesRow } from "./HomeSections";
 
@@ -242,14 +244,30 @@ export function TabPanel({
             if (!primary) return null;
             return (
               <div key={block.id}>
-                <StoreStrip categoryId={categoryId} title={block.title} />
-                {/* The round row goes directly under the big cards, as the
-                    second half of one "here are the shops" block. */}
+                {/* The endless-home rebuild: big featured cards with a real
+                    tagline replace the mixed-size strip, and the round row of
+                    every remaining store keeps its place beneath them. */}
+                <FeaturedStores />
                 <StoreCirclesRow />
               </div>
             );
 
           case "product_feed":
+            /*
+             * The All tab's default view is the endless sequence of titled
+             * sections — no unlabeled grid. But when an entry tile has
+             * APPLIED a filter, the person asked for a specific slice of the
+             * catalogue, and the honest answer to that is the plain filtered
+             * feed with its removable chip, exactly as before. The sections
+             * come back the moment the filter is cleared.
+             */
+            if (primary && !isFeedFiltered(filter)) {
+              return (
+                <div key={block.id} ref={feedRef}>
+                  <HomeLower />
+                </div>
+              );
+            }
             return (
               <div key={block.id} ref={feedRef}>
                 {isFeedFiltered(filter) ? (
