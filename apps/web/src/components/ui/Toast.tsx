@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { Link } from "react-router-dom";
 
 /** An optional way to act on what just happened — "Gift card added · View cart". */
-type ToastAction = { label: string; to: string };
+/** `to` navigates; `onClick` acts in place (Undo). Exactly one is used. */
+type ToastAction = { label: string; to?: string; onClick?: () => void };
 type Toast = { id: number; message: string; action?: ToastAction };
 
 const ToastContext = createContext<(message: string, action?: ToastAction) => void>(() => {});
@@ -53,13 +54,26 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
         // pointer-events-auto: the container above is deliberately
         // click-through so a toast never blocks the page, so the one thing
         // meant to be tapped has to opt back in.
-        <Link
-          to={toast.action.to}
-          onClick={onDone}
-          className="pointer-events-auto shrink-0 font-medium text-gold underline underline-offset-4"
-        >
-          {toast.action.label}
-        </Link>
+        toast.action.to ? (
+          <Link
+            to={toast.action.to}
+            onClick={onDone}
+            className="pointer-events-auto shrink-0 font-medium text-gold underline underline-offset-4"
+          >
+            {toast.action.label}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              toast.action?.onClick?.();
+              onDone();
+            }}
+            className="pointer-events-auto shrink-0 font-medium text-gold underline underline-offset-4"
+          >
+            {toast.action.label}
+          </button>
+        )
       ) : null}
     </div>
   );

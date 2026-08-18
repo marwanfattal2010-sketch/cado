@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { PRODUCT_CARD_COLUMNS, type FeedProduct } from "../lib/browse";
 import { useAuth } from "../lib/auth";
 
 /**
@@ -66,19 +67,17 @@ function useLocalFavoriteIds(): string[] {
 type FavoriteEntry = {
   id: string;
   product_id: string;
-  product: {
-    id: string;
-    title: string;
-    price: number;
-    currency: string | null;
-    product_images: { storage_path: string; is_primary: boolean }[] | null;
-  } | null;
+  /** The full card contract — the favorites page renders the same
+   *  ProductCard as the shop, so it needs the same fields. */
+  product: FeedProduct | null;
 };
 
 async function fetchDbFavorites(): Promise<FavoriteEntry[]> {
   const { data, error } = await supabase
     .from("favorites")
-    .select("id, product_id, product:products(id, title, price, currency, product_images(storage_path, is_primary))")
+    // The FULL card contract, so this page renders the exact same card as
+    // the shop — store name, tags, badges and all.
+    .select(`id, product_id, product:products(${PRODUCT_CARD_COLUMNS})`)
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) throw error;
@@ -97,7 +96,7 @@ export function useFavorites() {
       if (localIds.length === 0) return [];
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, price, currency, product_images(storage_path, is_primary)")
+        .select(PRODUCT_CARD_COLUMNS)
         .in("id", localIds);
       if (error) throw error;
       const byId = new Map((data ?? []).map((p) => [p.id, p]));

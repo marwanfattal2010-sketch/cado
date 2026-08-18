@@ -1,46 +1,21 @@
+import { Link, useNavigate } from "react-router-dom";
+import { useOrders, useReorder } from "../hooks/useOrders";
 import { useAuth } from "../lib/auth";
-import { useOrders } from "../hooks/useOrders";
-import { OrdersIcon } from "../components/Icons";
-import { Skeleton } from "../components/Skeleton";
-import { ButtonLink } from "../components/ui";
 import { formatMoney } from "../lib/money";
+import { statusView } from "../lib/orderStatus";
+import { productImageUrl } from "../lib/images";
+import { ButtonLink, useToast } from "../components/ui";
+import { Img } from "../components/Img";
+import { Skeleton } from "../components/Skeleton";
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending",
-  accepted: "Accepted",
-  preparing: "Preparing",
-  ready: "Ready",
-  out_for_delivery: "On the way",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
-
-/** Tokens only — the old green-100/red-700 pills were raw Tailwind defaults
- *  and the only two colours on the site that weren't in the design system. */
-const STATUS_STYLE: Record<string, string> = {
-  out_for_delivery: "bg-today-tint text-today",
-  delivered: "bg-today text-inverse",
-  cancelled: "bg-alert/10 text-alert",
-};
-
-function OrdersSkeleton() {
-  return (
-    <div className="mt-5 flex flex-col gap-4">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-card bg-surface p-4 shadow-rest">
-          <div className="flex items-baseline justify-between gap-3">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-3 w-20" />
-          </div>
-          <Skeleton className="mt-4 h-4 w-2/5" />
-          <Skeleton className="mt-2.5 h-4 w-4/5" />
-          <Skeleton className="mt-2.5 h-4 w-1/3" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
+/**
+ * Order history, one card per order. One order = one store (trigger-enforced
+ * since 0046), so a card is a store's card without any grouping gymnastics.
+ *
+ * Current orders float to the top under their own label with a persimmon
+ * left accent — the ones a person actually opens this page for. The past is
+ * below, newest first, quiet.
+ */
 export function Orders() {
   const { session } = useAuth();
   const orders = useOrders();
@@ -48,10 +23,9 @@ export function Orders() {
   if (!session) {
     return (
       <div className="mx-auto max-w-md px-6 py-20 text-center">
-        <OrdersIcon className="mx-auto h-10 w-10 text-muted" />
-        <h1 className="mt-4 font-display text-h1">Your orders</h1>
-        <p className="mt-2 text-body text-muted">Log in to follow an order from the store to the door.</p>
-        <ButtonLink to="/login" className="mt-6">
+        <h1 className="font-display text-h1">Your orders</h1>
+        <p className="mt-2 text-body text-muted">Log in to see your orders.</p>
+        <ButtonLink to="/login" variant="accent" className="mt-6">
           Log in
         </ButtonLink>
       </div>
@@ -59,75 +33,162 @@ export function Orders() {
   }
 
   const list = orders.data ?? [];
+  const current = list.filter((o) => statusView(o.sub_orders?.[0]?.status).active);
+  const past = list.filter((o) => !statusView(o.sub_orders?.[0]?.status).active);
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-6">
+    <div className="mx-auto max-w-2xl px-5 py-6">
       <h1 className="font-display text-h1">Your orders</h1>
 
       {orders.isLoading ? (
-        <OrdersSkeleton />
-      ) : orders.isError ? (
-        <div className="mt-16 text-center">
-          <p className="text-body text-muted">We couldn't load your orders just now.</p>
-          <button
-            onClick={() => orders.refetch()}
-            className="mt-4 min-h-[44px] px-4 text-body font-medium text-ink underline"
-          >
-            Try again
-          </button>
+        <div className="mt-6 flex flex-col gap-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-[130px] w-full rounded-card" />
+          ))}
         </div>
       ) : list.length === 0 ? (
         <div className="mt-16 text-center">
-          <OrdersIcon className="mx-auto h-10 w-10 text-muted" />
-          <p className="mt-4 text-body text-muted">No orders yet.</p>
-          <ButtonLink to="/" className="mt-6">
-            Browse gifts
+          <p className="text-body text-muted">No orders yet.</p>
+          <ButtonLink to="/" variant="accent" className="mt-6">
+            Start shopping
           </ButtonLink>
         </div>
       ) : (
-        <div className="mt-5 flex animate-fade-in flex-col gap-4">
-          {list.map((order) => (
-            <div key={order.id} className="rounded-card bg-surface p-4 shadow-rest">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-body font-medium">#{order.order_number}</span>
-                <span className="text-caption text-muted">
-                  {new Date(order.created_at).toLocaleDateString()}
-                </span>
+        <>
+          {current.length > 0 ? (
+            <section className="mt-6">
+              <p className="text-eyebrow uppercase text-muted">Current</p>
+              <div className="mt-2 flex flex-col gap-3">
+                {current.map((o) => (
+                  <OrderCard key={o.id} order={o} prominent />
+                ))}
               </div>
+            </section>
+          ) : null}
 
-              {(order.sub_orders ?? []).map((sub) => (
-                <div key={sub.id} className="mt-3 border-t border-line pt-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="truncate text-body font-medium">{sub.partner?.name}</span>
-                    <span
-                      className={`shrink-0 rounded-pill px-2.5 py-1 text-caption font-medium ${
-                        STATUS_STYLE[sub.status] ?? "bg-surface-sunk text-muted"
-                      }`}
-                    >
-                      {STATUS_LABEL[sub.status] ?? sub.status}
-                    </span>
-                  </div>
-                  <ul className="mt-2 space-y-0.5">
-                    {(sub.order_items ?? []).map((item) => (
-                      <li key={item.id} className="flex justify-between text-body text-muted">
-                        <span className="truncate">
-                          {item.quantity} × {item.product_title_snapshot}
-                        </span>
-                        <span className="shrink-0 pl-3">{formatMoney(item.line_total)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-
-              <div className="mt-3 flex justify-between border-t border-line pt-3 text-body font-semibold">
-                <span>Total</span>
-                <span>{formatMoney(order.total)}</span>
+          {past.length > 0 ? (
+            <section className="mt-7">
+              <p className="text-eyebrow uppercase text-muted">Past orders</p>
+              <div className="mt-2 flex flex-col gap-3">
+                {past.map((o) => (
+                  <OrderCard key={o.id} order={o} />
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
+            </section>
+          ) : null}
+        </>
       )}
+      {/* Clear of the pinned bottom nav. */}
+      <div className="h-24" />
+    </div>
+  );
+}
+
+type OrderRow = NonNullable<ReturnType<typeof useOrders>["data"]>[number];
+
+const THUMBS_SHOWN = 4;
+
+function OrderCard({ order, prominent = false }: { order: OrderRow; prominent?: boolean }) {
+  const navigate = useNavigate();
+  const reorder = useReorder();
+  const toast = useToast();
+
+  const sub = order.sub_orders?.[0];
+  const view = statusView(sub?.status);
+  const items = sub?.order_items ?? [];
+  const extra = Math.max(0, items.length - THUMBS_SHOWN);
+  const when = new Date(order.created_at);
+
+  const doReorder = async (e: React.MouseEvent) => {
+    // The whole card navigates; this button must not.
+    e.stopPropagation();
+    try {
+      const r = await reorder.mutateAsync(items);
+      if (r.added === r.total) {
+        toast(`Added ${r.added} item${r.added === 1 ? "" : "s"} to your cart`, {
+          label: "View cart",
+          to: "/cart",
+        });
+      } else {
+        toast(
+          `Added ${r.added} of ${r.total} items — ${r.skippedTitles.join(", ")} ${
+            r.skippedTitles.length === 1 ? "is" : "are"
+          } no longer available.`,
+          { label: "View cart", to: "/cart" }
+        );
+      }
+      navigate("/cart");
+    } catch {
+      toast("Couldn't reorder — try again.");
+    }
+  };
+
+  return (
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => navigate(`/orders/${order.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") navigate(`/orders/${order.id}`);
+      }}
+      className={`cursor-pointer rounded-card border border-line bg-surface p-4 transition-transform duration-press ease-out active:scale-[0.98] ${
+        prominent ? "border-l-4 border-l-persimmon" : ""
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-body font-semibold text-store-name">{sub?.partner?.name ?? "CADO"}</p>
+          <p className="mt-0.5 text-caption text-muted">
+            #{order.order_number} ·{" "}
+            {when.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}{" "}
+            {when.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
+        <span className={`shrink-0 rounded-[4px] px-2 py-1 text-[11px] font-bold ${view.chip}`}>
+          {view.label}
+        </span>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5">
+          {items.slice(0, THUMBS_SHOWN).map((it) => {
+            const imgs = it.product?.product_images ?? [];
+            const primary = imgs.find((i) => i.is_primary) ?? imgs[0];
+            return (
+              <span key={it.id} className="h-11 w-11 shrink-0 overflow-hidden rounded-[8px] bg-surface-sunk">
+                {primary ? (
+                  <Img src={productImageUrl(primary.storage_path)} className="h-full w-full object-cover" />
+                ) : null}
+              </span>
+            );
+          })}
+          {extra > 0 ? (
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-surface-sunk text-caption font-semibold text-muted">
+              +{extra}
+            </span>
+          ) : null}
+        </div>
+        <p className="shrink-0 text-price">{formatMoney(order.total)}</p>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={doReorder}
+          disabled={reorder.isPending}
+          className="tap-44 inline-flex h-10 items-center rounded-[4px] border border-persimmon px-4 text-caption font-semibold text-persimmon transition active:scale-[0.97] disabled:opacity-50"
+        >
+          {reorder.isPending ? "Adding…" : "Reorder"}
+        </button>
+        <Link
+          to={`/orders/${order.id}`}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Order details"
+          className="text-muted"
+        >
+          ›
+        </Link>
+      </div>
     </div>
   );
 }

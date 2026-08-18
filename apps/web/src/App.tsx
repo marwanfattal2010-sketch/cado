@@ -25,6 +25,7 @@ import { Checkout } from "./pages/Checkout";
 import { OrderConfirmed } from "./pages/OrderConfirmed";
 import { Search } from "./pages/Search";
 import { Orders } from "./pages/Orders";
+import { OrderDetail } from "./pages/OrderDetail";
 import { Account } from "./pages/Account";
 import { Wishlist } from "./pages/Wishlist";
 import { Settings } from "./pages/Settings";
@@ -62,6 +63,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="search" element={<Search />} />
         <Route path="orders" element={<Orders />} />
+        <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="account" element={<Account />} />
         <Route path="wishlist" element={<Wishlist />} />
         <Route path="settings" element={<Settings />} />
