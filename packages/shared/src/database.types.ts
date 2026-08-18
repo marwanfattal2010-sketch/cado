@@ -734,6 +734,32 @@ export type Database = {
           },
         ]
       }
+      homepage_config: {
+        Row: {
+          id: boolean
+          store_of_week_partner_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          store_of_week_partner_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          store_of_week_partner_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homepage_config_store_of_week_partner_id_fkey"
+            columns: ["store_of_week_partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1247,17 +1273,17 @@ export type Database = {
           created_at: string
           description: string | null
           email: string | null
-          id: string
-          is_live: boolean
-          is_featured: boolean
           featured_rank: number | null
-          tagline: string | null
+          id: string
+          is_featured: boolean
+          is_live: boolean
           logo_url: string | null
           name: string
           offers_gift_wrap: boolean
           phone: string | null
           slug: string
           status: string
+          tagline: string | null
         }
         Insert: {
           city?: string | null
@@ -1268,17 +1294,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
-          id?: string
-          is_live?: boolean
-          is_featured?: boolean
           featured_rank?: number | null
-          tagline?: string | null
+          id?: string
+          is_featured?: boolean
+          is_live?: boolean
           logo_url?: string | null
           name: string
           offers_gift_wrap?: boolean
           phone?: string | null
           slug: string
           status?: string
+          tagline?: string | null
         }
         Update: {
           city?: string | null
@@ -1289,17 +1315,17 @@ export type Database = {
           created_at?: string
           description?: string | null
           email?: string | null
-          id?: string
-          is_live?: boolean
-          is_featured?: boolean
           featured_rank?: number | null
-          tagline?: string | null
+          id?: string
+          is_featured?: boolean
+          is_live?: boolean
           logo_url?: string | null
           name?: string
           offers_gift_wrap?: boolean
           phone?: string | null
           slug?: string
           status?: string
+          tagline?: string | null
         }
         Relationships: []
       }
@@ -1444,25 +1470,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      // --- endless home (migration 0065): regenerate types after applying and delete these hand-written blocks ---
-      homepage_config: {
-        Row: {
-          id: boolean
-          store_of_week_partner_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          id?: boolean
-          store_of_week_partner_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          id?: boolean
-          store_of_week_partner_id?: string | null
-          updated_at?: string
-        }
-        Relationships: []
       }
       products: {
         Row: {
@@ -2233,6 +2240,14 @@ export type Database = {
           status: string
         }[]
       }
+      home_product_signals: {
+        Args: { p_days?: number }
+        Returns: {
+          favorites: number
+          product_id: string
+          recent_orders: number
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_store_owner: { Args: never; Returns: boolean }
       is_valid_contact: { Args: { p_contact: string }; Returns: boolean }
@@ -2275,14 +2290,6 @@ export type Database = {
         }[]
       }
       my_partner_id: { Args: never; Returns: string }
-      home_product_signals: {
-        Args: { p_days?: number }
-        Returns: {
-          product_id: string
-          recent_orders: number
-          favorites: number
-        }[]
-      }
       my_wallet: {
         Args: never
         Returns: {
