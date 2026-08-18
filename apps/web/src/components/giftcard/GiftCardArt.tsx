@@ -107,3 +107,96 @@ export function EnvelopeCardArt({ className = "" }: { className?: string }) {
     </svg>
   );
 }
+
+/**
+ * The decorative hero card on the Gift Cards page. Brand, not data: it shows
+ * NO balance and NO code — a new visitor's first sight of the page must not
+ * be "$0, you have nothing", and a made-up code would be fake content.
+ *
+ * The wordmark stays in Jost 600, deliberately, although the brief sketched
+ * "wordmark in serif": Jost 600 IS the CADO wordmark — the app icon, the
+ * splash and the header all set it in that face, and a serif CADO existing
+ * only on this card would be a second logo. Serif is the amount's job on the
+ * cards that carry one, which matches the design system's "serif for display"
+ * rule without forking the mark.
+ */
+export function GiftCardHero({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 320 190" className={className} role="img" aria-label="A CADO gift card">
+      <defs>
+        <linearGradient id="cado-card-face" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={PERSIMMON} />
+          <stop offset="100%" stopColor="#D8422A" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="316" height="186" rx="18" fill="url(#cado-card-face)" />
+      {/* the ribbon that crosses every CADO card, tied with the brand bow */}
+      <path d="M2 122h316" stroke={CREAM} strokeWidth="1.8" opacity="0.45" />
+      <path d="M226 2v186" stroke={CREAM} strokeWidth="1.8" opacity="0.28" />
+      <Bow x={226} y={122} scale={1.7} stroke={CREAM} />
+      <text x="24" y="46" fontFamily="Jost, sans-serif" fontWeight="600" fontSize="26" letterSpacing="3" fill={CREAM}>
+        CADO
+      </text>
+      <text x="24" y="168" fontFamily="Jost, sans-serif" fontWeight="600" fontSize="12" letterSpacing="1" fill={CREAM} opacity="0.8">
+        GIFT CARD
+      </text>
+    </svg>
+  );
+}
+
+/**
+ * The live preview in the send flows: the card with the chosen amount, and
+ * beneath it the note exactly as typed. Nothing invented — empty fields
+ * render nothing, so an unwritten note is an unwritten note.
+ *
+ * The note area keeps a fixed minimum height whether or not anything is
+ * typed, so the page never jumps as someone writes (the no-layout-shift
+ * rule).
+ */
+export function LiveCardPreview({
+  amount,
+  to = "",
+  from = "",
+  message = "",
+  className = "",
+}: {
+  amount: string;
+  to?: string;
+  from?: string;
+  message?: string;
+  className?: string;
+}) {
+  const hasNote = !!(to.trim() || from.trim() || message.trim());
+  return (
+    <div className={className}>
+      <DigitalCardMock amount={amount} className="w-full" />
+      <div className="mt-2 min-h-[84px]">
+        {hasNote ? (
+          <div className="rounded-[10px] border border-line bg-surface px-4 py-3 shadow-rest">
+            {to.trim() ? <p className="font-display text-caption">To {to.trim()}</p> : null}
+            {message.trim() ? (
+              <p className="py-1 font-display text-body leading-snug">{message.trim()}</p>
+            ) : null}
+            {from.trim() ? (
+              <p className="text-right font-display text-caption text-muted">— {from.trim()}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * THE SLOT FOR THE REAL PHOTOGRAPH.
+ *
+ * Today this renders the hand-drawn envelope, which is honest: it is CADO's
+ * own drawing of CADO's own card. The day a real photograph of the printed
+ * envelope exists, it replaces the drawing HERE and nowhere else — every
+ * screen that shows the physical option renders this component, so the swap
+ * is one file. No stock photo and no generated image may ever fill this
+ * slot: both would be a picture of something that does not arrive.
+ */
+export function PhysicalCardPhotoSlot({ className = "" }: { className?: string }) {
+  return <EnvelopeCardArt className={className} />;
+}

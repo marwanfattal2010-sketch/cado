@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCreatePool } from "../hooks/useGiftCardPools";
-import { Button, ButtonLink, Chip } from "../components/ui";
-import { GiftNoteBlock, OCCASIONS, suggestionFor, type NoteValue, type Occasion } from "../components/giftcard/GiftNote";
+import { Button, ButtonLink } from "../components/ui";
+import { GiftNoteBlock, type NoteValue } from "../components/giftcard/GiftNote";
+import { LiveCardPreview } from "../components/giftcard/GiftCardArt";
+import { formatMoney } from "../lib/money";
 
 const FIELD =
   "w-full rounded-card border border-line bg-surface px-4 py-3.5 text-body outline-none transition focus:border-ink/35";
@@ -24,13 +26,14 @@ export function GiftCardGroupCreate() {
   const create = useCreatePool();
 
   const [recipient, setRecipient] = useState("");
-  const [occasion, setOccasion] = useState<Occasion>("birthday");
   const [goal, setGoal] = useState("");
   const [deadline, setDeadline] = useState("");
   const [note, setNote] = useState<NoteValue>({
     to: "",
     from: profile?.full_name ?? "",
-    message: suggestionFor("birthday", ""),
+    // Empty on purpose: the occasion question is gone, so there is no
+    // honest greeting to pre-write. What they type is what prints.
+    message: "",
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +60,9 @@ export function GiftCardGroupCreate() {
     try {
       const slug = await create.mutateAsync({
         recipientName: recipient.trim(),
-        occasion,
+        // The database column stays; "just-because" is the value that claims
+        // nothing, which is the truth now that nobody is asked.
+        occasion: "just-because",
         goalCents: Math.round(goalNumber * 100),
         deadline: deadline || null,
         noteTo: note.to.trim() || recipient.trim(),
@@ -89,16 +94,8 @@ export function GiftCardGroupCreate() {
         </label>
       </section>
 
-      <section className="mt-6">
-        <p className="text-body font-medium">Occasion</p>
-        <div className="scroll-row mt-3" style={{ ["--row-gap" as string]: "8px" }}>
-          {OCCASIONS.map((o) => (
-            <Chip key={o.value} active={occasion === o.value} onClick={() => setOccasion(o.value)}>
-              {o.label}
-            </Chip>
-          ))}
-        </div>
-      </section>
+      {/* The occasion question is gone on purpose — same reasoning as the
+          single-card flow: a decision that changed nothing about the card. */}
 
       <section className="mt-6">
         <p className="text-body font-medium">Goal amount</p>
@@ -118,6 +115,17 @@ export function GiftCardGroupCreate() {
         <p className="mt-1.5 text-caption text-muted">At least ${MIN_GOAL}. Up to 20 people can chip in.</p>
       </section>
 
+      {/* The card everyone is chipping in for, goal on its face, live. */}
+      <section className="mt-6">
+        <LiveCardPreview
+          amount={goalNumber >= MIN_GOAL ? formatMoney(goalNumber) : formatMoney(0)}
+          to={note.to || recipient}
+          from={note.from}
+          message={note.message}
+          className="mx-auto max-w-[340px]"
+        />
+      </section>
+
       <section className="mt-6">
         <label className="block">
           <span className="mb-1 block text-caption text-muted">Deadline (optional)</span>
@@ -130,7 +138,7 @@ export function GiftCardGroupCreate() {
         </label>
       </section>
 
-      <GiftNoteBlock occasion={occasion} value={note} onChange={setNote} heading="The note on the card" />
+      <GiftNoteBlock occasion="just-because" value={note} onChange={setNote} heading="The note on the card" />
 
       {error ? (
         <p role="alert" className="mt-6 text-body text-alert">
@@ -141,7 +149,8 @@ export function GiftCardGroupCreate() {
       <Button onClick={submit} disabled={create.isPending} variant="accent" fullWidth className="mt-8">
         {create.isPending ? "Creating…" : "Create group"}
       </Button>
-      <div className="h-24" />
+      {/* Clear of the bottom nav: the Create button must never sit under it. */}
+      <div className="h-40" />
     </div>
   );
 }

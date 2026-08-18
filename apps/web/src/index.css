@@ -545,3 +545,12 @@ button:active:not(:disabled),
     scroll-behavior: auto !important;
   }
 }
+
+/* One tasteful pulse when a redeemed card's value lands on the wallet —
+   the confetti-free version of celebrating. Applied for a single run via
+   .glow-once and removed on animationend. */
+@keyframes cado-glow {
+  0% { box-shadow: 0 0 0 0 rgb(var(--persimmon) / 0.55); }
+  100% { box-shadow: 0 0 0 18px rgb(var(--persimmon) / 0); }
+}
+.glow-once { animation: cado-glow 1.4s ease-out 1; }

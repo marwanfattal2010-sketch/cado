@@ -1,4 +1,16 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+
+/**
+ * /gift-cards/redeem is gone as a page — redeeming lives on the Gift Cards
+ * page itself — but the URL is NOT gone as an address: group-gift share
+ * links carry `?code=` on it and those links are already in people's chats.
+ * The query string must survive the redirect, so the redeem box can prefill
+ * the code the link was sent with.
+ */
+function RedeemRedirect() {
+  const location = useLocation();
+  return <Navigate to={{ pathname: "/gift-cards", search: location.search }} replace />;
+}
 import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Browse } from "./pages/Browse";
@@ -22,7 +34,7 @@ import { GiftFinder } from "./pages/GiftFinder";
 import { Occasions } from "./pages/Occasions";
 import { GiftCards } from "./pages/GiftCards";
 import { GiftCardSend } from "./pages/GiftCardSend";
-import { GiftCardRedeem } from "./pages/GiftCardRedeem";
+
 import { GiftCardGroupCreate } from "./pages/GiftCardGroupCreate";
 import { GiftCardGroupPool } from "./pages/GiftCardGroupPool";
 import { GiftCardGroupChipIn } from "./pages/GiftCardGroupChipIn";
@@ -76,7 +88,8 @@ export default function App() {
         <Route path="occasions" element={<Occasions />} />
         <Route path="gift-cards" element={<GiftCards />} />
         <Route path="gift-cards/send" element={<GiftCardSend />} />
-        <Route path="gift-cards/redeem" element={<GiftCardRedeem />} />
+        {/* Redeeming lives on the Gift Cards page itself now; the old URL keeps working. */}
+        <Route path="gift-cards/redeem" element={<RedeemRedirect />} />
         {/* The group pages are deliberately outside any auth gate: the whole
             point of the slug is that it opens for someone who has never used
             CADO. Only creating one needs an account. */}

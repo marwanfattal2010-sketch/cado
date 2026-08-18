@@ -11,9 +11,18 @@ export type DeliveryMethod = "digital" | "physical";
  * entered without dashes silently failed to redeem. Strip anything that
  * isn't an allowed character, upper-case, and re-insert the dashes.
  */
+/**
+ * What a person typed, turned into what the database stores: uppercase,
+ * separators stripped, NOTHING ELSE.
+ *
+ * The previous version sliced to twelve characters and re-inserted dashes
+ * before sending — which silently broke every real 20-character code at
+ * checkout: the lookup is an exact match against the stored code, and a
+ * truncated, dashed string can never hit it. Display formatting belongs to
+ * the input; the wire format is the bare code.
+ */
 export function normalizeGiftCardCode(input: string): string {
-  const cleaned = input.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 12);
-  return cleaned.match(/.{1,4}/g)?.join("-") ?? "";
+  return input.toUpperCase().replace(/[^0-9A-Z]/g, "");
 }
 
 export function usePurchaseGiftCard() {

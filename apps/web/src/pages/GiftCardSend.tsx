@@ -5,9 +5,9 @@ import { type DeliveryMethod } from "../hooks/useGiftCards";
 import { useAddGiftCardToCart } from "../hooks/useCart";
 import { formatMoney } from "../lib/money";
 
-import { Button, ButtonLink, Chip, useToast } from "../components/ui";
-import { DigitalCardMock, EnvelopeCardArt } from "../components/giftcard/GiftCardArt";
-import { GiftNoteBlock, OCCASIONS, suggestionFor, type NoteValue, type Occasion } from "../components/giftcard/GiftNote";
+import { Button, ButtonLink, useToast } from "../components/ui";
+import { LiveCardPreview, PhysicalCardPhotoSlot } from "../components/giftcard/GiftCardArt";
+import { GiftNoteBlock, type NoteValue } from "../components/giftcard/GiftNote";
 
 const AMOUNTS = [25, 50, 100, 150];
 
@@ -64,11 +64,12 @@ export function GiftCardSend() {
 
   const [amount, setAmount] = useState(50);
   const [customAmount, setCustomAmount] = useState("");
-  const [occasion, setOccasion] = useState<Occasion>("birthday");
   const [note, setNote] = useState<NoteValue>({
     to: "",
     from: profile?.full_name ?? "",
-    message: suggestionFor("birthday", ""),
+    // Empty on purpose: with the occasion question gone there is no honest
+    // greeting to pre-write. What they type is what prints.
+    message: "",
   });
   const [delivery, setDelivery] = useState<DeliveryMethod>("digital");
   const [error, setError] = useState<string | null>(null);
@@ -148,15 +149,21 @@ export function GiftCardSend() {
         />
       </section>
 
+      {/* The occasion question is gone on purpose: it added a decision
+          without changing anything about the card. */}
+
+      {/* THE signature moment: the card itself, updating as they choose.
+          Amount changes with the chips above; the note appears under it as
+          they type below. Empty fields show nothing — the preview only ever
+          contains what the buyer wrote. */}
       <section className="mt-7">
-        <p className="text-body font-medium">What's the occasion?</p>
-        <div className="scroll-row mt-3" style={{ ["--row-gap" as string]: "8px" }}>
-          {OCCASIONS.map((o) => (
-            <Chip key={o.value} active={occasion === o.value} onClick={() => setOccasion(o.value)}>
-              {o.label}
-            </Chip>
-          ))}
-        </div>
+        <LiveCardPreview
+          amount={formatMoney(finalAmount || 0)}
+          to={note.to}
+          from={note.from}
+          message={note.message}
+          className="mx-auto max-w-[340px]"
+        />
       </section>
 
       <section className="mt-7">
@@ -165,23 +172,30 @@ export function GiftCardSend() {
           <DeliveryOption
             selected={delivery === "digital"}
             onSelect={() => setDelivery("digital")}
-            title="Digital card"
-            desc="They get a link and a QR code. Arrives instantly."
+            title="Link or QR"
+            desc="Sent instantly. They tap it and the balance is theirs."
           >
-            <DigitalCardMock amount={formatMoney(finalAmount || 0)} className="w-full max-w-[260px]" />
+            {/* The live preview above is the card; repeating it inside the
+                tile would be the same picture twice on one screen. */}
+            <span className="block h-1" aria-hidden />
           </DeliveryOption>
           <DeliveryOption
             selected={delivery === "physical"}
             onSelect={() => setDelivery("physical")}
             title="Real card, delivered"
-            desc="A real CADO card in an envelope, hand-delivered with a small note."
+            desc="A CADO card in a sealed envelope with your note, hand-delivered today. Normal delivery fee applies at checkout."
           >
-            <EnvelopeCardArt className="w-full max-w-[260px]" />
+            <PhysicalCardPhotoSlot className="w-full max-w-[260px]" />
+            <span className="mt-2 block text-caption leading-snug text-muted">
+              Inside the envelope: a CADO card with its code, and your printed note. They redeem the
+              code in the app and the balance is theirs.
+            </span>
           </DeliveryOption>
         </div>
       </section>
 
-      <GiftNoteBlock occasion={occasion} value={note} onChange={setNote} />
+      {/* "just-because" suggests nothing — the honest default now that nobody is asked the occasion. */}
+      <GiftNoteBlock occasion="just-because" value={note} onChange={setNote} />
 
       {error ? (
         <p role="alert" className="mt-6 text-body text-alert">

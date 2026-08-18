@@ -46,22 +46,23 @@ export function formatCardNumber(raw: string | null | undefined): string {
 /**
  * What a person types, turned into what the server wants.
  *
- * New codes are nine digits shown as 333-333-333. Old ones are twenty
- * characters. Both are accepted, so this only strips the punctuation and
- * leaves the rest alone — deciding which format it is belongs to the
- * database, which is the only place that knows what codes exist.
+ * New codes are twelve digits shown as XXXX-XXXX-XXXX. Cards sold before
+ * the change carry twenty alphanumeric characters. Both are accepted, so
+ * this only strips punctuation — deciding which format a code is belongs
+ * to the database, the only place that knows what codes exist.
  */
 export function normaliseCode(input: string): string {
   return input.replace(/[\s-]/g, "").toUpperCase();
 }
 
-/** Live formatting for the redeem input: 333-333-333 as you type. */
+/** Live formatting for the redeem input: XXXX-XXXX-XXXX as you type. */
 export function formatCodeInput(input: string): string {
   const raw = input.replace(/[\s-]/g, "").toUpperCase();
-  // Only group into threes while it still looks like a new-style numeric
-  // code. An old twenty-character code would be mangled by it.
-  if (/^\d{1,9}$/.test(raw)) {
-    return raw.replace(/(\d{3})(?=\d)/g, "$1-");
+  // Only group while it still looks like a new-style numeric code. An old
+  // twenty-character code would be mangled by regrouping, so it passes
+  // through untouched — pasted or typed, with or without dashes.
+  if (/^\d{1,12}$/.test(raw)) {
+    return raw.replace(/(\d{4})(?=\d)/g, "$1-");
   }
   return raw;
 }
