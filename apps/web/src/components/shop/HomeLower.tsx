@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { SectionHead } from "../SectionHead";
 import { ProductCard } from "../ProductCard";
+import { ProductRail } from "../ProductRail";
 import { ProductRowSkeleton, ProductGridSkeleton } from "../Skeleton";
 import { Img } from "../Img";
 import { storePath } from "../../lib/routes";
@@ -16,8 +17,9 @@ import {
   useDiscoverMore,
   useHomeSignals,
   useNewest,
-  useStoreOfWeek,
+  useStoresOfWeek,
   useTrendingPool,
+  type FeaturedStore,
 } from "../../hooks/useHomeEndless";
 import { useRecentlyViewed } from "../../hooks/useRecentlyViewed";
 
@@ -39,7 +41,7 @@ export function HomeLower() {
   const signals = useHomeSignals();
   const trendingPool = useTrendingPool();
   const deals = useDeals();
-  const sow = useStoreOfWeek();
+  const storesOfWeek = useStoresOfWeek(3);
   const catCounts = useCategoryCounts();
   const newest = useNewest(10);
   const recent = useRecentlyViewed();
@@ -76,21 +78,20 @@ export function HomeLower() {
 
   /* ---- 10. Discover more: exclude everything already on the page ------- */
 
-  const contributors = [trendingPool, deals, sow, newest, strip0, strip1, strip2];
+  const contributors = [trendingPool, deals, newest, strip0, strip1, strip2];
   const excludeReady =
     contributors.every((q) => !q.isLoading) && !signals.isLoading && !recent.isLoading;
   const exclude = useMemo(() => {
     const s = new Set<string>();
     for (const p of trending) s.add(p.id);
     for (const p of deals.data ?? []) s.add(p.id);
-    for (const p of sow.data?.products ?? []) s.add(p.id);
     for (const p of newest.data ?? []) s.add(p.id);
     for (const p of recent.data ?? []) s.add(p.id);
     for (const [i] of strips.entries())
       for (const p of rankedStrip(strips[i].data, signals.data).slice(0, 8)) s.add(p.id);
     return s;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trending, deals.data, sow.data, newest.data, recent.data, strip0.data, strip1.data, strip2.data, signals.data]);
+  }, [trending, deals.data, newest.data, recent.data, strip0.data, strip1.data, strip2.data, signals.data]);
 
   return (
     <div className="pb-6">
@@ -131,20 +132,26 @@ export function HomeLower() {
         </Pad>
       ) : null}
 
-      {/* 4 — Store of the Week */}
-      {sow.data ? <StoreOfWeekBlock data={sow.data} /> : null}
+      {/* 4 — Stores of the Week */}
+      <StoresOfWeekBlock stores={storesOfWeek.data ?? []} />
 
       {/* 5 — Shop by budget */}
       <Pad>
         <SectionHead title="Shop by budget" />
-        <div className="scroll-row" style={{ ["--row-gap" as string]: "8px" }}>
+        <div className="scroll-row" style={{ ["--row-gap" as string]: "12px" }}>
           {BUDGETS.map((b) => (
             <Link
               key={b.slug}
               to={`/gift-finder?budget=${b.slug}`}
               className="flex h-[76px] w-[132px] shrink-0 flex-col justify-center rounded-card bg-tint-sand px-4 transition-transform duration-press ease-out active:scale-[0.96]"
             >
-              <span className="font-display text-h2 text-deep-sand">{b.label}</span>
+              {/* Inter, not the display serif. Fraunces is built for words —
+                  its numerals are the wonky part of it, and "$25" set in it
+                  read as a novelty sticker rather than a price. Section
+                  TITLES keep the serif; the money does not. */}
+              <span className="font-body text-[22px] font-semibold leading-none tracking-[-0.01em] text-deep-sand">
+                {b.label}
+              </span>
               <span className="mt-0.5 text-[11px] text-muted">Gifts that fit</span>
             </Link>
           ))}
@@ -154,14 +161,18 @@ export function HomeLower() {
       {/* 6 — Shop by recipient */}
       <Pad>
         <SectionHead title="Shop by recipient" />
-        <div className="scroll-row" style={{ ["--row-gap" as string]: "8px" }}>
+        <div className="scroll-row" style={{ ["--row-gap" as string]: "12px" }}>
           {RECIPIENT_ROW.map((r) => (
             <Link
               key={r.value}
               to={`/gift-finder?recipient=${r.value}`}
               className="flex h-[76px] w-[104px] shrink-0 flex-col items-center justify-center gap-1 rounded-card bg-tint-sage transition-transform duration-press ease-out active:scale-[0.96]"
             >
-              <span className="font-display text-h2 text-deep-sage">{r.label}</span>
+              {/* Matched to the budget tiles above: these two rows sit next
+                  to each other and one serif + one sans read as a mistake. */}
+              <span className="font-body text-[17px] font-semibold leading-none text-deep-sage">
+                {r.label}
+              </span>
             </Link>
           ))}
         </div>
@@ -227,16 +238,14 @@ function Pad({ children }: { children: React.ReactNode }) {
   return <section className="pt-7">{children}</section>;
 }
 
+/**
+ * Every swipe row on this page is the shared rail — identical card width,
+ * identical card height, one 12px gap, first card inset to the page margin.
+ * Deals, Recently viewed, New on CADO and every Best-of strip all come
+ * through here, so they cannot drift apart again.
+ */
 function Rail({ products }: { products: FeedProduct[] }) {
-  return (
-    <div className="scroll-row" style={{ ["--row-gap" as string]: "10px" }}>
-      {products.map((p) => (
-        <div key={p.id} className="w-[46%] shrink-0 sm:w-[30%] lg:w-[19%]">
-          <ProductCard {...p} compact />
-        </div>
-      ))}
-    </div>
-  );
+  return <ProductRail products={products} />;
 }
 
 function RailSkeleton({ title }: { title: string }) {
@@ -267,42 +276,44 @@ const TAB_OF: Record<string, string> = {
   "gift-sets": "home",
 };
 
-function StoreOfWeekBlock({
-  data,
-}: {
-  data: NonNullable<ReturnType<typeof useStoreOfWeek>["data"]>;
-}) {
-  const { store, products } = data;
-  const image = store.cover_image_url ?? store.logo_url;
+/**
+ * Stores of the Week: a swipe row of two or three, every card the same size.
+ * A single hero card here looked like the section had failed to load the
+ * rest — and with a dozen live partners there is no reason to spotlight only
+ * one. Same weekly rotation, three slots.
+ */
+function StoresOfWeekBlock({ stores }: { stores: FeaturedStore[] }) {
+  if (stores.length === 0) return null;
   return (
     <Pad>
-      <SectionHead title="Store of the Week" />
-      <div className="mx-auto max-w-6xl px-4">
-        <Link
-          to={storePath(store)}
-          className="relative block overflow-hidden rounded-card bg-surface-sunk shadow-rest"
-        >
-          <div className="relative aspect-[21/9] w-full">
-            {image ? <Img src={image} className="h-full w-full object-cover" /> : null}
-            {/* Ink gradient for the text, same treatment as the store strip
-                cards — legibility, not decoration. */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-4">
-              <p className="font-display text-h2 text-white">{store.name}</p>
-              {store.tagline || store.description ? (
-                <p className="mt-0.5 line-clamp-1 text-caption text-white/85">
-                  {store.tagline ?? store.description}
-                </p>
-              ) : null}
-              <span className="mt-2 inline-flex h-9 items-center rounded-[4px] bg-persimmon px-3 text-caption font-semibold text-white">
-                Visit store
-              </span>
-            </div>
-          </div>
-        </Link>
-      </div>
-      <div className="pt-3">
-        <Rail products={products} />
+      <SectionHead title={stores.length > 1 ? "Stores of the Week" : "Store of the Week"} to="/stores" />
+      <div className="scroll-row" style={{ ["--row-gap" as string]: "12px" }}>
+        {stores.map((store) => {
+          const image = store.cover_image_url ?? store.logo_url;
+          return (
+            <Link
+              key={store.id}
+              to={storePath(store)}
+              className="relative block h-[168px] w-[268px] shrink-0 overflow-hidden rounded-card bg-surface-sunk shadow-rest transition-transform duration-press ease-out active:scale-[0.98]"
+            >
+              {image ? <Img src={image} className="h-full w-full object-cover" /> : null}
+              {/* Ink gradient for the text, same treatment as the store strip
+                  cards — legibility, not decoration. */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-3">
+                <p className="truncate font-display text-[17px] font-semibold text-white">{store.name}</p>
+                {store.tagline || store.description ? (
+                  <p className="mt-0.5 line-clamp-1 text-[11px] text-white/85">
+                    {store.tagline ?? store.description}
+                  </p>
+                ) : null}
+                <span className="mt-2 inline-flex h-8 items-center rounded-[4px] bg-persimmon px-3 text-[12px] font-semibold text-white">
+                  Visit store
+                </span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </Pad>
   );

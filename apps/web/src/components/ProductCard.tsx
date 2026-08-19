@@ -45,6 +45,12 @@ type ProductCardProps = {
   completed_orders?: number | null;
   /** Tighter vertical rhythm under the photo, for dense rows. Spacing only. */
   compact?: boolean;
+  /**
+   * Every card the same size as its siblings: square photo, fixed text box.
+   * For swipe rows and the favorites grid, where ragged heights read as
+   * broken. Geometry only — it hides no information except surplus tag chips.
+   */
+  uniform?: boolean;
 };
 
 /**
@@ -185,8 +191,27 @@ function chipsFor(p: ProductCardProps, categoryName?: string | null): Chip[] {
  * is a lie that happens to look like a feature.
  */
 export function ProductCard(props: ProductCardProps) {
-  const { id, title, price, compare_at_price, stock_quantity, product_images, partner, compact = false } =
-    props;
+  const {
+    id,
+    title,
+    price,
+    compare_at_price,
+    stock_quantity,
+    product_images,
+    partner,
+    compact = false,
+    /**
+     * UNIFORM MODE — every card exactly the same size as its siblings.
+     *
+     * The free-height card above is right for the masonry feed and wrong for
+     * a swipe row: a row of photos with their own aspect ratios is a row of
+     * different-height cards with ragged gaps. Uniform mode pins the photo to
+     * a square and gives the text below it a fixed box, so a rail (or a
+     * favorites grid) reads as one clean band. It changes no content — the
+     * same store, title, price and honest low-stock line — only its geometry.
+     */
+    uniform = false,
+  } = props;
   const uri = gridImage(product_images);
   const favoriteIds = useFavoriteIds();
   const toggleFavorite = useToggleFavorite();
@@ -206,14 +231,19 @@ export function ProductCard(props: ProductCardProps) {
   const chips = chipsFor({ ...props, category_slug: category?.slug ?? null }, category?.name);
 
   return (
-    <div className="group mb-3 w-full break-inside-avoid">
+    <div className={`group w-full break-inside-avoid ${uniform ? "flex flex-col" : "mb-3"}`}>
       <Link
         to={`/product/${id}`}
         className="block w-full transition-transform duration-150 active:scale-[0.97]"
       >
         {/* No fixed ratio: the tinted box is sized by the image itself, so the
-            card is as tall as its photo and the columns fall out of step. */}
-        <div className="relative w-full overflow-hidden rounded-card bg-surface-sunk">
+            card is as tall as its photo and the columns fall out of step.
+            Uniform mode squares it, which is the whole point of uniform. */}
+        <div
+          className={`relative w-full overflow-hidden rounded-card bg-surface-sunk ${
+            uniform ? "aspect-square" : ""
+          }`}
+        >
           {uri ? (
             <img
               src={uri}
@@ -222,9 +252,9 @@ export function ProductCard(props: ProductCardProps) {
               decoding="async"
               onLoad={() => setLoaded(true)}
               onError={() => setLoaded(true)}
-              className={`h-auto w-full object-cover transition-all duration-500 ${
-                loaded ? "blur-0 opacity-100" : "blur-md opacity-0"
-              }`}
+              className={`w-full object-cover transition-all duration-500 ${
+                uniform ? "h-full" : "h-auto"
+              } ${loaded ? "blur-0 opacity-100" : "blur-md opacity-0"}`}
             />
           ) : (
             <div className="flex aspect-square h-full w-full items-center justify-center text-caption text-muted">
@@ -268,6 +298,11 @@ export function ProductCard(props: ProductCardProps) {
         </div>
       </Link>
 
+      {/* Uniform mode boxes everything under the photo at one fixed height,
+          so a missing store name or a low-stock line cannot make this card
+          taller than the one beside it. `contents` means the free-height card
+          is laid out exactly as before. */}
+      <div className={uniform ? "h-[92px] overflow-hidden" : "contents"}>
       {/* Store first — the trust signal, and its own link. Its own colour
           too, so "who is this from" is scannable without reading the title. */}
       {partner?.name ? (
@@ -302,8 +337,10 @@ export function ProductCard(props: ProductCardProps) {
       </Link>
 
       {chips.length > 0 ? (
-        <div className="mt-1 flex flex-wrap gap-1">
-          {chips.map((c) => (
+        // One chip only in uniform mode: three of them wrap onto a second
+        // line on a narrow card, and a wrapping row is a variable height.
+        <div className={`mt-1 flex gap-1 ${uniform ? "flex-nowrap overflow-hidden" : "flex-wrap"}`}>
+          {(uniform ? chips.slice(0, 1) : chips).map((c) => (
             <Link
               key={`${c.className}-${c.to}`}
               to={c.to}
@@ -314,6 +351,7 @@ export function ProductCard(props: ProductCardProps) {
           ))}
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export function FeaturedStores() {
         <SectionHead title="Stores on CADO" />
         <div className="scroll-row" style={{ ["--row-gap" as string]: "12px" }}>
           {[0, 1].map((i) => (
-            <Skeleton key={i} className="h-[180px] w-[85%] shrink-0 rounded-card" />
+            <Skeleton key={i} className="h-[208px] w-[300px] shrink-0 rounded-card" />
           ))}
         </div>
       </section>
@@ -59,11 +59,15 @@ function hook(store: FeaturedStore): string | null {
 function FeaturedStoreCard({ store }: { store: FeaturedStore }) {
   const image = store.cover_image_url ?? store.logo_url;
   return (
+    /* Fixed size, not 85% of the screen: every card in this row is the same
+       card, and a store without a tagline must not be shorter than the one
+       beside it. The photo box is pinned to 2:1 and the text box to what two
+       lines need, so the row is one clean band. */
     <Link
       to={storePath(store)}
-      className="w-[85%] max-w-[420px] shrink-0 overflow-hidden rounded-card bg-surface shadow-rest transition-transform duration-press ease-out active:scale-[0.98]"
+      className="flex h-[208px] w-[300px] shrink-0 flex-col overflow-hidden rounded-card bg-surface shadow-rest transition-transform duration-press ease-out active:scale-[0.98]"
     >
-      <div className="relative aspect-[2/1] w-full overflow-hidden bg-surface-sunk">
+      <div className="relative aspect-[2/1] w-full shrink-0 overflow-hidden bg-surface-sunk">
         {image ? (
           <Img src={image} className="h-full w-full object-cover" />
         ) : (

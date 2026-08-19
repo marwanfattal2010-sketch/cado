@@ -21,6 +21,7 @@ import { TopOfCategory } from "./blocks/TopOfCategory";
 import { StoreStrip } from "./blocks/StoreStrip";
 import { FeaturedStores } from "./FeaturedStores";
 import { HomeLower } from "./HomeLower";
+import { ThemedTab, THEMED_TAB_SLUGS } from "./ThemedTab";
 import { ProductFeed } from "./blocks/ProductFeed";
 import { GiftCardSection, OccasionRail, StoreCirclesRow } from "./HomeSections";
 
@@ -106,6 +107,21 @@ export function TabPanel({
   };
 
   if (!mounted) return <div className="panel" aria-hidden style={{ minHeight: "100%" }} />;
+
+  /**
+   * V3: every category tab is its own designed world — palette, hero, tile
+   * shape, card style, section rhythm, motif — rendered by ThemedTab from
+   * its per-tab recipe. The All tab does not go through ThemedTab and keeps
+   * the block pipeline below untouched — and so does any category tab
+   * without a recipe (Shoes today): generic blocks beat a bare feed.
+   */
+  if (!primary && THEMED_TAB_SLUGS.has(tab.slug)) {
+    return (
+      <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
+        <ThemedTab tab={tab} categoryId={categoryId} categoryName={categoryName} />
+      </section>
+    );
+  }
 
   return (
     <section className="panel" aria-hidden={!active} data-tab={tab.slug}>

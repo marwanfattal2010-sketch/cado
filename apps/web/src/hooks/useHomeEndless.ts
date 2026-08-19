@@ -167,6 +167,62 @@ export function useFeaturedStores() {
 
 /* ------------------------------------------------------- store of the week */
 
+/**
+ * STORES of the week — two or three, not one.
+ *
+ * One card alone read as an accident on the page. The rotation logic is the
+ * one that was already here: an admin pick wins if `homepage_config` names
+ * one, otherwise the featured stores are ordered by how much stock they
+ * actually carry and the ISO week picks the starting point, so the set is
+ * deterministic (everyone sees the same stores this week) and changes by
+ * itself every Monday. It just takes a slice of three now instead of one.
+ *
+ * Stores with nothing in stock are dropped rather than padded — a "store of
+ * the week" you cannot buy anything from is not one.
+ */
+export function useStoresOfWeek(count = 3) {
+  const featured = useFeaturedStores();
+  return useQuery({
+    queryKey: ["home-stores-of-week", count, featured.data?.map((f) => f.id).join(",") ?? ""],
+    enabled: !!featured.data,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<FeaturedStore[]> => {
+      const { data: cfg, error: cfgErr } = await supabase
+        .from("homepage_config")
+        .select("store_of_week_partner_id")
+        .limit(1);
+      if (cfgErr && !missingMigration(cfgErr)) throw cfgErr;
+      const pinned: string | null = cfg?.[0]?.store_of_week_partner_id ?? null;
+
+      const poolAll = featured.data ?? [];
+      if (poolAll.length === 0) return [];
+
+      // How much each featured store actually has on the shelf right now.
+      const counts = await supabase
+        .from("products")
+        .select("partner_id")
+        .eq("is_active", true)
+        .gt("stock_quantity", 0)
+        .in("partner_id", poolAll.map((p) => p.id));
+      if (counts.error) throw counts.error;
+      const byStore = new Map<string, number>();
+      for (const r of counts.data ?? []) byStore.set(r.partner_id, (byStore.get(r.partner_id) ?? 0) + 1);
+
+      const stocked = poolAll
+        .filter((p) => (byStore.get(p.id) ?? 0) > 0)
+        .sort((a, b) => (byStore.get(b.id) ?? 0) - (byStore.get(a.id) ?? 0));
+      if (stocked.length === 0) return [];
+
+      const start = isoWeek() % stocked.length;
+      const rotated = stocked.map((_, i) => stocked[(start + i) % stocked.length]);
+      const picked = pinned ? rotated.filter((s) => s.id !== pinned) : rotated;
+      const head = pinned ? stocked.filter((s) => s.id === pinned) : [];
+      return [...head, ...picked].slice(0, count);
+    },
+  });
+}
+
+/** The single-store version, still used for the Discover-more exclude set. */
 export function useStoreOfWeek() {
   const featured = useFeaturedStores();
   return useQuery({

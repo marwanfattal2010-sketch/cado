@@ -615,3 +615,72 @@ Useful pattern learned here, worth reusing: `plus.unsplash.com/premium_photo-…
 results are **Unsplash+ paid licence**, not free. They 404 when downloaded
 server-side, which is a handy accident, but they should be filtered out on
 licence grounds — match only `images.unsplash.com/photo-…`.
+
+## V3 category tabs — nine designed worlds (Aug 18, 2026)
+
+Every category tab is now its own shop with its own palette, hero, tile
+shape, card style, section rhythm, and signature motif. All of it lives in
+two files:
+
+- `apps/web/src/components/shop/ThemedTab.tsx` — the nine recipes, keyed by
+  TAB slug (note: `home` = Gift Sets, `jewelry`, `flowers`; tab slugs are not
+  category slugs). Exports `THEMED_TAB_SLUGS`.
+- `apps/web/src/components/shop/TabMotifs.tsx` — per-tab divider/decoration
+  SVGs (gold rule, leaf, drizzle, confetti, ribbon, dot grid, diagonals).
+
+`TabPanel.tsx` routes `!primary && THEMED_TAB_SLUGS.has(tab.slug)` to
+ThemedTab; the **All tab and the Shoes tab keep the old block pipeline**
+(Shoes wasn't in the nine — falling into a bare feed would be a regression).
+Every photo on the themed tabs is a real product/store photo pulled by pool
+(newest / deals / under-$50 / cheapest per category); "best sellers" sections
+only render when the signals RPC shows real orders. Toys has no age tags in
+the data — its chips are the real subcategories instead.
+
+**Deploy path changed (important):** the Vercel token was revoked, and the
+CLI is now logged in as fattalmarwan33-alt. Remote builds FAIL on this repo
+(`workspace:*` needs pnpm; Vercel runs npm) and local `vercel build` FAILS
+too (project env vars are Sensitive, unreadable locally). The working recipe,
+from `apps/web`:
+1. `npx vite build` (env from `apps/web/.env`)
+2. copy `dist` → `.vercel/output/static`, write `.vercel/output/config.json`
+   with the SPA fallback route
+3. `npx vercel deploy --prebuilt --prod --yes`
+`vercel link --yes` earlier clobbered `.env.local` (now just an OIDC token —
+the real vars live in `.env`) and auto-created a junk Vercel project named
+`web` that can be deleted from the dashboard.
+
+## Revert & polish round (Aug 19, 2026)
+
+**Six tabs reverted, three kept.** `THEMED_TAB_SLUGS` in `ThemedTab.tsx` is
+now `{perfumes, toys, sport}`. Everything else — Fashion, Jewelry, Flowers,
+Chocolate, Gift Sets, Electronics, Shoes — renders the original block
+pipeline in `TabPanel.tsx`, which was never deleted, so reverting was
+removing slugs from that set rather than rebuilding old screens by hand.
+NOTE: Shoes was never part of the nine V3 tabs; it has always been on the
+block layout, so "keep Shoes" and "revert" mean the same thing for it.
+
+**Sport rebuilt** (kept as a designed tab, redesigned in full): clipped
+diagonal hero instead of the rotated bar that hung off the page, a kit row of
+three real products with real prices, tiles built from label-matching pools
+with a used-photo set so no two tiles wear the same picture (and a tile with
+no honest photo is dropped, never backfilled), uniform product rails, and
+`SportHead` section headers. "Fan favorites" still hides until sport has real
+orders.
+
+**Uniform carousels.** `components/ProductRail.tsx` is now THE horizontal
+product row: fixed 152px cards, `uniform` ProductCard, 12px gap, page-margin
+lead-in. `ProductCard` gained a `uniform` prop — square photo + fixed 92px
+text box + one chip — which is what makes rails and the favorites grid line
+up; the free-height card is still the default for the masonry feed. Every
+`--row-gap` on Home is 12px.
+
+**Stores of the Week** (`useStoresOfWeek`) replaces the single-store block:
+same ISO-week rotation and same admin pin from `homepage_config`, but it
+returns up to three in-stock featured stores. `useStoreOfWeek` is still
+exported and now unused by Home.
+
+**Shop by budget** amounts are Inter, not Fraunces — the display serif's
+numerals read as novelty at that size. Section titles keep Fraunces.
+
+**Favorites** uses the uniform card in a 2-col `items-start` grid, so every
+card is exactly 158x250 at 375px.

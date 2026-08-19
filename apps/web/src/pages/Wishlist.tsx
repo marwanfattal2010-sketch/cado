@@ -104,7 +104,11 @@ export function Wishlist() {
           </ButtonLink>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        /* Uniform cards, so this reads as a grid and not as a pile: every
+           photo square, every text box the same height, so row two starts on
+           one straight line instead of stepping around the tallest card in
+           row one. `items-start` keeps the cells from stretching. */
+        <div className="mt-6 grid grid-cols-2 items-start gap-3 sm:grid-cols-3 md:grid-cols-4">
           {shown.map((f) =>
             f.product ? (
               <div
@@ -113,7 +117,7 @@ export function Wishlist() {
                   favoriteIds.has(f.product.id) ? "" : "scale-95 opacity-0"
                 }`}
               >
-                <ProductCard {...f.product} compact />
+                <ProductCard {...f.product} compact uniform />
               </div>
             ) : null
           )}

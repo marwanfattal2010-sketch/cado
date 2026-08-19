@@ -123,7 +123,7 @@ export function EntryCards({
   if (tiles.length < MIN_ITEMS) return null;
 
   return (
-    <div className="scroll-row pt-4" style={{ ["--row-gap" as string]: "8px" }}>
+    <div className="scroll-row pt-4" style={{ ["--row-gap" as string]: "12px" }}>
       {tiles.map((tile, position) => {
         const photo = photoFor(tile, position);
         const inner = (
