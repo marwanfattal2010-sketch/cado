@@ -1,0 +1,270 @@
+# Nightly backup of the whole Supabase project.
+#
+# WHY THIS EXISTS: the project is on the Supabase free plan, which has no
+# platform backups at all (pitr_enabled false, zero backups listed). If the
+# database were lost tomorrow there is currently nothing to restore from.
+# It runs here rather than on a laptop because the laptop has no Docker and
+# no Postgres client tools, and because a backup that depends on someone's
+# machine being awake at 4am is not a backup.
+#
+# WHAT IT COVERS: the entire database (schema, data, functions, RLS
+# policies, triggers) as a gzipped plain-SQL dump, AND every Storage bucket
+# mirrored file-by-file. A dump alone would restore a catalogue whose photos
+# are all broken links.
+#
+# It refuses to commit a backup it could not restore: every night the fresh
+# dump is loaded into a throwaway Postgres and its row counts are compared
+# against the live database before anything is pushed.
+name: Nightly backup
+
+on:
+  schedule:
+    # 01:00 UTC = 04:00 Beirut — after the 21:00 ordering cutoff, before
+    # anyone is shopping. Quiet hours, so the counts are stable.
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+# Read-only against this repo. The backup repo is written to with its own
+# fine-grained token, which is scoped to that repo alone.
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      # Session-mode connection string. pg_dump needs a real session, so the
+      # transaction pooler (port 6543) will NOT work here.
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: https://tzuntmerjhegkzsbfmnf.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Row-count tolerance: a write landing mid-dump is normal, a table
+      # losing rows is not.
+      COUNT_TOLERANCE: "2"
+
+    steps:
+      - name: Check out the app repo (for the storage mirror script)
+        uses: actions/checkout@v4
+
+      - name: Fail early if the secrets are missing
+        env:
+          # Through the environment, never interpolated into the script text.
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          missing=0
+          # Only ever tests for emptiness — no value is echoed anywhere.
+          [ -n "${SUPABASE_DB_URL:-}" ]           || { echo "::error::SUPABASE_DB_URL is not set"; missing=1; }
+          [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || { echo "::error::SUPABASE_SERVICE_ROLE_KEY is not set"; missing=1; }
+          [ -n "${BACKUP_REPO_TOKEN:-}" ]         || { echo "::error::BACKUP_REPO_TOKEN is not set"; missing=1; }
+          exit $missing
+
+      - name: Match the Postgres client to the server version
+        run: |
+          set -euo pipefail
+          # A pg_dump older than the server refuses to run, so the client is
+          # chosen from what the server actually reports rather than pinned to
+          # a guess that goes stale on the next Supabase upgrade.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+          MAJOR="$(psql "$SUPABASE_DB_URL" -tAc "SELECT current_setting('server_version_num')::int / 10000")"
+          FULL="$(psql "$SUPABASE_DB_URL" -tAc "SHOW server_version")"
+          echo "server reports Postgres $FULL (major $MAJOR)"
+          echo "PG_MAJOR=$MAJOR" >> "$GITHUB_ENV"
+
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-$MAJOR" >/dev/null
+          echo "PATH=/usr/lib/postgresql/$MAJOR/bin:$PATH" >> "$GITHUB_ENV"
+          "/usr/lib/postgresql/$MAJOR/bin/pg_dump" --version
+
+      - name: Count the live rows (before the dump)
+        run: |
+          set -euo pipefail
+          mkdir -p work
+          # These are the tables whose loss would actually hurt: the shops,
+          # the catalogue, the money, and the accounts.
+          for t in public.partners public.products public.orders public.order_items public.gift_cards public.profiles auth.users; do
+            n="$(psql "$SUPABASE_DB_URL" -tAc "SELECT count(*) FROM $t" || echo "ERR")"
+            echo "$t=$n" >> work/live-counts.txt
+          done
+          cat work/live-counts.txt
+
+      - name: Dump the database
+        run: |
+          set -euo pipefail
+          DATE="$(date -u +%F)"
+          echo "DUMP_DATE=$DATE" >> "$GITHUB_ENV"
+          # --no-owner/--no-privileges: the Supabase-internal roles do not
+          # exist anywhere else, and keeping them makes the dump restorable
+          # only back into an identical project.
+          pg_dump "$SUPABASE_DB_URL" \
+            --no-owner --no-privileges \
+            --format=plain \
+            --file=work/dump.sql
+          gzip -9 -c work/dump.sql > "work/$DATE.sql.gz"
+          ls -l "work/$DATE.sql.gz"
+          SIZE="$(stat -c%s "work/$DATE.sql.gz")"
+          echo "dump size: $SIZE bytes"
+          # A dump that is suspiciously tiny is a failed dump wearing a .gz.
+          [ "$SIZE" -gt 10240 ] || { echo "::error::dump is only $SIZE bytes"; exit 1; }
+
+      - name: Mirror every Storage bucket
+        run: |
+          set -euo pipefail
+          mkdir -p work/storage
+          node scripts/backup/storage-mirror.mjs work/storage
+          FILES="$(find work/storage -type f | wc -l)"
+          LIVE="$(cat work/storage-count.txt)"
+          echo "mirrored files: $FILES · live objects: $LIVE"
+          # A partial mirror is not a backup.
+          [ "$FILES" -eq "$LIVE" ] || { echo "::error::mirror has $FILES files but the project has $LIVE objects"; exit 1; }
+          echo "STORAGE_FILES=$FILES" >> "$GITHUB_ENV"
+
+      - name: Restore the dump into a throwaway Postgres and verify it
+        run: |
+          set -euo pipefail
+          # Docker is available on the runner. This container is the ONLY
+          # thing the restore touches — production is never written to.
+          docker run -d --name verifydb \
+            -e POSTGRES_PASSWORD=verify -e POSTGRES_DB=verify \
+            -p 55432:5432 "postgres:${PG_MAJOR}" >/dev/null
+          for i in $(seq 1 60); do
+            docker exec verifydb pg_isready -U postgres -q && break
+            sleep 2
+          done
+          VERIFY_URL="postgresql://postgres:verify@localhost:55432/verify"
+
+          # The restore is expected to complain about things that only exist
+          # inside Supabase — its extensions and its internal roles. Those are
+          # listed below and tolerated; ANY other error fails the job.
+          gunzip -c "work/${DUMP_DATE}.sql.gz" | psql "$VERIFY_URL" -v ON_ERROR_STOP=0 \
+            > work/restore.out 2> work/restore.err || true
+
+          grep -E "^(ERROR|FATAL)" work/restore.err > work/errors.txt || true
+          echo "restore reported $(wc -l < work/errors.txt) error line(s)"
+
+          # Errors that are inherent to restoring a Supabase dump anywhere
+          # other than Supabase.
+          grep -Ev \
+            -e 'extension "[^"]+" is not available' \
+            -e 'could not open extension control file' \
+            -e 'role "[^"]+" does not exist' \
+            -e 'unrecognized configuration parameter' \
+            -e 'schema "(auth|storage|graphql|graphql_public|extensions|realtime|vault|pgbouncer|supabase_functions|net|cron)"' \
+            -e 'function (auth|storage|extensions|vault|realtime|pgsodium|graphql)\.' \
+            -e 'type "(auth|storage|extensions|vault|realtime)\.' \
+            -e 'permission denied' \
+            -e 'must be owner of' \
+            -e 'publication "supabase_realtime"' \
+            work/errors.txt > work/unexpected.txt || true
+
+          if [ -s work/unexpected.txt ]; then
+            echo "::error::restore produced errors that are not expected outside Supabase:"
+            head -40 work/unexpected.txt
+            exit 1
+          fi
+          echo "no unexpected restore errors"
+
+          # --- row counts: live vs restored -----------------------------
+          echo "| table | live | restored | delta |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | ---: | ---: | ---: |" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          while IFS='=' read -r table live; do
+            restored="$(psql "$VERIFY_URL" -tAc "SELECT count(*) FROM $table" 2>/dev/null || echo "MISSING")"
+            if [ "$restored" = "MISSING" ]; then
+              echo "| $table | $live | **missing** | — |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::$table did not restore at all"
+              fail=1
+              continue
+            fi
+            delta=$(( restored - live )); abs=${delta#-}
+            echo "$table: live=$live restored=$restored delta=$delta"
+            echo "| $table | $live | $restored | $delta |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$abs" -gt "$COUNT_TOLERANCE" ]; then
+              echo "::error::$table is off by $delta rows (tolerance $COUNT_TOLERANCE)"
+              fail=1
+            fi
+          done < work/live-counts.txt
+
+          # --- schema objects, not just data ----------------------------
+          DEFINERS="$(psql "$VERIFY_URL" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.prosecdef AND n.nspname='public'")"
+          POLICIES="$(psql "$VERIFY_URL" -tAc "SELECT count(*) FROM pg_policies WHERE schemaname='public'")"
+          RLSTABLES="$(psql "$VERIFY_URL" -tAc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relrowsecurity AND n.nspname='public'")"
+          echo "restored SECURITY DEFINER functions (public): $DEFINERS"
+          echo "restored RLS policies (public): $POLICIES"
+          echo "restored tables with RLS enabled (public): $RLSTABLES"
+          {
+            echo ""
+            echo "SECURITY DEFINER functions: $DEFINERS · RLS policies: $POLICIES · RLS-enabled tables: $RLSTABLES"
+            echo "Storage objects mirrored: ${STORAGE_FILES}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$DEFINERS" -ge 1 ] || { echo "::error::no SECURITY DEFINER function survived the restore"; fail=1; }
+          [ "$POLICIES" -ge 1 ] || { echo "::error::no RLS policy survived the restore"; fail=1; }
+
+          docker rm -f verifydb >/dev/null
+          exit $fail
+
+      - name: Push to the private backups repo
+        env:
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 \
+            "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${OWNER}/cado-backups.git" \
+            backups
+          cd backups
+          git config user.name "cado-backup-bot"
+          git config user.email "backup@users.noreply.github.com"
+
+          mkdir -p db storage
+          cp "../work/${DUMP_DATE}.sql.gz" "db/${DUMP_DATE}.sql.gz"
+
+          # The storage folder is a mirror, so it is replaced wholesale rather
+          # than merged: a photo deleted in Supabase has to disappear here too.
+          # Replacing beats rsync --delete only because it needs nothing
+          # installed on the runner; git works out the real diff either way.
+          rm -rf storage && mkdir -p storage
+          cp -a ../work/storage/. storage/
+
+          # 30 days of history. Dumps are named by date, so the pruning is
+          # just arithmetic on the filename — no dependency on file mtimes,
+          # which a fresh clone would have reset to today anyway.
+          CUTOFF="$(date -u -d '30 days ago' +%F)"
+          for f in db/*.sql.gz; do
+            [ -e "$f" ] || continue
+            d="$(basename "$f" .sql.gz)"
+            if [[ "$d" < "$CUTOFF" ]]; then
+              echo "pruning $f (older than $CUTOFF)"
+              git rm -q "$f"
+            fi
+          done
+
+          # Seed the restore guide on the first run, and keep it current after.
+          cp ../scripts/backup/backups-README.md README.md
+
+          SUMMARY="$(tr '\n' ' ' < ../work/live-counts.txt | sed 's/public\.//g; s/auth\.//g; s/=/ /g')"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+          else
+            git commit -q -m "backup ${DUMP_DATE} — ${SUMMARY}storage ${STORAGE_FILES}"
+            git push -q
+            echo "pushed backup ${DUMP_DATE}"
+          fi
+
+      - name: Clean up
+        if: always()
+        run: |
+          docker rm -f verifydb >/dev/null 2>&1 || true
+          rm -rf work backups

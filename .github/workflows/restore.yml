@@ -1,0 +1,111 @@
+# Restore a backup — BY HAND ONLY.
+#
+# This is the "the database is gone" button. It never runs on a schedule and
+# it never runs automatically: it exists because the laptop has no Postgres
+# tools, so the only machine that can push a dump back into Supabase is this
+# runner.
+#
+# IT OVERWRITES THE TARGET. Everything currently in the target database is
+# replaced by the dump. That is why it asks you to type the project ref: the
+# run aborts unless what you type matches the project the target connection
+# string actually points at, so a mistyped target cannot quietly flatten the
+# wrong project.
+name: Restore a backup (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dump_date:
+        description: "Which dump to restore, e.g. 2026-08-24 (see db/ in cado-backups)"
+        required: true
+        type: string
+      confirm_project_ref:
+        description: "Type the TARGET Supabase project ref to confirm (must match RESTORE_TARGET_DB_URL)"
+        required: true
+        type: string
+      i_understand:
+        description: "This ERASES and replaces the target database"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      # A separate secret from the nightly one on purpose: the backup job only
+      # ever needs to READ production, and this job is the only thing allowed
+      # to write. Point it at the project you are restoring INTO.
+      TARGET_DB_URL: ${{ secrets.RESTORE_TARGET_DB_URL }}
+
+    steps:
+      - name: Confirm the target, loudly
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.i_understand }}" != "true" ]; then
+            echo "::error::Tick the box: this erases and replaces the target database."
+            exit 1
+          fi
+          [ -n "${TARGET_DB_URL:-}" ] || { echo "::error::RESTORE_TARGET_DB_URL is not set"; exit 1; }
+
+          REF="${{ inputs.confirm_project_ref }}"
+          # The ref appears in the host of both the direct and pooler
+          # connection strings. No part of the URL is ever printed.
+          if ! printf '%s' "$TARGET_DB_URL" | grep -q "$REF"; then
+            echo "::error::'$REF' does not appear in RESTORE_TARGET_DB_URL — refusing to restore into a project you did not name."
+            exit 1
+          fi
+          echo "target confirmed as project $REF"
+
+      - name: Install the matching Postgres client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+          MAJOR="$(psql "$TARGET_DB_URL" -tAc "SELECT current_setting('server_version_num')::int / 10000")"
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-$MAJOR" >/dev/null
+          echo "PATH=/usr/lib/postgresql/$MAJOR/bin:$PATH" >> "$GITHUB_ENV"
+
+      - name: Fetch the dump from the backups repo
+        env:
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 \
+            "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${OWNER}/cado-backups.git" \
+            backups
+          FILE="backups/db/${{ inputs.dump_date }}.sql.gz"
+          [ -f "$FILE" ] || { echo "::error::$FILE is not in the backups repo"; ls backups/db; exit 1; }
+          ls -l "$FILE"
+
+      - name: Restore
+        run: |
+          set -euo pipefail
+          # ON_ERROR_STOP=0 on purpose: a Supabase dump always reports some
+          # noise about extensions and internal roles, and stopping on the
+          # first one would leave the database half-restored.
+          gunzip -c "backups/db/${{ inputs.dump_date }}.sql.gz" \
+            | psql "$TARGET_DB_URL" -v ON_ERROR_STOP=0 2> restore.err || true
+          grep -E "^(ERROR|FATAL)" restore.err | head -40 || true
+          echo "--- row counts in the restored target ---"
+          for t in public.partners public.products public.orders public.order_items public.gift_cards public.profiles auth.users; do
+            n="$(psql "$TARGET_DB_URL" -tAc "SELECT count(*) FROM $t" 2>/dev/null || echo "missing")"
+            echo "$t=$n" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: What is NOT restored by this job
+        run: |
+          echo "Storage files are not pushed by this workflow — see the README in"
+          echo "cado-backups for the re-upload step. Auth users are in the dump, but"
+          echo "anyone's session tokens are not: everyone signs in again after a restore."
