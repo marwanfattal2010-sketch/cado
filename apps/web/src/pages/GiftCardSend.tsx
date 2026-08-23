@@ -209,7 +209,7 @@ export function GiftCardSend() {
       ) : null}
 
       <Button onClick={submit} disabled={addToCart.isPending} variant="accent" fullWidth className="mt-3">
-        {addToCart.isPending ? "Adding…" : "Add to cart"}
+        {addToCart.isPending ? "Adding…" : "Add to gift"}
       </Button>
       <p className="mt-2 text-center text-[11px] text-muted">Paid at checkout. Valid for 2 years.</p>
       {/* Clear of the pinned bottom nav. */}

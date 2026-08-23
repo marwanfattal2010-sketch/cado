@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCategories } from "../../hooks/useCategories";
 import { useSubcategories } from "../../hooks/useStores";
 import { useCategorySlides } from "../../hooks/useCategorySlides";
@@ -15,6 +15,7 @@ import {
 } from "../../lib/browse";
 import { BannerCarousel } from "./blocks/BannerCarousel";
 import { EntryCards } from "./blocks/EntryCards";
+import { OccasionStrip } from "./blocks/OccasionStrip";
 import { CategoryCircles } from "./blocks/CategoryCircles";
 import { SubTabs } from "./blocks/SubTabs";
 import { DealPair } from "./blocks/DealPair";
@@ -169,13 +170,24 @@ export function TabPanel({
 
           case "entry_cards":
             return (
-              <EntryCards
-                key={block.id}
-                tiles={block.tiles}
-                accentToken={tab.accent_token}
-                categoryId={categoryId}
-                onTile={applyTile}
-              />
+              <div key={block.id}>
+                {/* "Flowers for…" — directly under the hero on every category
+                    tab. The occasion is the question a gift shopper actually
+                    arrives with; the tiles below are the department. */}
+                {!primary ? (
+                  <OccasionStrip
+                    categoryId={categoryId}
+                    categorySlug={tab.filter.category_slug}
+                    categoryName={categoryName}
+                  />
+                ) : null}
+                <EntryCards
+                  tiles={block.tiles}
+                  accentToken={tab.accent_token}
+                  categoryId={categoryId}
+                  onTile={applyTile}
+                />
+              </div>
             );
 
           case "sub_tabs":
@@ -203,6 +215,31 @@ export function TabPanel({
               : block.tiles;
             return (
               <div key={block.id + activeGroup}>
+                {/*
+                 * OCCASION FIRST, on the landing page.
+                 *
+                 * Nobody opens CADO thinking "jewelry". They open it thinking
+                 * "it's my mother's birthday on Thursday" — so the page asks
+                 * the question they already have an answer to before it asks
+                 * which department they want. Categories still follow, for
+                 * the person who does know.
+                 */}
+                {primary ? (
+                  <>
+                    <OccasionRail />
+                    {/* Was a small underlined link tucked beside the search
+                        field, where someone who is stuck is least likely to
+                        look. It is the second thing on the page now. */}
+                    <div className="mx-auto max-w-6xl px-4 pt-4">
+                      <Link
+                        to="/find"
+                        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-card bg-ink px-4 text-body font-semibold text-inverse transition-transform duration-press ease-out active:scale-[0.99]"
+                      >
+                        Help me choose
+                      </Link>
+                    </div>
+                  </>
+                ) : null}
                 <div className="animate-fade-in">
                   <CategoryCircles
                     tiles={tiles}
@@ -215,7 +252,6 @@ export function TabPanel({
                 </div>
                 {primary ? (
                   <>
-                    <OccasionRail />
                     <GiftCardSection />
                   </>
                 ) : (

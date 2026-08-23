@@ -336,7 +336,7 @@ export function Product() {
             disabled={adding || !inStock}
             className="inline-flex h-[52px] flex-1 items-center justify-center rounded-pill bg-primary text-body font-medium text-inverse transition-all duration-fast active:scale-[0.97] disabled:opacity-40"
           >
-            {!inStock ? "Out of stock" : adding ? "Adding..." : "Add to cart"}
+            {!inStock ? "Out of stock" : adding ? "Adding..." : "Add to gift"}
           </button>
         </div>
       </div>

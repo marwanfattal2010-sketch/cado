@@ -4,7 +4,7 @@ import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
 import { useStore } from "../hooks/useStores";
 import { useAuth } from "../lib/auth";
 import { BrandLogo } from "./BrandLogo";
-import { BasketIcon, ChevronLeftIcon } from "./Icons";
+import { GiftBagIcon, ChevronLeftIcon } from "./Icons";
 import {
   AREAS,
   useArea,
@@ -254,9 +254,14 @@ export function Header() {
             {/* .tap-44 rather than a taller logo: growing the mark itself
                 would push the whole header down. The overlay is a child, so
                 a tap anywhere in the 44px band still hits the link. */}
-            <Link to="/" className="tap-44 flex shrink-0 items-center" aria-label="CADO home">
+            <Link to="/" className="tap-44 flex shrink-0 flex-col justify-center" aria-label="CADO home">
               {/* h-[32px], not h-8: the project's spacing scale maps 8 to 64px. */}
-              <BrandLogo variant="ink" className="h-[32px] w-auto" />
+              <BrandLogo variant="ink" className="h-[28px] w-auto" />
+              {/* What CADO is, in three words, under the mark. A shop does not
+                  need to say what it is; a marketplace for gifts does. */}
+              <span className="mt-[1px] whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.1em] text-muted">
+                Lebanon's gift marketplace
+              </span>
             </Link>
           </div>
 
@@ -282,7 +287,7 @@ export function Header() {
               }
               className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted transition-all duration-fast hover:bg-surface-sunk hover:text-ink active:scale-90"
             >
-              <BasketIcon className="h-[22px] w-[22px]" />
+              <GiftBagIcon className="h-[22px] w-[22px]" />
               {count > 0 ? (
                 <span
                   key={count}

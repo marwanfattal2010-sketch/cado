@@ -56,7 +56,7 @@ export function ShopSearchBar({
           enterKeyHint="search"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search gifts or stores"
+          placeholder="Who are you shopping for?"
           aria-label="Search gifts or stores"
           /* h-full, not the input's default 23px line box: the pill is 44px
              and the input has to BE the tap target, or the top and bottom
@@ -65,14 +65,7 @@ export function ShopSearchBar({
         />
         <SearchIcon className="h-[18px] w-[18px] shrink-0 text-muted" aria-hidden />
       </form>
-      {/* A way out for someone who's stuck, not a gate. */}
-      <Link
-        to="/find"
-        className="tap-44 shrink-0 whitespace-nowrap text-caption font-medium text-ink underline underline-offset-4"
-      >
-        Help me choose
-      </Link>
-    </div>
+      </div>
   );
 }
 

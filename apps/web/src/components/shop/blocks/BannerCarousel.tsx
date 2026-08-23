@@ -103,23 +103,36 @@ export function BannerCarousel({
               <div aria-hidden className="absolute inset-0" style={{ background: accentColor(accentToken) }} />
               {photo ? (
                 <>
-                  <Img src={photo} className="absolute inset-0 h-full w-full object-cover" eager />
-                  {/* Dark enough on the left for white type over any photo,
-                      clear on the right so the product is still visible. */}
+                  {/* object-right: the gift sits on the right of the frame,
+                      and the left is where the type goes. */}
+                  <Img
+                    src={photo}
+                    className="absolute inset-0 h-full w-full object-cover object-right"
+                    eager
+                  />
+                  {/*
+                   * INK, NOT ACCENT. The old wash was the tab's own colour at
+                   * 94% — an orange sheet with a photo somewhere behind it,
+                   * which is what made the front page read as a poster for a
+                   * sale rather than a picture of a gift. This is a soft ink
+                   * gradient: dark enough on the left to carry white type,
+                   * gone entirely by 70% so the gift itself is just a
+                   * photograph.
+                   */}
                   <div
                     aria-hidden
                     className="absolute inset-0"
                     style={{
-                      background: `linear-gradient(90deg, ${accentColor(accentToken, 0.94)} 0%, ${accentColor(
-                        accentToken,
-                        0.7
-                      )} 42%, transparent 88%)`,
+                      background:
+                        "linear-gradient(90deg, rgba(28,20,16,0.55) 0%, rgba(28,20,16,0.30) 40%, rgba(28,20,16,0) 70%)",
                     }}
                   />
                 </>
               ) : null}
 
-              <div className="relative flex h-full w-[68%] flex-col justify-center gap-2 px-[var(--page-x)]">
+              {/* 60%, not 68%: at 375px the headline has to stop before it
+                  reaches the box in the photograph. */}
+              <div className="relative flex h-full w-[60%] flex-col justify-center gap-2 px-[var(--page-x)]">
                 {banner.headline ? (
                   <p className="font-display text-[24px] font-semibold leading-[1.1] text-inverse">
                     {banner.headline}

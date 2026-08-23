@@ -199,7 +199,7 @@ function StoreCartView() {
             onClick={() => navigate(storeFilter ? `/checkout?store=${storeFilter}` : "/checkout")}
             className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-persimmon text-body font-medium text-white transition-all duration-fast active:scale-[0.98]"
           >
-            Checkout — {formatMoney(subtotal + DELIVERY_FEE)}
+            Send this gift — {formatMoney(subtotal + DELIVERY_FEE)}
           </button>
         </div>
       </div>
@@ -335,7 +335,7 @@ function GiftCardCartView() {
             onClick={() => navigate("/checkout?gift-cards=1")}
             className="inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-persimmon text-body font-medium text-white transition-all duration-fast active:scale-[0.98]"
           >
-            Checkout — {formatMoney(total)}
+            Send this gift — {formatMoney(total)}
           </button>
         </div>
       </div>

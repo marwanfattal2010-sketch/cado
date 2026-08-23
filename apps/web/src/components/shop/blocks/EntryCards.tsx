@@ -11,6 +11,8 @@ type Candidate = {
   price: number;
   same_day: boolean | null;
   created_at: string;
+  /** So an occasion tile can show something actually tagged for it. */
+  occasion_tags: string[] | null;
   product_images: { storage_path: string; is_primary: boolean }[] | null;
 };
 
@@ -29,7 +31,7 @@ function useEntryPhotos(categoryId?: string) {
     queryFn: async () => {
       let q = supabase
         .from("products")
-        .select("price, same_day, created_at, product_images(storage_path, is_primary)")
+        .select("price, same_day, created_at, occasion_tags, product_images(storage_path, is_primary)")
         .eq("is_active", true)
         .gt("stock_quantity", 0)
         .order("created_at", { ascending: false })
@@ -90,42 +92,66 @@ export function EntryCards({
    * product per position — five copies of the same photo in one row reads as
    * a bug, and there is no reason to repeat when the catalogue has more.
    */
-  const photoFor = (tile: BrowseTile, position: number) => {
+  const photoFor = (tile: BrowseTile, used: Set<string>) => {
     if (tile.image_url) return tile.image_url;
     const rows = pool.data ?? [];
     const f = tile.link_type === "filter" ? parseFilterValue(tile.link_value) : {};
 
-    if (f.max_price != null) {
-      const m = rows.find((p) => Number(p.price) <= f.max_price!);
-      return m ? primaryImage(m.product_images) : null;
-    }
-    if (f.same_day) {
-      const m = rows.find((p) => p.same_day === true);
-      return m ? primaryImage(m.product_images) : null;
-    }
-    if (f.sort === "new") return rows[0] ? primaryImage(rows[0].product_images) : null;
+    /**
+     * Take the first product that satisfies the tile AND is not already on
+     * another tile in this row. Two tiles wearing the same picture reads as a
+     * bug — and it also makes one of the two labels a lie about that item,
+     * which is how Flowers ended up with "Anniversary" and "Under $100" both
+     * showing the same box of candles.
+     */
+    const pick = (match: (p: Candidate) => boolean) => {
+      const rowsWithPhoto = rows.filter((p) => (p.product_images?.length ?? 0) > 0);
+      const fresh = rowsWithPhoto.find((p) => match(p) && !used.has(primaryImage(p.product_images) as string));
+      const any = fresh ?? rowsWithPhoto.find(match);
+      const src = any ? primaryImage(any.product_images) : null;
+      if (src) used.add(src);
+      return src;
+    };
 
-    // A link out of the feed — /browse, /occasions, or a budget band handed
-    // to the results grid. A band still gets a product that genuinely sits
+    if (f.max_price != null) return pick((p) => Number(p.price) <= f.max_price!);
+    if (f.same_day) return pick((p) => p.same_day === true);
+    if (f.sort === "new") return pick(() => true);
+
+    // An occasion tile shows something genuinely tagged for that occasion.
+    // Products carry `occasion_tags`, so this is a real match rather than
+    // whatever happened to be at that position in the list.
+    const occasion = tile.link_value.match(/[?&]occasion=([\w-]+)/);
+    if (occasion) {
+      const value = occasion[1];
+      const tagged = pick((p) => (p.occasion_tags ?? []).includes(value));
+      // Nothing tagged for it: leave the tile on its flat accent panel rather
+      // than illustrate an occasion with something that has nothing to do
+      // with it.
+      return tagged;
+    }
+
+    // A budget band handed to the results grid still gets a product that sits
     // inside it, so "Under $50" is never illustrated by a $200 gift.
     const band = tile.link_value.match(/[?&]budget=under-(\d+)/);
     if (band) {
       const ceiling = Number(band[1]);
-      const m = rows.find((p) => Number(p.price) < ceiling);
-      return m ? primaryImage(m.product_images) : null;
+      return pick((p) => Number(p.price) < ceiling);
     }
+
     const logos = storeLogos.data ?? [];
     if (tile.link_value === "/browse" && logos.length > 0) return logos[0];
-    const pick = rows[(position * 3) % Math.max(rows.length, 1)];
-    return pick ? primaryImage(pick.product_images) : null;
+    return pick(() => true);
   };
 
   if (tiles.length < MIN_ITEMS) return null;
 
+  // One photo per tile across the whole row — see the note in `pick`.
+  const used = new Set<string>();
+
   return (
     <div className="scroll-row pt-4" style={{ ["--row-gap" as string]: "12px" }}>
-      {tiles.map((tile, position) => {
-        const photo = photoFor(tile, position);
+      {tiles.map((tile) => {
+        const photo = photoFor(tile, used);
         const inner = (
           <>
             <span

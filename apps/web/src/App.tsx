@@ -4,7 +4,7 @@ import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Browse } from "./pages/Browse";
 import { Stores } from "./pages/Stores";
-import { CategoryRedirect } from "./pages/CategoryRedirect";
+import { CategoryOccasion } from "./pages/CategoryOccasion";
 import { Store } from "./pages/Store";
 import { Product } from "./pages/Product";
 import { Login } from "./pages/Login";
@@ -64,7 +64,7 @@ export default function App() {
         <Route path="stores" element={<Stores />} />
         {/* One category page, and it is a tab on "/". This only keeps old
             links alive. */}
-        <Route path="category/:slug" element={<CategoryRedirect />} />
+        <Route path="category/:slug" element={<CategoryOccasion />} />
         {/* :slug, but useStore also accepts a uuid — /store/<uuid> links
             were shipped before the slug route existed. */}
         <Route path="store/:slug" element={<Store />} />

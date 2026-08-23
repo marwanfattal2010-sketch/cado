@@ -39,6 +39,33 @@ export function GiftIcon({ className = base, filled }: IconProps) {
   );
 }
 
+/**
+ * The bag in the header. A shopping basket says supermarket; this is a gift
+ * bag with handles and a ribbon, which is what someone is actually carrying
+ * out of CADO.
+ */
+export function GiftBagIcon({ className = base, filled }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* the bag */}
+      <path d="M5 8h14l-1 12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 8Z" />
+      {/* handles */}
+      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+      {/* ribbon down the front */}
+      <path d="M12 11v10" />
+      <path d="M12 11s-1-2-2.4-2a1.3 1.3 0 0 0 0 2.6H12Zm0 0s1-2 2.4-2a1.3 1.3 0 0 1 0 2.6H12Z" />
+    </svg>
+  );
+}
+
 export function OrdersIcon({ className = base }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">

@@ -23,7 +23,10 @@ export function PhotoCard({ to, img, label }: { to: string; img: string; label: 
       {/* black/… works where a token/… would not: `black` is a real hex in
           Tailwind's default palette, so the alpha actually compiles. */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-      <span className="relative font-display text-[15px] font-semibold leading-tight text-inverse drop-shadow">
+      {/* w-full so a long label wraps inside the card instead of running off
+          its right edge and being sliced by overflow-hidden — which is how
+          "Get Well Soon" was arriving as "Get Well S". */}
+      <span className="relative w-full break-words font-display text-[14px] font-semibold leading-tight text-inverse drop-shadow">
         {label}
       </span>
     </Link>

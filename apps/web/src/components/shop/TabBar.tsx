@@ -43,8 +43,17 @@ export function TabBar({
   }, [activeIndex]);
 
   return (
-    <div className="relative shrink-0 border-b border-line bg-canvas">
-      <div ref={stripRef} className="tab-strip h-11 items-stretch pl-[var(--page-x)] pr-12">
+    /* z-20 so the strip stays above anything in the panel that scrolls under
+       it, and an opaque canvas behind it so nothing shows through. */
+    <div className="relative z-20 shrink-0 border-b border-line bg-canvas">
+      <div
+        ref={stripRef}
+        /* scroll-padding-inline keeps a tab from resting half-cut against the
+           left edge when the strip scrolls — "Accessories" was arriving as
+           "sories". */
+        className="tab-strip h-11 items-stretch pl-[var(--page-x)] pr-12"
+        style={{ scrollPaddingInline: "var(--page-x)" }}
+      >
         {tabs.map((tab, i) => {
           const active = i === activeIndex;
           return (
@@ -79,6 +88,12 @@ export function TabBar({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-y-0 right-10 w-[18px] bg-gradient-to-r from-transparent to-canvas"
+      />
+      {/* The same on the left, so a scrolled-past tab fades out instead of
+          ending mid-word against the screen edge. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-[14px] bg-gradient-to-l from-transparent to-canvas"
       />
       <button
         type="button"

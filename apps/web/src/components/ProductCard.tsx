@@ -334,6 +334,10 @@ export function ProductCard(props: ProductCardProps) {
         {lowStock ? (
           <p className="mt-0.5 text-[11px] font-semibold text-persimmon">Only {stock_quantity} left</p>
         ) : null}
+        {/* Every CADO order is wrapped before it travels — it is a gift
+            marketplace, so this is the default rather than an upsell. Not
+            shown on the uniform card, whose text box is a fixed height. */}
+        {uniform ? null : <p className="mt-0.5 text-[11px] text-muted">Arrives wrapped</p>}
       </Link>
 
       {chips.length > 0 ? (
