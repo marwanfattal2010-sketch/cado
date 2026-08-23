@@ -684,3 +684,42 @@ numerals read as novelty at that size. Section titles keep Fraunces.
 
 **Favorites** uses the uniform card in a 2-col `items-start` grid, so every
 card is exactly 158x250 at 375px.
+
+## One layout for all nine category tabs (Aug 24, 2026)
+
+The per-tab designed worlds are gone for good: `ThemedTab.tsx` and
+`TabMotifs.tsx` are DELETED and every category tab renders the same block
+pipeline in `TabPanel.tsx`. Put any two tabs side by side and the skeleton is
+identical; only content differs.
+
+Order, every tab: hero carousel (3 slides) · entry tiles · Shop by category ·
+**store circles** · Super Deals · New Arrivals · Top of {Category} ·
+**More stores** · the full grid.
+
+**Stores moved.** They used to sit eight cards deep inside the product grid.
+`blocks/TabStores.tsx` now provides `TabStoreCircles` (round logos, directly
+under Shop by category) and `TabStoreBanners` ("More stores", before the grid
+starts). `StoreStrip` is no longer rendered on category tabs.
+
+**Price tiles are per-tab, computed from real prices** (`scripts/unify-category-tabs.mjs`):
+fashion/jewelry/flowers/perfumes/shoes/electronics $100, chocolate/toys $75,
+gift-sets/sport $50. They are in-tab `{"max_price":N}` filters now, not
+gift-finder links, so the tile narrows the grid you are already on. The
+thresholds are high because the catalogue is small — 7–15 products per
+category — and the rule was "must land on a well-stocked grid".
+
+**Shop by category was empty on three tabs.** Shoes, Electronics and Sport
+had the block but no circles; they now have circles for the subcategories
+that actually hold stock (Sneakers/Boots/Heels & Sandals, Audio/Gadgets/
+Cameras & Photo, Football/Training/Racket Sports).
+
+**Photos** (`scripts/wire-tab-photos.mjs`, files in `apps/web/public/tiles`
+and `public/heroes`, ids in `public/tiles/SOURCES.txt`): new hero photos for
+Fashion, Chocolate, Gift Sets and Sport; new tile photos for Fashion (5),
+Jewelry (4), Chocolate (2), Gift Sets (2), Sport (1). Every one was opened
+and looked at; anything with a visible brand mark was rejected — that ruled
+out most chocolate-gift-box and football-boot results (Dior, "Le Noir",
+HOSG, HEAD, Adidas/Nike boots, BATCH/Nivea hampers). The Fashion hero's
+"Leather Weekend Bag" is un-featured: Fashion shows clothing only.
+Bright Spark Electronics had no cover image at all, which is why Electronics
+only had two hero slides; it has one now.

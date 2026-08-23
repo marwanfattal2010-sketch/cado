@@ -6,6 +6,7 @@ import { useCategorySlides } from "../../hooks/useCategorySlides";
 import { useTileImages, type BrowseBlockWithContent } from "../../hooks/useBrowseConfig";
 import { productImageUrl } from "../../lib/images";
 import {
+  accentColor,
   isFeedFiltered,
   parseFilterValue,
   type BrowseTab,
@@ -18,10 +19,9 @@ import { CategoryCircles } from "./blocks/CategoryCircles";
 import { SubTabs } from "./blocks/SubTabs";
 import { DealPair } from "./blocks/DealPair";
 import { TopOfCategory } from "./blocks/TopOfCategory";
-import { StoreStrip } from "./blocks/StoreStrip";
 import { FeaturedStores } from "./FeaturedStores";
 import { HomeLower } from "./HomeLower";
-import { ThemedTab, THEMED_TAB_SLUGS } from "./ThemedTab";
+import { TabStoreCircles, TabStoreBanners } from "./blocks/TabStores";
 import { ProductFeed } from "./blocks/ProductFeed";
 import { GiftCardSection, OccasionRail, StoreCirclesRow } from "./HomeSections";
 
@@ -108,21 +108,21 @@ export function TabPanel({
 
   if (!mounted) return <div className="panel" aria-hidden style={{ minHeight: "100%" }} />;
 
-  /**
-   * V3: every category tab is its own designed world — palette, hero, tile
-   * shape, card style, section rhythm, motif — rendered by ThemedTab from
-   * its per-tab recipe. The All tab does not go through ThemedTab and keeps
-   * the block pipeline below untouched — and so does any category tab
-   * without a recipe (Shoes today): generic blocks beat a bare feed.
+  /*
+   * ONE LAYOUT FOR ALL NINE CATEGORY TABS.
+   *
+   * The per-tab designed worlds are gone: every category tab now renders
+   * this same block pipeline, in this same order, and differs only in its
+   * content — photos, labels, subcategories, price tier, stores, products.
+   * Put any two tabs side by side and the skeleton is identical:
+   *
+   *   1 hero carousel · 2 entry tiles · 3 shop by category ·
+   *   4 store circles · 5 super deals · 6 new arrivals ·
+   *   7 top of {category} · 8 more stores · then the full grid.
+   *
+   * The All tab shares the same pipeline and adds the three page-level
+   * sections that belong to the landing page rather than to a category.
    */
-  if (!primary && THEMED_TAB_SLUGS.has(tab.slug)) {
-    return (
-      <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
-        <ThemedTab tab={tab} categoryId={categoryId} categoryName={categoryName} />
-      </section>
-    );
-  }
-
   return (
     <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
       {blocks.map((block) => {
@@ -218,7 +218,13 @@ export function TabPanel({
                     <OccasionRail />
                     <GiftCardSection />
                   </>
-                ) : null}
+                ) : (
+                  /* Position 4: the shops for THIS category, as round logos,
+                     directly under the categories — the place both SHEIN and
+                     Trendyol put brands, and the place they stopped being an
+                     interruption of the product grid. */
+                  <TabStoreCircles categoryId={categoryId} />
+                )}
                 {/* 4 — the sort + filter bar goes here, directly under the
                     circles and above the grid. Left as a slot on purpose:
                     it is its own piece of work. */}
@@ -252,12 +258,11 @@ export function TabPanel({
             );
 
           case "stores":
-            // On a category page the strip is rendered INSIDE the feed, after
-            // the first eight products — see the product_feed case. Here it
-            // would sit above the grid, which is the ordering the brief
-            // explicitly rules out: products before stores, never the
-            // reverse. The All landing page keeps it in place.
-            if (!primary) return null;
+            /* Position 8 on a category tab: the bigger store cards, after
+               Top of {category} and BEFORE the grid begins — browsing, not
+               interrupting. The All landing page keeps its own pair. */
+            if (!primary)
+              return <TabStoreBanners key={block.id} categoryId={categoryId} accent={accentColor(tab.accent_token, 1)} />;
             return (
               <div key={block.id}>
                 {/* The endless-home rebuild: big featured cards with a real
@@ -303,15 +308,9 @@ export function TabPanel({
                   categoryId={categoryId}
                   subcategoryId={subcategoryId}
                   filter={filter}
-                  // One store strip per category page, and it comes after the
-                  // products rather than before them.
-                  renderAfter={
-                    primary ? undefined : (
-                      <div className="pt-4">
-                        <StoreStrip categoryId={categoryId} title="Stores" />
-                      </div>
-                    )
-                  }
+                  /* No store strip inside the grid any more: stores are the
+                     circles under Shop by category and the cards above this
+                     grid. Nothing interrupts the products. */
                   // The tab's own category has to be resolved before the feed
                   // can be honest about what it is showing; without this an
                   // unresolved slug would briefly render the whole catalogue

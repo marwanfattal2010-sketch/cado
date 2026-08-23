@@ -34,3 +34,35 @@ longer used.
 First gift-cards.jpg pull was a set of SALE tags - wrong, replaced. Every one
 of these was opened and looked at before wiring; a filename is not proof of
 what is in the file.
+
+--- Aug 24, 2026: unified category tabs ---
+All Unsplash (free licence), fetched as images.unsplash.com/<id>?w=1000&q=80.
+Every one was opened and looked at before it was used; anything showing a
+real brand mark (Dior boxes, "Le Noir" chocolates, HOSG shirts, HEAD racket,
+branded football boots, BATCH/Nivea gift boxes) was rejected on the
+no-trademark rule, which is why some obvious search hits are missing here.
+
+tiles/fashion-women.jpg        photo-1782357091589-a3382cabc067
+tiles/fashion-men.jpg          photo-1539125530496-3ca408f9c2d9
+tiles/fashion-kids.jpg         photo-1758782213532-bbb5fd89885e
+tiles/fashion-bestsellers.jpg  photo-1603400521630-9f2de124b33b
+tiles/jewelry-for-her.jpg      photo-1728647771865-636b715674f4
+tiles/jewelry-for-him.jpg      photo-1579543768549-96d37c1df78f
+tiles/jewelry-necklaces.jpg    photo-1758995115682-1452a1a9e35b
+tiles/jewelry-price.jpg        photo-1633810542706-90e5ff7557be
+tiles/chocolate-bestsellers.jpg photo-1785517607397-546d935d509f
+tiles/chocolate-birthday.jpg   photo-1694481901573-a970f982ac5e
+tiles/giftsets-for-her.jpg     photo-1513201099705-a9746e1e201f
+tiles/giftsets-new-in.jpg      photo-1633683788767-ac390c4bf988
+tiles/sport-training.jpg       photo-1576678927484-cc907957088c
+
+heroes/fashion.jpg             photo-1779400202227-140d6b48a473
+heroes/chocolate.jpg           photo-1548741487-18d363dc4469
+heroes/gift-sets.jpg           photo-1545844568-98bb15133ec0
+heroes/sport.jpg               photo-1660926655155-8b1f8f9079f5
+tiles/fashion-men-circle.jpg   photo-1619603364937-8d7af41ef206
+tiles/fashion-women-circle.jpg photo-1603400521630-9f2de124b33b
+tiles/fashion-bestsellers.jpg  photo-1582719188393-bb71ca45dbb9  (replaced the rail above; the rail moved to the Women circle so no two tiles on Fashion share a photo)
+partner-logos/covers/bright-spark-electronics.jpg  photo-1610041321327-b794c052db27
+  (Bright Spark Electronics had no cover at all, which is why the Electronics
+   hero only had two slides and its store circle showed a letter.)
