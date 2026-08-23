@@ -77,10 +77,13 @@ jobs:
           echo "PATH=/usr/lib/postgresql/$MAJOR/bin:$PATH" >> "$GITHUB_ENV"
 
       - name: Fetch the dump from the backups repo
+        env:
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
           git clone --depth 1 \
-            "https://x-access-token:${{ secrets.BACKUP_REPO_TOKEN }}@github.com/${{ github.repository_owner }}/cado-backups.git" \
+            "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${OWNER}/cado-backups.git" \
             backups
           FILE="backups/db/${{ inputs.dump_date }}.sql.gz"
           [ -f "$FILE" ] || { echo "::error::$FILE is not in the backups repo"; ls backups/db; exit 1; }
