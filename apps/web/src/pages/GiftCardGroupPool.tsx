@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { formatMoney } from "../lib/money";
 import { OCCASIONS } from "../components/giftcard/GiftNote";
-import { DigitalCardMock, EnvelopeCardArt } from "../components/giftcard/GiftCardArt";
+import { PersimmonCard } from "../components/giftcard/PersimmonCard";
 import { QrCode } from "../components/QrCode";
 import { Button, ButtonLink } from "../components/ui";
 import { WhatsAppIcon } from "../components/Icons";
@@ -221,7 +221,7 @@ function OrganizerPanel({ pool, slug }: { pool: Pool; slug: string }) {
                   aria-pressed={delivery === "digital"}
                   className={`rounded-[12px] p-3 text-left ${delivery === "digital" ? "border-2 border-persimmon" : "border border-line"}`}
                 >
-                  <DigitalCardMock amount={money(pool.goal_cents)} className="w-full max-w-[220px]" />
+                  <PersimmonCard amount={money(pool.goal_cents)} className="w-full max-w-[220px]" />
                   <span className="mt-2 block text-body font-semibold">Digital card</span>
                   <span className="text-caption text-muted">A link and a QR code. Arrives instantly.</span>
                 </button>
@@ -231,7 +231,7 @@ function OrganizerPanel({ pool, slug }: { pool: Pool; slug: string }) {
                   aria-pressed={delivery === "physical"}
                   className={`rounded-[12px] p-3 text-left ${delivery === "physical" ? "border-2 border-persimmon" : "border border-line"}`}
                 >
-                  <EnvelopeCardArt className="w-full max-w-[220px]" />
+                  <PersimmonCard amount={money(pool.goal_cents)} label="REAL CARD" className="w-full max-w-[220px]" />
                   <span className="mt-2 block text-body font-semibold">Real card, delivered</span>
                   <span className="text-caption text-muted">
                     A real CADO card in an envelope, hand-delivered with a small note.

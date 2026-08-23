@@ -5,7 +5,7 @@ import { primaryImage } from "../lib/images";
 import { formatMoney } from "../lib/money";
 import { useCart, useRemoveCartItem, useUpdateCartQuantity } from "../hooks/useCart";
 import { ButtonLink, RibbonEmpty } from "../components/ui";
-import { DigitalCardMock } from "../components/giftcard/GiftCardArt";
+import { PersimmonCard } from "../components/giftcard/PersimmonCard";
 import { Carts } from "./Carts";
 
 const DELIVERY_FEE = 5;
@@ -279,7 +279,7 @@ function GiftCardCartView() {
           return (
             <div key={line.id} className="flex gap-3 rounded-card border border-line bg-surface p-3">
               <span className="h-20 w-[120px] shrink-0 overflow-hidden rounded-card">
-                <DigitalCardMock amount={formatMoney(amount)} className="h-full w-full" />
+                <PersimmonCard amount={formatMoney(amount)} thumb />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-product-name">CADO gift card — {formatMoney(amount)}</p>

@@ -1,9 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useTopStores } from "../hooks/useStores";
 import {
   AccountIcon,
-  GiftIcon,
+
   GlobeIcon,
   HeartIcon,
   HelpIcon,
@@ -12,8 +12,7 @@ import {
 } from "../components/Icons";
 import { Button, ButtonLink } from "../components/ui";
 import { Img } from "../components/Img";
-import { WalletBalanceCard } from "../components/giftcard/WalletCard";
-import { storePath } from "../lib/routes";
+import { GiftCardBalance } from "../components/giftcard/GiftCardBalance";
 
 /**
  * Up to two initials. A full name gives first + last, one word gives one
@@ -171,7 +170,7 @@ function SiteLinks() {
 
 export function Account() {
   const { session, profile, signOut } = useAuth();
-  const topStores = useTopStores();
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   if (!session) {
     return (
@@ -215,81 +214,78 @@ export function Account() {
           and it made the account screen read as a different app. Cream card,
           hairline, and the only colour is the Persimmon monogram. Nothing
           else lives in this card. */}
-      <div className="flex items-center gap-4 rounded-[16px] border border-line bg-surface px-6 py-6">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-pill bg-persimmon/10 font-display text-h2 text-persimmon">
+      {/* Just rows: a name, an email under it, a monogram. No card around
+          it — the page starts with who you are, not with a panel. */}
+      <div className="flex items-center gap-3.5 px-1">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-persimmon/10 font-display text-[17px] text-persimmon">
           {initialsOf(name)}
         </div>
         <div className="min-w-0">
-          <p className="truncate font-display text-[20px] leading-tight text-ink">{name}</p>
+          <p className="truncate text-[17px] font-semibold leading-tight text-ink">{name}</p>
           <p className="truncate text-[13px] text-muted">{session.user.email}</p>
         </div>
       </div>
 
-      {/* Straight under the profile: what is actually on the card, read from
-          my_wallet(). Tapping it opens the Gift Cards page. */}
-      <WalletBalanceCard />
-
-      <div className="mt-6 overflow-hidden rounded-card bg-surface shadow-rest">
-        <Row to="/settings" Icon={SettingsIcon} label="Settings" first />
-        <Row to="/wishlist" Icon={HeartIcon} label="Favorites" />
-        <Row to="/language" Icon={GlobeIcon} label="Language" />
-        <Row to="/help" Icon={HelpIcon} label="Help Center" />
+      {/* What is actually on the card, read from my_wallet(). Tapping it
+          opens the Gift Cards page. */}
+      <div className="mt-4">
+        <GiftCardBalance linkToGiftCards />
       </div>
 
-      <div className="mt-4 flex gap-3">
-        <Link
-          to="/orders"
-          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
-        >
-          <OrdersIcon className="h-4 w-4 text-persimmon" />
-          My orders
-        </Link>
-        <Link
-          to="/gift-cards"
-          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
-        >
-          <GiftIcon className="h-4 w-4 text-persimmon" />
-          Gift cards
-        </Link>
+      <div className="mt-5 overflow-hidden rounded-card bg-surface shadow-rest">
+        <Row to="/settings" Icon={SettingsIcon} label="Settings" first />
+        <Row to="/wishlist" Icon={HeartIcon} label="Favorites" />
+        <Row to="/orders" Icon={OrdersIcon} label="Orders" />
+        <Row to="/language" Icon={GlobeIcon} label="Language" />
+        <Row to="/help" Icon={HelpIcon} label="Help Center" />
       </div>
 
       {/* Shop · Help · Company · Legal — all four kept. */}
       <SiteLinks />
 
-      {/* Last thing you can DO on the page, after every link group. */}
-      <Button onClick={signOut} variant="secondary" fullWidth className="mt-8">
-        Log out
-      </Button>
+      {/* The last row on the page, and the only red one. Signing out by
+          accident is a small disaster on a phone, so it asks first. */}
+      <div className="mt-5 overflow-hidden rounded-card bg-surface shadow-rest">
+        <button
+          type="button"
+          onClick={() => setConfirmLogout(true)}
+          className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-surface-sunk"
+        >
+          <span className="flex-1 text-body font-medium text-alert">Log out</span>
+        </button>
+      </div>
 
-      {/* Honest label. This list is every active store, ordered by name — it
-          is not a ranking, so it can't be called "stores you'll love". It
-          sits below Log out with the rest of the footer: it is browsing, not
-          account management. */}
-      {topStores.data && topStores.data.length > 0 ? (
-        <div className="mt-10">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="font-display text-h2">Stores on CADO</h2>
-            <Link to="/browse" className="tap-44 text-caption font-medium text-ink">
-              See all →
-            </Link>
-          </div>
-          <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
-            {topStores.data.map((store) => (
-              <Link
-                key={store.id}
-                to={storePath(store)}
-                className="flex w-28 shrink-0 flex-col items-center gap-2 rounded-card bg-surface p-3 text-center shadow-rest transition-transform duration-fast active:scale-[0.97]"
+      {confirmLogout ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-5 pb-8"
+          onClick={() => setConfirmLogout(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Log out"
+            className="w-full max-w-sm rounded-card bg-surface p-5 shadow-lift"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-body font-semibold">Log out of CADO?</p>
+            <p className="mt-1 text-caption text-muted">
+              Your favorites on this device stay. You'll need to log in again to see your orders.
+            </p>
+            <div className="mt-4 flex gap-3">
+              <Button variant="secondary" fullWidth onClick={() => setConfirmLogout(false)}>
+                Cancel
+              </Button>
+              <Button
+                fullWidth
+                onClick={() => {
+                  setConfirmLogout(false);
+                  void signOut();
+                }}
+                className="!bg-alert !text-white"
               >
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill bg-surface-sunk">
-                  {store.logo_url ? (
-                    <img src={store.logo_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="font-display text-h2 text-muted">{store.name.charAt(0)}</span>
-                  )}
-                </div>
-                <span className="line-clamp-2 text-caption font-medium leading-tight">{store.name}</span>
-              </Link>
-            ))}
+                Log out
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}

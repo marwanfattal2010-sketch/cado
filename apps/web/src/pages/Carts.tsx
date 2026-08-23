@@ -8,7 +8,7 @@ import { primaryImage } from "../lib/images";
 import { formatMoney } from "../lib/money";
 import { ButtonLink, RibbonEmpty } from "../components/ui";
 import { GiftIcon } from "../components/Icons";
-import { DigitalCardMock } from "../components/giftcard/GiftCardArt";
+import { PersimmonCard } from "../components/giftcard/PersimmonCard";
 
 type CartItem = NonNullable<ReturnType<typeof useCart>["data"]>[number];
 
@@ -310,7 +310,7 @@ export function Carts() {
               <div className="mt-4 flex items-center gap-2">
                 {giftCards.lines.slice(0, 4).map((line) => (
                   <span key={line.id} className="h-12 w-[68px] shrink-0 overflow-hidden rounded-card">
-                    <DigitalCardMock
+                    <PersimmonCard thumb
                       amount={formatMoney((line.gift_card_amount_cents ?? 0) / 100)}
                       className="h-full w-full"
                     />
