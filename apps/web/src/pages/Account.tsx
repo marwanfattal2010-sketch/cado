@@ -3,83 +3,17 @@ import { useAuth } from "../lib/auth";
 import { useTopStores } from "../hooks/useStores";
 import {
   AccountIcon,
-  BasketIcon,
   GiftIcon,
   GlobeIcon,
   HeartIcon,
   HelpIcon,
   OrdersIcon,
   SettingsIcon,
-  ShieldCheckIcon,
-  TruckIcon,
-  WalletIcon,
 } from "../components/Icons";
-import { Button, ButtonLink, RibbonDivider } from "../components/ui";
+import { Button, ButtonLink } from "../components/ui";
 import { Img } from "../components/Img";
+import { WalletBalanceCard } from "../components/giftcard/WalletCard";
 import { storePath } from "../lib/routes";
-
-/**
- * The fuller "How CADO works" panel, recovered from the pre-redesign
- * homepage (it lived there until 0195c24). The homepage keeps the compact
- * one-line strip — a shopper scrolling for a birthday present does not need
- * three cards explaining the concept. Here it does earn its space: Account
- * is where someone lands when they are deciding whether to trust the thing,
- * and it is the one screen with room for it.
- *
- * Every claim on it is one CADO actually makes elsewhere on the site
- * (same-day, pay on delivery, verified stores). Nothing here is a number, a
- * rating or a count, because there is no real one to show.
- *
- * Step 2 used to be "We wrap it — your note inside, free". CADO is not
- * offering gift wrapping (Marwan, 2026-08: "i dont need gift wrapping"), so
- * it is replaced by the step that actually happens in the middle: CADO
- * collects the gift from the store. That is not a new promise — it is the
- * same one /partners already makes to store owners ("Same-day delivery
- * across Lebanon, handled by us").
- */
-const HOW_IT_WORKS = [
-  { n: "1", Icon: GiftIcon, title: "Choose a gift", desc: "From stores across Lebanon." },
-  { n: "2", Icon: BasketIcon, title: "We collect it", desc: "From the store, the same day." },
-  { n: "3", Icon: TruckIcon, title: "Arrives today", desc: "Order before midnight, arrives today." },
-];
-
-/** Three, not four — the "Free gift wrapping" badge is gone with the
- *  service. A claim we no longer make does not get relocated. */
-const WHY_CADO = [
-  { Icon: TruckIcon, label: "Same-day delivery" },
-  { Icon: ShieldCheckIcon, label: "Verified Lebanese stores" },
-  { Icon: WalletIcon, label: "Pay on delivery" },
-];
-
-function HowCadoWorks() {
-  return (
-    <section className="mt-10">
-      <RibbonDivider className="mb-4" />
-      <h2 className="text-center font-display text-h2">How CADO works</h2>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {HOW_IT_WORKS.map((s) => (
-          <div key={s.n} className="rounded-card bg-surface p-3 text-center shadow-rest">
-            <s.Icon className="mx-auto h-5 w-5 text-persimmon" />
-            <p className="mt-1.5 text-caption font-semibold">{s.title}</p>
-            <p className="mt-0.5 text-[11px] leading-snug text-muted">{s.desc}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 grid grid-cols-3 gap-3">
-        {WHY_CADO.map((w) => (
-          <div
-            key={w.label}
-            className="flex flex-col items-center gap-2 rounded-card bg-surface py-5 text-center shadow-rest"
-          >
-            <w.Icon className="h-6 w-6 text-persimmon" />
-            <span className="text-caption font-medium text-muted">{w.label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 /**
  * Up to two initials. A full name gives first + last, one word gives one
@@ -174,44 +108,12 @@ const INSTAGRAM_IMAGES = [
   "/instagram/8.jpg",
 ];
 
-/**
- * The two blocks that came off the bottom of the old Home page when the Shop
- * page replaced it. Both are unchanged — same copy, same photographs, same
- * card.
- *
- * They belong here rather than on Home for the same reason the footer links
- * did: a shopper scrolling for a birthday present is not the audience for
- * "own a store?", and someone who has opened Account is at least looking at
- * the company rather than the catalogue.
- *
- * The full partner pitch — no upfront cost, we deliver, new customers, email
- * and WhatsApp — already lives on /partners, which this links to. Nothing was
- * lost in the move.
+/*
+ * The black "Own a store?" banner is gone from this page. It was the
+ * heaviest thing on a cream screen, and the Company group below already
+ * carries "Become a partner" as a plain row to the same page — one link is
+ * enough. /partners itself is unchanged.
  */
-function OwnAStore() {
-  return (
-    <section className="mt-10">
-      <Link
-        to="/partners"
-        className="block rounded-card bg-primary px-5 py-4 text-inverse transition-transform duration-press ease-out active:scale-[0.99]"
-      >
-        {/* Title and call-to-action share the first row; the one line of copy
-            runs full width underneath. Side by side all three squeezed the
-            copy into a three-line column and the card back up to 120px,
-            which is not compact. */}
-        <span className="flex items-center justify-between gap-3">
-          <span className="font-display text-h2">Own a store?</span>
-          <span className="shrink-0 whitespace-nowrap text-caption font-medium text-gold">
-            Become a partner →
-          </span>
-        </span>
-        <span className="mt-1 block text-caption text-inverse/65">
-          Sell on CADO — no upfront cost, and we deliver.
-        </span>
-      </Link>
-    </section>
-  );
-}
 
 /** Real photographs from the account, each opening the profile. No embed, no
  *  follower count, no faked post metadata — pictures and a link. */
@@ -298,12 +200,7 @@ export function Account() {
           <SiteLinks />
         </div>
 
-        {/* Signed out is exactly when someone is still deciding, so the
-            explainer belongs here too — and so does the partner pitch, since
-            a store owner looking at CADO has no account either. */}
         <div className="text-left">
-          <HowCadoWorks />
-          <OwnAStore />
           <InstagramStrip />
         </div>
       </div>
@@ -328,10 +225,48 @@ export function Account() {
         </div>
       </div>
 
+      {/* Straight under the profile: what is actually on the card, read from
+          my_wallet(). Tapping it opens the Gift Cards page. */}
+      <WalletBalanceCard />
+
+      <div className="mt-6 overflow-hidden rounded-card bg-surface shadow-rest">
+        <Row to="/settings" Icon={SettingsIcon} label="Settings" first />
+        <Row to="/wishlist" Icon={HeartIcon} label="Favorites" />
+        <Row to="/language" Icon={GlobeIcon} label="Language" />
+        <Row to="/help" Icon={HelpIcon} label="Help Center" />
+      </div>
+
+      <div className="mt-4 flex gap-3">
+        <Link
+          to="/orders"
+          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
+        >
+          <OrdersIcon className="h-4 w-4 text-persimmon" />
+          My orders
+        </Link>
+        <Link
+          to="/gift-cards"
+          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
+        >
+          <GiftIcon className="h-4 w-4 text-persimmon" />
+          Gift cards
+        </Link>
+      </div>
+
+      {/* Shop · Help · Company · Legal — all four kept. */}
+      <SiteLinks />
+
+      {/* Last thing you can DO on the page, after every link group. */}
+      <Button onClick={signOut} variant="secondary" fullWidth className="mt-8">
+        Log out
+      </Button>
+
       {/* Honest label. This list is every active store, ordered by name — it
-          is not a ranking, so it can't be called "stores you'll love". */}
+          is not a ranking, so it can't be called "stores you'll love". It
+          sits below Log out with the rest of the footer: it is browsing, not
+          account management. */}
       {topStores.data && topStores.data.length > 0 ? (
-        <div className="mt-6">
+        <div className="mt-10">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-display text-h2">Stores on CADO</h2>
             <Link to="/browse" className="tap-44 text-caption font-medium text-ink">
@@ -358,40 +293,6 @@ export function Account() {
           </div>
         </div>
       ) : null}
-
-      <div className="mt-6 overflow-hidden rounded-card bg-surface shadow-rest">
-        <Row to="/settings" Icon={SettingsIcon} label="Settings" first />
-        <Row to="/wishlist" Icon={HeartIcon} label="Favorites" />
-        <Row to="/language" Icon={GlobeIcon} label="Language" />
-        <Row to="/help" Icon={HelpIcon} label="Help Center" />
-      </div>
-
-      <div className="mt-4 flex gap-3">
-        <Link
-          to="/orders"
-          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
-        >
-          <OrdersIcon className="h-4 w-4 text-persimmon" />
-          My orders
-        </Link>
-        <Link
-          to="/gift-cards"
-          className="flex min-h-[52px] flex-1 items-center gap-2 rounded-card bg-surface px-4 text-body shadow-rest transition-transform duration-fast active:scale-[0.98]"
-        >
-          <GiftIcon className="h-4 w-4 text-persimmon" />
-          Gift cards
-        </Link>
-      </div>
-
-      <Button onClick={signOut} variant="secondary" fullWidth className="mt-6">
-        Log out
-      </Button>
-
-      <HowCadoWorks />
-
-      <SiteLinks />
-
-      <OwnAStore />
 
       <InstagramStrip />
 

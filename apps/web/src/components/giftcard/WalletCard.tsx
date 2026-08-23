@@ -25,6 +25,44 @@ const HIDDEN_KEY = "cado-wallet-hidden";
  * `my_wallet()`; a logged-out visitor is told to log in rather than shown a
  * zero, because a zero would be a claim about an account that doesn't exist.
  */
+/**
+ * The same card, cut down for the Account page.
+ *
+ * Same persimmon face as the full card above, so the two screens are
+ * obviously the same object — but at ~120px it states the three things
+ * that belong on a summary and nothing else: what it is, what is on it,
+ * and where it spends. No card number, no expiry line, no decorative arc,
+ * no hide toggle; those live on the Gift Cards page, which is where this
+ * card taps through to.
+ *
+ * The figure is `my_wallet()`, the same RPC the full card reads. A person
+ * with no balance sees $0, which is true, rather than a number that looks
+ * like a promotion.
+ */
+export function WalletBalanceCard() {
+  const wallet = useWallet();
+  const balance = wallet.data?.balance ?? 0;
+  return (
+    <Link
+      to="/gift-cards"
+      className="mt-4 block transition-transform duration-press ease-out active:scale-[0.99]"
+      aria-label="Your CADO gift card balance"
+    >
+      <div className="flex h-[120px] flex-col justify-between overflow-hidden rounded-card bg-gradient-to-br from-persimmon via-persimmon to-primary-deep px-5 py-4 shadow-rest">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/80">CADO gift card</p>
+        <p className="font-display text-[28px] font-semibold leading-none text-white">
+          {wallet.isLoading ? (
+            <span className="inline-block h-[28px] w-24 animate-pulse rounded bg-white/25 align-middle" />
+          ) : (
+            formatMoney(balance)
+          )}
+        </p>
+        <p className="text-[12px] text-white/85">Spend it at any CADO store.</p>
+      </div>
+    </Link>
+  );
+}
+
 export function WalletCard() {
   const { session } = useAuth();
   const wallet = useWallet();
