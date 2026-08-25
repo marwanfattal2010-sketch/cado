@@ -68,7 +68,7 @@ export function OrderDetail() {
   }
 
   const sub = o.sub_orders?.[0];
-  const view = statusView(sub?.status);
+  const view = statusView(sub?.status, o.recipient_name);
   const items = sub?.order_items ?? [];
   const placed = new Date(o.created_at);
   const addr = o.address;

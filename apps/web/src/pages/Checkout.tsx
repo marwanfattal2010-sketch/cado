@@ -81,7 +81,9 @@ export function Checkout() {
   const placeGiftCardOrder = usePlaceGiftCardOrder();
   const [params] = useSearchParams();
 
-  const [isGift, setIsGift] = useState(false);
+  /* Every CADO order is a gift. What varies is whose door it goes to. */
+  const [toThem, setToThem] = useState(true);
+  const isGift = true;
   const [payment, setPayment] = useState<PaymentMethod>("cod");
   const wallet = useWallet();
   const [useBalance, setUseBalance] = useState(false);
@@ -91,6 +93,9 @@ export function Checkout() {
   const [giftCardError, setGiftCardError] = useState<string | null>(null);
   const [giftCardOpen, setGiftCardOpen] = useState(false);
   const [checkingCard, setCheckingCard] = useState(false);
+  /* The note travels with the order. Empty by default — see the section. */
+  const [giftNote, setGiftNote] = useState("");
+  const [giftFrom, setGiftFrom] = useState("");
 
   /**
    * WHEN. There is no date picker any more, and no "pick a date".
@@ -226,7 +231,7 @@ export function Checkout() {
   const savedAddress = addresses.data?.[0];
   // Going straight to the recipient means their address, so the saved one is
   // not offered — it is the wrong address by definition.
-  const showSaved = !!savedAddress && useSaved && !isGift;
+  const showSaved = !!savedAddress && useSaved && !toThem;
 
   /**
    * Cash on delivery disappears when the gift goes straight to the person
@@ -236,13 +241,14 @@ export function Checkout() {
    * Whish and OMT stay: both are manual transfers the buyer makes before
    * delivery, which is exactly how gift cards are already paid for.
    */
-  const payments = useMemo(() => PAYMENTS.filter((p) => !(isGift && p.value === "cod")), [isGift]);
+  /* Cash on delivery only works when the buyer is the one at the door. */
+  const payments = useMemo(() => PAYMENTS.filter((p) => !(toThem && p.value === "cod")), [toThem]);
 
   useEffect(() => {
     // If they had already chosen cash and then switched the destination, move
     // them off it rather than silently sending an order we would refuse.
-    if (isGift && payment === "cod") setPayment("whish");
-  }, [isGift, payment]);
+    if (toThem && payment === "cod") setPayment("whish");
+  }, [toThem, payment]);
 
   /**
    * The gift choices made per item on the product page, summarised for the
@@ -272,6 +278,15 @@ export function Checkout() {
     }
     return { messages, anyHidden };
   }, [items]);
+
+  /* Message plus signature, as one printed note. Nothing is added when
+   * both are blank — an unsigned blank card is just no card. */
+  const composedNote = useMemo(() => {
+    const body = giftNote.trim();
+    const from = giftFrom.trim();
+    if (!body && !from) return "";
+    return from ? [body, `— ${from}`].filter(Boolean).join("\n") : body;
+  }, [giftNote, giftFrom]);
 
   const applyGiftCard = async (code: string) => {
     setGiftCardError(null);
@@ -360,13 +375,13 @@ export function Checkout() {
           deliveryAddressId: addressId,
           addressSource: "buyer",
           isGift,
-          recipientName: isGift ? recipientName.trim() : undefined,
-          recipientPhone: isGift ? recipientPhone.trim() : undefined,
+          recipientName: toThem ? recipientName.trim() : undefined,
+          recipientPhone: toThem ? recipientPhone.trim() : undefined,
           deliverySlot: when === "now" ? "Now" : `Preorder ${preorderAt}`,
           paymentMethod: payment,
         });
         navigate(`/order-confirmed/${giftOrderId}`, {
-          state: { recipientName: isGift ? recipientName.trim() : "", paymentMethod: payment },
+          state: { recipientName: toThem ? recipientName.trim() : "", paymentMethod: payment },
         });
         return;
       }
@@ -377,11 +392,11 @@ export function Checkout() {
         // from the recipient. The WhatsApp path is gone from the UI.
         addressSource: "buyer",
         isGift,
-        recipientName: isGift ? recipientName.trim() : undefined,
-        recipientPhone: isGift ? recipientPhone.trim() : undefined,
+        recipientName: toThem ? recipientName.trim() : undefined,
+        recipientPhone: toThem ? recipientPhone.trim() : undefined,
         // Both derived from what was chosen per item on the product page.
         hidePrice: giftNotes.anyHidden,
-        giftMessage: giftNotes.messages[0],
+        giftMessage: composedNote || giftNotes.messages[0],
         // "Now" is the exact word the server-side window check looks for.
         deliverySlot: when === "now" ? "Now" : `Preorder ${preorderAt}`,
         paymentMethod: payment,
@@ -393,7 +408,7 @@ export function Checkout() {
       });
       sessionStorage.removeItem("cado-gift-card");
       navigate(`/order-confirmed/${orderId}`, {
-        state: { recipientName: isGift ? recipientName.trim() : "", paymentMethod: payment },
+        state: { recipientName: toThem ? recipientName.trim() : "", paymentMethod: payment },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not place the order");
@@ -408,20 +423,29 @@ export function Checkout() {
         {/* One question, not a checkbox with a sentence hanging off it. It
             changes what every field below means, so it is asked plainly and
             first. */}
+        {/*
+         * BOTH ANSWERS ARE GIFTING.
+         *
+         * "To me" is not a normal order that happens to come from a gift
+         * site — it is the birthday-party case: someone buys a present,
+         * takes delivery at home, and carries it to the party themselves.
+         * They still want it wrapped and they still want a note in it. The
+         * only thing this question changes is whose door it arrives at.
+         */}
         <p className="mb-2 text-body font-medium">Where should it go?</p>
         <div className="mb-3 flex flex-col gap-2">
           <label className="flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-card border border-line bg-surface px-3 text-body">
             <input
               type="radio"
               name="destination"
-              checked={!isGift}
-              onChange={() => setIsGift(false)}
+              checked={toThem}
+              onChange={() => setToThem(true)}
               className="h-4 w-4 shrink-0 accent-[color:rgb(var(--persimmon))]"
             />
             <span>
-              To me
+              Straight to them
               <span className="mt-0.5 block text-caption text-muted">
-                We deliver it to your address and you hand it over.
+                We deliver it to the person receiving the gift.
               </span>
             </span>
           </label>
@@ -429,14 +453,14 @@ export function Checkout() {
             <input
               type="radio"
               name="destination"
-              checked={isGift}
-              onChange={() => setIsGift(true)}
+              checked={!toThem}
+              onChange={() => setToThem(false)}
               className="h-4 w-4 shrink-0 accent-[color:rgb(var(--persimmon))]"
             />
             <span>
-              Straight to them
+              To me — I'm giving it in person
               <span className="mt-0.5 block text-caption text-muted">
-                We deliver it to the person receiving the gift.
+                It comes to your address, wrapped, with your note inside.
               </span>
             </span>
           </label>
@@ -468,13 +492,13 @@ export function Checkout() {
         ) : (
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Field
-              label={isGift ? "Their full name" : "Full name"}
+              label={toThem ? "Their full name" : "Your full name"}
               className="col-span-2"
               value={addressForm.recipient_name}
               onChange={(v) => setAddressForm({ ...addressForm, recipient_name: v })}
             />
             <Field
-              label={isGift ? "Their phone" : "Phone"}
+              label={toThem ? "Their phone" : "Your phone"}
               className="col-span-2"
               placeholder="+961…"
               inputMode="tel"
@@ -520,7 +544,36 @@ export function Checkout() {
         )}
       </Section>
 
-      <Section n="②" title="When">
+      {/*
+       * THE NOTE. Optional, skippable, and never pre-filled — a suggested
+       * message is one the buyer has to delete before they can write their
+       * own, and a card that arrives with placeholder text on it is worse
+       * than a card with nothing.
+       *
+       * It goes with the order either way: someone who is handing the gift
+       * over in person still wants a note inside it.
+       */}
+      <Section n="②" title="A note with it">
+        <textarea
+          value={giftNote}
+          maxLength={280}
+          onChange={(e) => setGiftNote(e.target.value)}
+          placeholder="Write something (optional)"
+          aria-label="Message on the card"
+          rows={2}
+          className={`${FIELD} resize-none`}
+        />
+        <div className="mt-2">
+          <Field label="From" value={giftFrom} onChange={setGiftFrom} placeholder="Your name" />
+        </div>
+        <p className="mt-1.5 text-caption text-muted">
+          {toThem
+            ? "Printed on a card and put in with the gift. The price is never included."
+            : "Printed on a card and put in with the gift, ready for you to hand over."}
+        </p>
+      </Section>
+
+      <Section n="③" title="When">
         <div className="flex flex-col gap-2">
           {/* "Now" disappears entirely outside the same-day window rather
               than sitting there disabled — an option you cannot pick is a
@@ -559,7 +612,7 @@ export function Checkout() {
         </div>
       </Section>
 
-      <Section n="③" title="Payment">
+      <Section n="④" title="Payment">
         {/*
           The CADO balance sits ABOVE the payment methods, and is a checkbox
           rather than one of the radios, because it is not an alternative to
@@ -731,7 +784,7 @@ export function Checkout() {
 
       {/* Buyers abandon gifting checkouts out of fear they'll send it to
           themselves — so say plainly where it's going. */}
-      {isGift && recipientName.trim() ? (
+      {toThem && recipientName.trim() ? (
         <p className="mt-3 rounded-card bg-today-tint px-3 py-2 text-caption font-medium text-today">
           Delivering to {recipientName.trim()}, not to you.
         </p>

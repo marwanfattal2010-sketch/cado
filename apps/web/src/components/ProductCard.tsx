@@ -29,6 +29,9 @@ type ProductCardProps = {
   created_at?: string | null;
   occasion_tags?: string[] | null;
   recipient_tags?: string[] | null;
+  /** Whether this seller can actually wrap THIS item. The card only claims
+   *  "Arrives wrapped" where that is true. */
+  gift_wrap_available?: boolean | null;
   /** Resolved to a name and a tab slug for the category chip. */
   category_id?: string | null;
   /** Filled in by the card from `category_id`; never passed by callers. */
@@ -334,10 +337,13 @@ export function ProductCard(props: ProductCardProps) {
         {lowStock ? (
           <p className="mt-0.5 text-[11px] font-semibold text-persimmon">Only {stock_quantity} left</p>
         ) : null}
-        {/* Every CADO order is wrapped before it travels — it is a gift
-            marketplace, so this is the default rather than an upsell. Not
-            shown on the uniform card, whose text box is a fixed height. */}
-        {uniform ? null : <p className="mt-0.5 text-[11px] text-muted">Arrives wrapped</p>}
+        {/* Only where the seller genuinely wraps this item — about half the
+            catalogue does. Printing it on everything would be a promise the
+            other half cannot keep. Not shown on the uniform card, whose text
+            box is a fixed height. */}
+        {!uniform && props.gift_wrap_available ? (
+          <p className="mt-0.5 text-[11px] text-muted">Arrives wrapped</p>
+        ) : null}
       </Link>
 
       {chips.length > 0 ? (

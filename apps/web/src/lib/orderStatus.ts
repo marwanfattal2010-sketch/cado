@@ -37,16 +37,37 @@ const CHIP = {
   cancelled: "bg-surface-sunk text-muted",
 } as const;
 
-export function statusView(status: string | null | undefined): StatusView {
+/**
+ * The status, in words, and — where we know it — about WHOM.
+ *
+ * "Delivered" is what a shop says, because a shop delivers to the person who
+ * paid. A gift has two people in it, and which one is holding it is the
+ * entire question: "Delivered to Rana" is the sentence the buyer actually
+ * wants, and "Delivered to you" is the honest version when the buyer chose to
+ * hand it over themselves.
+ *
+ * `recipient` is the recipient's name when the order goes straight to them,
+ * and null when it comes to the buyer — which is exactly what `orders`
+ * already stores, so nothing here is guessed.
+ */
+export function statusView(status: string | null | undefined, recipient?: string | null): StatusView {
+  const who = recipient?.trim();
+  const to = who ? ` to ${who}` : " to you";
   switch (status) {
     case "accepted":
     case "preparing":
     case "ready":
       return { label: "Confirmed", step: 1, cancelled: false, chip: CHIP.confirmed, active: true };
     case "out_for_delivery":
-      return { label: "On the way", step: 2, cancelled: false, chip: CHIP.onTheWay, active: true };
+      return {
+        label: who ? `On the way to ${who}` : "On the way to you",
+        step: 2,
+        cancelled: false,
+        chip: CHIP.onTheWay,
+        active: true,
+      };
     case "delivered":
-      return { label: "Delivered", step: 3, cancelled: false, chip: CHIP.delivered, active: false };
+      return { label: `Delivered${to}`, step: 3, cancelled: false, chip: CHIP.delivered, active: false };
     case "cancelled":
       return { label: "Cancelled", step: 0, cancelled: true, chip: CHIP.cancelled, active: false };
     case "pending":

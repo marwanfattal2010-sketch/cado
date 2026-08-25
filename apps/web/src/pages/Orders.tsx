@@ -33,8 +33,8 @@ export function Orders() {
   }
 
   const list = orders.data ?? [];
-  const current = list.filter((o) => statusView(o.sub_orders?.[0]?.status).active);
-  const past = list.filter((o) => !statusView(o.sub_orders?.[0]?.status).active);
+  const current = list.filter((o) => statusView(o.sub_orders?.[0]?.status, o.recipient_name).active);
+  const past = list.filter((o) => !statusView(o.sub_orders?.[0]?.status, o.recipient_name).active);
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-6">
@@ -94,7 +94,7 @@ function OrderCard({ order, prominent = false }: { order: OrderRow; prominent?: 
   const toast = useToast();
 
   const sub = order.sub_orders?.[0];
-  const view = statusView(sub?.status);
+  const view = statusView(sub?.status, order.recipient_name);
   const items = sub?.order_items ?? [];
   const extra = Math.max(0, items.length - THUMBS_SHOWN);
   const when = new Date(order.created_at);

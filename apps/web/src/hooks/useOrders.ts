@@ -23,7 +23,7 @@ export function useOrders() {
         // the typed client returns GenericStringError instead of rows — the
         // same trap PRODUCT_CARD_COLUMNS documents.
         .select(
-          "id, order_number, total, created_at, payment_method, sub_orders(id, status, total, partner:partners(id, name, slug), order_items(id, product_title_snapshot, quantity, line_total, product:products(id, is_active, stock_quantity, product_images(storage_path, is_primary))))"
+          "id, order_number, total, created_at, payment_method, recipient_name, sub_orders(id, status, total, partner:partners(id, name, slug), order_items(id, product_title_snapshot, quantity, line_total, product:products(id, is_active, stock_quantity, product_images(storage_path, is_primary))))"
         )
         .order("created_at", { ascending: false })
         .limit(100);

@@ -135,7 +135,10 @@ export function accentColor(token: string | null | undefined, alpha?: number) {
  * literal select.
  */
 export const PRODUCT_CARD_COLUMNS =
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
+  // gift_wrap_available is on the card contract because the card SAYS
+  // "Arrives wrapped", and that has to be true of the item it is printed on
+  // — roughly half the catalogue cannot be wrapped.
+  "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
 
 export type FeedProduct = {
   id: string;
