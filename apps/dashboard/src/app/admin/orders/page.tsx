@@ -74,7 +74,7 @@ export default async function AdminOrdersPage({
               <li key={o.order_id} className="rounded-card border border-line bg-surface p-4 shadow-rest">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <div>
-                    <span className="font-semibold text-ink">{o.order_number}</span>
+                    <Link href={`/admin/orders/${o.order_id}`} className="font-semibold text-ribbon hover:underline">{o.order_number}</Link>
                     <span className="ml-2 text-sm text-muted">
                       {new Date(o.placed_at).toLocaleString()}
                     </span>

@@ -22,3 +22,6 @@ cado-backups/
 # Backup workflow scratch dirs — dumps must never land in the app repo
 work/
 backups/
+
+# Credentials and working files — never committed
+scratchpad/

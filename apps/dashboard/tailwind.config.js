@@ -36,6 +36,8 @@ module.exports = {
         "status-blue": { DEFAULT: "var(--status-blue)", tint: "var(--status-blue-tint)" },
         "status-grey": { DEFAULT: "var(--status-grey)", tint: "var(--status-grey-tint)" },
         "status-red": { DEFAULT: "var(--status-red)", tint: "var(--status-red-tint)" },
+        "status-indigo": { DEFAULT: "var(--status-indigo)", tint: "var(--status-indigo-tint)" },
+        "status-purple": { DEFAULT: "var(--status-purple)", tint: "var(--status-purple-tint)" },
       },
       fontFamily: {
         display: ['"Fraunces"', "Georgia", "serif"],
@@ -50,6 +52,8 @@ module.exports = {
       boxShadow: {
         rest: "var(--shadow-rest)",
         lift: "var(--shadow-lift)",
+        /* V2 cards: barely-there. Heavy shadows read as consumer app. */
+        card: "0 1px 2px rgba(23, 19, 15, 0.05)",
       },
       keyframes: {
         shimmer: {
