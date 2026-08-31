@@ -59,7 +59,30 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = 
   approved: { bg: "bg-status-green-tint", fg: "text-status-green", label: "Live" },
 };
 
-export function StatusPill({ status }: { status: string | null | undefined }) {
+/**
+ * A few words are shared between the order lifecycle and the store lifecycle
+ * but do NOT mean the same thing. 'pending' on an order is an order nobody has
+ * confirmed yet ("Awaiting action"); 'pending' on a store is an application
+ * nobody has approved yet. Rendering the order word on a store page tells the
+ * reader something false, so a caller in a different context passes its own
+ * label and keeps the shared colour grammar.
+ */
+export const STORE_STATUS_LABEL: Record<string, string> = {
+  pending: "Pending approval",
+  active: "Active",
+  paused: "Paused",
+  closed: "Closed",
+  rejected: "Rejected",
+};
+
+export function StatusPill({
+  status,
+  label,
+}: {
+  status: string | null | undefined;
+  /** Override the word, keep the colour. See STORE_STATUS_LABEL. */
+  label?: string;
+}) {
   const s = STATUS_STYLE[status ?? ""] ?? {
     bg: "bg-status-grey-tint",
     fg: "text-status-grey",
@@ -67,7 +90,7 @@ export function StatusPill({ status }: { status: string | null | undefined }) {
   };
   return (
     <span className={`inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold ${s.bg} ${s.fg}`}>
-      {s.label}
+      {label ?? s.label}
     </span>
   );
 }

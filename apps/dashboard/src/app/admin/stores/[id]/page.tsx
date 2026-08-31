@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
-import { PageHeader, StatusPill, Card, KpiCard, EmptyStateV2, usd } from "@/components/ui";
+import { PageHeader, StatusPill, STORE_STATUS_LABEL, Card, KpiCard, EmptyStateV2, usd } from "@/components/ui";
 import {
   setCommissionRate,
   setStoreStatus,
@@ -119,7 +119,7 @@ export default async function AdminStoreDetail({
         ]}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <StatusPill status={partner.status} />
+            <StatusPill status={partner.status} label={STORE_STATUS_LABEL[partner.status]} />
             {partner.is_demo ? (
               <span className="rounded-pill bg-status-amber-tint px-2 py-0.5 text-[10px] font-bold tracking-wide text-status-amber">
                 DEMO
