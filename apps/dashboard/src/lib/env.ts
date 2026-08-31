@@ -12,12 +12,20 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20),
   NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3100"),
+  /**
+   * The CUSTOMER-facing storefront (apps/web), not this dashboard. Used for the
+   * "View my store on CADO" link, which points at the real storefront route
+   * `/store/:slug` (see apps/web/src/App.tsx). Defaulted to the live Vercel
+   * deployment so the link is correct in local dev too.
+   */
+  NEXT_PUBLIC_STOREFRONT_URL: z.string().url().default("https://cado-web.vercel.app"),
 });
 
 export const publicEnv = publicSchema.parse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_STOREFRONT_URL: process.env.NEXT_PUBLIC_STOREFRONT_URL,
 });
 
 const serverSchema = z.object({

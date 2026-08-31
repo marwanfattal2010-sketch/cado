@@ -40,8 +40,20 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     .eq("id", partnerId!)
     .single();
 
-  // A pending or rejected store waits outside; nothing else renders.
-  if (!viewingAs && partner && partner.status !== "active") redirect("/pending");
+  /*
+   * A pending, rejected or closed store waits outside; nothing else renders.
+   *
+   * 'paused' is explicitly LET THROUGH, and that is the whole point. A paused
+   * store is hidden from the storefront but still has orders in flight,
+   * payouts owed, and an owner who needs to be able to press Resume. The
+   * previous `status !== 'active'` test locked a paused owner out of the very
+   * screen that unpauses them — pausing would have been a one-way door.
+   *
+   * Allow-list rather than deny-list: any status nobody has thought about yet
+   * keeps the owner outside, which is the safe direction to fail.
+   */
+  const OWNER_MAY_ENTER = new Set(["active", "paused"]);
+  if (!viewingAs && partner && !OWNER_MAY_ENTER.has(partner.status)) redirect("/pending");
 
   return (
     <AppShell role="store_owner" storeName={partner?.name}>

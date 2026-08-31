@@ -31,7 +31,9 @@ const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/orders", label: "Orders", icon: "▤" },
       { href: "/admin/stores", label: "Stores", icon: "⌂" },
       { href: "/admin/products", label: "Products", icon: "▦" },
+      { href: "/admin/delivery", label: "Delivery", icon: "➔" },
       { href: "/admin/customers", label: "Customers", icon: "◉" },
+      { href: "/admin/support", label: "Support", icon: "✆" },
     ],
   },
   {
@@ -58,6 +60,13 @@ const STORE_NAV: NavGroup[] = [
       { href: "/store/orders", label: "Orders", icon: "▤" },
       { href: "/store/products", label: "Products", icon: "▦" },
       { href: "/store/payouts", label: "Earnings", icon: "◈" },
+    ],
+  },
+  {
+    heading: "Your shop",
+    items: [
+      { href: "/store/profile", label: "Store profile", icon: "❋" },
+      { href: "/store/reviews", label: "Reviews", icon: "★" },
       { href: "/store/account", label: "Settings", icon: "⚙" },
     ],
   },
