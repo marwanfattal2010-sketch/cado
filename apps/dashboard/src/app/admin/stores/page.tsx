@@ -19,6 +19,8 @@ interface PartnerTotals {
   gross_revenue: number;
   commission: number;
   payable_pending: number;
+  /** The pitch, for pending applications. */
+  application_text: string | null;
 }
 
 /**
@@ -37,7 +39,19 @@ export default async function AdminPartnersPage() {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase.rpc("admin_partner_totals");
-  const partners = (data ?? []) as PartnerTotals[];
+  const totals = (data ?? []) as Omit<PartnerTotals, "application_text">[];
+
+  // The application pitch lives on partners.description (until 0068 gives
+  // it a column of its own). Only pending stores need it here.
+  const pendingIds = totals.filter((p) => p.status === "pending").map((p) => p.partner_id);
+  const { data: pitches } = pendingIds.length
+    ? await supabase.from("partners").select("id, description").in("id", pendingIds)
+    : { data: [] as { id: string; description: string | null }[] };
+  const pitchOf = new Map((pitches ?? []).map((x) => [x.id, x.description]));
+  const partners: PartnerTotals[] = totals.map((p) => ({
+    ...p,
+    application_text: pitchOf.get(p.partner_id) ?? null,
+  }));
 
   const isDemo = (email: string | null) =>
     !!email && (email.endsWith("@cadotest.local") || email.endsWith("@cado-demo.local"));
@@ -90,6 +104,13 @@ export default async function AdminPartnersPage() {
                 <Metric label={t("admin.partners.payable")} value={money(p.payable_pending)} strong />
               </div>
 
+              {p.status === "pending" && p.application_text ? (
+                /* The application, shown where the decision is made. */
+                <p className="mt-2 whitespace-pre-line rounded-card bg-status-amber-tint p-2.5 text-xs text-ink">
+                  {p.application_text}
+                </p>
+              ) : null}
+
               <p className="mt-2 text-xs text-muted">
                 {t("admin.partners.owner")}:{" "}
                 {p.owner_email ? (
@@ -99,12 +120,28 @@ export default async function AdminPartnersPage() {
                 )}
               </p>
 
-              <div className="mt-3 border-t border-line pt-3">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
                 <PartnerControls
                   partnerId={p.partner_id}
                   commissionPercent={Number(p.commission_rate) * 100}
                   status={p.status}
                 />
+                {/* §3.3: the admin edits this store's products and orders by
+                    stepping into its dashboard — no second login. */}
+                <form
+                  action={async () => {
+                    "use server";
+                    const { enterViewAs } = await import("./view-as/actions");
+                    await enterViewAs(p.partner_id);
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="rounded-pill border border-ribbon px-3 py-1.5 text-xs font-semibold text-ribbon transition-colors hover:bg-ribbon-tint"
+                  >
+                    View as store →
+                  </button>
+                </form>
               </div>
             </li>
           ))}

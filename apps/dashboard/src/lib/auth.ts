@@ -6,6 +6,7 @@ import "server-only";
  * verified session, never from a cookie value, header, or client prop.
  */
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
 
 export type DashboardRole = "admin" | "store_owner";
@@ -96,6 +97,23 @@ export async function requireAdmin(): Promise<DashboardUser> {
 /** Require a store owner specifically. Admins get bounced to the admin area. */
 export async function requireStoreOwner(): Promise<StoreOwnerUser> {
   const user = await requireDashboardUser();
+  /*
+   * THE STORE SWITCHER (§3.3). An admin carrying the view-as cookie gets a
+   * synthetic store context for that partner, banner and all. It is a lens,
+   * not an impersonated JWT: every query still runs under the admin's own
+   * session and admin RLS. The cookie names WHICH store an admin is looking
+   * at — it never grants anything, and it is ignored for real partners,
+   * whose scope is always their own partner_id from the database. That keeps
+   * the CLAUDE.md rule intact: identity still comes from auth.uid() only.
+   */
+  if (user.role === "admin") {
+    const jar = await cookies();
+    const target = jar.get("cado_view_as_partner")?.value;
+    if (target && /^[0-9a-f-]{36}$/.test(target)) {
+      return { ...user, role: "store_owner", partnerId: target } as StoreOwnerUser;
+    }
+    redirect("/admin/stores");
+  }
   if (user.role !== "store_owner") redirect("/admin/stores");
   // Belt and braces: getDashboardUser() cannot return 'store_owner' without a
   // partner_id, so this only fires if that invariant is ever broken. Bouncing

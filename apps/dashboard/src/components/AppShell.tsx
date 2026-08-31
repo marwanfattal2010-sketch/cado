@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { DashboardRole } from "@/lib/auth";
 import { BrandLogo } from "./BrandLogo";
+import { NotificationBell } from "./NotificationBell";
 
 /**
  * The V2 shell: grouped left sidebar on desktop, bottom bar + "More" sheet on
@@ -92,7 +93,8 @@ export function AppShell({
             {role === "admin" ? "CADO admin" : storeName ?? "Your store"}
           </p>
         </div>
-        <nav className="mt-6 flex-1 space-y-4 overflow-y-auto">
+        <div className="mt-3 px-2"><NotificationBell /></div>
+        <nav className="mt-3 flex-1 space-y-4 overflow-y-auto">
           {groups.map((g, i) => (
             <div key={i}>
               {g.heading ? (
@@ -131,7 +133,7 @@ export function AppShell({
             <BrandLogo variant="ink" height={22} />
             <p className="text-[10px] text-muted">{role === "admin" ? "CADO admin" : storeName ?? ""}</p>
           </div>
-          <SignOut compact />
+          <div className="flex items-center gap-1"><NotificationBell /><SignOut compact /></div>
         </header>
 
         <main className="mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
