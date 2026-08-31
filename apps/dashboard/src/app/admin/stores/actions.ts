@@ -42,13 +42,24 @@ export async function setPartnerCommission(
   return { ok: true };
 }
 
+/**
+ * The status vocabulary is fixed by the partners_status_check constraint that
+ * 0068 installed: pending | active | paused | closed | rejected. This function
+ * used to write 'suspended', which that constraint now rejects — so the Suspend
+ * button was writing a value the database refuses. 'paused' is the same idea
+ * under the name the schema actually uses: hidden from the storefront, all data
+ * kept, reversible in one click.
+ *
+ * 'pending' and 'rejected' are deliberately NOT settable here — those belong to
+ * the application review flow, where a rejection reason is recorded with them.
+ */
 export async function setPartnerStatus(
   partnerId: string,
-  status: "active" | "suspended"
+  status: "active" | "paused" | "closed"
 ): Promise<{ ok: boolean; message?: string }> {
   await requireAdmin();
 
-  if (!["active", "suspended"].includes(status)) {
+  if (!["active", "paused", "closed"].includes(status)) {
     return { ok: false, message: "Unknown status." };
   }
 

@@ -46,8 +46,19 @@ export function NotificationBell() {
     };
     void load();
 
+    /*
+     * The channel name MUST be unique per mount. supabase.channel(name) returns
+     * the EXISTING channel when the name is already taken, and a channel that
+     * has been subscribed refuses new .on() callbacks — it throws "cannot add
+     * postgres_changes callbacks ... after subscribe()", which in a component
+     * effect is an uncaught error that takes the whole dashboard down with a
+     * client-side exception. React's dev double-invoke hits this every time,
+     * and in production any remount that outpaces the cleanup does the same.
+     * A per-mount name means the lookup always misses and we always get a
+     * fresh channel; removeChannel below closes it.
+     */
     const channel = supabase
-      .channel("bell")
+      .channel(`bell-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => void load())
       .subscribe();
 

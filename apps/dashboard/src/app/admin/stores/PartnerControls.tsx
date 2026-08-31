@@ -44,16 +44,21 @@ export function PartnerControls({
       </label>
       <button
         onClick={() =>
-          run(() => setPartnerStatus(partnerId, status === "active" ? "suspended" : "active"))
+          run(() => setPartnerStatus(partnerId, status === "active" ? "paused" : "active"))
         }
         disabled={pending}
+        title={
+          status === "active"
+            ? "Hides this store's products from the storefront. Nothing is deleted."
+            : "Puts this store back on the storefront."
+        }
         className={`min-h-[36px] rounded-pill px-3 text-xs font-semibold disabled:opacity-50 ${
           status === "active"
             ? "border border-status-red text-status-red"
             : "bg-status-green text-white"
         }`}
       >
-        {status === "active" ? "Suspend" : "Activate"}
+        {status === "active" ? "Pause" : "Activate"}
       </button>
       {error ? <p className="w-full text-xs text-status-red">{error}</p> : null}
     </div>
