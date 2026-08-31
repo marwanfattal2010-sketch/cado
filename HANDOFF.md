@@ -723,3 +723,62 @@ HOSG, HEAD, Adidas/Nike boots, BATCH/Nivea hampers). The Fashion hero's
 "Leather Weekend Bag" is un-featured: Fashion shows clothing only.
 Bright Spark Electronics had no cover image at all, which is why Electronics
 only had two hero slides; it has one now.
+
+## Dashboard V2, third slice (Sep 1, 2026)
+
+Branch `dashboard-v2`. The dashboard is an operations back-office at
+cado-dashboard.vercel.app; `apps/dashboard/PLAN-V2.md` holds the recon of what
+0031–0033 already delivered and the names the live schema actually uses
+(the store role is **`partner`**, not the spec's `store_owner`;
+gift wrap is **`offers_gift_wrap`**).
+
+**0068 shipped tables that nothing rendered.** This slice built the screens for
+them: `/admin/support` (tickets + review moderation), `/admin/delivery`,
+`/admin/stores/[id]`, `/store/profile`, `/store/reviews`, and payout details +
+pause on `/store/account`. Nav in `AppShell.tsx` lists only pages that exist —
+a dead nav link is a 404 with a friendly name.
+
+**Four migrations written, NONE APPLIED.** They need a Supabase management
+token; there is no apply script in the repo any more, it was written ad hoc and
+deleted with the token. Until they run, the code paths they back are inert:
+
+- `0069_delivery_fee_from_settings.sql` — place_order read a delivery fee
+  hard-coded in its declarations. 0068 built `settings` + `delivery_fee_usd()`
+  but never pointed the order path at them, so the Settings knob was decorative.
+  Body is 0050 verbatim with ONE line changed; diff it against 0050 lines 34-234.
+- `0070_paused_stores_hide_products.sql` — "Pause store" claimed to hide a store
+  from the storefront. Nothing enforced it: visibility came from
+  `products.is_active` alone and the storefront filters stores by `is_live`,
+  never by `status`. A paused store kept selling. Now RLS, via a SECURITY
+  DEFINER `partner_is_active()` — a policy's inline subquery runs under the
+  CALLER's RLS, so reading partners inline would make visibility depend on who
+  is looking. Measured first: all 101 active products belong to active partners,
+  so it hides nothing visible today.
+- `0071_store_owner_pause.sql` — lets a store pause ITSELF. 0026 pins
+  `partners.status` behind a trigger (a store that sets its own status can
+  self-approve out of `pending`). That lock stays; the trigger gains one escape
+  hatch keyed on a transaction-local GUC that only `store_set_own_pause()` can
+  open, and even then only active <-> paused. **Changes a security trigger —
+  review before running.** Until applied the button fails closed.
+- `0072_reviews_stores_may_only_reply.sql` — RLS has no column granularity, so
+  0068's row-level `reviews_store_reply` let a partner edit `rating`, `text` and
+  `status` on reviews of their own products: a store could turn one star into
+  five, or bury every bad review. Trigger pins everything except `store_reply`.
+
+**Bugs found and fixed while building:**
+- `setPartnerStatus` wrote `'suspended'`, which 0068's new
+  `partners_status_check` rejects — the Suspend button could never have worked.
+  It is `'paused'` now, and the button says Pause.
+- `NotificationBell` reused one channel name. `supabase.channel(name)` returns
+  the EXISTING channel, and a subscribed channel refuses new `.on()` callbacks,
+  so any remount threw an uncaught error that took the whole dashboard down with
+  a client-side exception. Unique name per mount.
+- `/store/layout.tsx` redirected on `status !== 'active'`, so pausing a store
+  would have locked its owner out of the screen that unpauses it. Allow-list now.
+
+**Things deliberately NOT faked:** `partners` has no `instagram` column, so the
+store profile has no Instagram field. There is no image-upload helper in this
+app, so logo/cover are plainly-labelled URL fields. The storefront has no
+support thread, so the admin reply banner says so instead of claiming the
+customer was emailed. `support_tickets` and `reviews` are genuinely empty in
+production and render empty states; nothing was seeded.
