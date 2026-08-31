@@ -8,7 +8,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const PUBLIC_PREFIXES = ["/login", "/auth", "/logout"];
+// /apply is the one truly public page: a store that cannot reach the
+// application form cannot apply.
+const PUBLIC_PREFIXES = ["/login", "/auth", "/logout", "/apply"];
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
