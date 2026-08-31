@@ -78,7 +78,12 @@ export default async function AdminPartnersPage() {
             <li key={p.partner_id} className="rounded-card border border-line bg-surface p-4 shadow-rest">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-ink">{p.name}</p>
+                  <Link
+                    href={`/admin/stores/${p.partner_id}`}
+                    className="font-medium text-ink underline-offset-2 hover:underline"
+                  >
+                    {p.name}
+                  </Link>
                   {isDemo(p.owner_email) ? (
                     <span className="rounded-pill bg-status-amber-tint px-2 py-0.5 text-[10px] font-bold tracking-wide text-status-amber">
                       {t("admin.partners.demo")}
