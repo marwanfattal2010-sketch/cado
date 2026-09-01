@@ -382,7 +382,7 @@ export default async function AdminSupportPage({
     return (
       <div>
         <div className="mb-4 grid grid-cols-2 gap-3">
-          <KpiCard
+          <KpiCard tint="violet"
             label={t("admin.support.reviews.count")}
             value={String(shown)}
             hint={
@@ -393,7 +393,7 @@ export default async function AdminSupportPage({
                   : "every review"
             }
           />
-          <KpiCard
+          <KpiCard tint="amber"
             label={t("admin.support.reviews.avg")}
             value={avg == null ? "—" : avg.toFixed(1)}
             hint={

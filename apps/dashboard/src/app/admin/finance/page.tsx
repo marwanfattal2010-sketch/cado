@@ -111,10 +111,10 @@ export default async function AdminFinancePage({
           "Sales" was not, so each says what it actually is and the table states
           the difference rather than leaving the reader to notice it.
         */}
-        <KpiCard label="Order value" value={usd(totals.gmv)} hint={`${r.key} · incl. delivery`} />
-        <KpiCard label="CADO commission" value={usd(totals.commission)} hint="Your earnings" />
-        <KpiCard label="Delivery fees" value={usd(totals.delivery)} hint="Collected on orders" />
-        <KpiCard label="Orders" value={String(totals.orders)} hint="In this range" />
+        <KpiCard tint="coral" label="Order value" value={usd(totals.gmv)} hint={`${r.key} · incl. delivery`} />
+        <KpiCard tint="mint" label="CADO commission" value={usd(totals.commission)} hint="Your earnings" />
+        <KpiCard tint="sky" label="Delivery fees" value={usd(totals.delivery)} hint="Collected on orders" />
+        <KpiCard tint="amber" label="Orders" value={String(totals.orders)} hint="In this range" />
       </div>
 
       {days.length > 0 ? (

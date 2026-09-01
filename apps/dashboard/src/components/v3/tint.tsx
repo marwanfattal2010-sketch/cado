@@ -107,6 +107,9 @@ const ST: Record<string, { v: string; label: string }> = {
   rejected: { v: "--st-cancelled", label: "Rejected" },
   paid: { v: "--st-delivered", label: "Paid" },
   unpaid: { v: "--st-preparing", label: "Unpaid" },
+  // product review pipeline
+  approved: { v: "--st-delivered", label: "Live" },
+  confirmed: { v: "--st-preparing", label: "Confirmed" },
 };
 
 export function Pill({ status, label }: { status: string | null | undefined; label?: string }) {

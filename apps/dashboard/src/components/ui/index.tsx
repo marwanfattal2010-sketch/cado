@@ -1,10 +1,17 @@
 import Link from "next/link";
+import { Pill, TintCard, type Tint } from "@/components/v3/tint";
 
 /**
- * The V2 shared components — the visual grammar of the whole dashboard.
- * White card, hairline border, subtle shadow, persimmon only where something
- * is THE thing. Every number that reaches these components came from a real
- * query; nothing here generates or defaults a figure.
+ * The shared components, now speaking V4.
+ *
+ * Pages built before V4 — Gift cards, Finance, Support, Audit, Settings — are
+ * written against these. Rather than rewrite five files, the components
+ * themselves moved to the new grammar: 18px cards, a hairline header row, 26px
+ * page titles, and status pills that delegate to the V4 palette so a
+ * "Delivered" pill is the same green everywhere in the product.
+ *
+ * Every number that reaches these components came from a real query; nothing
+ * here generates or defaults a figure.
  */
 
 /* ------------------------------------------------------------- KpiCard --- */
@@ -14,6 +21,7 @@ export function KpiCard({
   value,
   delta,
   hint,
+  tint,
 }: {
   label: string;
   value: string;
@@ -21,20 +29,25 @@ export function KpiCard({
    *  period — a delta against nothing is a made-up number. */
   delta?: number | null;
   hint?: string;
+  /** Give the card a colour, matching Home's language. */
+  tint?: Tint;
 }) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface p-4 shadow-card">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
-      <p className="mt-1.5 font-display text-2xl text-ink">{value}</p>
+  const body = (
+    <>
+      <p className="text-[13px] font-medium text-secondary">{label}</p>
+      <p className="mt-0.5 text-[26px] font-bold leading-8 text-ink tnum">{value}</p>
       {delta != null && Number.isFinite(delta) ? (
-        <p className={`mt-1 text-xs font-semibold ${delta >= 0 ? "text-status-green" : "text-status-red"}`}>
-          {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(0)}% vs previous
+        <p className={`mt-0.5 text-[12px] font-semibold tnum ${delta >= 0 ? "text-status-green" : "text-status-red"}`}>
+          {delta >= 0 ? "↗" : "↘"} {Math.abs(delta).toFixed(0)}% vs previous
         </p>
       ) : hint ? (
-        <p className="mt-1 text-xs text-muted">{hint}</p>
+        <p className="mt-0.5 text-[12px] text-muted">{hint}</p>
       ) : null}
-    </div>
+    </>
   );
+
+  if (tint) return <TintCard tint={tint} className="p-4">{body}</TintCard>;
+  return <div className="rounded-card border border-line bg-surface p-4">{body}</div>;
 }
 
 /* ---------------------------------------------------------- StatusPill --- */
@@ -75,6 +88,15 @@ export const STORE_STATUS_LABEL: Record<string, string> = {
   rejected: "Rejected",
 };
 
+/**
+ * Delegates entirely to the V4 pill, so one status has one colour AND one word
+ * everywhere.
+ *
+ * It deliberately does NOT fall back to STATUS_STYLE's wording: doing that made
+ * the Audit log say "Awaiting action" while Orders said "Needs confirming"
+ * about the same row. Only an explicit `label` from the caller overrides — that
+ * is the store-vs-order case, where the same value genuinely means two things.
+ */
 export function StatusPill({
   status,
   label,
@@ -83,16 +105,7 @@ export function StatusPill({
   /** Override the word, keep the colour. See STORE_STATUS_LABEL. */
   label?: string;
 }) {
-  const s = STATUS_STYLE[status ?? ""] ?? {
-    bg: "bg-status-grey-tint",
-    fg: "text-status-grey",
-    label: status ?? "—",
-  };
-  return (
-    <span className={`inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold ${s.bg} ${s.fg}`}>
-      {label ?? s.label}
-    </span>
-  );
+  return <Pill status={status} label={label} />;
 }
 
 /* ---------------------------------------------------------- PageHeader --- */
@@ -107,10 +120,10 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
         {breadcrumb?.length ? (
-          <nav className="mb-1 flex items-center gap-1 text-xs text-muted">
+          <nav className="mb-1 flex items-center gap-1 text-[12.5px] text-muted">
             {breadcrumb.map((b, i) => (
               <span key={b.href} className="flex items-center gap-1">
                 {i > 0 ? <span aria-hidden>/</span> : null}
@@ -121,7 +134,7 @@ export function PageHeader({
             ))}
           </nav>
         ) : null}
-        <h1 className="font-display text-2xl text-ink">{title}</h1>
+        <h1 className="text-[26px] font-semibold leading-8 text-ink">{title}</h1>
       </div>
       {action}
     </div>
@@ -282,15 +295,17 @@ export function Card({
   children: React.ReactNode;
   className?: string;
 }) {
+  // Header sits in its own bar with a hairline under it, matching Panel — so a
+  // V4 page and a pre-V4 page have the same silhouette.
   return (
-    <section className={`rounded-2xl border border-line bg-surface p-4 shadow-card ${className}`}>
+    <section className={`overflow-hidden rounded-card border border-line bg-surface ${className}`}>
       {title ? (
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        <div className="flex min-h-[48px] items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+          <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
           {action}
         </div>
       ) : null}
-      {children}
+      <div className="p-4">{children}</div>
     </section>
   );
 }

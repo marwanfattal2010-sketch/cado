@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Pill } from "./tint";
 
 /**
  * V3 primitives. One density for the whole back-office: 12px radius, hairline
@@ -162,17 +163,13 @@ const STATUS: Record<string, { tint: string; fg: string; label: string }> = {
   approved: { tint: "bg-status-green-tint", fg: "text-status-green", label: "Live" },
 };
 
+/**
+ * Delegates to the V4 pill so one status has one colour and one word across
+ * the product. STATUS above stays as the fallback wording for values the V4
+ * map does not carry.
+ */
 export function StatusPill({ status, label }: { status: string | null | undefined; label?: string }) {
-  const s = STATUS[status ?? ""] ?? {
-    tint: "bg-status-grey-tint",
-    fg: "text-status-grey",
-    label: status ?? "—",
-  };
-  return (
-    <span className={`inline-flex items-center whitespace-nowrap rounded-pill px-2 py-0.5 text-[11px] font-semibold ${s.tint} ${s.fg}`}>
-      {label ?? s.label}
-    </span>
-  );
+  return <Pill status={status} label={label} />;
 }
 
 /** The same words, without the pill — for a store's status line, say. */
