@@ -284,7 +284,9 @@ export default async function AdminHome({
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-12">
+      {/* One height for the row. Without it the chart (330px) sat beside the
+          live list (635px) and left a 300px hole underneath it. */}
+      <div className="grid gap-4 xl:h-[420px] xl:grid-cols-12">
         <div className="xl:col-span-8"><OverviewChart points={monthly} /></div>
         <div className="xl:col-span-4"><InMotion initial={motion} /></div>
       </div>

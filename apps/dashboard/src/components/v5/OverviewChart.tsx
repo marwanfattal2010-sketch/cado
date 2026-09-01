@@ -39,7 +39,9 @@ export function OverviewChart({ points }: { points: MonthPoint[] }) {
   const thisMonth = points.length ? points[points.length - 1].month : null;
 
   return (
-    <section className="rounded-card border border-line bg-surface">
+    /* h-full + a flexing chart: this card is the SHORT one in its row, and
+       letting it stretch is what closes the gap under it. */
+    <section className="flex h-full flex-col rounded-card border border-line bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
         <div>
           <h2 className="text-[15px] font-semibold text-ink">Overview</h2>
@@ -71,7 +73,7 @@ export function OverviewChart({ points }: { points: MonthPoint[] }) {
         </div>
       </div>
 
-      <div className="p-3" style={{ height: 260 }}>
+      <div className="min-h-[240px] flex-1 p-3">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={points}

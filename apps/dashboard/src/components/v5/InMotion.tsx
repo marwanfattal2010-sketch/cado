@@ -68,7 +68,10 @@ export function InMotion({ initial }: { initial: MotionRow[] }) {
   }, []);
 
   return (
-    <section className="flex h-full flex-col rounded-card border border-line bg-surface">
+    /* overflow-hidden + a scrolling list: eight parcels made this card twice
+       the height of the chart beside it, and the row is only as short as its
+       tallest card — which left a 300px hole under the chart. */
+    <section className="flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface">
       <div className="flex h-12 items-center justify-between border-b border-line px-4">
         <div className="flex items-center gap-2">
           <h2 className="text-[15px] font-semibold text-ink">In motion right now</h2>
@@ -90,7 +93,7 @@ export function InMotion({ initial }: { initial: MotionRow[] }) {
           <p className="text-[13.5px] text-secondary">Nothing on the road right now.</p>
         </div>
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="flex-1 divide-y divide-line overflow-y-auto">
           {rows.map((r) => {
             const step = stepOf(r.status);
             return (
