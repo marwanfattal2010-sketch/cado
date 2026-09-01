@@ -1,67 +1,147 @@
-/* Design tokens lifted from apps/web/src/index.css so the dashboard is visibly
-   the same brand. Values are duplicated, not imported, because the storefront
-   is a separate Vite app and must not be coupled to this one. Keep in sync by
-   hand if the storefront's palette ever moves. */
+/* ===========================================================================
+   CADO back-office — V3 design system.
+   ===========================================================================
+
+   The dashboard deliberately does NOT look like the storefront. The storefront
+   is cream, serif and playful because it is selling gifts. This is a tool that
+   has to feel calm, dense and expensive for someone staring at it all day.
+
+   Two themes, both defined as VALUES for the same token names, so every page
+   in the app re-skins without touching a single component:
+
+     Midnight (default)  dark, the reference Marwan sent
+     Paper               light, for daylight and printing
+
+   Persimmon #F94E33 is the ONE accent. Primary buttons, the active nav item,
+   the current-day marker, the assistant's send button, needs-attention dots.
+   Nowhere else. No gradients, no glow — colour is information here, not
+   decoration, and a UI that shouts everywhere says nothing.
+   ========================================================================= */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --canvas: #f7f3ed;
-  --surface: #ffffff;
-  --surface-sunk: #efe9e0;
-  --ink: #17130f;
-  --text: #17130f;
-  --text-muted: #6b625a;
-  --text-inverse: #f7f3ed;
-  --ribbon: #F94E33; /* persimmon — the storefront accent, V2 */
-  --ribbon-deep: #D63A20;
-  --ribbon-tint: #FDEDE9;
+/* --------------------------------------------------------- Midnight ------ */
+:root,
+:root[data-theme="midnight"] {
+  --canvas: #0e0f13;
+  --surface: #15171d;
+  --surface-sunk: #1c1f27;
+  --surface-raised: #1c1f27;
+  --ink: #f3f4f6;
+  --text: #f3f4f6;
+  --text-secondary: #a2a8b6;
+  --text-muted: #6b7280;
+  --text-inverse: #0e0f13;
+  --border: #262a34;
+  --border-strong: #333846;
+
+  --ribbon: #f94e33;
+  --ribbon-deep: #d63a20;
+  /* Tints are translucent, not mixed with a fixed background, so a pill sits
+     correctly on canvas AND on a raised card. */
+  --ribbon-tint: rgba(249, 78, 51, 0.14);
   --gold: #c9a227;
-  --today: #1f6b4a;
-  --today-tint: #e4f0ea;
-  --alert: #c2410c;
-  --border: #e2d9cd;
 
-  --persimmon: #F94E33;
-  --status-indigo: #4338ca;
-  --status-indigo-tint: #e8e7fa;
-  --status-purple: #7e22ce;
-  --status-purple-tint: #f3e8fd;
+  --today: #3ddc97;
+  --today-tint: rgba(61, 220, 151, 0.14);
+  --alert: #ff5c5c;
 
-  /* Status palette (spec): amber awaiting, green confirmed, blue in progress,
-     grey completed, red rejected/cancelled. */
-  --status-amber: #b45309;
-  --status-amber-tint: #fdf0dd;
-  --status-green: #1f6b4a;
-  --status-green-tint: #e4f0ea;
-  --status-blue: #1e5f8f;
-  --status-blue-tint: #e3eef6;
-  --status-grey: #6b625a;
-  --status-grey-tint: #efe9e0;
-  --status-red: #b91c1c;
-  --status-red-tint: #f6e7e9;
+  --status-green: #3ddc97;
+  --status-green-tint: rgba(61, 220, 151, 0.14);
+  --status-amber: #f5b94a;
+  --status-amber-tint: rgba(245, 185, 74, 0.14);
+  --status-red: #ff5c5c;
+  --status-red-tint: rgba(255, 92, 92, 0.14);
+  --status-blue: #5b9cff;
+  --status-blue-tint: rgba(91, 156, 255, 0.14);
+  --status-indigo: #8b9dff;
+  --status-indigo-tint: rgba(139, 157, 255, 0.14);
+  --status-purple: #b98cff;
+  --status-purple-tint: rgba(185, 140, 255, 0.14);
+  --status-grey: #6b7280;
+  --status-grey-tint: rgba(107, 114, 128, 0.16);
 
-  --radius-card: 14px;
+  --skeleton-hi: #232733;
+
+  --radius-card: 12px;
   --radius-pill: 999px;
-  --radius-sheet: 22px;
-  --shadow-rest: 0 1px 3px rgba(23, 19, 15, 0.06);
-  --shadow-lift: 0 6px 20px rgba(23, 19, 15, 0.1);
+  --radius-sheet: 16px;
+  /* Dark surfaces separate by border, never by shadow. */
+  --shadow-rest: none;
+  --shadow-lift: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
 
-html, body {
+/* ------------------------------------------------------------ Paper ------ */
+:root[data-theme="paper"] {
+  --canvas: #f7f6f2;
+  --surface: #ffffff;
+  --surface-sunk: #f1efe9;
+  --surface-raised: #ffffff;
+  --ink: #141518;
+  --text: #141518;
+  --text-secondary: #5c6070;
+  --text-muted: #8b8f9c;
+  --text-inverse: #ffffff;
+  --border: #e6e4dd;
+  --border-strong: #d6d3c9;
+
+  --ribbon: #f94e33;
+  --ribbon-deep: #d63a20;
+  --ribbon-tint: rgba(249, 78, 51, 0.10);
+  --gold: #a8871f;
+
+  --today: #12805a;
+  --today-tint: rgba(18, 128, 90, 0.10);
+  --alert: #c8352f;
+
+  --status-green: #12805a;
+  --status-green-tint: rgba(18, 128, 90, 0.10);
+  --status-amber: #a86a12;
+  --status-amber-tint: rgba(168, 106, 18, 0.10);
+  --status-red: #c8352f;
+  --status-red-tint: rgba(200, 53, 47, 0.10);
+  --status-blue: #2b6bc4;
+  --status-blue-tint: rgba(43, 107, 196, 0.10);
+  --status-indigo: #4f46e5;
+  --status-indigo-tint: rgba(79, 70, 229, 0.10);
+  --status-purple: #7e22ce;
+  --status-purple-tint: rgba(126, 34, 206, 0.10);
+  --status-grey: #6b7280;
+  --status-grey-tint: rgba(107, 114, 128, 0.10);
+
+  --skeleton-hi: #e8e6df;
+
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --radius-sheet: 16px;
+  --shadow-rest: 0 1px 2px rgba(20, 21, 24, 0.05);
+  --shadow-lift: 0 12px 32px rgba(20, 21, 24, 0.12);
+}
+
+html,
+body {
   background: var(--canvas);
   color: var(--text);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Manrope", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Skeleton shimmer — the spec wants skeletons, not spinners. */
+/* Every figure in a back-office sits in a column next to another figure.
+   Tabular numerals keep those columns straight. */
+.tnum,
+table,
+input[inputmode="decimal"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skeletons, never spinners — a spinner says "wait", a skeleton says what is
+   about to appear. */
 .skeleton {
   background: linear-gradient(
     90deg,
     var(--surface-sunk) 25%,
-    #f3ece2 37%,
+    var(--skeleton-hi) 37%,
     var(--surface-sunk) 63%
   );
   background-size: 800px 100%;
@@ -76,4 +156,25 @@ html, body {
 :focus-visible {
   outline: 2px solid var(--ribbon);
   outline-offset: 2px;
+}
+
+/* Dense scrollbars; the default light ones look broken on Midnight. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Nothing animates on load. Only in response to something the user did. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

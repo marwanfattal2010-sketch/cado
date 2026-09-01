@@ -2,78 +2,64 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  LayoutDashboard, ReceiptText, Truck, Store, Package, Users, Gift,
+  Wallet, Megaphone, LifeBuoy, UserCog, ScrollText, Settings as Cog,
+  PanelLeftClose, PanelLeft, LogOut,
+} from "lucide-react";
 import type { DashboardRole } from "@/lib/auth";
 import { BrandLogo } from "./BrandLogo";
 import { NotificationBell } from "./NotificationBell";
+import { ThemeToggle } from "./ThemeToggle";
+import { GlobalSearch } from "./GlobalSearch";
 
 /**
- * The V2 shell: grouped left sidebar on desktop, bottom bar + "More" sheet on
- * mobile (Marwan runs this from his phone), top strip with the role and sign
- * out. Persimmon marks exactly one thing: where you are.
+ * V3 shell: 240px sidebar collapsing to 64px, 56px top bar, one flat nav list.
  *
- * Every href below is a page that exists. The spec's full IA lists sections
- * that are not built yet (Marketing, Reports, Delivery…) — those are OMITTED
- * rather than rendered as dead links, and get added here the day their page
- * lands. A professional tool never 404s from its own navigation.
+ * The V2 shell grouped items under OPERATE / MONEY / SYSTEM headings. Those
+ * headings were noise — thirteen items do not need three labels to be found —
+ * so the order itself carries the meaning: what you do all day first, money in
+ * the middle, configuration last, with one hairline before the admin-only tail.
+ *
+ * Every href here is a page that exists. A nav that 404s is worse than a nav
+ * that is missing an entry, so new sections are added the day their page lands.
  */
 
-type NavItem = { href: string; label: string; icon: string };
-type NavGroup = { heading?: string; items: NavItem[] };
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
 
-const ADMIN_NAV: NavGroup[] = [
-  {
-    items: [{ href: "/admin", label: "Overview", icon: "◧" }],
-  },
-  {
-    heading: "Operate",
-    items: [
-      { href: "/admin/orders", label: "Orders", icon: "▤" },
-      { href: "/admin/stores", label: "Stores", icon: "⌂" },
-      { href: "/admin/products", label: "Products", icon: "▦" },
-      { href: "/admin/delivery", label: "Delivery", icon: "➔" },
-      { href: "/admin/customers", label: "Customers", icon: "◉" },
-      { href: "/admin/support", label: "Support", icon: "✆" },
-    ],
-  },
-  {
-    heading: "Money",
-    items: [
-      { href: "/admin/finance", label: "Finance", icon: "◈" },
-      { href: "/admin/gift-cards", label: "Gift cards", icon: "▣" },
-    ],
-  },
-  {
-    heading: "System",
-    items: [
-      { href: "/admin/audit", label: "Audit log", icon: "≡" },
-      { href: "/admin/invites", label: "Team", icon: "✉" },
-      { href: "/admin/settings", label: "Settings", icon: "⚙" },
-    ],
-  },
+const ADMIN_NAV: NavItem[] = [
+  { href: "/admin", label: "Home", icon: LayoutDashboard },
+  { href: "/admin/orders", label: "Orders", icon: ReceiptText },
+  { href: "/admin/delivery", label: "Delivery", icon: Truck },
+  { href: "/admin/stores", label: "Stores", icon: Store },
+  { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/customers", label: "Customers", icon: Users },
+  { href: "/admin/gift-cards", label: "Gift cards", icon: Gift },
+  { href: "/admin/finance", label: "Finance", icon: Wallet },
+  { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/admin/support", label: "Support", icon: LifeBuoy },
+];
+/** Rendered after a hairline divider. */
+const ADMIN_NAV_TAIL: NavItem[] = [
+  { href: "/admin/invites", label: "Team", icon: UserCog },
+  { href: "/admin/audit", label: "Audit log", icon: ScrollText },
+  { href: "/admin/settings", label: "Settings", icon: Cog },
 ];
 
-const STORE_NAV: NavGroup[] = [
-  {
-    items: [
-      { href: "/store", label: "Overview", icon: "◧" },
-      { href: "/store/orders", label: "Orders", icon: "▤" },
-      { href: "/store/products", label: "Products", icon: "▦" },
-      { href: "/store/payouts", label: "Earnings", icon: "◈" },
-    ],
-  },
-  {
-    heading: "Your shop",
-    items: [
-      { href: "/store/profile", label: "Store profile", icon: "❋" },
-      { href: "/store/reviews", label: "Reviews", icon: "★" },
-      { href: "/store/account", label: "Settings", icon: "⚙" },
-    ],
-  },
+const STORE_NAV: NavItem[] = [
+  { href: "/store", label: "Home", icon: LayoutDashboard },
+  { href: "/store/orders", label: "Orders", icon: ReceiptText },
+  { href: "/store/products", label: "Products", icon: Package },
+  { href: "/store/payouts", label: "Finance", icon: Wallet },
+  { href: "/store/reviews", label: "Reviews", icon: LifeBuoy },
+];
+const STORE_NAV_TAIL: NavItem[] = [
+  { href: "/store/profile", label: "Store profile", icon: Store },
+  { href: "/store/account", label: "Settings", icon: Cog },
 ];
 
-/** The five slots the mobile bottom bar holds; the rest go in the sheet. */
-const MOBILE_PRIMARY = 4;
+const COLLAPSE_KEY = "cado-nav-collapsed";
 
 export function AppShell({
   role,
@@ -84,140 +70,144 @@ export function AppShell({
   storeName?: string | null;
   children: React.ReactNode;
 }) {
-  const groups = role === "admin" ? ADMIN_NAV : STORE_NAV;
-  const flat = groups.flatMap((g) => g.items);
+  const head = role === "admin" ? ADMIN_NAV : STORE_NAV;
+  const tail = role === "admin" ? ADMIN_NAV_TAIL : STORE_NAV_TAIL;
   const pathname = usePathname();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileNav, setMobileNav] = useState(false);
 
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => setMobileNav(false), [pathname]);
+
+  const toggleCollapse = () => {
+    setCollapsed((v) => {
+      try {
+        localStorage.setItem(COLLAPSE_KEY, v ? "0" : "1");
+      } catch {
+        /* ignore */
+      }
+      return !v;
+    });
+  };
+
+  // "/admin" and "/store" are exact; everything else matches its subtree, so
+  // /admin/orders/123 keeps Orders lit.
   const isActive = (href: string) =>
     href === "/admin" || href === "/store" ? pathname === href : pathname.startsWith(href);
 
+  const NavLink = ({ item }: { item: NavItem }) => {
+    const Icon = item.icon;
+    const active = isActive(item.href);
+    return (
+      <Link
+        href={item.href}
+        title={collapsed ? item.label : undefined}
+        aria-current={active ? "page" : undefined}
+        className={`flex items-center gap-3 rounded-card px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 ${
+          active ? "bg-ribbon-tint text-ribbon" : "text-secondary hover:bg-surface-sunk hover:text-ink"
+        } ${collapsed ? "justify-center px-0" : ""}`}
+      >
+        <span className="shrink-0"><Icon size={18} /></span>
+        {collapsed ? null : <span className="truncate">{item.label}</span>}
+      </Link>
+    );
+  };
+
+  const navBody = (
+    <>
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
+        {head.map((i) => <NavLink key={i.href} item={i} />)}
+        <div className="my-2 border-t border-line" />
+        {tail.map((i) => <NavLink key={i.href} item={i} />)}
+      </nav>
+      <form action="/logout" method="post" className="px-2 pb-2">
+        <button
+          type="submit"
+          title={collapsed ? "Sign out" : undefined}
+          className={`flex w-full items-center gap-3 rounded-card px-2.5 py-2 text-[13px] font-medium text-muted transition-colors hover:bg-surface-sunk hover:text-ink ${
+            collapsed ? "justify-center px-0" : ""
+          }`}
+        >
+          <span className="shrink-0"><LogOut size={18} /></span>
+          {collapsed ? null : "Sign out"}
+        </button>
+      </form>
+    </>
+  );
+
   return (
-    <div className="min-h-screen md:flex">
+    <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 md:flex">
-        <div className="px-2">
-          <BrandLogo variant="ink" height={26} />
-          <p className="mt-1 text-[11px] text-muted">
-            {role === "admin" ? "CADO admin" : storeName ?? "Your store"}
-          </p>
-        </div>
-        <div className="mt-3 px-2"><NotificationBell /></div>
-        <nav className="mt-3 flex-1 space-y-4 overflow-y-auto">
-          {groups.map((g, i) => (
-            <div key={i}>
-              {g.heading ? (
-                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted">
-                  {g.heading}
-                </p>
-              ) : null}
-              <div className="space-y-0.5">
-                {g.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2.5 rounded-card px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
-                      isActive(item.href)
-                        ? "bg-ribbon-tint text-ribbon"
-                        : "text-ink hover:bg-surface-sunk"
-                    }`}
-                  >
-                    <span aria-hidden className="w-4 text-center text-xs">
-                      {item.icon}
-                    </span>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+      <aside
+        className={`hidden shrink-0 flex-col border-r border-line bg-surface py-3 transition-[width] duration-150 md:flex ${
+          collapsed ? "w-16" : "w-60"
+        }`}
+      >
+        <div className={`mb-3 flex items-center px-3 ${collapsed ? "justify-center" : "justify-between"}`}>
+          {collapsed ? null : (
+            <div className="min-w-0">
+              <BrandLogo variant="ink" height={22} />
+              <p className="mt-0.5 truncate text-[11px] text-muted">
+                {role === "admin" ? "Back office" : storeName ?? "Your store"}
+              </p>
             </div>
-          ))}
-        </nav>
-        <SignOut />
-      </aside>
-
-      <div className="min-w-0 flex-1 pb-20 md:pb-0">
-        {/* Mobile top bar */}
-        <header className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 md:hidden">
-          <div>
-            <BrandLogo variant="ink" height={22} />
-            <p className="text-[10px] text-muted">{role === "admin" ? "CADO admin" : storeName ?? ""}</p>
-          </div>
-          <div className="flex items-center gap-1"><NotificationBell /><SignOut compact /></div>
-        </header>
-
-        <main className="mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
-      </div>
-
-      {/* Mobile bottom bar: first N items + More */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface md:hidden">
-        {flat.slice(0, MOBILE_PRIMARY).map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium ${
-              isActive(item.href) ? "text-ribbon" : "text-muted"
-            }`}
-          >
-            <span aria-hidden className="text-sm leading-none">
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
-        ))}
-        {flat.length > MOBILE_PRIMARY ? (
+          )}
           <button
             type="button"
-            onClick={() => setMoreOpen(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium text-muted"
+            onClick={toggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="flex h-7 w-7 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-sunk hover:text-ink"
           >
-            <span aria-hidden className="text-sm leading-none">
-              ⋯
-            </span>
-            More
+            {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
           </button>
-        ) : null}
-      </nav>
+        </div>
+        {navBody}
+      </aside>
 
-      {/* The More sheet */}
-      {moreOpen ? (
-        <div className="fixed inset-0 z-30 flex items-end bg-black/40 md:hidden" onClick={() => setMoreOpen(false)}>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface px-3 md:px-4">
+          <button
+            type="button"
+            onClick={() => setMobileNav(true)}
+            aria-label="Open menu"
+            className="flex h-8 w-8 items-center justify-center rounded-card text-muted hover:bg-surface-sunk hover:text-ink md:hidden"
+          >
+            <PanelLeft size={18} />
+          </button>
+          <div className="md:hidden"><BrandLogo variant="ink" height={18} /></div>
+          <div className="min-w-0 flex-1"><GlobalSearch role={role} /></div>
+          <ThemeToggle />
+          <NotificationBell />
+        </header>
+
+        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 md:px-6">{children}</main>
+      </div>
+
+      {/* Mobile drawer nav */}
+      {mobileNav ? (
+        <div className="fixed inset-0 z-40 flex md:hidden" onClick={() => setMobileNav(false)}>
+          <div className="absolute inset-0 bg-black/60" />
           <div
-            className="w-full rounded-t-2xl bg-surface p-4 pb-8"
-            role="dialog"
-            aria-label="More sections"
+            className="relative flex w-64 flex-col border-r border-line bg-surface py-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="grid grid-cols-3 gap-2">
-              {flat.slice(MOBILE_PRIMARY).map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMoreOpen(false)}
-                  className={`flex flex-col items-center gap-1 rounded-card px-2 py-3 text-xs font-medium ${
-                    isActive(item.href) ? "bg-ribbon-tint text-ribbon" : "text-ink hover:bg-surface-sunk"
-                  }`}
-                >
-                  <span aria-hidden>{item.icon}</span>
-                  {item.label}
-                </Link>
-              ))}
+            <div className="mb-3 px-3">
+              <BrandLogo variant="ink" height={22} />
+              <p className="mt-0.5 text-[11px] text-muted">
+                {role === "admin" ? "Back office" : storeName ?? "Your store"}
+              </p>
             </div>
+            {navBody}
           </div>
         </div>
       ) : null}
     </div>
-  );
-}
-
-function SignOut({ compact }: { compact?: boolean }) {
-  return (
-    <form action="/logout" method="post">
-      <button
-        type="submit"
-        className="rounded-pill px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-ribbon"
-      >
-        {compact ? "Sign out" : "↩ Sign out"}
-      </button>
-    </form>
   );
 }

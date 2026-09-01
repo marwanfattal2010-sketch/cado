@@ -12,11 +12,14 @@
     "test:isolation": "tsx scripts/test-cross-store-isolation.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
+    "lucide-react": "^1.37.0",
     "next": "^15.1.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "recharts": "^3.10.1",
     "server-only": "^0.0.1",
     "zod": "^3.24.1"
   },

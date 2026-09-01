@@ -26,6 +26,9 @@ module.exports = {
           deep: "var(--ribbon-deep)",
           tint: "var(--ribbon-tint)",
         },
+        "surface-raised": "var(--surface-raised)",
+        secondary: "var(--text-secondary)",
+        "line-strong": "var(--border-strong)",
         gold: "var(--gold)",
         today: { DEFAULT: "var(--today)", tint: "var(--today-tint)" },
         alert: "var(--alert)",
@@ -39,9 +42,21 @@ module.exports = {
         "status-indigo": { DEFAULT: "var(--status-indigo)", tint: "var(--status-indigo-tint)" },
         "status-purple": { DEFAULT: "var(--status-purple)", tint: "var(--status-purple-tint)" },
       },
+      /*
+       * ONE family. The storefront's Fraunces/Inter pairing is a shop's voice;
+       * a back-office wants a single neutral face so nothing competes with the
+       * numbers. `display` is kept pointing at the same family so the pages
+       * still carrying font-display keep working while they are migrated.
+       */
       fontFamily: {
-        display: ['"Fraunces"', "Georgia", "serif"],
-        body: ['"Inter"', "system-ui", "sans-serif"],
+        display: ['"Manrope"', "system-ui", "sans-serif"],
+        body: ['"Manrope"', "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        "table": ["13px", { lineHeight: "18px" }],
+        "kpi": ["28px", { lineHeight: "32px", fontWeight: "700" }],
+        "page-title": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+        "section": ["14px", { lineHeight: "20px", fontWeight: "600" }],
       },
       borderRadius: {
         sm: "4px",

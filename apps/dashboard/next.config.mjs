@@ -39,9 +39,13 @@ const csp = [
   isDev
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
     : "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
+  /* Manrope is served by Google Fonts: the stylesheet comes from
+     fonts.googleapis.com and the font files it references from
+     fonts.gstatic.com. Both hosts are needed or the whole app silently falls
+     back to system sans. */
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   `img-src 'self' data: blob: ${supabaseOrigin}`.trim(),
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   /*
    * Supabase Realtime is a WEBSOCKET, and a wss:// URL is not covered by the
    * https:// origin — CSP treats the schemes as different sources. Production

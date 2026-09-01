@@ -11,12 +11,30 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f7f3ed",
+  themeColor: "#0e0f13",
 };
+
+/**
+ * Sets the theme BEFORE first paint. A React effect would run after hydration
+ * and show one frame of the wrong theme on every single load. Falls back to
+ * midnight — the default — if storage is unavailable (private windows throw on
+ * access, they do not merely return null).
+ */
+const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem('cado-theme');document.documentElement.setAttribute('data-theme',t==='paper'?'paper':'midnight')}catch(e){document.documentElement.setAttribute('data-theme','midnight')}})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="midnight" suppressHydrationWarning>
+      <head>
+        {/* One family, loaded once. Weights match the design system. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       <body className="min-h-screen bg-canvas text-text antialiased">{children}</body>
     </html>
   );
