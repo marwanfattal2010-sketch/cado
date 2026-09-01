@@ -15,6 +15,82 @@ import { ArrowUp, BarChart3, FileText, PackageSearch, Sparkles } from "lucide-re
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+/**
+ * Just enough markdown for what the assistant actually returns: paragraphs,
+ * "- " bullets, and pipe tables. A full markdown library for three shapes would
+ * be more dependency than feature.
+ */
+function Rich({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const blocks: React.ReactNode[] = [];
+  let i = 0;
+  let key = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.trim().startsWith("|")) {
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        const cells = lines[i].split("|").slice(1, -1).map((c) => c.trim());
+        // The |---|---| separator row carries no data.
+        if (!cells.every((c) => /^-{2,}$/.test(c))) rows.push(cells);
+        i++;
+      }
+      const [head, ...body] = rows;
+      blocks.push(
+        <div key={key++} className="my-1.5 overflow-x-auto">
+          <table className="w-full border-collapse text-[12px]">
+            <thead>
+              <tr>
+                {head?.map((h, n) => (
+                  <th key={n} className="border-b border-line px-1.5 py-1 text-left font-semibold text-muted">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {body.map((r, n) => (
+                <tr key={n}>
+                  {r.map((c, m) => (
+                    <td key={m} className="border-b border-line/60 px-1.5 py-1 text-ink tnum">
+                      {c}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
+    if (line.trim().startsWith("- ")) {
+      const items: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("- ")) {
+        items.push(lines[i].trim().slice(2));
+        i++;
+      }
+      blocks.push(
+        <ul key={key++} className="my-1 list-disc space-y-0.5 pl-4">
+          {items.map((t, n) => <li key={n}>{t}</li>)}
+        </ul>
+      );
+      continue;
+    }
+
+    if (line.trim() === "") {
+      i++;
+      continue;
+    }
+    blocks.push(<p key={key++} className="my-0.5">{line}</p>);
+    i++;
+  }
+  return <>{blocks}</>;
+}
+
 const CHIPS = [
   { icon: BarChart3, label: "Analytics", prompt: "Show revenue by store for the last 30 days." },
   { icon: FileText, label: "Reports", prompt: "Summarise this month's orders: how many, how much, and which stores." },
@@ -26,6 +102,8 @@ export function AssistantPanel() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [notConfigured, setNotConfigured] = useState(false);
+  /** Set once the server tells us it answered without a model. */
+  const [preview, setPreview] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,6 +124,7 @@ export function AssistantPanel() {
         body: JSON.stringify({ messages: next }),
       });
       const data = await res.json();
+      if (data.preview) setPreview(true);
       if (res.status === 503 && data.error === "not_configured") {
         setNotConfigured(true);
         setMessages(next);
@@ -84,10 +163,18 @@ export function AssistantPanel() {
     <section className="flex flex-col rounded-card border border-line bg-surface" style={{ height: 420 }}>
       <div className="flex items-center gap-2 border-b border-line px-4 py-3">
         <Sparkles size={16} className="text-ribbon" />
-        <div>
+        <div className="min-w-0 flex-1">
           <h2 className="text-[14px] font-semibold leading-4 text-ink">CADO Assistant</h2>
           <p className="text-[11px] text-muted">Ask about sales, orders, stores or customers.</p>
         </div>
+        {preview ? (
+          <span
+            className="shrink-0 rounded-pill bg-status-amber-tint px-2 py-0.5 text-[10px] font-semibold text-status-amber"
+            title="Real numbers from your database, but no AI yet — the shortcut questions work, free text needs the API key."
+          >
+            Preview
+          </span>
+        ) : null}
       </div>
 
       <div ref={scroller} className="flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
@@ -115,13 +202,13 @@ export function AssistantPanel() {
           messages.map((m, i) => (
             <div
               key={i}
-              className={`max-w-[92%] whitespace-pre-wrap rounded-card px-3 py-2 text-[13px] leading-5 ${
+              className={`max-w-[92%] rounded-card px-3 py-2 text-[13px] leading-5 ${
                 m.role === "user"
                   ? "ml-auto bg-ribbon-tint text-ink"
                   : "mr-auto border border-line bg-canvas text-secondary"
               }`}
             >
-              {m.content}
+              <Rich text={m.content} />
             </div>
           ))
         )}

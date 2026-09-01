@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getDashboardUser } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
 import { callRpc } from "@/lib/rpc";
+import { answerFromData, classify, PREVIEW_FALLBACK } from "./preview";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -213,14 +214,6 @@ export async function POST(req: Request) {
   const user = await getDashboardUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "not_configured", message: "The assistant needs an ANTHROPIC_API_KEY to be set." },
-      { status: 503 }
-    );
-  }
-
   let body: { messages?: { role: "user" | "assistant"; content: string }[] };
   try {
     body = await req.json();
@@ -231,6 +224,21 @@ export async function POST(req: Request) {
   if (history.length === 0) return NextResponse.json({ error: "Nothing asked." }, { status: 400 });
 
   const supabase = await createServerClient();
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  /*
+   * PREVIEW MODE. With no API key there is no model — but there is no reason to
+   * show a dead box either. The three shortcut questions run the SAME real
+   * queries the model would have called, and return the real answer. Nothing is
+   * invented; what is missing is only free-text understanding, and the reply
+   * says so when a question falls outside the three.
+   */
+  if (!apiKey) {
+    const question = history[history.length - 1]?.content ?? "";
+    const topic = classify(question);
+    const reply = topic ? await answerFromData(supabase, topic) : PREVIEW_FALLBACK;
+    return NextResponse.json({ reply, preview: true });
+  }
   const anthropic = new Anthropic({ apiKey });
 
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());

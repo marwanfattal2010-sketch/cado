@@ -470,6 +470,61 @@ export type Database = {
           },
         ]
       }
+      delivery_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          cost: number | null
+          delivered_at: string | null
+          driver_id: string
+          id: string
+          picked_up_at: string | null
+          sub_order_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          cost?: number | null
+          delivered_at?: string | null
+          driver_id: string
+          id?: string
+          picked_up_at?: string | null
+          sub_order_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          cost?: number | null
+          delivered_at?: string | null
+          driver_id?: string
+          id?: string
+          picked_up_at?: string | null
+          sub_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_sub_order_id_fkey"
+            columns: ["sub_order_id"]
+            isOneToOne: true
+            referencedRelation: "sub_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           active: boolean
@@ -477,6 +532,8 @@ export type Database = {
           id: string
           name: string
           phone: string
+          profile_id: string | null
+          vehicle: string | null
         }
         Insert: {
           active?: boolean
@@ -484,6 +541,8 @@ export type Database = {
           id?: string
           name: string
           phone: string
+          profile_id?: string | null
+          vehicle?: string | null
         }
         Update: {
           active?: boolean
@@ -491,8 +550,18 @@ export type Database = {
           id?: string
           name?: string
           phone?: string
+          profile_id?: string | null
+          vehicle?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "drivers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {
@@ -2543,6 +2612,27 @@ export type Database = {
           status: string
         }[]
       }
+      admin_home_summary: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          active_customers: number
+          avg_order_value: number
+          cado_earned: number
+          commission: number
+          delivery_fees: number
+          gmv: number
+          had_previous: boolean
+          orders: number
+          owed_to_stores: number
+          prev_active_customers: number
+          prev_avg_order_value: number
+          prev_cado_earned: number
+          prev_commission: number
+          prev_delivery_fees: number
+          prev_gmv: number
+          prev_orders: number
+        }[]
+      }
       admin_list_admins: {
         Args: never
         Returns: {
@@ -2622,6 +2712,16 @@ export type Database = {
         Args: { p_status: string; p_sub_order_id: string }
         Returns: undefined
       }
+      admin_top_products: {
+        Args: { p_from: string; p_limit?: number; p_to: string }
+        Returns: {
+          partner_name: string
+          product_id: string
+          revenue: number
+          title: string
+          units: number
+        }[]
+      }
       cado_is_open: { Args: never; Returns: boolean }
       cado_next_open_at: { Args: never; Returns: string }
       cancel_gift_card_pool: { Args: { p_pool_id: string }; Returns: undefined }
@@ -2676,6 +2776,26 @@ export type Database = {
       }
       current_client_ip: { Args: never; Returns: string }
       delivery_fee_usd: { Args: never; Returns: number }
+      driver_my_deliveries: {
+        Args: never
+        Returns: {
+          cod_amount: number
+          drop_off: string
+          items: number
+          order_number: string
+          pickup_address: string
+          recipient_name: string
+          recipient_phone: string
+          status: string
+          store_name: string
+          store_phone: string
+          sub_order_id: string
+        }[]
+      }
+      driver_set_delivery_status: {
+        Args: { p_status: string; p_sub_order_id: string }
+        Returns: string
+      }
       generate_card_number: { Args: never; Returns: string }
       generate_gift_card_code: { Args: never; Returns: string }
       generate_gift_card_pin: { Args: never; Returns: string }

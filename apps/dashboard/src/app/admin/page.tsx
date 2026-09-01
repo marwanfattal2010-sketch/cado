@@ -83,8 +83,16 @@ export default async function AdminHome({
       supabase.from("partners").select("id, name").eq("store_of_week", true).limit(3),
     ]);
 
-  // 0074 may not be applied yet; say so rather than render zeroes.
+  /*
+   * ANY failure here must be visible. The first version only checked for
+   * PGRST202 ("function not applied yet") and treated every other error as
+   * "no data" — so when 0074 shipped with an ambiguous column reference, Home
+   * rendered $0 revenue and $0 owed to stores above a chart of real August
+   * sales, and looked like a quiet month rather than a broken query. A money
+   * screen may show a zero only when the answer is genuinely zero.
+   */
   const summaryMissing = isMissingFunction(summaryRes.error);
+  const summaryError = summaryRes.error && !summaryMissing ? summaryRes.error.message : null;
   const s = (summaryRes.data ?? [])[0] ?? null;
   const days = (dailyRes.data ?? []) as DayRow[];
   const topProducts = topProductsRes.data ?? [];
@@ -146,6 +154,11 @@ export default async function AdminHome({
       {summaryMissing ? (
         <p className="mb-4 rounded-card border border-status-amber bg-status-amber-tint px-3 py-2 text-[13px] text-status-amber">
           The headline figures need migration 0074 applied. Everything else on this page is live.
+        </p>
+      ) : summaryError ? (
+        <p className="mb-4 rounded-card border border-status-red bg-status-red-tint px-3 py-2 text-[13px] text-status-red">
+          The headline figures could not be read, so the six numbers below are not your real totals:{" "}
+          {summaryError}
         </p>
       ) : null}
 
