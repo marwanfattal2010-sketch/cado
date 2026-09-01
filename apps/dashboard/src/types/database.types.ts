@@ -2516,6 +2516,18 @@ export type Database = {
           orders: number
         }[]
       }
+      admin_finance_by_store: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          cancelled: number
+          commission: number
+          name: string
+          orders: number
+          partner_id: string
+          payable: number
+          sales: number
+        }[]
+      }
       admin_gift_cards_list: {
         Args: never
         Returns: {
@@ -2787,6 +2799,7 @@ export type Database = {
           currency: string
         }[]
       }
+      partner_is_active: { Args: { p_partner_id: string }; Returns: boolean }
       partner_order_context: {
         Args: { p_sub_order_id: string }
         Returns: {
@@ -2918,6 +2931,7 @@ export type Database = {
         Args: { p_amount: number; p_order_id: string; p_profile_id: string }
         Returns: number
       }
+      store_set_own_pause: { Args: { p_paused: boolean }; Returns: string }
       void_order_gift_cards: {
         Args: { p_order_id: string }
         Returns: {

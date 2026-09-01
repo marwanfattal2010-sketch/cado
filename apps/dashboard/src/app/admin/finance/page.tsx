@@ -63,10 +63,7 @@ export default async function AdminFinancePage({
 
   const [daily, perStore, payablesRes, partnerNamesRes] = await Promise.all([
     supabase.rpc("admin_finance_breakdown", { p_from: asDate(r.from), p_to: asDate(r.to) }),
-    supabase.rpc("admin_finance_by_store" as never, {
-      p_from: asDate(r.from),
-      p_to: asDate(r.to),
-    } as never),
+    supabase.rpc("admin_finance_by_store", { p_from: asDate(r.from), p_to: asDate(r.to) }),
     supabase
       .from("store_payables")
       .select("id, store_id, gross_amount, commission_amount, net_owed, status, created_at")
