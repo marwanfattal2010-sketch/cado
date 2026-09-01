@@ -103,7 +103,15 @@ export default async function AdminFinancePage({
       ) : null}
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Sales" value={usd(totals.gmv)} hint={`${r.key} · what customers paid`} />
+        {/*
+          This is orders.total: product lines PLUS delivery, and it counts an
+          order even if a store later cancelled part of it. The per-store table
+          below is product lines only, minus cancellations, so the two differ by
+          delivery fees plus cancelled value. Both are right; calling them both
+          "Sales" was not, so each says what it actually is and the table states
+          the difference rather than leaving the reader to notice it.
+        */}
+        <KpiCard label="Order value" value={usd(totals.gmv)} hint={`${r.key} · incl. delivery`} />
         <KpiCard label="CADO commission" value={usd(totals.commission)} hint="Your earnings" />
         <KpiCard label="Delivery fees" value={usd(totals.delivery)} hint="Collected on orders" />
         <KpiCard label="Orders" value={String(totals.orders)} hint="In this range" />
@@ -137,6 +145,7 @@ export default async function AdminFinancePage({
                   <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
                     <th className="py-2 pr-3">Store</th>
                     <th className="py-2 pr-3 text-right">Sales</th>
+                    <th className="py-2 pr-3 text-right">Cancelled</th>
                     <th className="py-2 pr-3 text-right">Commission</th>
                     <th className="py-2 text-right">Payable to store</th>
                   </tr>
@@ -146,6 +155,9 @@ export default async function AdminFinancePage({
                     <tr key={s.partner_id} className="border-b border-line/60 last:border-0">
                       <td className="py-2 pr-3 font-medium">{s.name}</td>
                       <td className="py-2 pr-3 text-right tabular-nums">{usd(s.sales)}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums text-muted">
+                        {Number(s.cancelled) > 0 ? usd(s.cancelled) : "—"}
+                      </td>
                       <td className="py-2 pr-3 text-right tabular-nums text-ribbon">{usd(s.commission)}</td>
                       <td className="py-2 text-right font-semibold tabular-nums">{usd(s.payable)}</td>
                     </tr>
@@ -154,6 +166,12 @@ export default async function AdminFinancePage({
               </table>
             </div>
           )}
+          {storeRows.length > 0 ? (
+            <p className="mt-3 text-xs text-muted">
+              Store sales are product lines only — they exclude delivery fees and anything cancelled,
+              so they add up to less than the order value above.
+            </p>
+          ) : null}
         </Card>
 
         <Card title="Store payables (ledger)">
