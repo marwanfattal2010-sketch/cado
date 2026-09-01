@@ -36,55 +36,77 @@ export default async function AdminOverviewPage({
   const { range } = await searchParams;
   const r = resolveRange(range);
 
-  /** Orders and GMV for one window — one round trip per period. */
-  async function window_(from: Date, to: Date) {
-    const { data } = await supabase
-      .from("orders")
-      .select("id, total, delivery_fee, customer_id, created_at")
-      .gte("created_at", from.toISOString())
-      .lt("created_at", to.toISOString())
-      .limit(5000);
-    const rows = data ?? [];
-    return {
-      orders: rows.length,
-      gmv: rows.reduce((s, o) => s + Number(o.total ?? 0), 0),
-      fees: rows.reduce((s, o) => s + Number(o.delivery_fee ?? 0), 0),
-      customers: new Set(rows.map((o) => o.customer_id)).size,
-    };
-  }
+  /*
+   * EVERY figure here comes from a SECURITY DEFINER RPC, and it has to.
+   *
+   * Migration 0020 deliberately dropped the admin read policies on orders,
+   * sub_orders and order_items. PostgREST answers a blocked select with an
+   * EMPTY ARRAY rather than an error, so this page previously showed $0
+   * revenue, 0 orders and "No orders yet" — directly above a chart plotting
+   * that same range's orders, because the chart already used an RPC. A zero
+   * that means "you are not allowed to see this" is indistinguishable from a
+   * zero that means "nothing happened", which is the worst way for a money
+   * screen to fail.
+   */
+  const asDate = (d: Date) => d.toISOString().slice(0, 10);
 
-  const [cur, prev] = await Promise.all([window_(r.from, r.to), window_(r.prevFrom, r.prevTo)]);
+  const sumDays = (rows: { gmv: number; orders: number; commission: number; delivery_fees: number }[]) =>
+    rows.reduce(
+      (t, d) => ({
+        gmv: t.gmv + Number(d.gmv ?? 0),
+        orders: t.orders + Number(d.orders ?? 0),
+        commission: t.commission + Number(d.commission ?? 0),
+        fees: t.fees + Number(d.delivery_fees ?? 0),
+      }),
+      { gmv: 0, orders: 0, commission: 0, fees: 0 }
+    );
 
-  // Commission for the window, from the per-line snapshots 0031 added.
-  const { data: commRows } = await supabase
-    .from("order_items")
-    .select("commission_amount_snapshot, sub_order:sub_orders!inner(status, order:orders!inner(created_at))")
-    .gte("sub_order.order.created_at", r.from.toISOString())
-    .lt("sub_order.order.created_at", r.to.toISOString())
-    .neq("sub_order.status", "cancelled")
-    .limit(5000);
-  const commission = (commRows ?? []).reduce((s, x) => s + Number(x.commission_amount_snapshot ?? 0), 0);
+  const [daily, dailyPrev, recentRes] = await Promise.all([
+    supabase.rpc("admin_finance_breakdown", { p_from: asDate(r.from), p_to: asDate(r.to) }),
+    supabase.rpc("admin_finance_breakdown", { p_from: asDate(r.prevFrom), p_to: asDate(r.prevTo) }),
+    // 200 is this function's ceiling; enough to find both the newest orders and
+    // any that have sat unconfirmed.
+    supabase.rpc("admin_orders", { p_limit: 200, p_offset: 0 }),
+  ]);
+
+  const dailyRows = (daily.data ?? []) as { day: string; gmv: number }[];
+  const cur = sumDays((daily.data ?? []) as never[]);
+  const prev = sumDays((dailyPrev.data ?? []) as never[]);
+  const commission = cur.commission;
 
   const delta = (now: number, before: number) =>
     before > 0 ? ((now - before) / before) * 100 : null;
 
-  // Daily series — 0068's function; absent pre-migration.
-  const daily = await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }> }).rpc("admin_finance_breakdown", {
-    p_from: r.from.toISOString().slice(0, 10),
-    p_to: r.to.toISOString().slice(0, 10),
-  });
-  const dailyRows = (daily.data ?? []) as unknown as { day: string; gmv: number }[];
-
   /* ---------------- needs attention: each row is a real condition -------- */
 
-  const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-  const [{ data: stale }, { data: pendingApps }, { data: oosVisible }] = await Promise.all([
-    supabase
-      .from("sub_orders")
-      .select("id, order_id, status, created_at, partner:partners(name)")
-      .eq("status", "pending")
-      .lt("created_at", fifteenMinAgo)
-      .limit(10),
+  /** The shape admin_orders() embeds in its sub_orders jsonb column. */
+  type EmbeddedSub = { status: string; partner_name: string };
+  type AdminOrderRow = {
+    order_id: string;
+    order_number: string;
+    placed_at: string;
+    customer_name: string;
+    total: number;
+    sub_orders: EmbeddedSub[];
+  };
+  // sub_orders is a jsonb column, so the generated type is Json; the shape is
+  // fixed by admin_orders() itself (0036).
+  const adminOrders = (recentRes.data ?? []) as unknown as AdminOrderRow[];
+  const recent = adminOrders.slice(0, 10);
+
+  // Unconfirmed for over 15 minutes — derived from the same RPC rows, because
+  // selecting sub_orders directly returns nothing for an admin and this panel
+  // would quietly claim "all clear" while stores sat on orders.
+  const fifteenMinAgo = Date.now() - 15 * 60 * 1000;
+  const stale = adminOrders
+    .filter(
+      (o) =>
+        new Date(o.placed_at).getTime() < fifteenMinAgo &&
+        (o.sub_orders ?? []).some((s) => s.status === "pending")
+    )
+    .slice(0, 10);
+
+  const [{ data: pendingApps }, { data: oosVisible }] = await Promise.all([
     supabase.from("partners").select("id, name").eq("status", "pending").limit(10),
     supabase
       .from("products")
@@ -94,18 +116,12 @@ export default async function AdminOverviewPage({
       .limit(10),
   ]);
 
-  const { data: recent } = await supabase
-    .from("orders")
-    .select("id, order_number, total, created_at, recipient_name, sub_orders(status, partner:partners(name))")
-    .order("created_at", { ascending: false })
-    .limit(10);
-
   const attention = [
-    ...(stale ?? []).map((s) => ({
-      label: `Order unconfirmed ${Math.round((Date.now() - new Date(s.created_at).getTime()) / 60000)} min — ${
-        (s.partner as { name?: string } | null)?.name ?? "store"
+    ...stale.map((o) => ({
+      label: `Order unconfirmed ${Math.round((Date.now() - new Date(o.placed_at).getTime()) / 60000)} min — ${
+        (o.sub_orders ?? []).find((s) => s.status === "pending")?.partner_name ?? "store"
       }`,
-      href: `/admin/orders/${s.order_id}`,
+      href: `/admin/orders/${o.order_id}`,
     })),
     ...(pendingApps ?? []).map((p) => ({
       label: `Store application: ${p.name}`,
@@ -174,7 +190,7 @@ export default async function AdminOverviewPage({
       </div>
 
       <Card title="Recent orders" className="mt-4" action={<Link href="/admin/orders" className="text-xs font-medium text-ribbon">All orders →</Link>}>
-        {(recent ?? []).length === 0 ? (
+        {recent.length === 0 ? (
           <EmptyStateV2 title="No orders yet." />
         ) : (
           <div className="overflow-x-auto">
@@ -190,25 +206,29 @@ export default async function AdminOverviewPage({
                 </tr>
               </thead>
               <tbody>
-                {(recent ?? []).map((o) => {
-                  const sub = (o.sub_orders as { status: string; partner: { name: string } | null }[] | null)?.[0];
+                {recent.map((o) => {
+                  const subs = o.sub_orders ?? [];
+                  const sub = subs[0];
                   return (
-                    <tr key={o.id} className="border-b border-line/60 last:border-0 hover:bg-surface-sunk">
+                    <tr key={o.order_id} className="border-b border-line/60 last:border-0 hover:bg-surface-sunk">
                       <td className="py-2 pr-3">
-                        <Link href={`/admin/orders/${o.id}`} className="font-medium text-ribbon">
+                        <Link href={`/admin/orders/${o.order_id}`} className="font-medium text-ribbon">
                           #{o.order_number}
                         </Link>
                       </td>
                       <td className="whitespace-nowrap py-2 pr-3 text-muted">
-                        {new Date(o.created_at).toLocaleString("en-GB", {
+                        {new Date(o.placed_at).toLocaleString("en-GB", {
                           day: "numeric",
                           month: "short",
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </td>
-                      <td className="py-2 pr-3">{sub?.partner?.name ?? "—"}</td>
-                      <td className="py-2 pr-3">{o.recipient_name ?? "—"}</td>
+                      <td className="py-2 pr-3">
+                        {/* An order can span stores; say so rather than show the first and imply it is the only one. */}
+                        {subs.length > 1 ? `${subs.length} stores` : sub?.partner_name ?? "—"}
+                      </td>
+                      <td className="py-2 pr-3">{o.customer_name ?? "—"}</td>
                       <td className="py-2 pr-3">
                         <StatusPill status={sub?.status} />
                       </td>

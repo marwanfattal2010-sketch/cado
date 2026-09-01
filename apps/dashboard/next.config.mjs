@@ -31,6 +31,9 @@ if (supabaseUrl) {
   }
 }
 
+/** The same host over the websocket scheme, for Supabase Realtime. */
+const supabaseWsOrigin = supabaseOrigin ? supabaseOrigin.replace(/^https:/, "wss:") : "";
+
 const csp = [
   "default-src 'self'",
   isDev
@@ -39,7 +42,17 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${supabaseOrigin}`.trim(),
   "font-src 'self' data:",
-  `connect-src 'self' ${supabaseOrigin} ${isDev ? "ws: wss:" : ""}`.trim(),
+  /*
+   * Supabase Realtime is a WEBSOCKET, and a wss:// URL is not covered by the
+   * https:// origin — CSP treats the schemes as different sources. Production
+   * listed only the https origin, so every realtime connection was blocked,
+   * the client retried forever, and the failures surfaced as "Application
+   * error: a client-side exception has occurred" on the deployed dashboard.
+   *
+   * The wss origin is named explicitly rather than opening `wss:` wholesale,
+   * so this permits exactly one host: our own Supabase project.
+   */
+  `connect-src 'self' ${supabaseOrigin} ${supabaseWsOrigin} ${isDev ? "ws: wss:" : ""}`.trim(),
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
