@@ -36,8 +36,13 @@ import { TermsOfService } from "./pages/TermsOfService";
 import { DeliveryReturns } from "./pages/DeliveryReturns";
 import { Partners } from "./pages/Partners";
 import { Find } from "./pages/Find";
+import { useTrackPageView } from "./hooks/useTrackPageView";
 
 export default function App() {
+  // CADO's own page-view count. Mounted once above every route so it sees each
+  // navigation exactly once, and never blocks rendering.
+  useTrackPageView();
+
   return (
     <Routes>
       {/* Outside Layout on purpose. Home owns its whole viewport: the shell

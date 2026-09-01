@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowUp, Mic, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import { TintCard, TintChip } from "./tint";
+import { useSpeech, useSpeaker } from "../v5/useSpeech";
 
 /**
  * The compact assistant (V4 §3.4). The V3 panel was 420px of mostly empty box;
@@ -83,12 +84,16 @@ export function AssistantWidget() {
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
+  const speaker = useSpeaker();
+  const say = speaker.say;
+  // Dictation sends as soon as the speaker stops — that is the whole point.
+  const speech = useSpeech((text) => void send(text));
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
   }, [messages, busy]);
 
-  const send = async (text: string) => {
+  const send = useCallback(async (text: string) => {
     const q = text.trim();
     if (!q || busy) return;
     const next: Msg[] = [...messages, { role: "user", content: q }];
@@ -104,23 +109,20 @@ export function AssistantWidget() {
       });
       const data = await res.json();
       if (data.preview) setPreview(true);
-      setMessages([
-        ...next,
-        {
-          role: "assistant",
-          content: res.ok
-            ? data.reply
-            : data.error === "not_configured"
-              ? "The assistant isn't connected yet."
-              : `That didn't work: ${data.message ?? res.statusText}`,
-        },
-      ]);
+      const reply = res.ok
+        ? data.reply
+        : data.error === "not_configured"
+          ? "The assistant isn't connected yet."
+          : `That didn't work: ${data.message ?? res.statusText}`;
+      setMessages([...next, { role: "assistant", content: reply }]);
+      // Only reads it out if the speaker toggle is on; default is off.
+      if (res.ok) say(reply);
     } catch (e) {
       setMessages([...next, { role: "assistant", content: `That didn't work: ${(e as Error).message}` }]);
     } finally {
       setBusy(false);
     }
-  };
+  }, [busy, messages, say]);
 
   return (
     <>
@@ -156,21 +158,68 @@ export function AssistantWidget() {
           onSubmit={(e) => { e.preventDefault(); void send(input); }}
           className="mt-auto flex items-center gap-1.5"
         >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about sales, orders, stores…"
-            className="h-10 min-w-0 flex-1 rounded-[12px] border border-line bg-surface-sunk px-3 text-[13px] text-ink outline-none placeholder:text-muted focus:border-line-strong"
-          />
+          <div className="relative flex h-10 min-w-0 flex-1 items-center rounded-[12px] border border-line bg-surface-sunk pr-1">
+            <input
+              value={speech.listening ? speech.interim : input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={speech.listening}
+              placeholder={speech.listening ? "Listening…" : "Ask about sales, orders, stores…"}
+              className="h-full min-w-0 flex-1 bg-transparent px-3 text-[13px] text-ink outline-none placeholder:text-muted"
+            />
+            {/* Hidden entirely where the browser has no speech engine — a mic
+                button that cannot listen is worse than no mic button. */}
+            {speech.supported ? (
+              <button
+                type="button"
+                onClick={() => (speech.listening ? speech.stop() : speech.start())}
+                aria-label={speech.listening ? "Stop listening" : "Speak your question"}
+                title={speech.listening ? "Stop" : `Speak (${speech.lang === "ar-LB" ? "Arabic" : "English"})`}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] transition-colors ${
+                  speech.listening ? "bg-ribbon text-white" : "text-muted hover:text-ink"
+                }`}
+              >
+                <Mic size={15} />
+              </button>
+            ) : null}
+          </div>
+
+          {speech.supported ? (
+            <select
+              value={speech.lang}
+              onChange={(e) => speech.setLang(e.target.value as typeof speech.lang)}
+              aria-label="Speech language"
+              className="h-10 shrink-0 rounded-[12px] border border-line bg-surface-sunk px-1 text-[11px] text-secondary outline-none"
+            >
+              <option value="en-US">EN</option>
+              <option value="ar-LB">AR</option>
+            </select>
+          ) : null}
+
+          {speaker.supported ? (
+            <button
+              type="button"
+              onClick={speaker.toggle}
+              aria-pressed={speaker.on}
+              aria-label={speaker.on ? "Stop reading answers aloud" : "Read answers aloud"}
+              title={speaker.on ? "Reading answers aloud" : "Read answers aloud"}
+              className={`flex h-10 w-9 shrink-0 items-center justify-center rounded-[12px] border border-line transition-colors ${
+                speaker.on ? "text-ribbon" : "text-muted hover:text-ink"
+              }`}
+            >
+              {speaker.on ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            </button>
+          ) : null}
+
           <button
             type="submit"
-            disabled={!input.trim() || busy}
+            disabled={!input.trim() || busy || speech.listening}
             aria-label="Ask"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-ribbon text-white transition-colors hover:bg-ribbon-deep disabled:opacity-40"
           >
             <ArrowUp size={16} />
           </button>
         </form>
+        {speech.error ? <p className="mt-1 text-[11.5px] text-status-red">{speech.error}</p> : null}
       </TintCard>
 
       {/* Conversation drawer — the widget never grows into the page. */}

@@ -428,6 +428,54 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          done: boolean
+          due_date: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboard_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deliveries: {
         Row: {
           assigned_at: string
@@ -2047,6 +2095,47 @@ export type Database = {
           },
         ]
       }
+      site_events: {
+        Row: {
+          created_at: string
+          device: string | null
+          event: string
+          id: number
+          path: string
+          referrer: string | null
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          event: string
+          id?: never
+          path: string
+          referrer?: string | null
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          event?: string
+          id?: never
+          path?: string
+          referrer?: string | null
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_metrics: {
         Row: {
           avg_confirm_seconds: number | null
@@ -2677,6 +2766,14 @@ export type Database = {
           store_net_unpaid_total: number
         }[]
       }
+      admin_monthly_overview: {
+        Args: never
+        Returns: {
+          month: string
+          orders: number
+          revenue: number
+        }[]
+      }
       admin_new_customers: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -2713,6 +2810,26 @@ export type Database = {
         Returns: {
           area: string
           orders: number
+        }[]
+      }
+      admin_orders_by_day: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          day: string
+          orders: number
+        }[]
+      }
+      admin_orders_in_motion: {
+        Args: { p_limit?: number }
+        Returns: {
+          area: string
+          driver_name: string
+          order_id: string
+          order_number: string
+          placed_at: string
+          status: string
+          store_name: string
+          sub_order_id: string
         }[]
       }
       admin_orders_page: {
@@ -2771,6 +2888,30 @@ export type Database = {
           status: string
         }[]
       }
+      admin_recent_reviews: {
+        Args: { p_limit?: number }
+        Returns: {
+          comment: string
+          created_at: string
+          customer_first_name: string
+          id: string
+          rating: number
+          store_name: string
+        }[]
+      }
+      admin_review_summary: {
+        Args: never
+        Returns: {
+          average: number
+          five: number
+          four: number
+          one: number
+          satisfied_pct: number
+          three: number
+          total: number
+          two: number
+        }[]
+      }
       admin_set_role_admin: {
         Args: { p_email: string; p_make_admin: boolean }
         Returns: string
@@ -2778,6 +2919,26 @@ export type Database = {
       admin_set_sub_order_status: {
         Args: { p_status: string; p_sub_order_id: string }
         Returns: undefined
+      }
+      admin_site_stats: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          day: string
+          new_users: number
+          page_views: number
+          visitors: number
+        }[]
+      }
+      admin_team_members: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          joined: string
+          last_sign_in_at: string
+          role: string
+          user_id: string
+        }[]
       }
       admin_top_products: {
         Args: { p_from: string; p_limit?: number; p_to: string }
@@ -2787,6 +2948,21 @@ export type Database = {
           revenue: number
           title: string
           units: number
+        }[]
+      }
+      admin_tracking_since: { Args: never; Returns: string }
+      admin_upcoming_deliveries: {
+        Args: never
+        Returns: {
+          deliver_on: string
+          driver_name: string
+          items: number
+          order_id: string
+          order_number: string
+          status: string
+          store_name: string
+          sub_order_id: string
+          time_slot: string
         }[]
       }
       cado_is_open: { Args: never; Returns: boolean }
@@ -2842,6 +3018,7 @@ export type Database = {
         Returns: string
       }
       current_client_ip: { Args: never; Returns: string }
+      delete_old_site_events: { Args: never; Returns: number }
       delivery_fee_usd: { Args: never; Returns: number }
       driver_my_deliveries: {
         Args: never
@@ -3119,6 +3296,10 @@ export type Database = {
         Returns: number
       }
       store_set_own_pause: { Args: { p_paused: boolean }; Returns: string }
+      submit_review: {
+        Args: { p_comment?: string; p_rating: number; p_sub_order_id: string }
+        Returns: string
+      }
       void_order_gift_cards: {
         Args: { p_order_id: string }
         Returns: {

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useOrders, useReorder } from "../hooks/useOrders";
+import { RateOrder } from "../components/RateOrder";
 import { useAuth } from "../lib/auth";
 import { formatMoney } from "../lib/money";
 import { statusView } from "../lib/orderStatus";
@@ -189,6 +190,13 @@ function OrderCard({ order, prominent = false }: { order: OrderRow; prominent?: 
           ›
         </Link>
       </div>
+
+      {/* Rating appears only once the shop's part has actually arrived. The
+          database enforces the same rule; this just avoids offering a button
+          that would be refused. */}
+      {sub?.status === "delivered" && sub?.id ? (
+        <RateOrder subOrderId={sub.id} storeName={sub.partner?.name ?? "this shop"} />
+      ) : null}
     </div>
   );
 }
