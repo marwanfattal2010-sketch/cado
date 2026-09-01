@@ -6,16 +6,12 @@ import { useAuth } from "../lib/auth";
 import { BrandLogo } from "./BrandLogo";
 import { GiftBagIcon, ChevronLeftIcon } from "./Icons";
 import {
-  AREAS,
   useArea,
   getAddressDetails,
   setAddressDetails,
   type AddressDetails,
 } from "../lib/area";
-import { Button, Sheet } from "./ui";
-
-const FIELD =
-  "w-full rounded-card border border-line bg-surface px-4 py-3 text-body outline-none placeholder:text-muted focus:border-ink/35";
+import { DeliverySheet } from "./DeliverySheet";
 
 /**
  * Collapse-on-scroll thresholds.
@@ -303,70 +299,7 @@ export function Header() {
         </div>
       </header>
 
-      <Sheet open={areaOpen} onClose={closeAreaSheet} title="Where are we delivering?">
-        <div className="flex flex-col gap-2">
-          {AREAS.map((a) => (
-            <button
-              key={a}
-              onClick={() => setArea(a)}
-              className={`flex min-h-[52px] items-center justify-between rounded-card px-4 py-3.5 text-left text-body transition ${
-                a === area ? "bg-primary-tint font-medium text-ink" : "bg-surface-sunk text-ink hover:bg-line"
-              }`}
-            >
-              {a}
-              {a === area ? <span className="text-ink">✓</span> : null}
-            </button>
-          ))}
-        </div>
-        {/* Honest scope, not a fake long list. */}
-        <p className="mt-3 text-caption text-muted">More cities soon.</p>
-
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="text-body font-medium">
-            Your address <span className="font-normal text-muted">(optional)</span>
-          </p>
-          <p className="mt-0.5 text-caption text-muted">
-            We’ll prefill it at checkout so you don’t retype it.
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            <input
-              className={FIELD}
-              placeholder="Street"
-              value={details.street}
-              onChange={(e) => setDetails({ ...details, street: e.target.value })}
-            />
-            <div className="grid grid-cols-3 gap-2">
-              <input
-                className={FIELD}
-                placeholder="Building"
-                value={details.building}
-                onChange={(e) => setDetails({ ...details, building: e.target.value })}
-              />
-              <input
-                className={FIELD}
-                placeholder="Floor"
-                value={details.floor}
-                onChange={(e) => setDetails({ ...details, floor: e.target.value })}
-              />
-              <input
-                className={FIELD}
-                placeholder="Apt"
-                value={details.apartment}
-                onChange={(e) => setDetails({ ...details, apartment: e.target.value })}
-              />
-            </div>
-            <input
-              className={FIELD}
-              placeholder="Notes for the driver (landmark, gate code…)"
-              value={details.notes}
-              onChange={(e) => setDetails({ ...details, notes: e.target.value })}
-            />
-          </div>
-          <Button fullWidth className="mt-4" onClick={closeAreaSheet}>
-            Done
-          </Button>
-        </div>
-      </Sheet>
+      <DeliverySheet open={areaOpen} onClose={closeAreaSheet} area={area} setArea={setArea} />
     </>
   );
 }

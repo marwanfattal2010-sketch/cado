@@ -1,3 +1,4 @@
+import { NowOnCado, PopularBrands, NewOnCado, TopStoresInCity } from "./TotersSections";
 import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { SectionHead } from "../SectionHead";
@@ -95,6 +96,9 @@ export function HomeLower() {
 
   return (
     <div className="pb-6">
+      {/* Now on CADO — the newest shops, straight after "Stores on CADO". */}
+      <NowOnCado />
+
       {/* 2 — Trending / Popular picks */}
       {trendingPool.isLoading || signals.isLoading ? (
         <Pad>
@@ -132,8 +136,17 @@ export function HomeLower() {
         </Pad>
       ) : null}
 
+      {/* Popular Brands — between Popular picks and Deals, per the brief. */}
+      <PopularBrands />
+
+      {/* New on CADO — hides itself when no shop joined in the last 60 days. */}
+      <NewOnCado />
+
       {/* 4 — Stores of the Week */}
       <StoresOfWeekBlock stores={storesOfWeek.data ?? []} />
+
+      {/* Top stores in the delivery city — hidden when that city has none. */}
+      <TopStoresInCity />
 
       {/* 5 — Shop by budget */}
       <Pad>
