@@ -68,16 +68,19 @@ export default async function AdminHome({
   const iso = (d: Date) => d.toISOString();
   const day = (d: Date) => d.toISOString().slice(0, 10);
 
-  const [summaryRes, dailyRes, topRes, ordersRes, areaRes, newCustRes, featuredRes, sowRes, occRes] =
-    await Promise.all([
+  const [
+    summaryRes, dailyRes, topRes, ordersRes, areaRes, newCustRes,
+    occRes, pendingStoresRes, oosRes, ticketsRes,
+  ] = await Promise.all([
       callRpc<HomeSummary[]>(supabase, "admin_home_summary", { p_from: iso(r.from), p_to: iso(r.to) }),
       supabase.rpc("admin_finance_breakdown", { p_from: day(r.from), p_to: day(r.to) }),
       callRpc<TopProduct[]>(supabase, "admin_top_products", { p_from: iso(r.from), p_to: iso(r.to), p_limit: 5 }),
-      supabase.rpc("admin_orders", { p_limit: 5, p_offset: 0 }),
+      // 200, not 5: the "needs you" counts below are computed from these rows,
+      // and counting over the newest five would quietly understate every one of
+      // them. The rail only shows the first five.
+      supabase.rpc("admin_orders", { p_limit: 200, p_offset: 0 }),
       callRpc<AreaRow[]>(supabase, "admin_orders_by_area", { p_from: iso(r.from), p_to: iso(r.to) }),
       callRpc<NewCust[]>(supabase, "admin_new_customers", { p_from: iso(r.from), p_to: iso(r.to) }),
-      supabase.from("partners").select("id, name, logo_url, tagline").eq("is_featured", true).order("featured_rank").limit(4),
-      supabase.from("partners").select("id, name").eq("store_of_week", true).limit(1),
       supabase
         .from("occasion_events")
         .select("id, title, event_date, banner_image_url, occasion_id")
@@ -85,6 +88,9 @@ export default async function AdminHome({
         .gte("event_date", day(new Date()))
         .order("event_date")
         .limit(3),
+      supabase.from("partners").select("id, name").eq("status", "pending").limit(20),
+      supabase.from("products").select("id, title").eq("is_active", true).eq("stock_quantity", 0).limit(50),
+      supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "open"),
     ]);
 
   const s = (summaryRes.data ?? [])[0] ?? null;
@@ -93,11 +99,79 @@ export default async function AdminHome({
   const days = (dailyRes.data ?? []) as DayRow[];
   const top = topRes.data ?? [];
   const recent = (ordersRes.data ?? []) as unknown as OrderRow[];
+  /** The rail shows five; the counts above use the whole window. */
+  const recentFive = recent.slice(0, 5);
   const areas = areaRes.data ?? [];
   const newCust = newCustRes.data ?? [];
-  const featured = featuredRes.data ?? [];
-  const storeOfWeek = (sowRes.data ?? [])[0] ?? null;
   const occasions = occRes.data ?? [];
+
+  /* ------------------------------------------------- what needs doing ----- */
+  /*
+   * This replaces the "what customers see first" banner. That card told Marwan
+   * something he already knew and could not act on; this one is the answer to
+   * the question he actually opens the dashboard with — what do I have to deal
+   * with right now. Every row is a real count with a link straight to it, and
+   * when there is nothing, it says so rather than manufacturing a task.
+   */
+  const now = Date.now();
+  const hrsSince = (iso: string) => (now - new Date(iso).getTime()) / 3_600_000;
+  const legsWith = (o: OrderRow, st: string) => (o.sub_orders ?? []).some((x) => x.status === st);
+
+  const unconfirmed = recent.filter((o) => hrsSince(o.placed_at) > 2 && legsWith(o, "pending"));
+  const waitingDriver = recent.filter((o) => legsWith(o, "ready"));
+  const pendingStores = pendingStoresRes.data ?? [];
+  const outOfStock = oosRes.data ?? [];
+  const openTickets = ticketsRes.count ?? 0;
+
+  const attention: AttentionItem[] = [
+    {
+      n: unconfirmed.length,
+      label: unconfirmed.length === 1 ? "order a shop hasn't confirmed" : "orders shops haven't confirmed",
+      detail: "Waiting over 2 hours",
+      href: "/admin/orders?view=needs-action",
+      cta: "Chase them",
+      tint: "coral" as Tint,
+    },
+    {
+      n: waitingDriver.length,
+      label: waitingDriver.length === 1 ? "parcel waiting for a driver" : "parcels waiting for a driver",
+      detail: "Packed and ready to collect",
+      href: "/admin/delivery",
+      cta: "Assign a driver",
+      tint: "amber" as Tint,
+    },
+    {
+      n: pendingStores.length,
+      label: pendingStores.length === 1 ? "shop waiting to be approved" : "shops waiting to be approved",
+      detail: pendingStores.slice(0, 2).map((p) => p.name).join(", "),
+      href: "/admin/stores?status=pending",
+      cta: "Review",
+      tint: "violet" as Tint,
+    },
+    {
+      n: openTickets,
+      label: openTickets === 1 ? "customer message unanswered" : "customer messages unanswered",
+      detail: "Someone is waiting on a reply",
+      href: "/admin/support",
+      cta: "Reply",
+      tint: "sky" as Tint,
+    },
+    {
+      n: outOfStock.length,
+      label: outOfStock.length === 1 ? "product on sale with no stock" : "products on sale with no stock",
+      detail: "Customers can still order these",
+      href: "/admin/stores",
+      cta: "Fix stock",
+      tint: "rose" as Tint,
+    },
+  ].filter((x) => x.n > 0);
+
+  // The calm state needs something true to say, so today's own numbers.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const todays = recent.filter((o) => new Date(o.placed_at) >= startOfToday);
+  const ordersToday = todays.length;
+  const takingsToday = todays.reduce((n, o) => n + Number(o.total), 0);
 
   // Thumbnails for the top-selling list, from the real product image table.
   const topIds = top.map((t) => t.product_id).filter(Boolean);
@@ -221,7 +295,7 @@ export default async function AdminHome({
       {/* Hero + rail */}
       <div className="grid gap-4 xl:grid-cols-12">
         <div className="space-y-4 xl:col-span-8">
-          <Hero featured={featured} storeOfWeek={storeOfWeek} occasion={occasions[0] ?? null} />
+          <NeedsYou items={attention} ordersToday={ordersToday} takingsToday={takingsToday} />
 
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Top selling */}
@@ -318,11 +392,11 @@ export default async function AdminHome({
               <h2 className="text-[15px] font-semibold text-ink">Recent orders</h2>
               <Link href="/admin/orders" className="text-[12.5px] font-medium text-ribbon">View all</Link>
             </div>
-            {recent.length === 0 ? (
+            {recentFive.length === 0 ? (
               <EmptyBlock icon={<ShoppingBag size={20} />} title="No orders yet" />
             ) : (
               <ul className="divide-y divide-line">
-                {recent.map((o) => {
+                {recentFive.map((o) => {
                   const legs = o.sub_orders ?? [];
                   return (
                     <li key={o.order_id}>
@@ -427,103 +501,122 @@ function EmptyBlock({
   );
 }
 
+
+/* ------------------------------------------------------- what needs you --- */
+
+type AttentionItem = {
+  n: number;
+  label: string;
+  detail: string;
+  href: string;
+  cta: string;
+  tint: Tint;
+};
+
 /**
- * The hero (§3.3). Data-driven, in priority order: a dated occasion within 45
- * days, else this week's featured stores, else a prompt to choose them. There
- * is no fourth branch that invents a campaign.
+ * The prime slot on Home.
+ *
+ * It used to hold "what customers see first" — a card showing which stores were
+ * featured. Marwan didn't like it, and he was right: it told him something he
+ * had chosen himself, and gave him nothing to do about it.
+ *
+ * This answers the question he actually opens the dashboard to ask: what needs
+ * me right now. Each row is a real count from a real query with a button that
+ * lands on exactly that filtered list, worst first.
+ *
+ * When nothing needs him it says so and shows today's takings instead. It never
+ * manufactures a task to look busy — an empty list here is good news, and the
+ * card is allowed to say that.
  */
-function Hero({
-  featured,
-  storeOfWeek,
-  occasion,
+function NeedsYou({
+  items,
+  ordersToday,
+  takingsToday,
 }: {
-  featured: { id: string; name: string; logo_url: string | null; tagline: string | null }[];
-  storeOfWeek: { id: string; name: string } | null;
-  occasion: { id: string; title: string; event_date: string; banner_image_url: string | null } | null;
+  items: AttentionItem[];
+  ordersToday: number;
+  takingsToday: number;
 }) {
-  const daysAway = occasion
-    ? Math.ceil((new Date(occasion.event_date).getTime() - Date.now()) / 86_400_000)
-    : null;
-  const showOccasion = occasion && daysAway !== null && daysAway >= 0 && daysAway <= 45;
+  if (items.length === 0) {
+    return (
+      <TintCard tint="mint" className="flex flex-col justify-center p-6" style={{ minHeight: 220 }}>
+        <div className="flex items-center gap-2.5">
+          <TintChip><Check /></TintChip>
+          <h2 className="font-editorial text-[30px] font-medium leading-9 text-ink">All caught up</h2>
+        </div>
+        <p className="mt-2 max-w-md text-[14px] leading-6 text-secondary">
+          No orders waiting on a shop, no parcels without a driver, nothing waiting on you.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-6">
+          <div>
+            <p className="text-[12px] text-secondary">Orders today</p>
+            <p className="text-[24px] font-bold text-ink tnum">{ordersToday}</p>
+          </div>
+          <div>
+            <p className="text-[12px] text-secondary">Taken today</p>
+            <p className="text-[24px] font-bold text-ink tnum">{usd(takingsToday, 2)}</p>
+          </div>
+        </div>
+      </TintCard>
+    );
+  }
+
+  const total = items.reduce((n, i) => n + i.n, 0);
 
   return (
-    <TintCard tint="coral" className="relative overflow-hidden" style={{ minHeight: 220 }}>
-      <div className="relative z-10 flex h-full flex-col justify-center gap-3 p-6 md:max-w-[62%]">
-        {showOccasion ? (
-          <>
-            <span className="w-fit rounded-pill bg-surface/50 px-2.5 py-1 text-[12px] font-medium text-ink">
-              In {daysAway} days
-            </span>
-            <h2 className="font-editorial text-[30px] font-medium leading-9 text-ink">{occasion!.title}</h2>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/admin/marketing" className="rounded-[12px] bg-ribbon px-3.5 py-2 text-[13px] font-semibold text-white">
-                Feature stores
-              </Link>
-              <Link href="/admin/stores" className="rounded-[12px] border border-line bg-surface/40 px-3.5 py-2 text-[13px] font-medium text-ink">
-                View stores
-              </Link>
-            </div>
-          </>
-        ) : featured.length > 0 ? (
-          <>
-            <span className="w-fit rounded-pill bg-surface/50 px-2.5 py-1 text-[12px] font-medium text-ink">
-              Featured this week
-            </span>
-            <h2 className="font-editorial text-[30px] font-medium leading-9 text-ink">
-              {storeOfWeek ? storeOfWeek.name : "What customers see first"}
-            </h2>
-            <p className="text-[13.5px] text-secondary">
-              {featured.length} store{featured.length === 1 ? "" : "s"} on the CADO home screen right now
-              {storeOfWeek ? " · store of the week set" : ""}.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {featured.map((f) =>
-                f.logo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={f.id} src={f.logo_url} alt={f.name} title={f.name}
-                    className="h-9 w-9 rounded-pill border border-line object-cover" />
-                ) : (
-                  <span key={f.id} title={f.name}
-                    className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface/60 text-[12px] font-semibold text-ink">
-                    {f.name.slice(0, 2).toUpperCase()}
-                  </span>
-                )
-              )}
-              <Link href="/admin/marketing" className="ml-1 rounded-[12px] bg-ribbon px-3.5 py-2 text-[13px] font-semibold text-white">
-                Edit featured stores
-              </Link>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2 className="font-editorial text-[30px] font-medium leading-9 text-ink">
-              Set this week&rsquo;s gift focus
-            </h2>
-            <p className="text-[13.5px] text-secondary">
-              Choose the stores and occasion customers see first on the app.
-            </p>
-            <Link href="/admin/marketing" className="w-fit rounded-[12px] bg-ribbon px-3.5 py-2 text-[13px] font-semibold text-white">
-              Choose featured stores
-            </Link>
-          </>
-        )}
+    <TintCard tint={items[0].tint} className="p-5" style={{ minHeight: 220 }}>
+      <div className="mb-3 flex items-baseline gap-2">
+        <h2 className="font-editorial text-[28px] font-medium leading-8 text-ink">
+          {total} thing{total === 1 ? "" : "s"} need you
+        </h2>
+        <span className="text-[13px] text-secondary">right now</span>
       </div>
 
-      {/* Photo bleeding in from the right, faded into the tint. Only rendered
-          when a real image exists — no stock placeholder. */}
-      {showOccasion && occasion?.banner_image_url ? (
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[45%] md:block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={occasion.banner_image_url} alt="" className="h-full w-full object-cover" />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(90deg, color-mix(in srgb, var(--tint) 28%, var(--surface)) 0%, transparent 60%)",
-            }}
-          />
-        </div>
+      <ul className="space-y-1.5">
+        {items.slice(0, 4).map((i) => (
+          <li key={i.href}>
+            <Link
+              href={i.href}
+              className="group flex items-center gap-3 rounded-[12px] bg-surface/50 px-3 py-2.5 transition-colors hover:bg-surface/80"
+            >
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[15px] font-bold tnum"
+                style={{
+                  color: `var(--tint-${i.tint})`,
+                  background: `color-mix(in srgb, var(--tint-${i.tint}) 18%, transparent)`,
+                }}
+              >
+                {i.n}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-medium text-ink">{i.label}</span>
+                {i.detail ? (
+                  <span className="block truncate text-[12.5px] text-secondary">{i.detail}</span>
+                ) : null}
+              </span>
+              <span className="shrink-0 rounded-[10px] bg-ribbon px-3 py-1.5 text-[12.5px] font-semibold text-white">
+                {i.cta}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      {items.length > 4 ? (
+        <p className="mt-2 text-[12.5px] text-secondary">
+          and {items.length - 4} more kind{items.length - 4 === 1 ? "" : "s"} of thing below
+        </p>
       ) : null}
     </TintCard>
+  );
+}
+
+/** A tick, drawn rather than pulled from an icon set for one use. */
+function Check() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
   );
 }

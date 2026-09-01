@@ -11,20 +11,22 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#14121c",
+  themeColor: "#fbf7f1",
 };
 
 /**
  * Sets the theme BEFORE first paint. A React effect would run after hydration
- * and show one frame of the wrong theme on every single load. Falls back to
- * midnight — the default — if storage is unavailable (private windows throw on
- * access, they do not merely return null).
+ * and show one frame of the wrong theme on every single load.
+ *
+ * DEFAULT IS LIGHT. The dark theme is still there behind the toggle and the
+ * whole design works in both, but a back-office someone stares at all day is
+ * their choice to make, and this one's owner does not want dark.
  */
-const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem('cado-theme');document.documentElement.setAttribute('data-theme',t==='paper'?'paper':'midnight')}catch(e){document.documentElement.setAttribute('data-theme','midnight')}})()`;
+const THEME_BOOTSTRAP = `(function(){try{var t=localStorage.getItem('cado-theme');document.documentElement.setAttribute('data-theme',t==='midnight'?'midnight':'paper')}catch(e){document.documentElement.setAttribute('data-theme','paper')}})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="midnight" suppressHydrationWarning>
+    <html lang="en" data-theme="paper" suppressHydrationWarning>
       <head>
         {/* One family, loaded once. Weights match the design system. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

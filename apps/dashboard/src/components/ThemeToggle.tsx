@@ -16,7 +16,7 @@ export const THEME_STORAGE_KEY = "cado-theme";
  * with the change.
  */
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeName>("midnight");
+  const [theme, setTheme] = useState<ThemeName>("paper");
 
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme");
