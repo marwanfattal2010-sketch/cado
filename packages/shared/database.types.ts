@@ -1505,6 +1505,7 @@ export type Database = {
           id: string
           is_demo: boolean
           is_featured: boolean
+          is_lebanese_brand: boolean
           is_live: boolean
           logo_url: string | null
           name: string
@@ -1535,6 +1536,7 @@ export type Database = {
           id?: string
           is_demo?: boolean
           is_featured?: boolean
+          is_lebanese_brand?: boolean
           is_live?: boolean
           logo_url?: string | null
           name: string
@@ -1565,6 +1567,7 @@ export type Database = {
           id?: string
           is_demo?: boolean
           is_featured?: boolean
+          is_lebanese_brand?: boolean
           is_live?: boolean
           logo_url?: string | null
           name?: string
@@ -2512,6 +2515,65 @@ export type Database = {
           },
         ]
       }
+      user_addresses: {
+        Row: {
+          apartment: string | null
+          area: string | null
+          building: string | null
+          city: string
+          created_at: string
+          floor: string | null
+          id: string
+          is_default: boolean
+          label: string
+          notes: string | null
+          phone: string | null
+          profile_id: string
+          street: string | null
+          updated_at: string
+        }
+        Insert: {
+          apartment?: string | null
+          area?: string | null
+          building?: string | null
+          city: string
+          created_at?: string
+          floor?: string | null
+          id?: string
+          is_default?: boolean
+          label: string
+          notes?: string | null
+          phone?: string | null
+          profile_id: string
+          street?: string | null
+          updated_at?: string
+        }
+        Update: {
+          apartment?: string | null
+          area?: string | null
+          building?: string | null
+          city?: string
+          created_at?: string
+          floor?: string | null
+          id?: string
+          is_default?: boolean
+          label?: string
+          notes?: string | null
+          phone?: string | null
+          profile_id?: string
+          street?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_addresses_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_reminders: {
         Row: {
           created_at: string
@@ -3289,6 +3351,32 @@ export type Database = {
       }
       refund_gift_card: { Args: { p_gift_card_id: string }; Returns: undefined }
       refund_wallet_balance: { Args: { p_order_id: string }; Returns: number }
+      search_products: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          compare_at_price: number
+          created_at: string
+          id: string
+          image_path: string
+          partner_id: string
+          partner_name: string
+          partner_slug: string
+          price: number
+          title: string
+        }[]
+      }
+      search_stores: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          category_name: string
+          city: string
+          cover_image_url: string
+          id: string
+          logo_url: string
+          name: string
+          slug: string
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       spend_wallet_balance: {

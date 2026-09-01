@@ -1,5 +1,4 @@
-import { useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { SearchIcon } from "../Icons";
 import { Img } from "../Img";
 import { ProductCard } from "../ProductCard";
@@ -28,44 +27,37 @@ import { storePath } from "../../lib/routes";
  */
 export function ShopSearchBar({
   query,
-  onQueryChange,
 }: {
   query: string;
-  onQueryChange: (value: string) => void;
+  /** Kept optional so Home's existing call site still compiles. The bar no
+   *  longer edits text in place — it opens the search screen. */
+  onQueryChange?: (value: string) => void;
 }) {
-  const input = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
+  /*
+   * This is a BUTTON that looks like a field, not a field.
+   *
+   * Tapping search used to focus an input in place and swap the tab panels for
+   * a result list — a search with no back button, no history entry, and no room
+   * for recent searches or collections. It now pushes /search, which is a real
+   * screen: the back arrow works, the URL is shareable, and the keyboard opens
+   * against an input that is already on the page it belongs to.
+   */
   return (
     <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 pb-2 pt-2.5">
-      <form
-        role="search"
-        onSubmit={(e) => {
-          e.preventDefault();
-          input.current?.blur();
-        }}
-        /* The input is 42px inside a 44px pill and does not reach the
-           horizontal padding or the icon, so a tap on the pill's edge would
-           otherwise land on nothing. This makes the whole 44px control the
-           tap target, which is what it looks like. */
-        onClick={() => input.current?.focus()}
-        className="search-field flex h-11 flex-1 items-center gap-2.5 rounded-pill border border-line bg-surface px-4 shadow-rest transition-colors duration-fast"
+      <button
+        type="button"
+        onClick={() => navigate("/search")}
+        aria-label="Search gifts or stores"
+        className="search-field flex h-11 flex-1 items-center gap-2.5 rounded-pill border border-line bg-surface px-4 text-left shadow-rest transition-colors duration-fast active:scale-[0.99]"
       >
-        <input
-          ref={input}
-          type="search"
-          enterKeyHint="search"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Who are you shopping for?"
-          aria-label="Search gifts or stores"
-          /* h-full, not the input's default 23px line box: the pill is 44px
-             and the input has to BE the tap target, or the top and bottom
-             10px of the bar look tappable and do nothing. */
-          className="h-full w-full min-w-0 bg-transparent text-body text-ink outline-none placeholder:text-muted"
-        />
+        <span className="min-w-0 flex-1 truncate text-body text-muted">
+          {query || "Who are you shopping for?"}
+        </span>
         <SearchIcon className="h-[18px] w-[18px] shrink-0 text-muted" aria-hidden />
-      </form>
-      </div>
+      </button>
+    </div>
   );
 }
 

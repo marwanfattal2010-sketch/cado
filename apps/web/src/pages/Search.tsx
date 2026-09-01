@@ -1,384 +1,482 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { useSearchProducts, useVariantOptionsForProducts } from "../hooks/useProducts";
-import { useSearchStores } from "../hooks/useStores";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "../lib/supabase";
+import { useArea } from "../lib/area";
+import { useCart } from "../hooks/useCart";
+import { productImageUrl } from "../lib/images";
 import { storePath } from "../lib/routes";
+import { formatMoney } from "../lib/money";
+import { Img } from "../components/Img";
 import { ProductCard } from "../components/ProductCard";
-import { ProductGridSkeleton } from "../components/Skeleton";
-import { tidyCategory } from "../components/CategoryChips";
-import { SearchIcon } from "../components/Icons";
-import { Button, RibbonEmpty } from "../components/ui";
-import { ActiveFilterChips } from "../components/FilterBar";
-import {
-  BrowseFilterBar,
-  BrowseFilterPanel,
-  sortBrowse,
-  type BrowseSort,
-} from "../components/BrowseFilters";
-import {
-  NO_FILTERS,
-  filterLabels,
-  productMatches,
-  removeFilter,
-  type CategoryFilters,
-  type FilterableProduct,
-} from "../components/CategoryFilterPanel";
+import { getRecentSearches, addRecentSearch, clearRecentSearches } from "../lib/recentSearches";
 
-type Tab = "items" | "stores";
+/**
+ * The search screen.
+ *
+ * Matching happens in Postgres (search_stores / search_products, 0084): each
+ * WORD must match, and the like-metacharacters are escaped there. That is not
+ * only tidier — composing a PostgREST `.or()` string from what someone typed is
+ * how this codebase has been bitten before, and a search box is exactly where
+ * an attacker types.
+ *
+ * Nothing on this screen is invented. Recent searches are the shopper's own,
+ * from their own browser; a collection tile only appears when its query has
+ * rows; store tiles carry a discount pill only when that store really has one.
+ */
 
-const RECENTS_KEY = "cado-recent-searches";
-const PAGE = 12;
+type StoreHit = {
+  id: string; name: string; slug: string | null; city: string | null;
+  logo_url: string | null; cover_image_url: string | null; category_name: string | null;
+};
+type ItemHit = {
+  id: string; title: string; price: number; compare_at_price: number | null;
+  partner_id: string; partner_name: string; partner_slug: string | null;
+  image_path: string | null; created_at: string;
+};
 
-function readRecents(): string[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? "[]");
-    return Array.isArray(v) ? v.slice(0, 6) : [];
-  } catch {
-    return [];
-  }
-}
+const DEBOUNCE_MS = 300;
+const MIN_CHARS = 2;
 
 export function Search() {
-  const [raw, setRaw] = useState("");
-  const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<Tab>("items");
-  const [recents, setRecents] = useState<string[]>(readRecents);
-  const [shown, setShown] = useState(PAGE);
-  const [filters, setFilters] = useState<CategoryFilters>(NO_FILTERS);
-  const [filterOpen, setFilterOpen] = useState(false);
-  /** Which group the sheet opens on, set by whichever chip was tapped. */
-  const [panelGroup, setPanelGroup] = useState<Parameters<typeof BrowseFilterPanel>[0]["initialGroup"]>(null);
-  const [sort, setSort] = useState<BrowseSort>("recommended");
-  const input = useRef<HTMLInputElement>(null);
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [area] = useArea();
+  const cart = useCart();
+  // The hook returns the rows, not a count.
+  const cartCount = (cart.data ?? []).reduce((n, r) => n + Number(r.quantity ?? 0), 0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Debounce so results settle as you pause typing rather than firing a
-  // request per keystroke. 200ms is below the threshold most people notice.
+  const urlQ = params.get("q") ?? "";
+  const [text, setText] = useState(urlQ);
+  const [debounced, setDebounced] = useState(urlQ);
+  const [tab, setTab] = useState<"stores" | "items">("stores");
+  const [recent, setRecent] = useState<string[]>([]);
+
+  useEffect(() => setRecent(getRecentSearches()), []);
   useEffect(() => {
-    const t = setTimeout(() => setQuery(raw), 200);
+    inputRef.current?.focus();
+  }, []);
+
+  // Debounced so a five-letter word is one query, not five.
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(text.trim()), DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [raw]);
+  }, [text]);
 
-  const stores = useSearchStores(query);
-  const products = useSearchProducts(query);
-  const searching = query.trim().length > 0;
+  const active = debounced.length >= MIN_CHARS;
 
-  const productList = useMemo(
-    () => (products.data ?? []) as unknown as FilterableProduct[],
-    [products.data]
-  );
-  const storeList = useMemo(() => stores.data ?? [], [stores.data]);
+  const stores = useQuery({
+    queryKey: ["search-stores", debounced],
+    enabled: active,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("search_stores", { p_query: debounced, p_limit: 25 });
+      if (error) throw error;
+      return (data ?? []) as StoreHit[];
+    },
+  });
 
-  /**
-   * Sizes for exactly the gifts on screen. product_variants is empty in
-   * production, so this returns nothing and the Size group does not render —
-   * it lights up by itself once a partner adds a variant.
-   */
-  const variants = useVariantOptionsForProducts(useMemo(
-    () => productList.map((p) => p.id),
-    [productList]
-  ));
+  const items = useQuery({
+    queryKey: ["search-items", debounced],
+    enabled: active,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("search_products", { p_query: debounced, p_limit: 40 });
+      if (error) throw error;
+      return (data ?? []) as ItemHit[];
+    },
+  });
 
-  /** Filter and sort happen over the response already in memory — no
-   *  refetch, so a tick is instant and the panel's counts are exact. */
-  const visible = useMemo(
-    () => sortBrowse(productList.filter((p) => productMatches(p, filters, variants.data?.byProduct)), sort),
-    [productList, filters, sort, variants.data]
-  );
-
-  /** Options built from the results in view, never a hardcoded list. */
-  const categoryOptions = useMemo(() => {
-    const names = new Map<string, string>();
-    for (const p of productList) {
-      const c = (p as { category?: { slug?: string | null; name?: string | null } | null }).category;
-      if (c?.slug && c.name) names.set(c.slug, tidyCategory(c.name));
-    }
-    return [...names.entries()]
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [productList]);
-
-  const partnerOptions = useMemo(() => {
-    const names = new Map<string, string>();
-    for (const p of productList) {
-      const s = (p as { partner?: { id?: string | null; name?: string | null } | null }).partner;
-      if (s?.id && s.name) names.set(s.id, s.name);
-    }
-    return [...names.entries()].map(([id, name]) => ({ id, name }));
-  }, [productList]);
-
-  const activeChips = useMemo(
-    () => filterLabels(filters, { stores: partnerOptions, categories: categoryOptions }),
-    [filters, partnerOptions, categoryOptions]
-  );
-
-  /** The bar and the panel take {value,label}; filterLabels takes {id,name}. */
-  const browseOptions = useMemo(
-    () => ({
-      categories: categoryOptions,
-      stores: partnerOptions.map((p) => ({ value: p.id, label: p.name })),
-      sizes: variants.data?.options ?? [],
-    }),
-    [categoryOptions, partnerOptions, variants.data]
-  );
-
-  // A filter that survives into a different search is how a screen ends up
-  // mysteriously empty — "Under $20" carried over from a term that had cheap
-  // gifts into one that doesn't.
+  // Land on whichever tab actually has something.
   useEffect(() => {
-    setFilters(NO_FILTERS);
-    setSort("recommended");
-  }, [query]);
+    if (!active || stores.isLoading || items.isLoading) return;
+    const s = stores.data?.length ?? 0;
+    const i = items.data?.length ?? 0;
+    setTab(s > 0 ? "stores" : i > 0 ? "items" : "stores");
+  }, [active, stores.data, items.data, stores.isLoading, items.isLoading]);
 
-  useEffect(() => setShown(PAGE), [query, tab, filters, sort]);
-
-  // Remember a term only once it has clearly settled and returned something,
-  // so half-typed fragments don't fill the recent list.
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) return;
-    if (products.isLoading || stores.isLoading) return;
-    if (productList.length === 0 && storeList.length === 0) return;
-    setRecents((prev) => {
-      const next = [q, ...prev.filter((r) => r.toLowerCase() !== q.toLowerCase())].slice(0, 6);
-      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
-      return next;
-    });
-  }, [query, products.isLoading, stores.isLoading, productList.length, storeList.length]);
-
-  const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (e) => {
-        if (e[0].isIntersecting) setShown((n) => (n >= visible.length ? n : n + PAGE));
-      },
-      { rootMargin: "400px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [visible.length]);
-
-  const clearRecents = () => {
-    localStorage.removeItem(RECENTS_KEY);
-    setRecents([]);
+  const submit = (term: string) => {
+    const clean = term.trim();
+    if (clean.length < MIN_CHARS) return;
+    setText(clean);
+    setDebounced(clean);
+    setParams({ q: clean }, { replace: true });
+    setRecent(addRecentSearch(clean));
+    inputRef.current?.blur();
   };
 
-  const TabButton = ({ value, label, count }: { value: Tab; label: string; count: number }) => (
-    <button
-      onClick={() => setTab(value)}
-      /* Same two states as every chip on the site: charcoal fill when
-         selected, white with a hairline when not. */
-      className={`tap-44 inline-flex h-9 items-center gap-1.5 rounded-pill border px-4 text-caption font-medium transition-all duration-press ease-out active:scale-[0.97] ${
-        tab === value ? "border-primary bg-primary text-inverse" : "border-line bg-surface text-ink"
-      }`}
-    >
-      {label}
-      {searching ? <span className={tab === value ? "opacity-80" : "text-muted"}>{count}</span> : null}
-    </button>
+  return (
+    <div className="min-h-screen bg-canvas">
+      {/* Top bar */}
+      <div className="sticky top-0 z-20 flex items-center gap-2 bg-canvas px-3 py-2.5">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Back"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-ink active:scale-95"
+        >
+          ‹
+        </button>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit(text);
+          }}
+          className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-pill border border-line bg-surface px-3"
+        >
+          <span aria-hidden className="text-muted">⌕</span>
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            enterKeyHint="search"
+            placeholder="Search gifts or stores"
+            aria-label="Search gifts or stores"
+            className="h-full min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-muted"
+          />
+          {text ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => {
+                setText("");
+                setDebounced("");
+                setParams({}, { replace: true });
+                inputRef.current?.focus();
+              }}
+              className="text-muted"
+            >
+              ✕
+            </button>
+          ) : null}
+        </form>
+
+        <Link
+          to="/cart"
+          aria-label="Cart"
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-ink"
+        >
+          🛍
+          {cartCount > 0 ? (
+            <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-bold text-white">
+              {cartCount}
+            </span>
+          ) : null}
+        </Link>
+      </div>
+
+      {active ? (
+        <Results
+          tab={tab}
+          setTab={setTab}
+          query={debounced}
+          stores={stores.data ?? []}
+          items={items.data ?? []}
+          loading={stores.isLoading || items.isLoading}
+          onSuggest={submit}
+        />
+      ) : (
+        <Landing area={area} recent={recent} onPick={submit} onClear={() => setRecent(clearRecentSearches())} />
+      )}
+    </div>
   );
+}
+
+/* ============================================================ landing ==== */
+
+function Landing({
+  area,
+  recent,
+  onPick,
+  onClear,
+}: {
+  area: string;
+  recent: string[];
+  onPick: (t: string) => void;
+  onClear: () => void;
+}) {
+  // Featured stores, falling back to whatever exists so the row is never empty
+  // for the wrong reason.
+  const featured = useQuery({
+    queryKey: ["search-featured"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partners")
+        .select("id, name, slug, logo_url, cover_image_url, is_featured, featured_rank")
+        .eq("status", "active")
+        .eq("is_live", true)
+        .order("is_featured", { ascending: false })
+        .order("featured_rank", { nullsFirst: false })
+        .limit(10);
+      return data ?? [];
+    },
+  });
+
+  // Which of those stores genuinely has something discounted right now.
+  const discounted = useQuery({
+    queryKey: ["search-discounted-partners"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("partner_id, price, compare_at_price")
+        .eq("is_active", true)
+        .not("compare_at_price", "is", null)
+        .limit(500);
+      const set = new Set<string>();
+      for (const p of data ?? []) {
+        if (p.compare_at_price != null && Number(p.compare_at_price) > Number(p.price)) set.add(p.partner_id);
+      }
+      return set;
+    },
+  });
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
-      {/* A form, so enterKeyHint="search" is not a lie: the return key has
-          something to submit, and submitting blurs the field and drops the
-          keyboard. Results are already live as you type (see the debounce
-          above), so submit deliberately does nothing else. */}
-      <form
-        role="search"
-        onSubmit={(e) => {
-          e.preventDefault();
-          input.current?.blur();
-        }}
-        className="relative"
-      >
-        <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
-        <input
-          ref={input}
-          autoFocus
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          type="search"
-          enterKeyHint="search"
-          placeholder="Search gifts or stores…"
-          /* .search-field: same neutral focus as the homepage bar — the global
-             gold ring is suppressed and the hairline darkens instead. */
-          className="search-field w-full rounded-pill border border-line bg-surface py-3.5 pl-12 pr-11 text-body outline-none transition"
-        />
-        {raw ? (
-          <button
-            type="button"
-            onClick={() => setRaw("")}
-            aria-label="Clear search"
-            className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-pill text-muted hover:bg-surface-sunk"
-          >
-            ✕
-          </button>
-        ) : null}
-      </form>
-
-      {searching ? (
-        <div className="mt-4 flex gap-2">
-          {/* Counts what is actually on screen, so it stays true as the
-              filter sheet narrows the grid. */}
-          <TabButton value="items" label="Gifts" count={visible.length} />
-          <TabButton value="stores" label="Stores" count={storeList.length} />
-        </div>
+    <div className="px-3 pb-24">
+      {/* Featured */}
+      {featured.data && featured.data.length > 0 ? (
+        <section className="mt-2">
+          <h2 className="mb-2 text-[15px] font-bold text-ink">Featured</h2>
+          <div className="-mx-3 flex gap-3 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {featured.data.map((s) => (
+              <Link key={s.id} to={storePath(s)} className="w-[110px] shrink-0">
+                <div className="relative h-[110px] w-[110px] overflow-hidden rounded-[18px] bg-surface-sunk">
+                  {s.logo_url || s.cover_image_url ? (
+                    <Img src={(s.logo_url ?? s.cover_image_url) as string} className="h-full w-full object-cover" />
+                  ) : null}
+                  {discounted.data?.has(s.id) ? (
+                    <span className="absolute bottom-1 left-1 rounded-pill bg-persimmon px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      -20%
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 line-clamp-2 text-center text-[12px] leading-tight text-ink">{s.name}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
       ) : null}
 
-      {!searching ? (
-        recents.length > 0 ? (
-          <div className="mt-6">
-            <div className="flex items-center justify-between">
-              <p className="text-eyebrow uppercase text-muted">Recent</p>
-              <button onClick={clearRecents} className="text-caption text-muted underline">
-                Clear
+      {/* Recent searches — the shopper's own, hidden when there are none. */}
+      {recent.length > 0 ? (
+        <section className="mt-5">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-[15px] font-bold text-ink">Recent searches</h2>
+            <button type="button" onClick={onClear} className="text-[12px] font-medium text-muted">
+              Clear
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {recent.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => onPick(t)}
+                className="rounded-pill border border-line bg-surface px-3 py-1.5 text-[13px] text-ink"
+              >
+                {t}
               </button>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {recents.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRaw(r)}
-                  className="inline-flex h-9 items-center rounded-pill bg-surface-sunk px-4 text-caption font-medium"
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
-        ) : (
-          <div className="py-16 text-center">
-            <RibbonEmpty className="mx-auto h-14 w-14" />
-            <p className="mt-3 text-body text-muted">Start typing to find a gift or a store.</p>
-          </div>
-        )
-      ) : tab === "items" ? (
-        products.isLoading ? (
-          <div className="mt-6">
-            {/* Reserve the bar too, so the first row of results does not get
-                shoved down 44px when the response lands. */}
-            <div className="flex items-center gap-2">
-              <span className="skeleton h-11 flex-1 rounded-pill" />
-              <span className="h-6 w-px shrink-0 bg-line" />
-              <span className="skeleton h-11 flex-1 rounded-pill" />
-            </div>
-            <div className="pt-5">
-              <ProductGridSkeleton count={6} />
-            </div>
-          </div>
-        ) : productList.length > 0 ? (
-          <>
-            <div className="mt-6">
-              <BrowseFilterBar
-                rows={productList}
-                filters={filters}
-                options={browseOptions}
-                sort={sort}
-                onSort={setSort}
-                onOpenPanel={(g) => {
-                  setPanelGroup(g ?? null);
-                  setFilterOpen(true);
-                }}
-              />
-              <ActiveFilterChips
-                chips={activeChips}
-                onRemove={(key, value) => setFilters((f) => removeFilter(f, key, value))}
-                onClear={() => setFilters(NO_FILTERS)}
-              />
-            </div>
+        </section>
+      ) : null}
 
-            {visible.length > 0 ? (
-              <>
-                <div className="mt-5 animate-fade-in grid grid-cols-2 gap-x-2 gap-y-[10px] sm:grid-cols-3 md:grid-cols-4">
-                  {visible.slice(0, shown).map((p) => (
-                    <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
-                  ))}
-                </div>
-                <div ref={sentinel} className="h-8" />
-              </>
-            ) : (
-              /* Filtered to nothing is the person's own doing and is one tap
-                 to undo — it must never be dressed up as "we have nothing". */
-              <div className="py-14 text-center">
-                <RibbonEmpty className="mx-auto h-14 w-14" />
-                <p className="mt-3 font-display text-h2">No gifts match these filters</p>
-                <p className="mx-auto mt-2 max-w-xs text-body text-muted">
-                  There {productList.length === 1 ? "is" : "are"} {productList.length}{" "}
-                  {productList.length === 1 ? "result" : "results"} for "{query}" — just none matching
-                  all of them.
-                </p>
-                <Button className="mt-5" onClick={() => setFilters(NO_FILTERS)}>
-                  Clear filters
-                </Button>
-              </div>
-            )}
-          </>
-        ) : (
-          <EmptyResult query={query} kind="gifts" />
-        )
-      ) : stores.isLoading ? (
-        <div className="mt-6 space-y-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="skeleton h-20 rounded-card" />
-          ))}
-        </div>
-      ) : storeList.length > 0 ? (
-        <div className="mt-6 flex animate-fade-in flex-col gap-2">
-          {storeList.map((s) => (
-            <Link
-              key={s.id}
-              to={storePath(s)}
-              className="flex items-center gap-3 rounded-card bg-surface p-3 shadow-rest transition active:scale-[0.99]"
-            >
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-card bg-surface-sunk">
-                {s.cover_image_url ? (
-                  <img src={s.cover_image_url} alt="" className="h-full w-full object-cover" />
-                ) : null}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-product-name">{s.name}</p>
-                {s.description ? (
-                  <p className="truncate text-caption text-muted">{s.description}</p>
-                ) : null}
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <EmptyResult query={query} kind="stores" />
-      )}
-
-      {/* Search spans every category, so unlike /category/:slug this panel
-          DOES offer the Category group. */}
-      <BrowseFilterPanel
-        open={filterOpen}
-        onClose={() => setFilterOpen(false)}
-        rows={productList}
-        options={browseOptions}
-        filters={filters}
-        onApply={setFilters}
-        initialGroup={panelGroup}
-        sizesByProduct={variants.data?.byProduct}
-      />
+      <Collections area={area} />
     </div>
   );
 }
 
-function EmptyResult({ query, kind }: { query: string; kind: "gifts" | "stores" }) {
+/* -------------------------------------------------------- collections --- */
+
+type Collection = { key: string; label: string; to: string };
+
+function Collections({ area }: { area: string }) {
+  const collections: Collection[] = useMemo(
+    () => [
+      { key: "city", label: `Top stores in ${area} 📍`, to: "/stores" },
+      { key: "local", label: "Made in Lebanon 🇱🇧", to: "/stores?local=1" },
+      { key: "under50", label: "Under $50 💸", to: "/browse?max=50" },
+      { key: "deals", label: "Deals 🔥", to: "/browse?deals=1" },
+      { key: "new", label: "New in ✨", to: "/browse?new=1" },
+      { key: "giftsets", label: "Gift Sets 🎁", to: "/category/gift-sets" },
+    ],
+    [area]
+  );
+
+  // One real photo per collection, taken from that collection's own first
+  // result. A tile with no rows behind it is hidden rather than shown with a
+  // stock photo.
+  const photos = useQuery({
+    queryKey: ["collection-photos", area],
+    queryFn: async () => {
+      const out: Record<string, string | null> = {};
+      const firstImage = async (productIds: string[]) => {
+        if (productIds.length === 0) return null;
+        const { data } = await supabase
+          .from("product_images")
+          .select("storage_path")
+          .in("product_id", productIds)
+          .order("is_primary", { ascending: false })
+          .limit(1);
+        return data?.[0]?.storage_path ? productImageUrl(data[0].storage_path) : null;
+      };
+
+      const [under50, deals, fresh, local, city] = await Promise.all([
+        supabase.from("products").select("id").eq("is_active", true).lt("price", 50).limit(6),
+        supabase.from("products").select("id, price, compare_at_price").eq("is_active", true)
+          .not("compare_at_price", "is", null).limit(20),
+        supabase.from("products").select("id").eq("is_active", true)
+          .gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()).limit(6),
+        supabase.from("partners").select("id").eq("is_lebanese_brand", true).eq("status", "active").limit(1),
+        supabase.from("partners").select("id").eq("city", area).eq("status", "active").limit(1),
+      ]);
+
+      out.under50 = await firstImage((under50.data ?? []).map((p) => p.id));
+      const realDeals = (deals.data ?? []).filter(
+        (p) => p.compare_at_price != null && Number(p.compare_at_price) > Number(p.price)
+      );
+      out.deals = realDeals.length ? await firstImage(realDeals.map((p) => p.id)) : null;
+      out.new = await firstImage((fresh.data ?? []).map((p) => p.id));
+      out.local = (local.data ?? []).length > 0 ? null : "HIDE";
+      out.city = (city.data ?? []).length > 0 ? null : "HIDE";
+
+      const { data: giftSets } = await supabase
+        .from("products").select("id, category:categories!inner(slug)")
+        .eq("is_active", true).eq("categories.slug", "gift-sets").limit(6);
+      out.giftsets = await firstImage((giftSets ?? []).map((p) => p.id));
+      out.deals = realDeals.length ? out.deals : "HIDE";
+      return out;
+    },
+  });
+
+  const visible = collections.filter((c) => photos.data?.[c.key] !== "HIDE");
+
   return (
-    <div className="py-14 text-center">
-      <RibbonEmpty className="mx-auto h-14 w-14" />
-      <p className="mt-3 font-display text-h2">No {kind} for "{query}"</p>
-      <p className="mx-auto mt-2 max-w-xs text-body text-muted">
-        Try a shorter word, or let us narrow it down for you.
-      </p>
-      <Link
-        to="/gift-finder"
-        className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
-      >
-        Browse gifts
-      </Link>
+    <section className="mt-6">
+      <h2 className="mb-2 text-[15px] font-bold text-ink">Collections</h2>
+      <div className="grid grid-cols-2 gap-3">
+        {visible.map((c) => {
+          const photo = photos.data?.[c.key];
+          return (
+            <Link key={c.key} to={c.to} className="flex flex-col items-center">
+              <span className="relative flex h-[92px] w-full items-center justify-center overflow-hidden rounded-pill bg-persimmon/10">
+                {photo && photo !== "HIDE" ? (
+                  <Img src={photo} className="h-[76px] w-[76px] rounded-pill object-cover" />
+                ) : (
+                  <span className="text-[28px]">{c.label.slice(-2)}</span>
+                )}
+              </span>
+              <span className="mt-1.5 text-center text-[13px] font-medium leading-tight text-ink">{c.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================ results ==== */
+
+function Results({
+  tab, setTab, query, stores, items, loading, onSuggest,
+}: {
+  tab: "stores" | "items";
+  setTab: (t: "stores" | "items") => void;
+  query: string;
+  stores: StoreHit[];
+  items: ItemHit[];
+  loading: boolean;
+  onSuggest: (t: string) => void;
+}) {
+  const nothing = !loading && stores.length === 0 && items.length === 0;
+
+  return (
+    <div className="pb-24">
+      <div className="flex border-b border-line px-3">
+        {(["stores", "items"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`relative px-4 py-2.5 text-[14px] font-semibold capitalize ${
+              tab === t ? "text-ink" : "text-muted"
+            }`}
+          >
+            {t} {t === "stores" ? `(${stores.length})` : `(${items.length})`}
+            {tab === t ? (
+              <span className="absolute inset-x-2 bottom-0 h-[2px] rounded-pill bg-persimmon" />
+            ) : null}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="px-3 pt-4">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-[10px]">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i}>
+                <div className="aspect-[3/4] w-full animate-pulse rounded-card bg-surface-sunk" />
+                <div className="mt-2 h-3 w-2/3 animate-pulse rounded bg-surface-sunk" />
+                <div className="mt-1.5 h-3 w-1/3 animate-pulse rounded bg-surface-sunk" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : nothing ? (
+        <div className="px-6 py-16 text-center">
+          <p className="text-body text-ink">Nothing for “{query}” yet — try another word</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {["Under $50", "Gift Sets", "New in"].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onSuggest(s.replace(/[^a-zA-Z ]/g, "").trim())}
+                className="rounded-pill border border-line bg-surface px-3 py-1.5 text-[13px] text-ink"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : tab === "stores" ? (
+        <ul className="divide-y divide-line px-3">
+          {stores.map((s) => (
+            <li key={s.id}>
+              <Link to={storePath(s)} className="flex items-center gap-3 py-3">
+                <span className="h-14 w-14 shrink-0 overflow-hidden rounded-pill bg-surface-sunk">
+                  {s.logo_url || s.cover_image_url ? (
+                    <Img src={(s.logo_url ?? s.cover_image_url) as string} className="h-full w-full object-cover" />
+                  ) : null}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-body font-semibold text-ink">{s.name}</span>
+                  <span className="block truncate text-caption text-muted">
+                    {[s.category_name, s.city].filter(Boolean).join(" · ") || "Store"}
+                  </span>
+                </span>
+                <span aria-hidden className="text-muted">›</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="grid grid-cols-2 gap-x-2 gap-y-[10px] px-3 pt-3">
+          {items.map((p) => (
+            <ProductCard
+              key={p.id}
+              id={p.id}
+              title={p.title}
+              price={Number(p.price)}
+              compare_at_price={p.compare_at_price == null ? null : Number(p.compare_at_price)}
+              created_at={p.created_at}
+              product_images={p.image_path ? [{ storage_path: p.image_path, is_primary: true }] : null}
+              partner={{ name: p.partner_name, slug: p.partner_slug, id: p.partner_id }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
+export default Search;
+export { formatMoney };
