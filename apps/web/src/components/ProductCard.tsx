@@ -234,17 +234,21 @@ export function ProductCard(props: ProductCardProps) {
   const chips = chipsFor({ ...props, category_slug: category?.slug ?? null }, category?.name);
 
   return (
-    <div className={`group w-full break-inside-avoid ${uniform ? "flex flex-col" : "mb-3"}`}>
+    <div className="group flex w-full flex-col break-inside-avoid">
       <Link
         to={`/product/${id}`}
         className="block w-full transition-transform duration-150 active:scale-[0.97]"
       >
-        {/* No fixed ratio: the tinted box is sized by the image itself, so the
-            card is as tall as its photo and the columns fall out of step.
-            Uniform mode squares it, which is the whole point of uniform. */}
+        {/*
+          EVERY card gets a fixed ratio now. The photo used to size the box,
+          so a portrait shot next to a square one made one card taller than
+          its neighbour and left a dead block the height of the difference —
+          the wasted space in the grids. 3:4 for the grid, square for the
+          swipe rows where cards sit beside each other in one line.
+        */}
         <div
           className={`relative w-full overflow-hidden rounded-card bg-surface-sunk ${
-            uniform ? "aspect-square" : ""
+            uniform ? "aspect-square" : "aspect-[3/4]"
           }`}
         >
           {uri ? (
@@ -255,9 +259,9 @@ export function ProductCard(props: ProductCardProps) {
               decoding="async"
               onLoad={() => setLoaded(true)}
               onError={() => setLoaded(true)}
-              className={`w-full object-cover transition-all duration-500 ${
-                uniform ? "h-full" : "h-auto"
-              } ${loaded ? "blur-0 opacity-100" : "blur-md opacity-0"}`}
+              className={`h-full w-full object-cover transition-all duration-500 ${
+                loaded ? "blur-0 opacity-100" : "blur-md opacity-0"
+              }`}
             />
           ) : (
             <div className="flex aspect-square h-full w-full items-center justify-center text-caption text-muted">
@@ -301,11 +305,13 @@ export function ProductCard(props: ProductCardProps) {
         </div>
       </Link>
 
-      {/* Uniform mode boxes everything under the photo at one fixed height,
-          so a missing store name or a low-stock line cannot make this card
-          taller than the one beside it. `contents` means the free-height card
-          is laid out exactly as before. */}
-      <div className={uniform ? "h-[92px] overflow-hidden" : "contents"}>
+      {/*
+        The text block is a FIXED height for every card, uniform or not. A
+        missing store name or an extra hashtag used to change a card's height
+        and knock the row below it out of alignment; boxing it means row N+1
+        always starts at the same y for both columns.
+      */}
+      <div className={`overflow-hidden ${uniform ? "h-[92px]" : "h-[86px]"}`}>
       {/* Store first — the trust signal, and its own link. Its own colour
           too, so "who is this from" is scannable without reading the title. */}
       {partner?.name ? (

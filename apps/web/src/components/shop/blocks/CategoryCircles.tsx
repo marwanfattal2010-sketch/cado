@@ -144,7 +144,7 @@ export function CategoryCircles({
                     className="flex flex-col items-center gap-1.5 px-0.5 text-center transition-transform duration-press ease-out active:scale-[0.94]"
                   >
                     <span
-                      className={`flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-[24px] ${
+                      className={`flex h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-[24px] ${
                         on ? "ring-2 ring-[#F94E33] ring-offset-2 ring-offset-surface" : ""
                       }`}
                       style={{ background: accentColor(accentToken, 0.1) }}

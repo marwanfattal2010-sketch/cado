@@ -526,7 +526,7 @@ function Results({
           <ProductGridSkeleton count={8} />
         ) : visible.length > 0 ? (
           <>
-            <div className="animate-fade-in columns-2 gap-3 md:columns-4">
+            <div className="animate-fade-in grid grid-cols-2 gap-x-2 gap-y-[10px] md:grid-cols-4">
               {visible.map((p) => (
                 <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
               ))}

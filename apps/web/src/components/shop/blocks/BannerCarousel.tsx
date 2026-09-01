@@ -97,7 +97,7 @@ export function BannerCarousel({
           const photo = banner.image_url ?? fallbackImage ?? null;
           return (
           <div key={banner.id} className="relative w-full">
-            <div className="relative aspect-[2/1] w-full overflow-hidden">
+            <div className="relative h-[160px] w-full overflow-hidden">
               {/* Accent underneath either way, so the headline has something
                   solid behind it for the frame before the photo decodes. */}
               <div aria-hidden className="absolute inset-0" style={{ background: accentColor(accentToken) }} />
@@ -145,7 +145,7 @@ export function BannerCarousel({
                   <button
                     type="button"
                     onClick={() => onCta(banner)}
-                    className="mt-1 w-fit bg-surface px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] text-ink"
+                    className="mt-1 flex h-9 w-fit items-center bg-surface px-4 text-[12px] font-bold uppercase tracking-[0.08em] text-ink"
                   >
                     {banner.cta_label}
                   </button>

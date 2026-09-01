@@ -109,7 +109,7 @@ export function ShopSearchResults({ query }: { query: string }) {
       {products.isLoading ? (
         <ProductGridSkeleton count={6} />
       ) : products.data && products.data.length > 0 ? (
-        <div className="animate-fade-in columns-2 gap-3 md:columns-4">
+        <div className="animate-fade-in grid grid-cols-2 gap-x-2 gap-y-[10px] md:grid-cols-4">
           {products.data.map((p) => (
             <ProductCard key={p.id} {...p} />
           ))}

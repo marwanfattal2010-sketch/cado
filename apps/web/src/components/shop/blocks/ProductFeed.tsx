@@ -108,24 +108,27 @@ export function ProductFeed({
   }
 
   /**
-   * The strip breaks the masonry into two runs rather than sitting inside it.
-   * A full-width child of a `columns-2` container is not a thing CSS
-   * multi-column can express — it would be treated as one more item in a
-   * column — so the grid is split at the slot instead.
+   * The strip breaks the feed into two runs rather than sitting inside it.
+   *
+   * This used to be a `columns-2` masonry, which is what left the ragged
+   * empty blocks: a portrait photo made one column taller and the next card
+   * started wherever the previous one happened to end. It is a real grid now,
+   * with every card the same height, so the split is only about where the
+   * full-width strip goes — not about the layout falling out of step.
    */
   const head = renderAfter ? products.slice(0, afterIndex) : products;
   const tail = renderAfter ? products.slice(afterIndex) : [];
 
   return (
     <div className="pt-5">
-      <div className="columns-2 gap-2 px-[var(--page-x)]">
+      <div className="grid grid-cols-2 gap-x-2 gap-y-[10px] px-[var(--page-x)]">
         {head.map((p) => (
           <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
         ))}
       </div>
       {renderAfter && products.length > afterIndex ? renderAfter : null}
       {tail.length > 0 ? (
-        <div className="columns-2 gap-2 px-[var(--page-x)] pt-4">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-[10px] px-[var(--page-x)] pt-4">
           {tail.map((p) => (
             <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} />
           ))}

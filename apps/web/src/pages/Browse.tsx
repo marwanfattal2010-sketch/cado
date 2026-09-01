@@ -43,7 +43,7 @@ export function Browse() {
             </p>
           </div>
         ) : (
-          <div className="mt-8 animate-fade-in columns-2 gap-3 sm:columns-3 md:columns-4">
+          <div className="mt-8 animate-fade-in grid grid-cols-2 gap-x-2 gap-y-[10px] sm:grid-cols-3 md:grid-cols-4">
             {results.map((p) => (
               <ProductCard key={p.id} {...p} />
             ))}
