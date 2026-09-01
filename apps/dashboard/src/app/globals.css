@@ -1,142 +1,226 @@
 /* ===========================================================================
-   CADO back-office — V3 design system.
+   CADO back-office — V4 design tokens.
    ===========================================================================
 
-   The dashboard deliberately does NOT look like the storefront. The storefront
-   is cream, serif and playful because it is selling gifts. This is a tool that
-   has to feel calm, dense and expensive for someone staring at it all day.
+   V3 was rejected for being "so dark, there's no colors". The base was
+   near-black and every card was the same grey. V4 keeps a dark room but paints
+   it: a deep plum-charcoal ground, and every card carrying its own tint with a
+   soft glow, so the eye can tell revenue from orders from customers at a
+   glance instead of reading six identical boxes.
 
-   Two themes, both defined as VALUES for the same token names, so every page
-   in the app re-skins without touching a single component:
-
-     Midnight (default)  dark, the reference Marwan sent
-     Paper               light, for daylight and printing
-
-   Persimmon #F94E33 is the ONE accent. Primary buttons, the active nav item,
-   the current-day marker, the assistant's send button, needs-attention dots.
-   Nowhere else. No gradients, no glow — colour is information here, not
-   decoration, and a UI that shouts everywhere says nothing.
+   The token NAMES are unchanged from V3 on purpose — canvas / surface /
+   surface-sunk / line / ink / secondary / muted / ribbon — so every page in the
+   app takes the new look without being rewritten. Only the values move.
    ========================================================================= */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* --------------------------------------------------------- Midnight ------ */
+/* ------------------------------------------------------ Dark (default) --- */
 :root,
 :root[data-theme="midnight"] {
-  --canvas: #0e0f13;
-  --surface: #15171d;
-  --surface-sunk: #1c1f27;
-  --surface-raised: #1c1f27;
-  --ink: #f3f4f6;
-  --text: #f3f4f6;
-  --text-secondary: #a2a8b6;
-  --text-muted: #6b7280;
-  --text-inverse: #0e0f13;
-  --border: #262a34;
-  --border-strong: #333846;
+  --canvas: #14121c;        /* deep plum-charcoal, never pure black */
+  --surface: #1c1926;       /* sidebar, cards */
+  --surface-sunk: #262233;  /* inputs, nested cards */
+  --surface-raised: #262233;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --ink: #f3efea;
+  --text: #f3efea;
+  --text-secondary: #a9a3b3;
+  --text-muted: #6e6879;
+  --text-inverse: #14121c;
 
   --ribbon: #f94e33;
+  --ribbon-2: #ff7a5c;
   --ribbon-deep: #d63a20;
-  /* Tints are translucent, not mixed with a fixed background, so a pill sits
-     correctly on canvas AND on a raised card. */
-  --ribbon-tint: rgba(249, 78, 51, 0.14);
-  --gold: #c9a227;
+  --ribbon-tint: rgba(249, 78, 51, 0.18);
+  --cream: #fbf7f1;
+  --gold: #f5a524;
 
-  --today: #3ddc97;
-  --today-tint: rgba(61, 220, 151, 0.14);
+  /* Card tints — each section owns one. */
+  --tint-coral: #f94e33;
+  --tint-amber: #f5a524;
+  --tint-mint: #2fbf8f;
+  --tint-sky: #4c9bff;
+  --tint-rose: #f06292;
+  --tint-violet: #8e7cff;
+
+  /* Status */
+  --st-new: #4c9bff;
+  --st-preparing: #f5a524;
+  --st-out: #8e7cff;
+  --st-delivered: #2fbf8f;
+  --st-cancelled: #ff5c5c;
+  --st-pending: #a9a3b3;
+
+  /* Mapped onto the status names the existing pages already use. */
+  --status-green: #2fbf8f;
+  --status-green-tint: rgba(47, 191, 143, 0.16);
+  --status-amber: #f5a524;
+  --status-amber-tint: rgba(245, 165, 36, 0.16);
+  --status-red: #ff5c5c;
+  --status-red-tint: rgba(255, 92, 92, 0.16);
+  --status-blue: #4c9bff;
+  --status-blue-tint: rgba(76, 155, 255, 0.16);
+  --status-indigo: #8e7cff;
+  --status-indigo-tint: rgba(142, 124, 255, 0.16);
+  --status-purple: #b98cff;
+  --status-purple-tint: rgba(185, 140, 255, 0.16);
+  --status-grey: #a9a3b3;
+  --status-grey-tint: rgba(169, 163, 179, 0.14);
+
+  --today: #2fbf8f;
+  --today-tint: rgba(47, 191, 143, 0.16);
   --alert: #ff5c5c;
 
-  --status-green: #3ddc97;
-  --status-green-tint: rgba(61, 220, 151, 0.14);
-  --status-amber: #f5b94a;
-  --status-amber-tint: rgba(245, 185, 74, 0.14);
-  --status-red: #ff5c5c;
-  --status-red-tint: rgba(255, 92, 92, 0.14);
-  --status-blue: #5b9cff;
-  --status-blue-tint: rgba(91, 156, 255, 0.14);
-  --status-indigo: #8b9dff;
-  --status-indigo-tint: rgba(139, 157, 255, 0.14);
-  --status-purple: #b98cff;
-  --status-purple-tint: rgba(185, 140, 255, 0.14);
-  --status-grey: #6b7280;
-  --status-grey-tint: rgba(107, 114, 128, 0.16);
+  --skeleton-hi: #2e2a3b;
 
-  --skeleton-hi: #232733;
-
-  --radius-card: 12px;
+  --radius-card: 18px;
+  --r-inner: 12px;
   --radius-pill: 999px;
-  --radius-sheet: 16px;
-  /* Dark surfaces separate by border, never by shadow. */
-  --shadow-rest: none;
-  --shadow-lift: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --radius-sheet: 18px;
+  --shadow-rest: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
 
-/* ------------------------------------------------------------ Paper ------ */
+/* ------------------------------------------------------------- Light ---- */
 :root[data-theme="paper"] {
-  --canvas: #f7f6f2;
+  --canvas: #fbf7f1;
   --surface: #ffffff;
-  --surface-sunk: #f1efe9;
+  --surface-sunk: #f4efe7;
   --surface-raised: #ffffff;
-  --ink: #141518;
-  --text: #141518;
-  --text-secondary: #5c6070;
-  --text-muted: #8b8f9c;
+  --border: rgba(20, 18, 28, 0.10);
+  --border-strong: rgba(20, 18, 28, 0.20);
+
+  --ink: #14121c;
+  --text: #14121c;
+  --text-secondary: #5c5766;
+  --text-muted: #8b8695;
   --text-inverse: #ffffff;
-  --border: #e6e4dd;
-  --border-strong: #d6d3c9;
 
   --ribbon: #f94e33;
+  --ribbon-2: #ff7a5c;
   --ribbon-deep: #d63a20;
-  --ribbon-tint: rgba(249, 78, 51, 0.10);
-  --gold: #a8871f;
+  --ribbon-tint: rgba(249, 78, 51, 0.12);
+  --cream: #fbf7f1;
+  --gold: #b5790f;
 
-  --today: #12805a;
-  --today-tint: rgba(18, 128, 90, 0.10);
-  --alert: #c8352f;
+  --tint-coral: #f94e33;
+  --tint-amber: #e0900f;
+  --tint-mint: #17996f;
+  --tint-sky: #2b7fe0;
+  --tint-rose: #d94a78;
+  --tint-violet: #6f5be0;
 
-  --status-green: #12805a;
-  --status-green-tint: rgba(18, 128, 90, 0.10);
-  --status-amber: #a86a12;
-  --status-amber-tint: rgba(168, 106, 18, 0.10);
-  --status-red: #c8352f;
-  --status-red-tint: rgba(200, 53, 47, 0.10);
-  --status-blue: #2b6bc4;
-  --status-blue-tint: rgba(43, 107, 196, 0.10);
-  --status-indigo: #4f46e5;
-  --status-indigo-tint: rgba(79, 70, 229, 0.10);
+  --st-new: #2b7fe0;
+  --st-preparing: #e0900f;
+  --st-out: #6f5be0;
+  --st-delivered: #17996f;
+  --st-cancelled: #d93b3b;
+  --st-pending: #8b8695;
+
+  --status-green: #17996f;
+  --status-green-tint: rgba(23, 153, 111, 0.12);
+  --status-amber: #b5790f;
+  --status-amber-tint: rgba(224, 144, 15, 0.12);
+  --status-red: #d93b3b;
+  --status-red-tint: rgba(217, 59, 59, 0.12);
+  --status-blue: #2b7fe0;
+  --status-blue-tint: rgba(43, 127, 224, 0.12);
+  --status-indigo: #6f5be0;
+  --status-indigo-tint: rgba(111, 91, 224, 0.12);
   --status-purple: #7e22ce;
-  --status-purple-tint: rgba(126, 34, 206, 0.10);
-  --status-grey: #6b7280;
-  --status-grey-tint: rgba(107, 114, 128, 0.10);
+  --status-purple-tint: rgba(126, 34, 206, 0.12);
+  --status-grey: #8b8695;
+  --status-grey-tint: rgba(139, 134, 149, 0.12);
 
-  --skeleton-hi: #e8e6df;
+  --today: #17996f;
+  --today-tint: rgba(23, 153, 111, 0.12);
+  --alert: #d93b3b;
 
-  --radius-card: 12px;
+  --skeleton-hi: #ece6dc;
+
+  --radius-card: 18px;
+  --r-inner: 12px;
   --radius-pill: 999px;
-  --radius-sheet: 16px;
-  --shadow-rest: 0 1px 2px rgba(20, 21, 24, 0.05);
-  --shadow-lift: 0 12px 32px rgba(20, 21, 24, 0.12);
+  --radius-sheet: 18px;
+  --shadow-rest: 0 6px 20px rgba(20, 18, 28, 0.08);
+  --shadow-lift: 0 18px 44px rgba(20, 18, 28, 0.16);
 }
 
 html,
 body {
   background: var(--canvas);
   color: var(--text);
-  font-family: "Manrope", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", "Manrope", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Every figure in a back-office sits in a column next to another figure.
-   Tabular numerals keep those columns straight. */
+/* Every figure sits in a column next to another figure. */
 .tnum,
 table,
 input[inputmode="decimal"] {
   font-variant-numeric: tabular-nums;
 }
 
-/* Skeletons, never spinners — a spinner says "wait", a skeleton says what is
-   about to appear. */
+/* The editorial voice, used ONLY on the Home hero. */
+.font-editorial {
+  font-family: "Fraunces", Georgia, serif;
+}
+
+/* ---------------------------------------------------------- tint cards --- */
+/*
+ * One recipe, six colours. Set --tint on the element and it gets the gradient,
+ * the hairline in its own colour and the glow. color-mix keeps the tint
+ * readable on both themes without maintaining twelve hand-mixed values.
+ */
+.tint-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tint) 28%, var(--surface)) 0%,
+    color-mix(in srgb, var(--tint) 10%, var(--surface)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--tint) 30%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tint) 25%, transparent),
+    0 12px 40px -12px color-mix(in srgb, var(--tint) 45%, transparent);
+}
+:root[data-theme="paper"] .tint-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tint) 12%, var(--surface)) 0%,
+    color-mix(in srgb, var(--tint) 5%, var(--surface)) 100%
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tint) 18%, transparent),
+    0 10px 28px -14px color-mix(in srgb, var(--tint) 40%, transparent);
+}
+.tint-chip {
+  background: color-mix(in srgb, var(--tint) 22%, transparent);
+  color: var(--tint);
+}
+
+/* ------------------------------------------------------------ motion ----- */
+/*
+ * ONE stagger, on Home's cards, once. Nothing else on the page moves unless
+ * the user did something.
+ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.stagger > * {
+  animation: rise 240ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -145,7 +229,7 @@ input[inputmode="decimal"] {
     var(--surface-sunk) 63%
   );
   background-size: 800px 100%;
-  border-radius: 8px;
+  border-radius: 10px;
   animation: shimmer 1.4s ease-in-out infinite;
 }
 @keyframes shimmer {
@@ -158,7 +242,6 @@ input[inputmode="decimal"] {
   outline-offset: 2px;
 }
 
-/* Dense scrollbars; the default light ones look broken on Midnight. */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
@@ -171,10 +254,10 @@ input[inputmode="decimal"] {
   background-clip: content-box;
 }
 
-/* Nothing animates on load. Only in response to something the user did. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
 }

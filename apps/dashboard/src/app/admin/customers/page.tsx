@@ -1,119 +1,143 @@
+import Link from "next/link";
+import { Users } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
-import { PageHeader, Card, EmptyStateV2, usd } from "@/components/ui";
-import { untypedFrom } from "@/lib/untyped";
+import { callRpc } from "@/lib/rpc";
+import { Initials } from "@/components/v3/tint";
+import { CustomerSearch } from "./CustomerSearch";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Customers (§4.5): who buys, how often, and what they hold on their wallet.
- * Every column is a real aggregate over that customer's own rows. No payment
- * data beyond the method ever appears — none is stored.
+ * CUSTOMERS (V4 §6) — name, phone, city, orders, spend, last order.
+ *
+ * Everything comes from admin_customers_list(): profiles, orders and addresses
+ * are all closed to admins by RLS, so a direct query would return an empty
+ * table and look like CADO has no customers.
+ *
+ * The list shows a customer's CITY but not their street. Full address detail is
+ * on the one-person page, where an admin has actually navigated to that person —
+ * a table of everyone's doorsteps is not something to leave lying open.
  */
+
+const PAGE_SIZE = 50;
+
+type Row = {
+  customer_id: string; full_name: string; phone: string | null; city: string | null;
+  orders: number; total_spent: number; last_order: string | null; joined: string;
+  total_count: number;
+};
+
+const usd = (v: unknown) =>
+  `$${Number(v ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const date = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
+
 export default async function AdminCustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ focus?: string; q?: string }>;
+  searchParams: Promise<{ q?: string; city?: string; page?: string }>;
 }) {
   await requireAdmin();
   const supabase = await createServerClient();
-  const { focus, q } = await searchParams;
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page ?? 1) || 1);
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, phone, created_at, role")
-    .eq("role", "customer")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const { data, error } = await callRpc<Row[]>(supabase, "admin_customers_list", {
+    p_search: (sp.q ?? "").trim() || null,
+    p_city: sp.city || null,
+    p_limit: PAGE_SIZE,
+    p_offset: (page - 1) * PAGE_SIZE,
+  });
 
-  const ids = (profiles ?? []).map((p) => p.id);
-  const [{ data: orders }, { data: wallets }] = await Promise.all([
-    ids.length
-      ? supabase.from("orders").select("customer_id, total, created_at").in("customer_id", ids).limit(5000)
-      : Promise.resolve({ data: [] as { customer_id: string; total: number; created_at: string }[] }),
-    ids.length
-      ? untypedFrom(supabase as never, "wallets").select("profile_id, balance").in("profile_id", ids)
-      : Promise.resolve({ data: [] as { profile_id: string; balance: number }[] }),
-  ]);
+  const rows = data ?? [];
+  const total = Number(rows[0]?.total_count ?? 0);
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const byCustomer = new Map<string, { n: number; spend: number; last: string }>();
-  for (const o of orders ?? []) {
-    const cur = byCustomer.get(o.customer_id) ?? { n: 0, spend: 0, last: "" };
-    cur.n += 1;
-    cur.spend += Number(o.total ?? 0);
-    if (o.created_at > cur.last) cur.last = o.created_at;
-    byCustomer.set(o.customer_id, cur);
-  }
-  const walletOf = new Map(((wallets ?? []) as { profile_id: string; balance: number }[]).map((w) => [w.profile_id, Number(w.balance ?? 0)]));
-
-  const needle = (q ?? "").toLowerCase();
-  const rows = (profiles ?? []).filter(
-    (p) =>
-      !needle ||
-      (p.full_name ?? "").toLowerCase().includes(needle) ||
-      (p.phone ?? "").includes(needle)
-  );
+  const qs = (over: Record<string, string | number | undefined>) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries({ q: sp.q, city: sp.city, page: sp.page, ...over })) if (v) p.set(k, String(v));
+    return `/admin/customers${p.toString() ? `?${p}` : ""}`;
+  };
 
   return (
     <div>
-      <PageHeader title="Customers" />
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-[26px] font-semibold leading-8 text-ink">Customers</h1>
+          <p className="mt-0.5 text-[13.5px] text-secondary tnum">
+            {total.toLocaleString()} customer{total === 1 ? "" : "s"}
+            {sp.q ? " matching your search" : ""}
+          </p>
+        </div>
+        <CustomerSearch initial={sp.q ?? ""} />
+      </div>
 
-      <form className="mb-4" action="/admin/customers" method="get">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search name, email or phone…"
-          className="w-full max-w-sm rounded-card border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-ink/40"
-        />
-      </form>
+      {error ? (
+        <p className="mb-4 rounded-card border border-status-red bg-status-red-tint px-3 py-2 text-[13px] text-status-red">
+          Could not load customers: {error.message}
+        </p>
+      ) : null}
 
-      {rows.length === 0 ? (
-        <EmptyStateV2 title={q ? `No customers match “${q}”.` : "No customer accounts yet."} />
-      ) : (
-        <Card>
+      <div className="overflow-hidden rounded-card border border-line bg-surface">
+        {rows.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 px-4 py-16 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-surface-sunk text-muted">
+              <Users size={22} />
+            </span>
+            <p className="text-[13.5px] text-secondary">
+              {sp.q ? `Nobody matches “${sp.q}”.` : "No customers yet."}
+            </p>
+            {sp.q ? <Link href="/admin/customers" className="text-[13px] font-semibold text-ribbon">Clear search</Link> : null}
+          </div>
+        ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[820px] text-[13px]">
               <thead>
-                <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                  <th className="py-2 pr-3">Customer</th>
-                  <th className="py-2 pr-3">Phone</th>
-                  <th className="py-2 pr-3 text-right">Orders</th>
-                  <th className="py-2 pr-3 text-right">Lifetime</th>
-                  <th className="py-2 pr-3 text-right">Wallet</th>
-                  <th className="py-2 pr-3">Last order</th>
-                  <th className="py-2">Joined</th>
+                <tr className="border-b border-line text-left text-[11.5px] text-muted">
+                  <th className="px-4 py-2.5 font-medium">Customer</th>
+                  <th className="px-3 py-2.5 font-medium">Phone</th>
+                  <th className="px-3 py-2.5 font-medium">City</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Orders</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Total spent</th>
+                  <th className="px-3 py-2.5 font-medium">Last order</th>
+                  <th className="px-3 py-2.5 font-medium">Joined</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((p) => {
-                  const s = byCustomer.get(p.id);
-                  return (
-                    <tr
-                      key={p.id}
-                      className={`border-b border-line/60 last:border-0 ${focus === p.id ? "bg-ribbon-tint" : "hover:bg-surface-sunk"}`}
-                    >
-                      <td className="py-2 pr-3">
-                        <p className="font-medium text-ink">{p.full_name ?? "—"}</p>
-                        
-                      </td>
-                      <td className="py-2 pr-3">{p.phone ?? "—"}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">{s?.n ?? 0}</td>
-                      <td className="py-2 pr-3 text-right font-semibold tabular-nums">{usd(s?.spend ?? 0)}</td>
-                      <td className="py-2 pr-3 text-right tabular-nums">{usd(walletOf.get(p.id) ?? 0)}</td>
-                      <td className="whitespace-nowrap py-2 pr-3 text-muted">
-                        {s?.last ? new Date(s.last).toLocaleDateString("en-GB") : "—"}
-                      </td>
-                      <td className="whitespace-nowrap py-2 text-muted">
-                        {new Date(p.created_at).toLocaleDateString("en-GB")}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {rows.map((c) => (
+                  <tr key={c.customer_id} className="h-12 border-b border-line/60 last:border-0 hover:bg-surface-sunk">
+                    <td className="px-4">
+                      <Link href={`/admin/customers/${c.customer_id}`} className="flex items-center gap-2.5">
+                        <Initials name={c.full_name} size={30} />
+                        <span className="font-medium text-ink">{c.full_name}</span>
+                      </Link>
+                    </td>
+                    <td className="px-3 text-secondary tnum">{c.phone ?? "—"}</td>
+                    <td className="px-3 text-secondary">{c.city ?? "—"}</td>
+                    <td className="px-3 text-right text-ink tnum">{c.orders}</td>
+                    <td className="px-3 text-right font-semibold text-ink tnum">{usd(c.total_spent)}</td>
+                    <td className="px-3 text-secondary">{date(c.last_order)}</td>
+                    <td className="px-3 text-secondary">{date(c.joined)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </Card>
-      )}
+        )}
+      </div>
+
+      {pages > 1 ? (
+        <div className="mt-3 flex items-center justify-between text-[12.5px] text-secondary">
+          <span className="tnum">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+          </span>
+          <div className="flex gap-1">
+            <Link href={qs({ page: page - 1 })} className={`rounded-[10px] border border-line px-2.5 py-1.5 ${page <= 1 ? "pointer-events-none opacity-40" : ""}`}>Previous</Link>
+            <Link href={qs({ page: page + 1 })} className={`rounded-[10px] border border-line px-2.5 py-1.5 ${page >= pages ? "pointer-events-none opacity-40" : ""}`}>Next</Link>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

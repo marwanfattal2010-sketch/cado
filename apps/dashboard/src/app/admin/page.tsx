@@ -1,54 +1,59 @@
 import Link from "next/link";
+import { DollarSign, ShoppingBag, Wallet, Users, ArrowUpRight, ArrowDownRight, Gift, Sparkles } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
-import {
-  Panel, PageHeading, Kpi, StatusPill, Empty, usd, usdShort,
-  RangeBar, resolveRange, type RangeKey, btnGhost,
-} from "@/components/v3/primitives";
-import { RevenueChart } from "@/components/v3/RevenueChart";
-import { LiveOrders } from "@/components/v3/LiveOrders";
-import { AssistantPanel } from "@/components/v3/AssistantPanel";
 import { callRpc, isMissingFunction } from "@/lib/rpc";
+import { publicEnv } from "@/lib/env";
+import { TintCard, TintChip, Spark, Pill, Initials, type Tint } from "@/components/v3/tint";
+import { RangeChips } from "@/components/v3/RangeChips";
+import { resolveV4Range, RANGE_WORDS } from "@/lib/range";
+import { AssistantWidget } from "@/components/v3/AssistantWidget";
 
 export const dynamic = "force-dynamic";
 
 /**
- * HOME (§4) — the screen that runs the business.
+ * HOME — V4.
  *
- * Everything here comes from SECURITY DEFINER RPCs. Admins have no read policy
- * on orders / sub_orders / order_items (0020 dropped them on purpose), and
- * PostgREST answers a blocked select with an EMPTY ARRAY rather than an error —
- * which is how the old Overview came to show $0 revenue above a chart of that
- * same range's orders. If a figure here is ever zero, it is because nothing
- * happened, not because something was hidden.
+ * V3's Home was rejected as "so dark, there's no colors" and too empty. This is
+ * the same honest data in the reference's shape: four tinted KPI cards with
+ * real sparklines, a data-driven hero, a compact assistant, recent orders, top
+ * products, orders by area and upcoming occasions — one screen at 1440×900.
  *
- * Nothing on this page is invented. No sample rows, no placeholder avatars, no
- * "+18% vs last week" where there is no last week: when the previous period has
- * no data the KPI says "No previous data" and the delta is omitted entirely.
+ * Every figure is from a SECURITY DEFINER function. Admins cannot read orders,
+ * sub_orders, order_items or addresses directly (0020), and PostgREST answers a
+ * blocked select with an EMPTY ARRAY, not an error — so a page that queried
+ * those tables would show a confident $0. Any error here is shown in red
+ * instead.
+ *
+ * Nothing invented: no growth arrow without a previous period, no rating, no
+ * placeholder faces, no sample rows.
  */
 
 type HomeSummary = {
   gmv: number; orders: number; commission: number; delivery_fees: number;
-  cado_earned: number; avg_order_value: number; active_customers: number;
-  owed_to_stores: number;
-  prev_gmv: number; prev_orders: number; prev_commission: number;
-  prev_delivery_fees: number; prev_cado_earned: number;
-  prev_avg_order_value: number; prev_active_customers: number;
+  cado_earned: number; avg_order_value: number; active_customers: number; owed_to_stores: number;
+  prev_gmv: number; prev_orders: number; prev_commission: number; prev_delivery_fees: number;
+  prev_cado_earned: number; prev_avg_order_value: number; prev_active_customers: number;
   had_previous: boolean;
 };
 type DayRow = { day: string; gmv: number; orders: number; commission: number; delivery_fees: number };
 type TopProduct = { product_id: string; title: string; partner_name: string; units: number; revenue: number };
-type StoreRow = { partner_id: string; name: string; orders: number; sales: number; commission: number; payable: number };
+type AreaRow = { area: string; orders: number };
+type NewCust = { day: string; new_customers: number };
+type Sub = { status: string; partner_name: string };
+type OrderRow = {
+  order_id: string; order_number: string; placed_at: string;
+  customer_name: string | null; total: number; sub_orders: Sub[];
+};
+
+const usd = (v: unknown, dp = 0) =>
+  `$${Number(v ?? 0).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 
 const greeting = () => {
-  // Marwan runs this from Beirut; the greeting should match his clock, not the
-  // server's.
   const h = Number(
     new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: "Asia/Beirut" }).format(new Date())
   );
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 };
 
 export default async function AdminHome({
@@ -58,294 +63,467 @@ export default async function AdminHome({
 }) {
   const user = await requireAdmin();
   const supabase = await createServerClient();
-  const { range } = await searchParams;
-  const r = resolveRange(range, "today");
+  const sp = await searchParams;
+  const r = resolveV4Range(sp.range);
   const iso = (d: Date) => d.toISOString();
+  const day = (d: Date) => d.toISOString().slice(0, 10);
 
-  const [summaryRes, dailyRes, topProductsRes, byStoreRes, ordersRes, pendingStoresRes, oosRes, ticketsRes, featuredRes, sowRes] =
+  const [summaryRes, dailyRes, topRes, ordersRes, areaRes, newCustRes, featuredRes, sowRes, occRes] =
     await Promise.all([
-      // 0074 — via callRpc until it is applied and the types are regenerated.
       callRpc<HomeSummary[]>(supabase, "admin_home_summary", { p_from: iso(r.from), p_to: iso(r.to) }),
-      supabase.rpc("admin_finance_breakdown", {
-        p_from: r.from.toISOString().slice(0, 10),
-        p_to: r.to.toISOString().slice(0, 10),
-      }),
+      supabase.rpc("admin_finance_breakdown", { p_from: day(r.from), p_to: day(r.to) }),
       callRpc<TopProduct[]>(supabase, "admin_top_products", { p_from: iso(r.from), p_to: iso(r.to), p_limit: 5 }),
-      supabase.rpc("admin_finance_by_store", {
-        p_from: r.from.toISOString().slice(0, 10),
-        p_to: r.to.toISOString().slice(0, 10),
-      }),
-      supabase.rpc("admin_orders", { p_limit: 200, p_offset: 0 }),
-      supabase.from("partners").select("id, name").eq("status", "pending").limit(20),
-      supabase.from("products").select("id, title").eq("is_active", true).eq("stock_quantity", 0).limit(20),
-      supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "open"),
-      supabase.from("partners").select("id, name, tagline").eq("is_featured", true).order("featured_rank").limit(6),
-      supabase.from("partners").select("id, name").eq("store_of_week", true).limit(3),
+      supabase.rpc("admin_orders", { p_limit: 5, p_offset: 0 }),
+      callRpc<AreaRow[]>(supabase, "admin_orders_by_area", { p_from: iso(r.from), p_to: iso(r.to) }),
+      callRpc<NewCust[]>(supabase, "admin_new_customers", { p_from: iso(r.from), p_to: iso(r.to) }),
+      supabase.from("partners").select("id, name, logo_url, tagline").eq("is_featured", true).order("featured_rank").limit(4),
+      supabase.from("partners").select("id, name").eq("store_of_week", true).limit(1),
+      supabase
+        .from("occasion_events")
+        .select("id, title, event_date, banner_image_url, occasion_id")
+        .eq("is_active", true)
+        .gte("event_date", day(new Date()))
+        .order("event_date")
+        .limit(3),
     ]);
 
-  /*
-   * ANY failure here must be visible. The first version only checked for
-   * PGRST202 ("function not applied yet") and treated every other error as
-   * "no data" — so when 0074 shipped with an ambiguous column reference, Home
-   * rendered $0 revenue and $0 owed to stores above a chart of real August
-   * sales, and looked like a quiet month rather than a broken query. A money
-   * screen may show a zero only when the answer is genuinely zero.
-   */
-  const summaryMissing = isMissingFunction(summaryRes.error);
-  const summaryError = summaryRes.error && !summaryMissing ? summaryRes.error.message : null;
   const s = (summaryRes.data ?? [])[0] ?? null;
+  const summaryError =
+    summaryRes.error && !isMissingFunction(summaryRes.error) ? summaryRes.error.message : null;
   const days = (dailyRes.data ?? []) as DayRow[];
-  const topProducts = topProductsRes.data ?? [];
-  const topStores = ((byStoreRes.data ?? []) as StoreRow[]).slice(0, 5);
-
-  type Sub = { sub_order_id?: string; status: string; partner_name: string };
-  type OrderRow = {
-    order_id: string; order_number: string; placed_at: string;
-    customer_name: string | null; total: number; sub_orders: Sub[];
-  };
-  const allOrders = (ordersRes.data ?? []) as unknown as OrderRow[];
-
-  /* --------------------------------------------------- needs attention --- */
-  const now = Date.now();
-  const hrs = (iso: string) => (now - new Date(iso).getTime()) / 3_600_000;
-
-  const unconfirmed = allOrders.filter(
-    (o) => hrs(o.placed_at) > 2 && (o.sub_orders ?? []).some((x) => x.status === "pending")
-  );
-  const stuckReady = allOrders.filter(
-    (o) => hrs(o.placed_at) > 1 && (o.sub_orders ?? []).some((x) => x.status === "ready")
-  );
-  const pendingStores = pendingStoresRes.data ?? [];
-  const outOfStock = oosRes.data ?? [];
-  const openTickets = ticketsRes.count ?? 0;
-
-  const attention = [
-    { n: unconfirmed.length, label: "orders unconfirmed over 2 hours", href: "/admin/orders?view=needs-action" },
-    { n: stuckReady.length, label: "parcels waiting for a driver", href: "/admin/delivery" },
-    { n: pendingStores.length, label: "stores waiting for approval", href: "/admin/stores?status=pending" },
-    { n: outOfStock.length, label: "products live with no stock", href: "/admin/products?stock=out" },
-    { n: openTickets, label: "support messages open", href: "/admin/support" },
-  ].filter((x) => x.n > 0);
-
-  /* ------------------------------------------------------- delivery now -- */
-  const countStatus = (st: string) =>
-    allOrders.reduce((n, o) => n + (o.sub_orders ?? []).filter((x) => x.status === st).length, 0);
-  const deliveredToday = allOrders.reduce(
-    (n, o) =>
-      n +
-      (new Date(o.placed_at).toDateString() === new Date().toDateString()
-        ? (o.sub_orders ?? []).filter((x) => x.status === "delivered").length
-        : 0),
-    0
-  );
-
+  const top = topRes.data ?? [];
+  const recent = (ordersRes.data ?? []) as unknown as OrderRow[];
+  const areas = areaRes.data ?? [];
+  const newCust = newCustRes.data ?? [];
   const featured = featuredRes.data ?? [];
-  const storesOfWeek = sowRes.data ?? [];
-  const firstName = (user.fullName ?? "").split(" ")[0];
+  const storeOfWeek = (sowRes.data ?? [])[0] ?? null;
+  const occasions = occRes.data ?? [];
+
+  // Thumbnails for the top-selling list, from the real product image table.
+  const topIds = top.map((t) => t.product_id).filter(Boolean);
+  const { data: imgs } = topIds.length
+    ? await supabase.from("product_images").select("product_id, storage_path, is_primary").in("product_id", topIds)
+    : { data: [] as { product_id: string; storage_path: string; is_primary: boolean }[] };
+  const imgOf = new Map<string, string>();
+  for (const im of imgs ?? []) if (!imgOf.has(im.product_id) || im.is_primary) imgOf.set(im.product_id, im.storage_path);
+  const publicImg = (path: string) =>
+    `${publicEnv.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${path.replace(/^\/+/, "")}`;
+
+  const newInPeriod = newCust.reduce((n, d) => n + Number(d.new_customers), 0);
+  const totalAreaOrders = areas.reduce((n, a) => n + Number(a.orders), 0);
+  const topTotal = top.reduce((n, t) => n + Number(t.revenue), 0);
+
+  /* ------------------------------------------------ the summary sentence -- */
+  // One real sentence about the range. Never a slogan.
+  let summaryLine: string;
+  if (!s || Number(s.orders) === 0) {
+    summaryLine = `No orders in the last ${RANGE_WORDS[r.key] ?? r.key} yet.`;
+  } else if (s.had_previous && Number(s.prev_gmv) > 0) {
+    const pct = ((Number(s.gmv) - Number(s.prev_gmv)) / Number(s.prev_gmv)) * 100;
+    summaryLine = `Revenue is ${pct >= 0 ? "up" : "down"} ${Math.abs(pct).toFixed(0)}% on the previous ${
+      RANGE_WORDS[r.key] ?? r.key
+    }.`;
+  } else {
+    const storeCount = new Set(recent.flatMap((o) => (o.sub_orders ?? []).map((x) => x.partner_name))).size;
+    summaryLine = `${s.orders} order${Number(s.orders) === 1 ? "" : "s"} worth ${usd(s.gmv)} in the last ${
+      RANGE_WORDS[r.key] ?? r.key
+    }${storeCount ? ` across ${storeCount} store${storeCount === 1 ? "" : "s"}` : ""}.`;
+  }
+
+  // Demo/test accounts are named like "[DEMO] CADO Admin"; drop the tag, then
+  // take the first real word. Never greet someone as "[DEMO]".
+  const firstName = (user.fullName ?? "").replace(/\[[^\]]*\]/g, "").trim().split(/\s+/)[0] ?? "";
+
+  /* ----------------------------------------------------------- KPI defs -- */
+  const delta = (now?: number, prev?: number) => {
+    if (!s?.had_previous || prev === undefined || Number(prev) === 0) return null;
+    const d = ((Number(now) - Number(prev)) / Number(prev)) * 100;
+    return { pct: d, up: d >= 0 };
+  };
+
+  const kpis: {
+    tint: Tint; icon: React.ReactNode; label: string; value: string;
+    sub: React.ReactNode; spark: number[];
+  }[] = [
+    {
+      tint: "coral",
+      icon: <DollarSign size={17} />,
+      label: "Revenue",
+      value: usd(s?.gmv),
+      sub: renderDelta(delta(s?.gmv, s?.prev_gmv)),
+      spark: days.map((d) => Number(d.gmv)),
+    },
+    {
+      tint: "amber",
+      icon: <ShoppingBag size={17} />,
+      label: "Orders",
+      value: String(s?.orders ?? 0),
+      sub: renderDelta(delta(s?.orders, s?.prev_orders)),
+      spark: days.map((d) => Number(d.orders)),
+    },
+    {
+      tint: "mint",
+      icon: <Wallet size={17} />,
+      label: "CADO earned",
+      value: usd(s?.cado_earned, 2),
+      sub: <span className="text-[12px] text-secondary">Owed to stores {usd(s?.owed_to_stores, 2)}</span>,
+      spark: days.map((d) => Number(d.commission) + Number(d.delivery_fees)),
+    },
+    {
+      tint: "sky",
+      icon: <Users size={17} />,
+      label: "Customers",
+      value: String(s?.active_customers ?? 0),
+      sub: (
+        <span className="text-[12px] text-secondary">
+          {newInPeriod > 0 ? `${newInPeriod} new this period` : "No new customers yet"}
+        </span>
+      ),
+      spark: newCust.map((d) => Number(d.new_customers)),
+    },
+  ];
 
   return (
-    <div>
-      <PageHeading
-        title={`${greeting()}${firstName ? `, ${firstName}` : ""}`}
-        subtitle="Everything that matters, right now."
-        right={<RangeBar current={r.key as RangeKey} basePath="/admin" />}
-      />
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-[26px] font-semibold leading-8 text-ink">
+            {greeting()}{firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p className="mt-0.5 text-[13.5px] text-secondary">{summaryLine}</p>
+        </div>
+        <RangeChips current={r.key} basePath="/admin" explicit={r.explicit} />
+      </div>
 
-      {summaryMissing ? (
-        <p className="mb-4 rounded-card border border-status-amber bg-status-amber-tint px-3 py-2 text-[13px] text-status-amber">
-          The headline figures need migration 0074 applied. Everything else on this page is live.
-        </p>
-      ) : summaryError ? (
-        <p className="mb-4 rounded-card border border-status-red bg-status-red-tint px-3 py-2 text-[13px] text-status-red">
-          The headline figures could not be read, so the six numbers below are not your real totals:{" "}
-          {summaryError}
+      {summaryError ? (
+        <p className="rounded-card border border-status-red bg-status-red-tint px-3 py-2 text-[13px] text-status-red">
+          The headline figures could not be read, so the four numbers below are not your totals: {summaryError}
         </p>
       ) : null}
 
-      {/* KPI strip */}
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <Kpi
-          label="Revenue" value={usdShort(s?.gmv ?? 0)}
-          current={s?.gmv} previous={s?.prev_gmv} hadPrevious={s?.had_previous}
-          spark={days.map((d) => Number(d.gmv))}
-        />
-        <Kpi
-          label="Orders" value={String(s?.orders ?? 0)} money={false}
-          current={s?.orders} previous={s?.prev_orders} hadPrevious={s?.had_previous}
-          spark={days.map((d) => Number(d.orders))}
-        />
-        <Kpi
-          label="CADO earned" value={usdShort(s?.cado_earned ?? 0)}
-          current={s?.cado_earned} previous={s?.prev_cado_earned} hadPrevious={s?.had_previous}
-          hint={s ? `${usd(s.commission)} commission + ${usd(s.delivery_fees)} delivery` : undefined}
-          spark={days.map((d) => Number(d.commission) + Number(d.delivery_fees))}
-        />
-        <Kpi
-          label="Owed to stores" value={usdShort(s?.owed_to_stores ?? 0)}
-          hint="Unpaid across all stores"
-        />
-        <Kpi
-          label="Average order" value={usdShort(s?.avg_order_value ?? 0)}
-          current={s?.avg_order_value} previous={s?.prev_avg_order_value} hadPrevious={s?.had_previous}
-        />
-        <Kpi
-          label="Customers" value={String(s?.active_customers ?? 0)} money={false}
-          current={s?.active_customers} previous={s?.prev_active_customers} hadPrevious={s?.had_previous}
-        />
+      {/* KPI strip + assistant */}
+      <div className="stagger grid gap-4 lg:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_360px]">
+        {kpis.map((k) => (
+          <TintCard key={k.label} tint={k.tint} className="flex flex-col p-4">
+            <div className="mb-3 flex items-start justify-between">
+              <TintChip>{k.icon}</TintChip>
+            </div>
+            <p className="text-[13px] font-medium text-secondary">{k.label}</p>
+            <p className="mt-0.5 text-[28px] font-bold leading-8 text-ink tnum">{k.value}</p>
+            <div className="mt-1 min-h-[18px]">{k.sub}</div>
+            <div className="mt-2"><Spark points={k.spark} /></div>
+          </TintCard>
+        ))}
+        <div className="lg:col-span-4 xl:col-span-1"><AssistantWidget /></div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        {/* Main column */}
-        <div className="space-y-4 xl:col-span-2">
-          <Panel title="Revenue over time" bodyClass="p-3">
-            {days.length === 0 ? (
-              <Empty title="No orders in this range." hint="Pick a longer range to see history." />
-            ) : (
-              <RevenueChart
-                points={days.map((d) => ({
-                  day: d.day,
-                  gmv: Number(d.gmv),
-                  earned: Number(d.commission) + Number(d.delivery_fees),
-                }))}
-              />
-            )}
-          </Panel>
+      {/* Hero + rail */}
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="space-y-4 xl:col-span-8">
+          <Hero featured={featured} storeOfWeek={storeOfWeek} occasion={occasions[0] ?? null} />
 
-          <Panel
-            title="Live orders"
-            bodyClass="p-0"
-            action={<Link href="/admin/orders" className="text-[12px] font-medium text-ribbon">View all</Link>}
-          >
-            <LiveOrders initial={allOrders.slice(0, 8)} />
-          </Panel>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Panel title="Top products" bodyClass="p-0">
-              {topProducts.length === 0 ? (
-                <Empty title="Nothing sold in this range yet." />
-              ) : (
-                <ul className="divide-y divide-line">
-                  {topProducts.map((p) => (
-                    <li key={p.product_id} className="flex items-center gap-3 px-4 py-2.5">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] text-ink">{p.title}</p>
-                        <p className="truncate text-[11px] text-muted">{p.partner_name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[13px] font-semibold text-ink tnum">{usdShort(p.revenue)}</p>
-                        <p className="text-[11px] text-muted tnum">{p.units} sold</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Panel>
-
-            <Panel title="Top stores" bodyClass="p-0">
-              {topStores.length === 0 ? (
-                <Empty title="No store sales in this range." />
-              ) : (
-                <ul className="divide-y divide-line">
-                  {topStores.map((st) => (
-                    <li key={st.partner_id}>
-                      <Link
-                        href={`/admin/stores/${st.partner_id}`}
-                        className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-sunk"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] text-ink">{st.name}</p>
-                          <p className="text-[11px] text-muted tnum">{st.orders} orders</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[13px] font-semibold text-ink tnum">{usdShort(st.sales)}</p>
-                          <p className="text-[11px] text-muted tnum">{usdShort(st.commission)} to CADO</p>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Panel>
-          </div>
-
-          <Panel
-            title="Featured on the storefront"
-            action={<Link href="/admin/marketing" className={btnGhost}>Edit</Link>}
-          >
-            {featured.length === 0 && storesOfWeek.length === 0 ? (
-              <Empty
-                title="Nothing featured yet."
-                hint="Customers see a plain catalogue until you choose which stores to put first."
-                action={<Link href="/admin/marketing" className="text-[13px] font-semibold text-ribbon">Choose featured stores →</Link>}
-              />
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted">Featured stores</p>
-                  {featured.length === 0 ? (
-                    <p className="text-[13px] text-muted">None</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {featured.map((f) => (
-                        <span key={f.id} className="rounded-pill border border-line px-2.5 py-1 text-[12px] text-ink">
-                          {f.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted">Store of the week</p>
-                  <p className="text-[13px] text-ink">
-                    {storesOfWeek.length ? storesOfWeek.map((x) => x.name).join(", ") : "—"}
-                  </p>
-                </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* Top selling */}
+            <section className="rounded-card border border-line bg-surface">
+              <div className="flex h-12 items-center justify-between border-b border-line px-4">
+                <h2 className="text-[15px] font-semibold text-ink">Top selling products</h2>
               </div>
-            )}
-          </Panel>
+              {top.length === 0 ? (
+                <EmptyBlock
+                  icon={<Gift size={20} />}
+                  title="No sales in this range yet"
+                  action={<Link href="/admin?range=all" className="text-[13px] font-semibold text-ribbon">Change range</Link>}
+                />
+              ) : (
+                <ul className="divide-y divide-line">
+                  {top.map((p, i) => {
+                    const share = topTotal > 0 ? (Number(p.revenue) / topTotal) * 100 : 0;
+                    const medal = ["--tint-amber", "--text-2", "--tint-coral"][i];
+                    const img = imgOf.get(p.product_id);
+                    return (
+                      <li key={p.product_id ?? i} className="flex items-center gap-3 px-4 py-2.5">
+                        <span
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] text-[11.5px] font-bold"
+                          style={
+                            i < 3
+                              ? { color: `var(${medal})`, background: `color-mix(in srgb, var(${medal}) 16%, transparent)` }
+                              : { color: "var(--text-muted)", background: "var(--surface-sunk)" }
+                          }
+                        >
+                          {i + 1}
+                        </span>
+                        {img ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={publicImg(img)} alt="" className="h-11 w-11 shrink-0 rounded-[10px] object-cover" />
+                        ) : (
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-surface-sunk text-muted">
+                            <Gift size={16} />
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13.5px] text-ink">{p.title}</p>
+                          <p className="truncate text-[12px] text-secondary">{p.partner_name}</p>
+                        </div>
+                        <div className="w-24 text-right">
+                          <p className="text-[13px] font-semibold text-ink tnum">{p.units} sold</p>
+                          <div className="mt-1 h-1 w-full overflow-hidden rounded-pill bg-surface-sunk">
+                            <div className="h-full rounded-pill bg-ribbon" style={{ width: `${share.toFixed(0)}%` }} />
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
+            {/* Orders by area */}
+            <section className="rounded-card border border-line bg-surface">
+              <div className="flex h-12 items-center justify-between border-b border-line px-4">
+                <h2 className="text-[15px] font-semibold text-ink">Orders by area</h2>
+                <span className="text-[12px] text-muted tnum">{totalAreaOrders} total</span>
+              </div>
+              {areas.length === 0 ? (
+                <EmptyBlock icon={<ShoppingBag size={20} />} title="No delivered orders in this range" />
+              ) : (
+                <ul className="space-y-3 p-4">
+                  {areas.slice(0, 6).map((a, i) => {
+                    const pct = totalAreaOrders > 0 ? (Number(a.orders) / totalAreaOrders) * 100 : 0;
+                    const tints = ["--tint-coral", "--tint-amber", "--tint-mint", "--tint-sky", "--tint-rose", "--tint-violet"];
+                    const c = tints[i % tints.length];
+                    return (
+                      <li key={a.area}>
+                        <div className="mb-1 flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-pill" style={{ background: `var(${c})` }} />
+                          <span className="flex-1 text-[13px] text-ink">{a.area}</span>
+                          <span className="text-[12.5px] text-secondary tnum">{pct.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface-sunk">
+                          <div className="h-full rounded-pill" style={{ width: `${pct}%`, background: `var(${c})` }} />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </div>
         </div>
 
         {/* Right rail */}
-        <div className="space-y-4">
-          <AssistantPanel />
-
-          <Panel title="Needs attention" bodyClass="p-0">
-            {attention.length === 0 ? (
-              <Empty title="All clear." />
+        <div className="space-y-4 xl:col-span-4">
+          <section className="rounded-card border border-line bg-surface">
+            <div className="flex h-12 items-center justify-between border-b border-line px-4">
+              <h2 className="text-[15px] font-semibold text-ink">Recent orders</h2>
+              <Link href="/admin/orders" className="text-[12.5px] font-medium text-ribbon">View all</Link>
+            </div>
+            {recent.length === 0 ? (
+              <EmptyBlock icon={<ShoppingBag size={20} />} title="No orders yet" />
             ) : (
               <ul className="divide-y divide-line">
-                {attention.map((a) => (
-                  <li key={a.label}>
-                    <Link
-                      href={a.href}
-                      className="flex items-center gap-2.5 px-4 py-2.5 transition-colors hover:bg-surface-sunk"
-                    >
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-ribbon" />
-                      <span className="text-[13px] font-semibold text-ink tnum">{a.n}</span>
-                      <span className="text-[13px] text-secondary">{a.label}</span>
-                    </Link>
-                  </li>
-                ))}
+                {recent.map((o) => {
+                  const legs = o.sub_orders ?? [];
+                  return (
+                    <li key={o.order_id}>
+                      <Link
+                        href={`/admin/orders/${o.order_id}`}
+                        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-sunk"
+                      >
+                        <Initials name={o.customer_name} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13.5px] text-ink">{o.customer_name ?? "Customer"}</p>
+                          <p className="truncate text-[12px] text-secondary tnum">
+                            {legs.length} {legs.length === 1 ? "store" : "stores"} · {usd(o.total, 2)}
+                          </p>
+                        </div>
+                        <Pill status={legs[0]?.status} />
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
-          </Panel>
+          </section>
 
-          <Panel title="Delivery now" bodyClass="p-0">
-            <div className="grid grid-cols-3 divide-x divide-line">
-              {[
-                { n: countStatus("ready"), label: "Awaiting pickup" },
-                { n: countStatus("out_for_delivery"), label: "With driver" },
-                { n: deliveredToday, label: "Delivered today" },
-              ].map((c) => (
-                <Link key={c.label} href="/admin/delivery" className="px-3 py-3 text-center transition-colors hover:bg-surface-sunk">
-                  <p className="text-[20px] font-bold text-ink tnum">{c.n}</p>
-                  <p className="mt-0.5 text-[11px] text-muted">{c.label}</p>
-                </Link>
-              ))}
+          <section className="rounded-card border border-line bg-surface">
+            <div className="flex h-12 items-center justify-between border-b border-line px-4">
+              <h2 className="text-[15px] font-semibold text-ink">Upcoming occasions</h2>
+              <Link href="/admin/marketing" className="text-[12.5px] font-medium text-ribbon">+ Add</Link>
             </div>
-          </Panel>
+            {occasions.length === 0 ? (
+              <EmptyBlock
+                icon={<Sparkles size={20} />}
+                title="No dated occasions yet"
+                hint="Add Mother's Day or Valentine's with a date and CADO can push them here."
+                action={<Link href="/admin/marketing" className="text-[13px] font-semibold text-ribbon">Open Marketing</Link>}
+              />
+            ) : (
+              <ul className="divide-y divide-line">
+                {occasions.map((o) => {
+                  const d = new Date(o.event_date);
+                  return (
+                    <li key={o.id} className="flex items-center gap-3 px-4 py-3">
+                      <span
+                        className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-[12px]"
+                        style={{ background: "color-mix(in srgb, var(--tint-rose) 16%, transparent)", color: "var(--tint-rose)" }}
+                      >
+                        <span className="text-[15px] font-bold leading-4">{d.getDate()}</span>
+                        <span className="text-[10px] uppercase">{d.toLocaleDateString("en-GB", { month: "short" })}</span>
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13.5px] text-ink">{o.title}</p>
+                        <p className="text-[12px] text-secondary">
+                          {Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86_400_000))} days away
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------- pieces ---- */
+
+function renderDelta(d: { pct: number; up: boolean } | null) {
+  if (!d) return <span className="text-[12px] text-muted">No previous period yet</span>;
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 text-[12px] font-medium tnum"
+      style={{ color: d.up ? "var(--st-delivered)" : "var(--st-cancelled)" }}
+    >
+      {d.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+      {Math.abs(d.pct).toFixed(0)}% vs previous period
+    </span>
+  );
+}
+
+function EmptyBlock({
+  icon,
+  title,
+  hint,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  hint?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-surface-sunk text-muted">
+        {icon}
+      </span>
+      <p className="text-[13.5px] text-secondary">{title}</p>
+      {hint ? <p className="max-w-[240px] text-[12px] text-muted">{hint}</p> : null}
+      {action}
+    </div>
+  );
+}
+
+/**
+ * The hero (§3.3). Data-driven, in priority order: a dated occasion within 45
+ * days, else this week's featured stores, else a prompt to choose them. There
+ * is no fourth branch that invents a campaign.
+ */
+function Hero({
+  featured,
+  storeOfWeek,
+  occasion,
+}: {
+  featured: { id: string; name: string; logo_url: string | null; tagline: string | null }[];
+  storeOfWeek: { id: string; name: string } | null;
+  occasion: { id: string; title: string; event_date: string; banner_image_url: string | null } | null;
+}) {
+  const daysAway = occasion
+    ? Math.ceil((new Date(occasion.event_date).getTime() - Date.now()) / 86_400_000)
+    : null;
+  const showOccasion = occasion && daysAway !== null && daysAway >= 0 && daysAway <= 45;
+
+  return (
+    <TintCard tint="coral" className="relative overflow-hidden" style={{ minHeight: 220 }}>
+      <div className="relative z-10 flex h-full flex-col justify-center gap-3 p-6 md:max-w-[62%]">
+        {showOccasion ? (
+          <>
+            <span className="w-fit rounded-pill bg-surface/50 px-2.5 py-1 text-[12px] font-medium text-ink">
+              In {daysAway} days
+            </span>
+            <h2 className="font-editorial text-[30px] font-medium leading-9 text-ink">{occasion!.title}</h2>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/admin/marketing" className="rounded-[12px] bg-ribbon px-3.5 py-2 text-[13px] font-semibold text-white">
+                Feature stores
+              </Link>
+              <Link href="/admin/stores" className="rounded-[12px] border border-line bg-surface/40 px-3.5 py-2 text-[13px] font-medium text-ink">
+                View stores
+              </Link>
+            </div>
+          </>
+        ) : featured.length > 0 ? (
+          <>
+            <span className="w-fit rounded-pill bg-surface/50 px-2.5 py-1 text-[12px] font-medium text-ink">
+              Featured this week
+            </span>
+            <h2 className="font-editorial text-[30px] font-medium leading-9 text-ink">
+              {storeOfWeek ? storeOfWeek.name : "What customers see first"}
+            </h2>
+            <p className="text-[13.5px] text-secondary">
+              {featured.length} store{featured.length === 1 ? "" : "s"} on the CADO home screen right now
+              {storeOfWeek ? " · store of the week set" : ""}.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {featured.map((f) =>
+                f.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={f.id} src={f.logo_url} alt={f.name} title={f.name}
+                    className="h-9 w-9 rounded-pill border border-line object-cover" />
+                ) : (
+                  <span key={f.id} title={f.name}
+                    className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface/60 text-[12px] font-semibold text-ink">
+                    {f.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )
+              )}
+              <Link href="/admin/marketing" className="ml-1 rounded-[12px] bg-ribbon px-3.5 py-2 text-[13px] font-semibold text-white">
+                Edit featured stores
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="font-editorial text-[30px] font-medium leading-9 text-ink">
+              Set this week&rsquo;s gift focus
+            </h2>
+            <p className="text-[13.5px] text-secondary">
+              Choose the stores and occasion customers see first on the app.
+            </p>
+            <Link href="/admin/marketing" className="w-fit rounded-[12px] bg-ribbon px-3.5 py-2 text-[13px] font-semibold text-white">
+              Choose featured stores
+            </Link>
+          </>
+        )}
+      </div>
+
+      {/* Photo bleeding in from the right, faded into the tint. Only rendered
+          when a real image exists — no stock placeholder. */}
+      {showOccasion && occasion?.banner_image_url ? (
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[45%] md:block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={occasion.banner_image_url} alt="" className="h-full w-full object-cover" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(90deg, color-mix(in srgb, var(--tint) 28%, var(--surface)) 0%, transparent 60%)",
+            }}
+          />
+        </div>
+      ) : null}
+    </TintCard>
   );
 }

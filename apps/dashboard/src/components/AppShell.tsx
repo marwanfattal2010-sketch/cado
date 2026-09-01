@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, ReceiptText, Truck, Store, Package, Users, Gift,
   Wallet, Megaphone, LifeBuoy, UserCog, ScrollText, Settings as Cog,
-  PanelLeftClose, PanelLeft, LogOut,
+  PanelLeftClose, PanelLeft, LogOut, UserPlus, ChevronDown,
 } from "lucide-react";
 import type { DashboardRole } from "@/lib/auth";
 import { BrandLogo } from "./BrandLogo";
@@ -28,12 +28,18 @@ import { GlobalSearch } from "./GlobalSearch";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?: number }> };
 
+/**
+ * PRODUCTS IS NOT HERE, deliberately (V4 §5). A product belongs to a shop, and
+ * a flat list of every product across every shop is a page nobody can act on —
+ * you always arrive at it wanting one store's catalogue. Products now live on
+ * the store page's Products tab, /admin/products redirects to Stores, and the
+ * top-bar search still finds any product by name.
+ */
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Home", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: ReceiptText },
   { href: "/admin/delivery", label: "Delivery", icon: Truck },
   { href: "/admin/stores", label: "Stores", icon: Store },
-  { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/gift-cards", label: "Gift cards", icon: Gift },
   { href: "/admin/finance", label: "Finance", icon: Wallet },
@@ -64,10 +70,14 @@ const COLLAPSE_KEY = "cado-nav-collapsed";
 export function AppShell({
   role,
   storeName,
+  userName,
+  userEmail,
   children,
 }: {
   role: DashboardRole;
   storeName?: string | null;
+  userName?: string | null;
+  userEmail?: string | null;
   children: React.ReactNode;
 }) {
   const head = role === "admin" ? ADMIN_NAV : STORE_NAV;
@@ -126,18 +136,30 @@ export function AppShell({
         <div className="my-2 border-t border-line" />
         {tail.map((i) => <NavLink key={i.href} item={i} />)}
       </nav>
-      <form action="/logout" method="post" className="px-2 pb-2">
-        <button
-          type="submit"
-          title={collapsed ? "Sign out" : undefined}
-          className={`flex w-full items-center gap-3 rounded-card px-2.5 py-2 text-[13px] font-medium text-muted transition-colors hover:bg-surface-sunk hover:text-ink ${
-            collapsed ? "justify-center px-0" : ""
-          }`}
-        >
-          <span className="shrink-0"><LogOut size={18} /></span>
-          {collapsed ? null : "Sign out"}
-        </button>
-      </form>
+
+      {/*
+       * Where the reference puts "Upgrade to Pro". CADO has nothing to upsell
+       * its own staff, so the slot carries the thing an admin most often comes
+       * to this dashboard to do — and it goes to the real invite flow, not a
+       * decorative banner.
+       */}
+      {!collapsed && role === "admin" ? (
+        <div className="px-2 pb-2">
+          <Link
+            href="/admin/invites"
+            className="tint-card block rounded-card p-3 transition-transform hover:-translate-y-px"
+            style={{ ["--tint" as string]: "var(--ribbon)" }}
+          >
+            <span className="tint-chip mb-2 flex h-8 w-8 items-center justify-center rounded-[10px]">
+              <UserPlus size={16} />
+            </span>
+            <p className="text-[13px] font-semibold text-ink">Invite a store owner</p>
+            <p className="mt-0.5 text-[11.5px] leading-4 text-secondary">
+              Add a shop and its login in one step.
+            </p>
+          </Link>
+        </div>
+      ) : null}
     </>
   );
 
@@ -146,7 +168,7 @@ export function AppShell({
       {/* Desktop sidebar */}
       <aside
         className={`hidden shrink-0 flex-col border-r border-line bg-surface py-3 transition-[width] duration-150 md:flex ${
-          collapsed ? "w-16" : "w-60"
+          collapsed ? "w-16" : "w-[232px]"
         }`}
       >
         <div className={`mb-3 flex items-center px-3 ${collapsed ? "justify-center" : "justify-between"}`}>
@@ -172,22 +194,23 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface px-3 md:px-4">
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-2 border-b border-line bg-surface px-3 md:px-5">
           <button
             type="button"
             onClick={() => setMobileNav(true)}
             aria-label="Open menu"
-            className="flex h-8 w-8 items-center justify-center rounded-card text-muted hover:bg-surface-sunk hover:text-ink md:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-[10px] text-muted hover:bg-surface-sunk hover:text-ink md:hidden"
           >
             <PanelLeft size={18} />
           </button>
           <div className="md:hidden"><BrandLogo variant="ink" height={18} /></div>
           <div className="min-w-0 flex-1"><GlobalSearch role={role} /></div>
-          <ThemeToggle />
           <NotificationBell />
+          <ThemeToggle />
+          <UserMenu name={userName} email={userEmail} role={role} />
         </header>
 
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 md:px-6">{children}</main>
+        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 md:px-5">{children}</main>
       </div>
 
       {/* Mobile drawer nav */}
@@ -207,6 +230,83 @@ export function AppShell({
             {navBody}
           </div>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Avatar + name + role, with the menu the reference has in its top-right.
+ * Initials on persimmon rather than a stock photo: a fake face is still fake
+ * content, and this is a real person's account.
+ */
+function UserMenu({
+  name,
+  email,
+  role,
+}: {
+  name?: string | null;
+  email?: string | null;
+  role: DashboardRole;
+}) {
+  const [open, setOpen] = useState(false);
+  const label = name?.trim() || email?.split("@")[0] || "Account";
+  const initials =
+    label
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase() || "?";
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 rounded-pill px-1 py-1 transition-colors hover:bg-surface-sunk"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-pill bg-ribbon text-[12px] font-bold text-white">
+          {initials}
+        </span>
+        <span className="hidden text-left leading-tight lg:block">
+          <span className="block max-w-[140px] truncate text-[13px] font-medium text-ink">{label}</span>
+          <span className="block text-[11px] text-muted">{role === "admin" ? "Owner" : "Store"}</span>
+        </span>
+        <ChevronDown size={14} className="hidden text-muted lg:block" />
+      </button>
+
+      {open ? (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div
+            role="menu"
+            className="absolute right-0 top-11 z-40 w-56 overflow-hidden rounded-card border border-line bg-surface shadow-lift"
+          >
+            <div className="border-b border-line px-3 py-2.5">
+              <p className="truncate text-[13px] font-medium text-ink">{label}</p>
+              {email ? <p className="truncate text-[11.5px] text-muted">{email}</p> : null}
+            </div>
+            <Link
+              href={role === "admin" ? "/admin/settings" : "/store/account"}
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-[13px] text-secondary transition-colors hover:bg-surface-sunk hover:text-ink"
+            >
+              Settings
+            </Link>
+            <form action="/logout" method="post">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-secondary transition-colors hover:bg-surface-sunk hover:text-ink"
+              >
+                <LogOut size={14} />
+                Sign out
+              </button>
+            </form>
+          </div>
+        </>
       ) : null}
     </div>
   );
