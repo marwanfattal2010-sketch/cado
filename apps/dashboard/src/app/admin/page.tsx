@@ -227,7 +227,7 @@ export default async function AdminHome({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-semibold leading-8 text-ink">
@@ -245,7 +245,7 @@ export default async function AdminHome({
       ) : null}
 
       {/* Row 1 */}
-      <div className="grid gap-5 lg:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_360px]">
+      <div className="grid gap-4 lg:grid-cols-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_360px]">
         <BigKpi tint="coral" icon={<DollarSign size={17} />} label="Revenue" value={usd(s?.gmv)}
           d={delta(s?.gmv, s?.prev_gmv)} spark={days.map((x) => Number(x.gmv))} />
         <BigKpi tint="amber" icon={<ShoppingBag size={17} />} label="Orders" value={String(s?.orders ?? 0)}
@@ -260,7 +260,7 @@ export default async function AdminHome({
       </div>
 
       {/* Row 2 */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <SmallKpi tint="amber" icon={<Clock size={14} />} label="Pending orders" value={String(pendingCount)} note="Not yet on the road" />
         <SmallKpi tint="mint" icon={<PackageCheck size={14} />} label="Delivered" value={String(deliveredCount)} note="In this range" />
         <SmallKpi tint="violet" icon={<Truck size={14} />} label="Out for delivery" value={String(outNow)} note="Right now" live />
@@ -286,20 +286,20 @@ export default async function AdminHome({
 
       {/* One height for the row. Without it the chart (330px) sat beside the
           live list (635px) and left a 300px hole underneath it. */}
-      <div className="grid gap-5 xl:h-[420px] xl:grid-cols-12">
+      <div className="grid gap-4 xl:h-[420px] xl:grid-cols-12">
         <div className="xl:col-span-8"><OverviewChart points={monthly} /></div>
         <div className="xl:col-span-4"><InMotion initial={motion} /></div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-12">
+      <div className="grid gap-4 xl:grid-cols-12">
         <div className="xl:col-span-8"><UpcomingDeliveries rows={upcoming} /></div>
         <div className="xl:col-span-4">
           <MiniCalendar counts={byDay} occasions={occasions} selected={dayFilter ?? undefined} />
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-12">
-        <div className="grid gap-5 md:grid-cols-2 xl:col-span-8">
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="grid gap-4 md:grid-cols-2 xl:col-span-8">
           <TopProducts top={top} images={images} supabaseUrl={publicEnv.NEXT_PUBLIC_SUPABASE_URL} />
           <TopStores rows={topStores} />
         </div>
@@ -349,7 +349,7 @@ export default async function AdminHome({
         </section>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-12">
+      <div className="grid gap-4 xl:grid-cols-12">
         <div className="xl:col-span-4"><Satisfaction summary={reviewSummary} recent={recentReviews} /></div>
         <div className="xl:col-span-4">
           <FinanceSnapshot earned={Number(s?.cado_earned ?? 0)} owed={owed} paidOut={paidOut} />
@@ -357,7 +357,7 @@ export default async function AdminHome({
         <div className="xl:col-span-4"><TeamAndActivity team={team} activity={activity} /></div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-12">
+      <div className="grid gap-4 xl:grid-cols-12">
         <div className="xl:col-span-4"><Tasks tasks={tasks} /></div>
         <div className="xl:col-span-4"><OrdersByArea areas={areas} /></div>
         <div className="xl:col-span-4"><UpcomingOccasions occasions={occasions} /></div>
