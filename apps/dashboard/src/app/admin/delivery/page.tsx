@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { PageHeader, Card, StatusPill, EmptyStateV2, KpiCard, usd } from "@/components/ui";
 import { s } from "./strings";
 import { AssignDriver, type DriverOption } from "./AssignDriver";
-import { AdvanceStatus } from "./AdvanceStatus";
+import { OverrideStatus } from "./OverrideStatus";
 import { AddDriverForm, DriverActiveToggle } from "./DriverAdmin";
 
 export const dynamic = "force-dynamic";
@@ -415,10 +415,17 @@ export default async function AdminDeliveryPage() {
                           />
                         </div>
 
-                        <AdvanceStatus
-                          orderId={c.orderId}
-                          readySubOrderIds={c.readySubOrderIds}
-                          outSubOrderIds={c.outSubOrderIds}
+                        {/*
+                          NO "Mark delivered" here, deliberately. The store
+                          marks a parcel ready, the driver marks it picked up
+                          and delivered. An admin at a desk does not know a
+                          parcel changed hands, and a button that lets them say
+                          so turns the record into a guess. Override is the one
+                          exception and it asks for a reason.
+                        */}
+                        <OverrideStatus
+                          subOrderId={c.readySubOrderIds[0] ?? c.outSubOrderIds[0] ?? ""}
+                          current={c.readySubOrderIds.length > 0 ? "ready" : "out_for_delivery"}
                         />
                       </li>
                     );

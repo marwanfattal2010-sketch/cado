@@ -2575,6 +2575,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_customer_detail: { Args: { p_customer_id: string }; Returns: Json }
+      admin_customers_list: {
+        Args: {
+          p_city?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: {
+          city: string
+          customer_id: string
+          full_name: string
+          joined: string
+          last_order: string
+          orders: number
+          phone: string
+          total_count: number
+          total_spent: number
+        }[]
+      }
       admin_finance_breakdown: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -2657,7 +2677,21 @@ export type Database = {
           store_net_unpaid_total: number
         }[]
       }
+      admin_new_customers: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          day: string
+          new_customers: number
+        }[]
+      }
       admin_order_detail: { Args: { p_order_id: string }; Returns: Json }
+      admin_order_status_counts: {
+        Args: never
+        Returns: {
+          orders: number
+          status: string
+        }[]
+      }
       admin_orders: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: {
@@ -2672,6 +2706,39 @@ export type Database = {
           sub_orders: Json
           subtotal: number
           total: number
+        }[]
+      }
+      admin_orders_by_area: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          area: string
+          orders: number
+        }[]
+      }
+      admin_orders_page: {
+        Args: {
+          p_from?: string
+          p_limit?: number
+          p_offset?: number
+          p_partner?: string
+          p_payment_method?: string
+          p_payment_status?: string
+          p_search?: string
+          p_status?: string
+          p_to?: string
+        }
+        Returns: {
+          customer_name: string
+          customer_phone: string
+          item_count: number
+          order_id: string
+          order_number: string
+          payment_method: string
+          payment_status: string
+          placed_at: string
+          stores: Json
+          total: number
+          total_count: number
         }[]
       }
       admin_overview_stats: {

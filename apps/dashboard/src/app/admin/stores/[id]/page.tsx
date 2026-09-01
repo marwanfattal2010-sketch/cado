@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
 import { PageHeader, StatusPill, STORE_STATUS_LABEL, Card, KpiCard, EmptyStateV2, usd } from "@/components/ui";
+import { TintCard, type Tint } from "@/components/v3/tint";
+import { publicEnv } from "@/lib/env";
+import { ProductManager } from "./ProductManager";
 import {
   setCommissionRate,
   setStoreStatus,
@@ -323,11 +326,18 @@ async function OverviewTab({ supabase, id }: { supabase: Supa; id: string }) {
           </p>
         </Card>
       ) : (
+        /* Same tinted cards as Home, same colour meanings: coral revenue,
+           amber orders, mint what CADO keeps, sky what the store is owed. */
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <KpiCard label="Orders" value={String(mine.orders_count)} hint="Lifetime, excluding cancelled" />
-          <KpiCard label="Revenue" value={usd(mine.gross_revenue)} hint="Sum of line snapshots" />
-          <KpiCard label="CADO commission" value={usd(mine.commission)} hint="Snapshot at purchase" />
-          <KpiCard label="Payable to store" value={usd(mine.payable_pending)} hint="Ledger rows not yet paid" />
+          <StoreKpi tint="coral" label="Revenue" value={usd(mine.gross_revenue)} note="Lifetime, from line snapshots" />
+          <StoreKpi tint="amber" label="Orders" value={String(mine.orders_count)} note="Excluding cancelled" />
+          <StoreKpi
+            tint="mint"
+            label="CADO keeps"
+            value={usd(mine.commission)}
+            note={`${(Number(mine.commission_rate) * 100).toFixed(1)}% at time of sale`}
+          />
+          <StoreKpi tint="sky" label="Owed to store" value={usd(mine.payable_pending)} note="Not yet paid out" />
         </div>
       )}
 
@@ -396,69 +406,50 @@ function OrderTable({ rows }: { rows: StoreOrder[] }) {
 
 /* ============================================================= products === */
 
+/**
+ * The store's catalogue, EDITABLE. This tab is where Products lives now that
+ * the global product page has been removed (V4 §5) — you always arrive wanting
+ * one shop's list, so that is the only place it exists.
+ */
 async function ProductsTab({ supabase, id }: { supabase: Supa; id: string }) {
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, title, price, compare_at_price, is_active, review_status, stock_quantity")
-    .eq("partner_id", id)
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const [{ data, error }, { data: images }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("id, title, price, compare_at_price, is_active, review_status, stock_quantity")
+      .eq("partner_id", id)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase.from("product_images").select("product_id, storage_path, is_primary").eq("partner_id", id),
+  ]);
 
-  const rows = data ?? [];
+  if (error) {
+    return (
+      <p className="rounded-card border border-status-red bg-status-red-tint px-3 py-2 text-[13px] text-status-red">
+        Could not load products: {error.message}
+      </p>
+    );
+  }
+
+  const imgOf = new Map<string, string>();
+  for (const im of images ?? []) {
+    if (!imgOf.has(im.product_id) || im.is_primary) imgOf.set(im.product_id, im.storage_path);
+  }
+  const publicImg = (p: string) =>
+    `${publicEnv.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${p.replace(/^\/+/, "")}`;
 
   return (
-    <Card title={`Products${rows.length ? ` · ${rows.length}` : ""}`}>
-      {error ? (
-        <p className="text-sm text-status-red">{error.message}</p>
-      ) : rows.length === 0 ? (
-        <EmptyStateV2 title="This store has no products yet." />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                <th className="py-2 pr-3">Title</th>
-                <th className="py-2 pr-3 text-right">Price</th>
-                <th className="py-2 pr-3 text-right">Stock</th>
-                <th className="py-2 pr-3">On storefront</th>
-                <th className="py-2">Review</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((p) => (
-                <tr key={p.id} className="border-b border-line/60 last:border-0">
-                  <td className="py-2 pr-3 font-medium text-ink">{p.title}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">
-                    {usd(p.price)}
-                    {p.compare_at_price != null && Number(p.compare_at_price) > Number(p.price) ? (
-                      <span className="ml-1 text-[11px] text-muted line-through">
-                        {usd(p.compare_at_price)}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="py-2 pr-3 text-right tabular-nums text-muted">{p.stock_quantity}</td>
-                  <td className="py-2 pr-3">
-                    {/* products has no `status` column — visibility is is_active. */}
-                    <span
-                      className={`inline-flex items-center rounded-pill px-2.5 py-0.5 text-xs font-semibold ${
-                        p.is_active
-                          ? "bg-status-green-tint text-status-green"
-                          : "bg-status-grey-tint text-status-grey"
-                      }`}
-                    >
-                      {p.is_active ? "Visible" : "Hidden"}
-                    </span>
-                  </td>
-                  <td className="py-2">
-                    <StatusPill status={p.review_status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Card>
+    <ProductManager
+      products={(data ?? []).map((p) => ({
+        id: p.id,
+        title: p.title,
+        price: Number(p.price),
+        compare_at_price: p.compare_at_price === null ? null : Number(p.compare_at_price),
+        stock_quantity: Number(p.stock_quantity),
+        is_active: p.is_active,
+        review_status: p.review_status,
+        image: imgOf.has(p.id) ? publicImg(imgOf.get(p.id)!) : null,
+      }))}
+    />
   );
 }
 
@@ -940,5 +931,26 @@ function SettingsTab({
         </p>
       </Card>
     </div>
+  );
+}
+
+/** A tinted figure for this store, matching Home's colour language. */
+function StoreKpi({
+  tint,
+  label,
+  value,
+  note,
+}: {
+  tint: Tint;
+  label: string;
+  value: string;
+  note: string;
+}) {
+  return (
+    <TintCard tint={tint} className="p-4">
+      <p className="text-[13px] font-medium text-secondary">{label}</p>
+      <p className="mt-0.5 text-[26px] font-bold leading-8 text-ink tnum">{value}</p>
+      <p className="mt-0.5 text-[12px] text-muted">{note}</p>
+    </TintCard>
   );
 }

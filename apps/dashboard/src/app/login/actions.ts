@@ -41,9 +41,26 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   }
 
   const user = await getDashboardUser();
+
+  /*
+   * DRIVERS. getDashboardUser() only knows about admin and store roles, because
+   * a driver has no dashboard — they get one mobile page and nothing else. So a
+   * driver reaches this point as `null` and would have been signed out with
+   * "no dashboard access", which is how the driver product was unreachable.
+   * Their role is read here directly and they go straight to their round.
+   */
   if (!user) {
-    // Authenticated, but a plain customer or an unassigned partner. Don't leave
-    // a half-session hanging around.
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", auth.user.id)
+        .maybeSingle();
+      if (profile?.role === "driver") redirect("/driver");
+    }
+    // A plain customer, or a partner with no store assigned. Don't leave a
+    // half-session hanging around.
     await supabase.auth.signOut();
     return { error: t("login.error.norole") };
   }
@@ -52,5 +69,5 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   // absolute URL.
   const next = parsed.data.next;
   const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-  redirect(safeNext ?? (user.role === "admin" ? "/admin/stores" : "/store"));
+  redirect(safeNext ?? (user.role === "admin" ? "/admin" : "/store"));
 }

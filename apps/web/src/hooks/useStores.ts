@@ -114,7 +114,22 @@ export function useStore(slugOrId: string | undefined) {
     queryFn: async () => {
       const key = slugOrId as string;
       const column = UUID_RE.test(key) ? "id" : "slug";
-      const { data, error } = await supabase.from("partners").select("*").eq(column, key).maybeSingle();
+      /*
+       * Explicit columns, not `*`. The partners table also holds CADO's
+       * commercial terms and internal logistics details — commission_rate,
+       * pickup_address, driver_contact, the application text — and `*` published
+       * every one of them to any visitor, because the anon key is in the
+       * storefront bundle for anyone to read. Migration 0080 revokes those
+       * columns from the anon role, which would make a `*` select fail outright.
+       * This list is the shop page: what a customer is meant to see.
+       */
+      const { data, error } = await supabase
+        .from("partners")
+        .select(
+          "id, name, slug, description, tagline, logo_url, cover_image_url, city, country, is_live, is_featured, featured_rank, store_of_week, offers_gift_wrap, status, created_at"
+        )
+        .eq(column, key)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },

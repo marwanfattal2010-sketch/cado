@@ -220,3 +220,94 @@ export async function setDriverActive(driverId: string, active: boolean): Promis
   refresh();
   return { ok: true };
 }
+
+/**
+ * ADMIN OVERRIDE (V3 §8, V4 §7).
+ *
+ * Marwan's objection stands: "why would I mark as delivered? I'm the admin."
+ * The store marks a parcel ready, the driver marks it picked up and delivered.
+ * The admin's job is to assign and to watch.
+ *
+ * But things go wrong — a driver's phone dies, a store forgets. So the admin
+ * keeps ONE way to move a status, and it costs a written reason that lands in
+ * the audit trail next to who typed it. A free "Mark delivered" button makes
+ * the delivery record a guess; this makes an override a deliberate, attributable
+ * act.
+ */
+export async function overrideStatus(formData: FormData): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const supabase = await createServerClient();
+
+  const subOrderId = String(formData.get("subOrderId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  if (!UUID.test(subOrderId)) return { ok: false, message: s("delivery.error.generic") };
+  if (!["ready", "out_for_delivery", "delivered", "cancelled"].includes(status)) {
+    return { ok: false, message: "That is not a status this page can set." };
+  }
+  if (reason.length < 5) {
+    return { ok: false, message: "Say why you are overriding — it goes in the record." };
+  }
+
+  const { data: before } = await supabase
+    .from("sub_orders")
+    .select("status, order_id, partner_id")
+    .eq("id", subOrderId)
+    .maybeSingle();
+
+  const { error } = await supabase.rpc("admin_set_sub_order_status", {
+    p_sub_order_id: subOrderId,
+    p_status: status,
+  });
+  if (error) return { ok: false, message: error.message };
+
+  // The reason is the point of the whole action; if the note fails to save the
+  // admin needs to know the trail is incomplete.
+  const { error: noteError } = await supabase.from("order_events").insert({
+    sub_order_id: subOrderId,
+    order_id: before?.order_id ?? null,
+    partner_id: before?.partner_id ?? null,
+    actor_id: admin.id,
+    actor_role: "admin",
+    event_type: "admin_override",
+    from_status: before?.status ?? null,
+    to_status: status,
+    message: reason,
+  });
+
+  refresh();
+  revalidatePath("/admin/orders");
+  if (noteError) {
+    return { ok: false, message: `Status changed, but the reason was not recorded: ${noteError.message}` };
+  }
+  return { ok: true };
+}
+
+/**
+ * Set the delivery fee CADO pays the driver for one run. Empty clears it.
+ * Kept separate from assignment so recording a cost never moves a status.
+ */
+export async function setDeliveryCost(subOrderId: string, cost: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (!UUID.test(subOrderId)) return { ok: false, message: s("delivery.error.generic") };
+  const supabase = await createServerClient();
+
+  const trimmed = cost.trim();
+  let value: number | null = null;
+  if (trimmed !== "") {
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 0 || n > 1000) {
+      return { ok: false, message: "Enter a cost between $0 and $1,000, or leave it blank." };
+    }
+    value = n;
+  }
+
+  const { error } = await supabase
+    .from("delivery_assignments")
+    .update({ cost: value })
+    .eq("sub_order_id", subOrderId);
+  if (error) return { ok: false, message: error.message };
+  refresh();
+  return { ok: true };
+}

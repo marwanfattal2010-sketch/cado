@@ -40,6 +40,7 @@ export async function adminUpdateProduct(
   const { data, error } = await supabase.from("products").update(patch).eq("id", productId).select("id");
   if (error || !data || data.length === 0) return { ok: false, message: error?.message ?? "No such product." };
   revalidatePath("/admin/products");
+  revalidatePath("/admin/stores", "layout");
   return { ok: true };
 }
 
@@ -57,6 +58,7 @@ export async function adminSetProductActive(
     .select("id");
   if (error || !data || data.length === 0) return { ok: false, message: error?.message ?? "No such product." };
   revalidatePath("/admin/products");
+  revalidatePath("/admin/stores", "layout");
   return { ok: true };
 }
 
@@ -99,5 +101,6 @@ export async function adminCreateProduct(formData: FormData): Promise<{ ok: bool
 
   if (error) return { ok: false, message: error.message };
   revalidatePath("/admin/products");
+  revalidatePath("/admin/stores", "layout");
   return { ok: true, message: `Added "${title}" — hidden until you activate it.` };
 }
