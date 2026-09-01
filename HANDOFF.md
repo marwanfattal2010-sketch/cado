@@ -782,3 +782,42 @@ app, so logo/cover are plainly-labelled URL fields. The storefront has no
 support thread, so the admin reply banner says so instead of claiming the
 customer was emailed. `support_tickets` and `reviews` are genuinely empty in
 production and render empty states; nothing was seeded.
+
+### Dashboard access and two crash-class bugs (Sep 1, 2026)
+
+**Signing in.** Admin is `fattalmarwan33@gmail.com` at
+https://cado-dashboard.vercel.app/login. There is NO "forgot password" link and
+the storefront has no password UI either, so a lost dashboard password today
+means resetting it with the service role. Two things block the proper flow:
+Resend is in sandbox (invite/reset mail only reaches the project owner), and
+**the dashboard's URL is not in Supabase's redirect allow-list** — recovery
+links bounce to cado-web. Add `https://cado-dashboard.vercel.app/**` under
+Authentication → URL Configuration before building a reset flow, or it will
+look like it works and land people on the storefront.
+
+**Team & access (`/admin/invites`)** now creates accounts directly: a new store
+with its owner login, an extra owner/staff on an existing store, or another
+admin. Each shows a ONE-TIME password for the admin to pass on by phone, because
+email cannot be relied on. The email-invite form is still there with a note
+saying it does not deliver yet. Verified end to end in production: store created
+active + live, profile linked `role=partner`/`store_role=owner`, the generated
+password actually signs in; test store and login then deleted, 101 products
+unchanged.
+
+**Two bugs that made the dashboard look broken to its owner:**
+
+- **CSP blocked Supabase Realtime.** `connect-src` listed the https origin but
+  no `wss:` — CSP treats the schemes as separate sources, and the `ws: wss:`
+  allowance was gated behind `isDev`. Realtime could never connect in
+  production, the client retried forever, and it surfaced as "Application error:
+  a client-side exception has occurred". `next.config.mjs` now names the wss
+  origin explicitly. If you ever add another realtime host, it needs its own
+  entry.
+- **`/admin` Overview showed $0 / 0 orders / "No orders yet"** above a chart of
+  that same range's orders — the third page to hit the 0020 trap (finance and
+  the store detail page were the others). Its "needs attention" panel was worse:
+  it read `sub_orders` directly, so it always said "Nothing waiting. All clear."
+  no matter how long a store sat on an order. All of it goes through
+  `admin_finance_breakdown` and `admin_orders` now.
+
+**If a dashboard page shows a zero, suspect RLS before believing it.**
