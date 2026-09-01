@@ -116,9 +116,18 @@ export default async function AdminOverviewPage({
       .limit(10),
   ]);
 
+  /** "40 min", "6 hours", "20 days" — nobody can read "28329 min". */
+  const waited = (since: string) => {
+    const mins = Math.round((Date.now() - new Date(since).getTime()) / 60000);
+    if (mins < 90) return `${mins} min`;
+    const hours = Math.round(mins / 60);
+    if (hours < 48) return `${hours} hours`;
+    return `${Math.round(hours / 24)} days`;
+  };
+
   const attention = [
     ...stale.map((o) => ({
-      label: `Order unconfirmed ${Math.round((Date.now() - new Date(o.placed_at).getTime()) / 60000)} min — ${
+      label: `Order unconfirmed ${waited(o.placed_at)} — ${
         (o.sub_orders ?? []).find((s) => s.status === "pending")?.partner_name ?? "store"
       }`,
       href: `/admin/orders/${o.order_id}`,

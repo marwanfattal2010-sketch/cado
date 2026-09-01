@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
 import { InviteForm } from "./InviteForm";
+import { NewStoreForm, AddOwnerForm, NewAdminForm } from "./CreateAccessForms";
 import { t } from "@/lib/dictionary";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,20 @@ export default async function AdminInvitesPage() {
 
   return (
     <div>
-      <h1 className="mb-5 font-display text-h1 text-ink">{t("admin.invites.title")}</h1>
+      <h1 className="mb-5 font-display text-h1 text-ink">Team &amp; access</h1>
 
+      <div className="space-y-4">
+        <NewStoreForm />
+        <AddOwnerForm partners={partners ?? []} />
+        <NewAdminForm />
+      </div>
+
+      <h2 className="mb-2 mt-8 font-display text-h2 text-ink">Invite by email instead</h2>
+      <p className="mb-3 text-xs text-muted">
+        Lets the person choose their own password — but CADO&rsquo;s email sending is still in test
+        mode, so the invitation only actually arrives at the CADO owner&rsquo;s own address. Until
+        that is switched on, use the forms above and pass the password on yourself.
+      </p>
       <InviteForm partners={partners ?? []} />
 
       <h2 className="mb-3 mt-8 font-display text-h2 text-ink">{t("admin.invites.list")}</h2>
