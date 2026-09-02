@@ -404,7 +404,12 @@ button:active:not(:disabled),
   display: flex;
   flex: 1;
   min-height: 0;
-  overflow-x: auto;
+  /* CLIPPED, not auto (spec 1.8). A touch can no longer drag the pager a few
+     pixels sideways and let it spring back — the loose feel on the All tab.
+     `scrollTo` still works on a clipped container, so tab taps, deep links
+     and the resize re-anchor are unchanged; the swipe itself is recognised
+     in useTabSwipe. See the note there for why this is not `touch-action`. */
+  overflow-x: hidden;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain;
@@ -418,6 +423,12 @@ button:active:not(:disabled),
 .panel {
   flex: 0 0 100%;
   scroll-snap-align: start;
+  /* Explicit, and it has to be. `overflow-y: auto` alone computes overflow-x
+     to `auto` as well, so any child a few pixels wider than the screen turned
+     the panel itself into a sideways scroller — which is the other half of
+     the loose feel 1.8 describes. Rails inside still scroll: they are their
+     own scroll containers, and clipping a parent does not clip those. */
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;

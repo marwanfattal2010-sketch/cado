@@ -160,11 +160,11 @@ export function EntryCards({
               style={{ background: accentColor(accentToken, 0.12) }}
             />
             {photo ? (
-              <Img src={photo} className="absolute inset-x-0 top-0 h-[96px] w-full object-cover" />
+              <Img src={photo} className="absolute inset-x-0 top-0 h-[146px] w-full object-cover" />
             ) : (
               <span
                 aria-hidden
-                className="absolute inset-x-0 top-0 h-[96px]"
+                className="absolute inset-x-0 top-0 h-[146px]"
                 style={{
                   background: `linear-gradient(160deg, ${accentColor(accentToken, 0.22)}, ${accentColor(
                     accentToken,
@@ -174,7 +174,7 @@ export function EntryCards({
               />
             )}
             <span
-              className="absolute inset-x-0 bottom-0 flex h-[32px] items-center justify-center px-1.5 text-[14px] font-bold leading-none text-inverse"
+              className="absolute inset-x-0 bottom-0 flex h-[30px] items-center justify-center px-1.5 text-[13px] font-bold leading-none text-inverse"
               style={{ background: accentColor(accentToken) }}
             >
               {tile.label}
@@ -183,7 +183,7 @@ export function EntryCards({
         );
 
         const shell =
-          "relative block h-[128px] w-[112px] shrink-0 overflow-hidden rounded-[8px] transition-transform duration-press ease-out active:scale-[0.97]";
+          "relative block h-[176px] w-[116px] shrink-0 overflow-hidden rounded-[8px] transition-transform duration-press ease-out active:scale-[0.97]";
 
         return tile.link_type === "url" ? (
           <Link key={tile.id} to={tile.link_value} className={shell}>

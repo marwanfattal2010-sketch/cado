@@ -80,9 +80,9 @@ export function TabStoreCircles({ categoryId }: { categoryId?: string }) {
           <Link
             key={s.id}
             to={storePath(s)}
-            className="flex w-[56px] shrink-0 flex-col items-center gap-1.5 text-center transition-transform duration-press ease-out active:scale-[0.96]"
+            className="flex w-[64px] shrink-0 flex-col items-center gap-1.5 text-center transition-transform duration-press ease-out active:scale-[0.96]"
           >
-            <span className="h-[48px] w-[48px] overflow-hidden rounded-pill border border-line bg-surface">
+            <span className="h-[60px] w-[60px] overflow-hidden rounded-pill border border-line bg-surface">
               {s.logo_url || s.cover_image_url ? (
                 <Img
                   src={(s.logo_url ?? s.cover_image_url) as string}

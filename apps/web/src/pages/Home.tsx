@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "../components/Header";
 import { BottomNav } from "../components/BottomNav";
@@ -8,6 +8,7 @@ import { TabPanel } from "../components/shop/TabPanel";
 import { AllCategoriesSheet } from "../components/shop/AllCategoriesSheet";
 import { useBrowseConfig } from "../hooks/useBrowseConfig";
 import { usePagerSync } from "../hooks/usePagerSync";
+import { useTabSwipe } from "../hooks/useTabSwipe";
 import { Skeleton } from "../components/Skeleton";
 import { ShopSearchBar, ShopSearchResults } from "../components/shop/ShopSearch";
 
@@ -40,6 +41,25 @@ export function Home() {
   const searching = query.trim().length > 0;
   const { ref, index, goTo } = usePagerSync(tabs.length);
   const [deepLinked, setDeepLinked] = useState(false);
+
+  /**
+   * The tab swipe (spec 1.8). Reads `index` through a ref so the gesture
+   * handler is registered once and never re-binds mid-drag — a listener
+   * swapped out between touchstart and touchend loses the gesture entirely.
+   */
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  const tabCountRef = useRef(tabs.length);
+  tabCountRef.current = tabs.length;
+  const onSwipe = useCallback(
+    (direction: 1 | -1) => {
+      const next = indexRef.current + direction;
+      if (next < 0 || next >= tabCountRef.current) return;
+      goTo(next);
+    },
+    [goTo]
+  );
+  useTabSwipe(ref, onSwipe);
 
   /**
    * Which panels have had their contents mounted. Grows to cover the active

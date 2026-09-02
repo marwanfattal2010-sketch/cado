@@ -26,7 +26,7 @@ import { FeaturedStores } from "./FeaturedStores";
 import { HomeLower } from "./HomeLower";
 import { TabStoreCircles, TabStoreBanners } from "./blocks/TabStores";
 import { ProductFeed } from "./blocks/ProductFeed";
-import { GiftCardSection, OccasionRail, StoreCirclesRow } from "./HomeSections";
+import { GiftCardSection, OccasionRail } from "./HomeSections";
 
 /**
  * One tab's page: its own scroll container, its own filter state.
@@ -316,12 +316,13 @@ export function TabPanel({
             if (!primary)
               return <TabStoreBanners key={block.id} categoryId={categoryId} accent={accentColor(tab.accent_token, 1)} />;
             return (
+              /* Spec 1.6: ONE store section, circles only. The big rectangles
+                 are gone, and with them the separate round row that used to
+                 sit underneath — FeaturedStores now IS that row, two-deep and
+                 covering every live shop, so keeping StoreCirclesRow here
+                 would print the same stores twice in a row. */
               <div key={block.id}>
-                {/* The endless-home rebuild: big featured cards with a real
-                    tagline replace the mixed-size strip, and the round row of
-                    every remaining store keeps its place beneath them. */}
                 <FeaturedStores />
-                <StoreCirclesRow />
               </div>
             );
 

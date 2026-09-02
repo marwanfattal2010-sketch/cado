@@ -1,4 +1,4 @@
-import { NowOnCado, PopularBrands, NewOnCado, TopStoresInCity } from "./TotersSections";
+import { NewOnCado, PopularBrands, TopStoresNearYou, AllStores } from "./TotersSections";
 import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { SectionHead } from "../SectionHead";
@@ -96,9 +96,6 @@ export function HomeLower() {
 
   return (
     <div className="pb-6">
-      {/* Now on CADO — the newest shops, straight after "Stores on CADO". */}
-      <NowOnCado />
-
       {/* 2 — Trending / Popular picks */}
       {trendingPool.isLoading || signals.isLoading ? (
         <Pad>
@@ -145,8 +142,8 @@ export function HomeLower() {
       {/* 4 — Stores of the Week */}
       <StoresOfWeekBlock stores={storesOfWeek.data ?? []} />
 
-      {/* Top stores in the delivery city — hidden when that city has none. */}
-      <TopStoresInCity />
+      {/* 1.3: renamed — "near you" reads right whichever city is selected. */}
+      <TopStoresNearYou />
 
       {/* 5 — Shop by budget */}
       <Pad>
@@ -227,6 +224,11 @@ export function HomeLower() {
           <Rail products={newest.data ?? []} />
         </Pad>
       ) : null}
+
+      {/* 1.7 — All stores, BEFORE Discover more. Discover more really is an
+          infinite scroll (DiscoverMore pages forever on a sentinel), so
+          anything placed after it is unreachable. */}
+      <AllStores />
 
       {/* 10 — Discover more, the endless part */}
       <DiscoverMore exclude={exclude} excludeReady={excludeReady} />

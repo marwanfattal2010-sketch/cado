@@ -6,16 +6,15 @@ import { storePath } from "../../lib/routes";
 import { Img } from "../Img";
 
 /**
- * The Toters-style Home sections (Part 1).
+ * The Toters-shaped Home sections (spec 1.4, 1.5, 1.3, 1.7).
  *
- * Everything here is a real row from the database. In particular there is no
- * delivery time and no rating anywhere: Toters shows both, CADO measures
- * neither, and a "25-35 min" under a shop would be a number we made up. The
- * "-20%" pill appears only where that shop genuinely has a product priced below
- * its compare-at price — the same test the Deals section uses.
+ * Everything is a real row. No delivery times and no ratings anywhere: Toters
+ * shows both, CADO measures neither, and "25-35 min" under a shop would be a
+ * number we made up. A "-20%" pill appears only where that shop genuinely has
+ * a product priced below its compare-at price — the same test Deals uses.
  *
- * Every section hides itself entirely when its query comes back empty, rather
- * than rendering a heading over nothing.
+ * Every section hides itself when its query comes back empty rather than
+ * printing a heading over nothing.
  */
 
 type PartnerRow = {
@@ -26,11 +25,10 @@ type PartnerRow = {
   logo_url: string | null;
   cover_image_url: string | null;
   created_at: string;
+  is_featured?: boolean | null;
 };
 
-const CARD_GAP = "gap-3"; // 12px, per the brief
-
-/** Shops that really have something discounted right now. */
+/** Shops with something genuinely discounted right now. */
 function useDiscountedPartners() {
   return useQuery({
     queryKey: ["discounted-partners"],
@@ -53,93 +51,7 @@ function useDiscountedPartners() {
   });
 }
 
-function SectionTitle({ title, to }: { title: string; to?: string }) {
-  return (
-    <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 pb-2.5 pt-5">
-      <h2 className="font-display text-h2 text-ink">{title}</h2>
-      {to ? (
-        <Link
-          to={to}
-          aria-label="See all"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-persimmon text-white"
-        >
-          →
-        </Link>
-      ) : null}
-    </div>
-  );
-}
-
-/* ================================================= 2. Now on CADO 💥 ===== */
-
-/**
- * The newest shops, two to a page, swiped horizontally — Toters' "Now on
- * Toters". The tinted band and its wavy top edge are drawn with an inline SVG
- * rather than an image so it costs nothing and takes the brand colour.
- */
-export function NowOnCado() {
-  const stores = useQuery({
-    queryKey: ["now-on-cado"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("partners")
-        .select("id, name, slug, city, logo_url, cover_image_url, created_at")
-        .eq("status", "active")
-        .eq("is_live", true)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      return (data ?? []) as PartnerRow[];
-    },
-  });
-
-  const categories = useStoreCategories((stores.data ?? []).map((s) => s.id));
-  const rows = stores.data ?? [];
-  if (rows.length === 0) return null;
-
-  // Two stacked rows per swipe page.
-  const pages: PartnerRow[][] = [];
-  for (let i = 0; i < rows.length; i += 2) pages.push(rows.slice(i, i + 2));
-
-  return (
-    <section className="relative mt-5">
-      {/* Wavy top edge, then the tint behind the content. */}
-      <svg viewBox="0 0 375 16" preserveAspectRatio="none" aria-hidden className="block h-4 w-full">
-        <path d="M0 16 C 60 0, 120 16, 187 8 C 250 0, 315 16, 375 6 L375 16 Z" fill="var(--persimmon)" fillOpacity="0.07" />
-      </svg>
-      <div className="bg-persimmon/[0.07] pb-5">
-        <SectionTitle title="Now on CADO 💥" to="/stores" />
-        <div className={`-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 ${CARD_GAP} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
-          {pages.map((page, i) => (
-            <div key={i} className="flex w-[86%] shrink-0 snap-start flex-col gap-3 sm:w-[46%]">
-              {page.map((s) => (
-                <Link
-                  key={s.id}
-                  to={storePath(s)}
-                  className="flex items-center gap-3 rounded-card bg-surface p-2 shadow-rest"
-                >
-                  <span className="h-[96px] w-[96px] shrink-0 overflow-hidden rounded-[10px] bg-surface-sunk">
-                    {s.cover_image_url || s.logo_url ? (
-                      <Img src={(s.cover_image_url ?? s.logo_url) as string} className="h-full w-full object-cover" />
-                    ) : null}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-body font-bold text-ink">{s.name}</span>
-                    {/* Real info only: what they sell and where they are. */}
-                    <span className="mt-0.5 block truncate text-caption text-muted">
-                      {[categories.data?.get(s.id), s.city].filter(Boolean).join(" · ") || "New on CADO"}
-                    </span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/** One category name per store, for the "Jewelry · Beirut" line. */
+/** One category name per store, for the "Chocolate" line under a name. */
 function useStoreCategories(partnerIds: string[]) {
   return useQuery({
     queryKey: ["store-categories", partnerIds.join(",")],
@@ -150,7 +62,7 @@ function useStoreCategories(partnerIds: string[]) {
         .select("partner_id, category:categories(name)")
         .in("partner_id", partnerIds)
         .eq("is_active", true)
-        .limit(500);
+        .limit(600);
       const m = new Map<string, string>();
       for (const row of data ?? []) {
         const name = (row.category as { name?: string } | null)?.name;
@@ -161,45 +73,49 @@ function useStoreCategories(partnerIds: string[]) {
   });
 }
 
-/* ============================================ 4/6. small logo grids ====== */
-
-function LogoGrid({ stores, discounted }: { stores: PartnerRow[]; discounted?: Set<string> }) {
+/**
+ * A store's mark. Real logo where the shop has uploaded one; otherwise its
+ * initials on a tinted tile.
+ *
+ * 25 of 27 shops have no logo file. The alternative to initials would be
+ * drawing something — and inventing a mark for a real business is exactly the
+ * brand-imitation rule. Initials are legibly CADO's own placeholder, not a
+ * pretend logo, and they disappear the moment a shop uploads the real thing.
+ */
+function StoreMark({ store, size }: { store: PartnerRow; size: number }) {
+  const initials = store.name.replace(/\[.*?\]\s*/g, "").slice(0, 2).toUpperCase();
+  if (store.logo_url) {
+    return <Img src={store.logo_url} className="h-full w-full object-contain p-1.5" />;
+  }
   return (
-    <div className="mx-auto grid max-w-6xl grid-cols-5 gap-2.5 px-4">
-      {stores.map((s) => (
-        <Link key={s.id} to={storePath(s)} className="flex flex-col items-center">
-          <span className="flex h-[58px] w-[58px] items-center justify-center overflow-hidden rounded-[14px] border border-line bg-surface">
-            {s.logo_url || s.cover_image_url ? (
-              <Img src={(s.logo_url ?? s.cover_image_url) as string} className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-caption font-bold text-muted">{s.name.slice(0, 2).toUpperCase()}</span>
-            )}
-          </span>
-          {discounted?.has(s.id) ? (
-            <span className="mt-1 rounded-pill bg-persimmon px-1.5 py-px text-[10px] font-bold text-white">
-              -20%
-            </span>
-          ) : (
-            <span className="mt-1 line-clamp-1 text-[10px] leading-tight text-muted">{s.name}</span>
-          )}
-        </Link>
-      ))}
-    </div>
+    <span
+      className="flex h-full w-full items-center justify-center font-bold text-persimmon"
+      style={{ fontSize: Math.round(size * 0.34) }}
+    >
+      {initials}
+    </span>
   );
 }
 
+/* =========================================== 1.4  Popular brands ========= */
+
+/**
+ * Toters' "Popular Brands", literally: a static 5x2 grid of rounded logo
+ * tiles, no carousel and no arrow button, with the discount pill hanging over
+ * the bottom edge of the tile.
+ *
+ * Rows are 40px apart so the hanging pill never touches the row below.
+ */
 export function PopularBrands() {
   const discounted = useDiscountedPartners();
   const stores = useQuery({
     queryKey: ["popular-brands"],
     queryFn: async () => {
-      // Ordered by featured then newest. Ordering by orders in the last 30 days
-      // would be better, but the storefront cannot read orders under RLS and
-      // this section is not worth a new SECURITY DEFINER function — the
-      // fallback the brief names is exactly this.
+      // Ordered by featured then newest: the storefront cannot read orders
+      // under RLS, and that is the fallback the brief itself names.
       const { data } = await supabase
         .from("partners")
-        .select("id, name, slug, city, logo_url, cover_image_url, created_at")
+        .select("id, name, slug, city, logo_url, cover_image_url, created_at, is_featured")
         .eq("status", "active")
         .eq("is_live", true)
         .order("is_featured", { ascending: false })
@@ -213,13 +129,35 @@ export function PopularBrands() {
   if (rows.length === 0) return null;
 
   return (
-    <section>
-      <SectionTitle title="Popular Brands" to="/stores" />
-      <LogoGrid stores={rows} discounted={discounted.data} />
+    <section className="mt-6">
+      <h2 className="px-4 pb-3 font-hero text-[17px] font-extrabold text-ink">Popular brands</h2>
+      <div className="grid grid-cols-5 gap-x-2.5 gap-y-10 px-4">
+        {rows.map((s) => (
+          <Link key={s.id} to={storePath(s)} className="relative flex flex-col items-center">
+            <span className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-[16px] bg-surface shadow-rest">
+              <StoreMark store={s} size={60} />
+            </span>
+            {discounted.data?.has(s.id) ? (
+              // Overlaps the bottom edge, exactly like Toters' red pill.
+              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-pill bg-persimmon px-1.5 py-[3px] text-[10px] font-bold text-white">
+                -20%
+              </span>
+            ) : null}
+          </Link>
+        ))}
+      </div>
     </section>
   );
 }
 
+/* ============================================ 1.5  New on CADO ✨ ======== */
+
+/**
+ * Toters' "Now on Toters", literally: a full-width tinted band with a wavy top
+ * edge, the title in a darker shade of the accent, a small white round arrow
+ * on the right, and TWO independently swipeable rows of wide cards — photo on
+ * the left about 40% of the card, white panel on the right.
+ */
 export function NewOnCado() {
   const since = new Date(Date.now() - 60 * 86400000).toISOString();
   const stores = useQuery({
@@ -232,28 +170,89 @@ export function NewOnCado() {
         .eq("is_live", true)
         .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(12);
       return (data ?? []) as PartnerRow[];
     },
   });
 
   const rows = stores.data ?? [];
-  // Fewer than five still renders; zero hides the section entirely.
+  const categories = useStoreCategories(rows.map((s) => s.id));
   if (rows.length === 0) return null;
 
+  // Two rows, dealt alternately so both fill evenly.
+  const rowA = rows.filter((_, i) => i % 2 === 0);
+  const rowB = rows.filter((_, i) => i % 2 === 1);
+
+  const Card = ({ s }: { s: PartnerRow }) => (
+    <Link
+      to={storePath(s)}
+      className="flex w-[65%] shrink-0 snap-start overflow-hidden rounded-card bg-surface shadow-rest sm:w-[42%]"
+    >
+      <span className="aspect-square w-[40%] shrink-0 overflow-hidden bg-surface-sunk">
+        {s.cover_image_url || s.logo_url ? (
+          <Img src={(s.cover_image_url ?? s.logo_url) as string} className="h-full w-full object-cover" />
+        ) : null}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2">
+        <span className="truncate text-body font-bold text-ink">{s.name}</span>
+        <span className="mt-0.5 truncate text-caption text-muted">
+          {categories.data?.get(s.id) ?? "New shop"}
+        </span>
+        <span className="mt-0.5 text-[11px] font-medium text-persimmon">Added this week</span>
+      </span>
+    </Link>
+  );
+
+  const Row = ({ items }: { items: PartnerRow[] }) =>
+    items.length === 0 ? null : (
+      <div
+        style={{ touchAction: "pan-x" }}
+        onTouchMove={(e) => e.stopPropagation()}
+        className="flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {items.map((s) => (
+          <Card key={s.id} s={s} />
+        ))}
+      </div>
+    );
+
   return (
-    <section>
-      <SectionTitle title="New on CADO ✨" to="/stores" />
-      <LogoGrid stores={rows} />
+    <section className="mt-6">
+      {/* The wavy top edge, drawn rather than an image so it takes the brand
+          colour and costs nothing. */}
+      <svg viewBox="0 0 375 18" preserveAspectRatio="none" aria-hidden className="block h-[18px] w-full">
+        <path
+          d="M0 18 C 62 2, 124 18, 188 9 C 252 0, 314 17, 375 6 L375 18 Z"
+          fill="var(--persimmon)"
+          fillOpacity="0.08"
+        />
+      </svg>
+      <div className="bg-persimmon/[0.08] pb-5">
+        <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-1">
+          <h2 className="font-hero text-[17px] font-extrabold" style={{ color: "#B8321C" }}>
+            New on CADO ✨
+          </h2>
+          <Link
+            to="/stores"
+            aria-label="See all stores"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-surface text-ink shadow-rest"
+          >
+            →
+          </Link>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Row items={rowA} />
+          <Row items={rowB} />
+        </div>
+      </div>
     </section>
   );
 }
 
-/* ================================== 8. Top stores in {city} 📍 =========== */
+/* ==================================== 1.3  Top stores near you =========== */
 
-export function TopStoresInCity() {
+export function TopStoresNearYou() {
   const [area] = useArea();
-
   const stores = useQuery({
     queryKey: ["top-stores-city", area],
     queryFn: async () => {
@@ -274,29 +273,85 @@ export function TopStoresInCity() {
   if (rows.length === 0) return null;
 
   return (
-    <section>
-      <SectionTitle title="Top stores near you 📍" to="/stores" />
-      <div className={`-mx-4 flex overflow-x-auto px-4 pb-1 ${CARD_GAP} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
+    <section className="mt-6">
+      {/* 1.3: the title no longer names the city — "near you" reads right
+          whichever city is selected. */}
+      <h2 className="px-4 pb-3 font-hero text-[17px] font-extrabold text-ink">Top stores near you</h2>
+      <div
+        style={{ touchAction: "pan-x" }}
+        onTouchMove={(e) => e.stopPropagation()}
+        className="flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {rows.map((s) => (
-          <div key={s.id} className="w-[200px] shrink-0">
-            <Link to={storePath(s)} className="block">
-              {/*
-                NO HEART HERE, deliberately. The brief asks for one "using the
-                existing favorites logic" — but that logic favourites PRODUCTS:
-                the table stores product ids and Favourites renders product
-                cards. Putting a store id through it would write a row that
-                every other screen would read as a product and fail on. A
-                store-favourites feature is a real feature, not a heart icon,
-                so this card links to the shop and leaves it at that.
-              */}
-              <span className="relative block h-[130px] w-full overflow-hidden rounded-card bg-surface-sunk">
-                {s.cover_image_url || s.logo_url ? (
-                  <Img src={(s.cover_image_url ?? s.logo_url) as string} className="h-full w-full object-cover" />
-                ) : null}
+          <Link key={s.id} to={storePath(s)} className="w-[200px] shrink-0">
+            <span className="block h-[130px] w-full overflow-hidden rounded-card bg-surface-sunk">
+              {s.cover_image_url || s.logo_url ? (
+                <Img src={(s.cover_image_url ?? s.logo_url) as string} className="h-full w-full object-cover" />
+              ) : null}
+            </span>
+            <span className="mt-1.5 block truncate text-body font-medium text-ink">{s.name}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ============================================== 1.7  All stores ========== */
+
+/**
+ * Every shop, one full-width card each, stacked. Featured first then
+ * alphabetical.
+ *
+ * PLACEMENT: above "Discover more", because Discover more is an infinite
+ * scroll — anything after it is unreachable.
+ */
+export function AllStores() {
+  const stores = useQuery({
+    queryKey: ["all-stores-home"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partners")
+        .select("id, name, slug, city, logo_url, cover_image_url, created_at, is_featured")
+        .eq("status", "active")
+        .eq("is_live", true)
+        .order("is_featured", { ascending: false })
+        .order("name");
+      return (data ?? []) as PartnerRow[];
+    },
+  });
+
+  const rows = stores.data ?? [];
+  const categories = useStoreCategories(rows.map((s) => s.id));
+  if (rows.length === 0) return null;
+
+  return (
+    <section className="mt-6">
+      <h2 className="px-4 pb-3 font-hero text-[17px] font-extrabold text-ink">All stores</h2>
+      <div className="flex flex-col gap-3 px-4">
+        {rows.map((s) => (
+          <Link key={s.id} to={storePath(s)} className="overflow-hidden rounded-card bg-surface shadow-rest">
+            <span className="relative block aspect-square w-full overflow-hidden bg-surface-sunk">
+              {s.cover_image_url ? (
+                <Img src={s.cover_image_url} className="h-full w-full object-cover" />
+              ) : null}
+              {/* The logo circle sits on the photo; the NAME never does — text
+                  over a photograph is unreadable often enough that it is not
+                  worth the look. */}
+              <span className="absolute bottom-2 left-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-pill border-2 border-surface bg-surface">
+                <StoreMark store={s} size={48} />
               </span>
-              <span className="mt-1.5 block truncate text-body font-medium text-ink">{s.name}</span>
-            </Link>
-          </div>
+            </span>
+            <span className="flex items-center gap-3 bg-canvas px-3 py-2.5">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-body font-bold text-ink">{s.name}</span>
+                <span className="block truncate text-caption text-muted">
+                  {[categories.data?.get(s.id), s.city].filter(Boolean).join(" · ") || "Shop"}
+                </span>
+              </span>
+              <span aria-hidden className="shrink-0 text-body font-bold text-persimmon">Shop →</span>
+            </span>
+          </Link>
         ))}
       </div>
     </section>
