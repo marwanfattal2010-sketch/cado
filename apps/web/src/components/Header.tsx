@@ -3,8 +3,8 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
 import { useStore } from "../hooks/useStores";
 import { useAuth } from "../lib/auth";
-import { BrandLogo } from "./BrandLogo";
 import { GiftBagIcon, ChevronLeftIcon } from "./Icons";
+import { PointsPill, NotificationBell } from "./HeaderActions";
 import {
   useArea,
   getAddressDetails,
@@ -247,32 +247,33 @@ export function Header() {
                 <ChevronLeftIcon className="h-5 w-5" />
               </button>
             ) : null}
-            {/* .tap-44 rather than a taller logo: growing the mark itself
-                would push the whole header down. The overlay is a child, so
-                a tap anywhere in the 44px band still hits the link. */}
-            <Link to="/" className="tap-44 flex shrink-0 flex-col justify-center" aria-label="CADO home">
-              {/* h-[32px], not h-8: the project's spacing scale maps 8 to 64px. */}
-              <BrandLogo variant="ink" className="h-[28px] w-auto" />
-              {/* What CADO is, in three words, under the mark. A shop does not
-                  need to say what it is; a marketplace for gifts does. */}
-              <span className="mt-[1px] whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.1em] text-muted">
-                Lebanon's gift marketplace
+            {/*
+              NO LOGO IN THE HEADER (spec 1.11). Toters, Trendyol and Amazon
+              all spend this row on what a shopper needs — where it is going
+              and what is waiting for them — not on reminding them which app
+              they opened. The brand lives on the splash screen and Account.
+
+              Its place is taken by the address, which is the single most
+              consequential thing on a same-day delivery app.
+            */}
+            <button
+              onClick={openAreaSheet}
+              className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-surface-sunk"
+            >
+              <span aria-hidden className="text-[15px] text-persimmon">📍</span>
+              <span className="min-w-0">
+                <span className="block text-[10px] leading-none text-muted">Deliver to</span>
+                <span className="flex items-center gap-1 text-body font-bold leading-tight text-ink">
+                  <span className="truncate">{area}</span>
+                  <span aria-hidden className="text-[10px] font-normal text-muted">▾</span>
+                </span>
               </span>
-            </Link>
+            </button>
           </div>
 
           <div className="flex min-w-0 items-center gap-1">
-            {/* The whole promise is same-day delivery, so the site has to ask
-                where the customer is. */}
-            <button
-              onClick={openAreaSheet}
-              className="tap-44 flex min-w-0 items-center gap-1 rounded-pill px-2 py-1.5 text-caption text-muted transition hover:bg-surface-sunk hover:text-ink"
-            >
-              <span className="truncate">
-                Deliver to <span className="font-medium text-ink">{area}</span>
-              </span>
-              <span aria-hidden className="text-[10px]">▾</span>
-            </button>
+            <PointsPill />
+            <NotificationBell />
 
             <Link
               to={onStorePage ? `/cart?store=${storeId}` : "/cart"}

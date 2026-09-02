@@ -36,6 +36,8 @@ import { TermsOfService } from "./pages/TermsOfService";
 import { DeliveryReturns } from "./pages/DeliveryReturns";
 import { Partners } from "./pages/Partners";
 import { Find } from "./pages/Find";
+import { Points } from "./pages/Points";
+import { Notifications } from "./pages/Notifications";
 import { useTrackPageView } from "./hooks/useTrackPageView";
 
 export default function App() {
@@ -60,6 +62,8 @@ export default function App() {
         <Route path="orders" element={<Orders />} />
         <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="account" element={<Account />} />
+        <Route path="points" element={<Points />} />
+        <Route path="notifications" element={<Notifications />} />
         <Route path="wishlist" element={<Wishlist />} />
         <Route path="settings" element={<Settings />} />
         <Route path="help" element={<HelpCenter />} />
