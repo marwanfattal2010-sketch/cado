@@ -180,7 +180,7 @@
   --store-name: 74 88 104;
 
   /* Semantic */
-  --today: 31 107 74;
+  --today: 30 142 90; /* #1E8E5A — the one green, delivery promises only (spec 2.7) */
   --today-tint: 228 240 234;
   /* Low stock. Deliberately a deep gold rather than the old orange-red —
      it has to read as "hurry" without putting a warm red back on the page. */

@@ -5,9 +5,8 @@ import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
 import { timeUntilCutoff } from "../lib/area";
 import { formatMoney } from "../lib/money";
 import { storePath } from "../lib/routes";
-import { occasionByValue, recipientByValue } from "../lib/filters";
-import { useCategories } from "../hooks/useCategories";
 import { HeartIcon } from "./Icons";
+import { deliveryWord } from "../lib/deliveryPromise";
 
 /** A product is "new" for a fortnight after it is listed. */
 const NEW_DAYS = 14;
@@ -111,74 +110,6 @@ function badgeFor(p: ProductCardProps): { label: string; className: string } | n
   return null;
 }
 
-type Chip = { label: string; to: string; className: string };
-
-/**
- * The colour of a tag says what KIND of tag it is.
- *
- * Three hues, one per kind, each a soft tint with a darker version of its own
- * hue for the letters — so "#Birthday" and "#ForKids" are legibly different
- * things at a glance rather than the same red hashtag repeated. Contrast for
- * every pairing is measured in the note beside the tokens in index.css.
- *
- * Quiet on purpose: these sit under the price and must not out-shout it.
- */
-const CHIP_STYLE = {
-  occasion: "bg-tint-blush text-deep-blush",
-  recipient: "bg-tint-sage text-deep-sage",
-  category: "bg-tint-sand text-deep-sand",
-} as const;
-
-/**
- * Up to three chips, from tag columns that really hold those values.
- *
- * One of each kind first, then backfill — a card wearing three occasions
- * would be three blush chips and would waste the colour coding entirely.
- * Nothing here invents a tag: an untagged product simply shows fewer chips,
- * which is the same rule the occasion filters run on.
- */
-function chipsFor(p: ProductCardProps, categoryName?: string | null): Chip[] {
-  const occasions = (p.occasion_tags ?? [])
-    .map(occasionByValue)
-    .filter((o): o is NonNullable<typeof o> => !!o)
-    .map((o) => ({
-      label: `#${o.label.replace(/\s+/g, "")}`,
-      to: `/gift-finder?occasion=${o.value}`,
-      className: CHIP_STYLE.occasion,
-    }));
-
-  const recipients = (p.recipient_tags ?? [])
-    .map(recipientByValue)
-    .filter((r): r is NonNullable<typeof r> => !!r)
-    .map((r) => ({
-      label: `#${r.label.replace(/\s+/g, "")}`,
-      to: `/gift-finder?recipient=${r.value}`,
-      className: CHIP_STYLE.recipient,
-    }));
-
-  const category: Chip[] = categoryName
-    ? [
-        {
-          label: `#${categoryName.replace(/\s*&\s*/g, "").replace(/\s+/g, "")}`,
-          to: `/?tab=${p.category_slug ?? ""}`,
-          className: CHIP_STYLE.category,
-        },
-      ]
-    : [];
-
-  const out: Chip[] = [];
-  // One of each kind, in the order a shopper cares about them.
-  for (const list of [occasions, recipients, category]) if (list[0]) out.push(list[0]);
-  // Then backfill from whatever is left over, still capped at three.
-  for (const list of [occasions, recipients]) {
-    for (const c of list.slice(1)) {
-      if (out.length >= 3) break;
-      out.push(c);
-    }
-  }
-  return out.slice(0, 3);
-}
-
 /**
  * The one product card. Home, category tabs, search, store pages and gift
  * finder results all render this — there is no second copy to drift.
@@ -223,15 +154,14 @@ export function ProductCard(props: ProductCardProps) {
 
   // One shared, cached query however many cards are on screen — every card
   // asks for the same key, so this is a map lookup after the first.
-  const categories = useCategories();
-  const category = categories.data?.find((c) => c.id === props.category_id) ?? null;
 
   const inStock = stock_quantity == null || stock_quantity > 0;
   const lowStock = inStock && stock_quantity != null && stock_quantity <= LOW_STOCK;
   const onSale = compare_at_price != null && Number(compare_at_price) > Number(price);
   const off = onSale ? Math.round((1 - Number(price) / Number(compare_at_price)) * 100) : null;
   const badge = badgeFor(props);
-  const chips = chipsFor({ ...props, category_slug: category?.slug ?? null }, category?.name);
+  // chipsFor() is kept — the product PAGE still shows hashtags (spec 2.7 moves
+  // them off the card, it does not delete them from the product).
 
   return (
     <div className="group flex w-full flex-col break-inside-avoid">
@@ -343,30 +273,27 @@ export function ProductCard(props: ProductCardProps) {
         {lowStock ? (
           <p className="mt-0.5 text-[11px] font-semibold text-persimmon">Only {stock_quantity} left</p>
         ) : null}
-        {/* Only where the seller genuinely wraps this item — about half the
-            catalogue does. Printing it on everything would be a promise the
-            other half cannot keep. Not shown on the uniform card, whose text
-            box is a fixed height. */}
-        {!uniform && props.gift_wrap_available ? (
-          <p className="mt-0.5 text-[11px] text-muted">Arrives wrapped</p>
-        ) : null}
       </Link>
 
-      {chips.length > 0 ? (
-        // One chip only in uniform mode: three of them wrap onto a second
-        // line on a narrow card, and a wrapping row is a variable height.
-        <div className={`mt-1 flex gap-1 ${uniform ? "flex-nowrap overflow-hidden" : "flex-wrap"}`}>
-          {(uniform ? chips.slice(0, 1) : chips).map((c) => (
-            <Link
-              key={`${c.className}-${c.to}`}
-              to={c.to}
-              className={`rounded-[4px] px-1.5 py-[3px] text-[10px] font-medium leading-none ${c.className}`}
-            >
-              {c.label}
-            </Link>
-          ))}
-        </div>
-      ) : null}
+      {/*
+        THE DELIVERY LINE (spec 2.7). This replaces the hashtag row, which is
+        the right trade: a hashtag tells a shopper nothing they cannot see in
+        the photo, and "at their door tonight" is the single strongest reason
+        anyone buys a gift here. Hashtags still live on the product page.
+
+        The word comes from the REAL cutoff place_order enforces — before 21:00
+        Beirut it says Tonight, after it says Tomorrow. It is never a promise
+        the checkout would not keep.
+      */}
+      <p className="mt-1 flex items-center gap-1 text-[11px] font-medium leading-none text-today">
+        <span aria-hidden>🚚</span>
+        {deliveryWord()}
+        {props.gift_wrap_available ? (
+          <span className="ml-1 rounded-[4px] bg-surface-sunk px-1 py-[2px] text-[10px] font-medium text-muted">
+            Gift wrap
+          </span>
+        ) : null}
+      </p>
       </div>
     </div>
   );

@@ -117,14 +117,17 @@ export function parseFilterValue(value: string): FeedFilter {
 /**
  * A tab's accent as a CSS colour.
  *
- * `accent_token` is a database value, and this result is interpolated into an
- * inline style, so the name is checked against a strict pattern first. A row
- * with a malformed token falls back to the brand accent rather than emitting
- * a broken — or attacker-chosen — declaration.
+ * PERSIMMON, ALWAYS (spec 2.1). Every tab used to carry its own colour —
+ * magenta Fashion, purple Jewelry, green Beauty, blue Toys — which made eleven
+ * tabs look like eleven products. Tabs now differ by their PHOTOS, not their
+ * colour, and there is exactly one accent in the app.
+ *
+ * The `token` argument is kept so the dozens of call sites do not all have to
+ * change at once, and so a per-tab colour cannot creep back in through one of
+ * them. The database column stays; nothing reads it for colour any more.
  */
-export function accentColor(token: string | null | undefined, alpha?: number) {
-  const safe = token && /^[a-z0-9-]{1,40}$/.test(token) ? token : "accent-brand";
-  return alpha == null ? `rgb(var(--${safe}))` : `rgb(var(--${safe}) / ${alpha})`;
+export function accentColor(_token?: string | null, alpha?: number) {
+  return alpha == null ? "rgb(var(--accent-brand))" : `rgb(var(--accent-brand) / ${alpha})`;
 }
 
 /**
