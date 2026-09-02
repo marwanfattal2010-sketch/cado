@@ -14,6 +14,8 @@ import {
   type FeedFilter,
 } from "../../lib/browse";
 import { BannerCarousel } from "./blocks/BannerCarousel";
+import { HeroBanners } from "./HeroBanners";
+import { GiftAssistantSheet } from "../GiftAssistantSheet";
 import { EntryCards } from "./blocks/EntryCards";
 import { OccasionStrip } from "./blocks/OccasionStrip";
 import { CategoryCircles } from "./blocks/CategoryCircles";
@@ -65,6 +67,8 @@ export function TabPanel({
   const [group, setGroup] = useState<string | null>(null);
   /** The sub-category circle currently narrowing the grid, by slug. */
   const [subcategory, setSubcategory] = useState<string | null>(null);
+  /** The scripted gift assistant (spec 1.10), opened from under the hero. */
+  const [aiOpen, setAiOpen] = useState(false);
   const subcategories = useSubcategories(tab.filter.category_slug);
   const subcategoryId = subcategories.data?.find((s) => s.slug === subcategory)?.id;
 
@@ -129,6 +133,18 @@ export function TabPanel({
       {blocks.map((block) => {
         switch (block.type) {
           case "banner_carousel":
+            /*
+             * THE ALL TAB GETS THE NEW HERO (spec 1.9, Option F): three swipe
+             * banners, user-driven, CSS illustrations. Category tabs keep the
+             * photo carousel, which is what spec 2.2 builds on.
+             */
+            if (primary) {
+              return (
+                <div key={block.id} className="pt-1">
+                  <HeroBanners onAskAi={() => setAiOpen(true)} />
+                </div>
+              );
+            }
             return (
               <BannerCarousel
                 key={block.id}
@@ -235,7 +251,7 @@ export function TabPanel({
                         to="/find"
                         className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-card bg-ink px-4 text-body font-semibold text-inverse transition-transform duration-press ease-out active:scale-[0.99]"
                       >
-                        Help me choose
+                        Let AI help me choose
                       </Link>
                     </div>
                   </>
@@ -360,6 +376,10 @@ export function TabPanel({
             return null;
         }
       })}
+
+      {/* Scripted, and labelled as such. Only mounted on the All tab, which is
+          where the "Let AI help me choose" link lives. */}
+      {primary ? <GiftAssistantSheet open={aiOpen} onClose={() => setAiOpen(false)} /> : null}
     </section>
   );
 }

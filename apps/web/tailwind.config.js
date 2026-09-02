@@ -83,6 +83,10 @@ export default {
         body: ['"Inter"', "system-ui", "sans-serif"],
         accent: ["Italiana", "serif"],
         arabic: ['"IBM Plex Sans Arabic"', "sans-serif"],
+        /* The hero and category-tab titles (spec 1.9, 2.1). Loaded from Google
+           Fonts in index.html; falls back to the body sans if it never
+           arrives, so the layout holds either way. */
+        hero: ['"Nunito"', '"Inter"', "system-ui", "sans-serif"],
       },
       // Type scale from spec 1.2. Nothing below 12px, no weight 300 body.
       fontSize: {

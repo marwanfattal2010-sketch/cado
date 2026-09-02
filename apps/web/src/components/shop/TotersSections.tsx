@@ -275,7 +275,7 @@ export function TopStoresInCity() {
 
   return (
     <section>
-      <SectionTitle title={`Top stores in ${area} 📍`} to="/stores" />
+      <SectionTitle title="Top stores near you 📍" to="/stores" />
       <div className={`-mx-4 flex overflow-x-auto px-4 pb-1 ${CARD_GAP} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
         {rows.map((s) => (
           <div key={s.id} className="w-[200px] shrink-0">
