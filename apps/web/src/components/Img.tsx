@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 type Props = {
   src: string | null | undefined;
@@ -20,12 +20,33 @@ type Props = {
  *
  * `onError` is treated exactly like a successful load: a broken URL should
  * leave the tinted placeholder visible, not a permanently blurred ghost.
+ *
+ * THE CALLBACK REF IS NOT DECORATION — IT IS THE WHOLE CORRECTNESS OF THIS.
+ *
+ * `onLoad` only fires for a decode that happens AFTER React attaches the
+ * handler. An image already in the browser cache is finished before that, so
+ * the event never arrives, `loaded` stays false, and `.blur-up` holds it at
+ * `opacity: 0` forever. The image is fully downloaded and simply invisible.
+ *
+ * That is exactly what happened: every photo on a revisited page rendered as
+ * an empty tinted box — heroes, tiles, category circles — and it looked like
+ * missing data rather than a stuck transition. The callback ref runs the
+ * instant the element exists and asks the element itself whether it is
+ * already complete, which is the only reliable way to catch a cache hit.
  */
 export function Img({ src, alt = "", className = "", eager = false }: Props) {
   const [loaded, setLoaded] = useState(false);
+
+  const measure = useCallback((el: HTMLImageElement | null) => {
+    // `naturalWidth > 0` distinguishes a genuinely decoded image from one
+    // that completed by failing — a broken src is also `complete`.
+    if (el?.complete) setLoaded(true);
+  }, []);
+
   if (!src) return null;
   return (
     <img
+      ref={measure}
       src={src}
       alt={alt}
       loading={eager ? "eager" : "lazy"}

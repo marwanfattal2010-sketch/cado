@@ -68,9 +68,14 @@ function insideHorizontalScroller(start: EventTarget | null, stopAt: HTMLElement
   return false;
 }
 
-export function usePager(count: number) {
+export function usePager(count: number, onChange?: (index: number) => void) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState(0);
+
+  /** Read through a ref so `settleTo` never has to be rebuilt when the
+   *  callback identity changes — rebuilding it would re-bind the gesture. */
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   /** Live index for the gesture handlers, which are bound once and must not
    *  be re-bound mid-drag — a listener swapped between touchstart and
@@ -105,8 +110,18 @@ export function usePager(count: number) {
       // The index is published UP FRONT, not on arrival. The tab bar's
       // underline has its own transition, so both move together; waiting for
       // the scroll to land made the underline chase the panel.
+      //
+      // `onChange` fires SYNCHRONOUSLY here, and that is the whole point of
+      // it existing. Anything downstream that has to agree with the pager —
+      // the URL, most of all — cannot read the `index` STATE to find out
+      // where we are going, because a setState inside an effect does not
+      // change the value other effects in that same pass already captured.
+      // That is precisely how the address bar and the page ended up naming
+      // two different categories. One synchronous notification, one writer.
+      const changed = indexRef.current !== clamped;
       indexRef.current = clamped;
       setIndex(clamped);
+      if (changed) onChangeRef.current?.(clamped);
 
       cancelAnimation();
       const from = el.scrollLeft;

@@ -117,7 +117,12 @@
      it is not a style preference — below it the subcopy stops being
      readable on a phone in daylight. */
   --tab-all: var(--accent-brand);
-  --tab-fashion: 146 62 104;
+  /* Per-category skins now live in lib/categoryTheme.ts, which is the one
+     place to change them. These stay as the fallback for anything still
+     reading a token by name; the two that changed are Fashion (now the
+     orange Marwan asked for) and Electronics (indigo, because it and Toys
+     were both blue and read as the same tab). */
+  --tab-fashion: 196 85 31;
   --tab-jewelry: 136 64 168;
   --tab-shoes: 176 90 54;
   --tab-perfumes: 78 124 108;
@@ -125,7 +130,7 @@
   --tab-flowers: 178 84 108;
   --tab-toys: 42 112 206;
   --tab-home: 148 106 54;
-  --tab-electronics: 46 104 184;
+  --tab-electronics: 59 66 146;
   /* Deep pitch green. Sport's tab existed with accent_token 'tab-sport' but
      this variable did not, so accentColor() emitted rgb(var(--tab-sport)) —
      an undefined name — and the banner had no field colour at all. Green
@@ -442,9 +447,10 @@ button:active:not(:disabled),
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  /* The bottom nav is fixed and floats over the pager, so every panel has to
-     end above it or the last row of the feed is unreachable. */
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  /* The SHELL reserves the bottom nav now (see Home), so a panel only needs
+     a little breathing room at the end of its own content. It used to carry
+     80px to clear a nav that floated over it. */
+  padding-bottom: 16px;
 }
 
 /* The tab bar hides its scrollbar the same way the strips do, but it is not

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { accentColor, type BrowseTab } from "../../lib/browse";
+import { type BrowseTab } from "../../lib/browse";
+import { accent, themeFor } from "../../lib/categoryTheme";
 
 /**
  * The horizontally scrolling tab strip.
@@ -102,7 +103,9 @@ export function TabBar({
             aria-hidden
             className="pointer-events-none absolute bottom-0 left-0 h-[3px] rounded-full transition-[transform,width] duration-base ease-ease"
             style={{
-              background: accentColor(),
+              // The underline wears the active category's accent, so the
+              // tab bar and the page below it are visibly the same place.
+              background: accent(themeFor(tabs[activeIndex]?.filter.category_slug)),
               width: marker.w,
               transform: `translateX(${marker.x}px)`,
             }}

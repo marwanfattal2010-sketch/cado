@@ -38,9 +38,18 @@ export function CutoffBar() {
 
   if (dismissed) return null;
 
+  /*
+   * DOCKED, NOT FLOATING.
+   *
+   * This used to be `position: fixed` above the bottom nav, so the last row
+   * of whatever you were reading slid underneath it and stayed there — you
+   * could not scroll the bar off the thing it was covering. It is a normal
+   * block now and the shell reserves its height, so content scrolls ABOVE it
+   * and nothing is ever hidden behind it.
+   */
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[64px] z-30 px-3">
-      <div className="pointer-events-auto mx-auto flex max-w-2xl items-center gap-2 rounded-pill bg-persimmon/10 px-3.5 py-2 backdrop-blur-[2px]">
+    <div className="shrink-0 border-t border-line bg-canvas px-3 py-1.5">
+      <div className="mx-auto flex max-w-2xl items-center gap-2 rounded-pill bg-persimmon/10 px-3.5 py-2">
         <span aria-hidden className="text-[13px]">🚚</span>
         <p className="min-w-0 flex-1 truncate text-caption font-medium text-ink">{msg.text}</p>
         <button

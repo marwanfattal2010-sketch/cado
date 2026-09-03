@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "../components/Header";
 import { BottomNav } from "../components/BottomNav";
@@ -39,8 +39,58 @@ export function Home() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [query, setQuery] = useState("");
   const searching = query.trim().length > 0;
-  const { ref, index, goTo } = usePager(tabs.length);
   const [deepLinked, setDeepLinked] = useState(false);
+
+  /**
+   * URL <-> TAB. ONE effect in, ONE callback out — never two effects.
+   *
+   * This was two effects (URL drives pager, pager drives URL) and they raced.
+   * Effects run in declaration order within a commit, so when a category
+   * circle navigated to `/?tab=jewelry`, the first effect called `goTo(2)`
+   * and the second ran straight afterwards still holding the OLD `index` of
+   * 0, decided the URL disagreed with it, and wrote `?tab=all` back over it.
+   * The address bar and the page then named two different categories.
+   *
+   * A `setState` inside the first effect cannot fix that: it does not change
+   * the `index` the second effect already captured in the same pass. So the
+   * pager-to-URL direction is not an effect any more. `usePager` calls this
+   * synchronously at the moment a move is ordered, which is the only moment
+   * anyone actually knows where we are going.
+   */
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
+
+  const writeTabToUrl = useCallback(
+    (next: number) => {
+      const tab = tabsRef.current[next];
+      if (!tab) return;
+      const current = paramsRef.current;
+      if (current.get("tab") === tab.slug) return;
+      const search = new URLSearchParams(current);
+      search.set("tab", tab.slug);
+      // `replace`, so a flick through nine tabs does not bury the page you
+      // arrived from under nine history entries.
+      setParams(search, { replace: true });
+    },
+    [setParams]
+  );
+
+  const { ref, index, goTo } = usePager(tabs.length, writeTabToUrl);
+
+  /** URL -> pager. The only remaining effect in this relationship. */
+  const urlTab = params.get("tab");
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  useEffect(() => {
+    if (tabs.length === 0) return;
+    const target = tabs.findIndex((t) => t.slug === urlTab);
+    if (target >= 0 && target !== indexRef.current) {
+      goTo(target, deepLinked ? "smooth" : "auto");
+    }
+    if (!deepLinked) setDeepLinked(true);
+  }, [urlTab, tabs, goTo, deepLinked]);
 
 
   /**
@@ -65,50 +115,18 @@ export function Home() {
     });
   }, [index, tabs.length]);
 
-  /**
-   * URL <-> TAB, and this is deliberately much simpler than it used to be.
-   *
-   * The old version carried a `drivingTo` ref and a comment about the address
-   * bar lying, because the pager published its index ASYNCHRONOUSLY — the
-   * index arrived from a scroll listener some frames after the move was
-   * ordered, so these two effects genuinely could see a new URL beside an old
-   * index and "correct" each other in a loop. That race is what landed you on
-   * the wrong category: whichever effect won the frame decided the tab.
-   *
-   * usePager sets the index the instant a move is ordered, so there is no
-   * window where the two disagree, and no guard is needed. Each effect does
-   * one thing and both are idempotent: they converge in a single pass.
-   */
-  const urlTab = params.get("tab");
-  const indexRef = useRef(index);
-  indexRef.current = index;
-
-  // URL -> pager.
-  useEffect(() => {
-    if (tabs.length === 0) return;
-    const target = tabs.findIndex((t) => t.slug === urlTab);
-    if (target >= 0 && target !== indexRef.current) {
-      goTo(target, deepLinked ? "smooth" : "auto");
-    }
-    if (!deepLinked) setDeepLinked(true);
-  }, [urlTab, tabs, goTo, deepLinked]);
-
-  // Pager -> URL. `replace`, so a flick through nine tabs does not bury the
-  // page you arrived from under nine history entries.
-  const paramsRef = useRef(params);
-  paramsRef.current = params;
-  useEffect(() => {
-    const tab = tabs[index];
-    if (!tab || !deepLinked) return;
-    const current = paramsRef.current;
-    if (current.get("tab") === tab.slug) return;
-    const next = new URLSearchParams(current);
-    next.set("tab", tab.slug);
-    setParams(next, { replace: true });
-  }, [index, tabs, deepLinked, setParams]);
 
   return (
-    <div className="shop-shell bg-canvas text-ink">
+    /*
+     * The shell reserves the bottom nav's height rather than letting the nav
+     * float over the content. That is what lets the delivery strip dock in
+     * real layout space directly above it — see CutoffBar — instead of being
+     * a fixed bar with the page sliding underneath.
+     */
+    <div
+      className="shop-shell bg-canvas text-ink"
+      style={{ paddingBottom: "calc(58px + env(safe-area-inset-bottom))" }}
+    >
       <Header />
 
       {/*
