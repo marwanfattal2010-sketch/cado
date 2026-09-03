@@ -45,12 +45,12 @@ export function ShopSearchBar({
    * against an input that is already on the page it belongs to.
    */
   return (
-    <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 pb-2 pt-2.5">
+    <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 pb-1.5 pt-1.5">
       <button
         type="button"
         onClick={() => navigate("/search")}
         aria-label="Search gifts or stores"
-        className="search-field flex h-11 flex-1 items-center gap-2.5 rounded-pill border border-line bg-surface px-4 text-left shadow-rest transition-colors duration-fast active:scale-[0.99]"
+        className="search-field flex h-10 flex-1 items-center gap-2.5 rounded-pill border border-line bg-surface px-4 text-left shadow-rest transition-colors duration-fast active:scale-[0.99]"
       >
         <span className="min-w-0 flex-1 truncate text-body text-muted">
           {query || "Who are you shopping for?"}

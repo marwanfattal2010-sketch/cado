@@ -58,8 +58,29 @@ function shopNow(): { hour: number; minute: number; second: number } {
   return { hour, minute: get("minute"), second: get("second") };
 }
 
+/**
+ * THREE STATES, NOT TWO — and the third one is why this is not just
+ * `hour < cutoffHour`.
+ *
+ * Between midnight and opening the shop is SHUT, but the day's cutoff has
+ * not happened yet. A naive "before 21:00" test says "Tonight" at 3am and
+ * offers a seventeen-hour countdown, which is both absurd and wrong: nothing
+ * is being picked, packed or driven at 3am. It is still true that an order
+ * placed then arrives today, so the honest line names the opening time
+ * instead of pretending the clock is already running.
+ */
+export type DeliveryState = "before-open" | "open" | "after-cutoff";
+
+export function deliveryState(): DeliveryState {
+  const { hour } = shopNow();
+  if (hour >= current.cutoffHour) return "after-cutoff";
+  if (hour < current.opensHour) return "before-open";
+  return "open";
+}
+
+/** True while an order placed now still lands today. */
 export function isBeforeCutoff(): boolean {
-  return shopNow().hour < current.cutoffHour;
+  return deliveryState() !== "after-cutoff";
 }
 
 /** "Tonight" or "Tomorrow" — the line printed under a price. */
@@ -67,10 +88,10 @@ export function deliveryWord(): "Tonight" | "Tomorrow" {
   return isBeforeCutoff() ? "Tonight" : "Tomorrow";
 }
 
-/** Seconds left until the cutoff, or 0 once it has passed. */
+/** Seconds left until the cutoff, or 0 outside the open window. */
 export function secondsToCutoff(): number {
+  if (deliveryState() !== "open") return 0;
   const { hour, minute, second } = shopNow();
-  if (hour >= current.cutoffHour) return 0;
   return (current.cutoffHour - hour) * 3600 - minute * 60 - second;
 }
 
@@ -95,9 +116,17 @@ function openingLabel(): string {
 
 /** The cutoff bar's whole message, so the bar itself has no logic in it. */
 export function cutoffMessage(): { text: string; counting: boolean } {
-  const left = secondsToCutoff();
-  if (left <= 0) {
-    return { text: `Order now → delivered tomorrow from ${openingLabel()}`, counting: false };
+  switch (deliveryState()) {
+    case "after-cutoff":
+      return { text: `Order now → delivered tomorrow from ${openingLabel()}`, counting: false };
+    case "before-open":
+      // Still today, but nothing moves until the shop opens. No countdown:
+      // counting down seventeen hours to a cutoff is pressure, not information.
+      return { text: `Order now → delivered today from ${openingLabel()}`, counting: false };
+    default:
+      return {
+        text: `Order in ${formatCountdown(secondsToCutoff())} → at their door tonight`,
+        counting: true,
+      };
   }
-  return { text: `Order in ${formatCountdown(left)} → at their door tonight`, counting: true };
 }

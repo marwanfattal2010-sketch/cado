@@ -51,7 +51,7 @@ export function TabBar({
         /* scroll-padding-inline keeps a tab from resting half-cut against the
            left edge when the strip scrolls — "Accessories" was arriving as
            "sories". */
-        className="tab-strip h-11 items-stretch pl-[var(--page-x)] pr-12"
+        className="tab-strip h-10 items-stretch pl-[var(--page-x)] pr-12"
         style={{ scrollPaddingInline: "var(--page-x)" }}
       >
         {tabs.map((tab, i) => {

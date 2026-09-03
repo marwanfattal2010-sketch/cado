@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCategories } from "../../hooks/useCategories";
 import { useSubcategories } from "../../hooks/useStores";
 import { useCategorySlides } from "../../hooks/useCategorySlides";
@@ -260,17 +260,11 @@ export function TabPanel({
                 {primary ? (
                   <>
                     <OccasionRail />
-                    {/* Was a small underlined link tucked beside the search
-                        field, where someone who is stuck is least likely to
-                        look. It is the second thing on the page now. */}
-                    <div className="mx-auto max-w-6xl px-4 pt-4">
-                      <Link
-                        to="/find"
-                        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-card bg-ink px-4 text-body font-semibold text-inverse transition-transform duration-press ease-out active:scale-[0.99]"
-                      >
-                        Let AI help me choose
-                      </Link>
-                    </div>
+                    {/* The big "Let AI help me choose" button that used to sit
+                        here is gone: 1.9 puts that link under the hero dots,
+                        and the quiz it led to is what hero slide 1 opens. Two
+                        controls with identical wording on one screen is the
+                        duplication this round exists to remove. */}
                   </>
                 ) : null}
                 <div className="animate-fade-in">

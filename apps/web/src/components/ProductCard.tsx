@@ -221,9 +221,26 @@ export function ProductCard(props: ProductCardProps) {
             </span>
           </button>
 
+          {/* The discount moved onto the photo when the text block shrank to
+              48px (2.11). It reads better here anyway — it is a fact about
+              the item, next to the item, and it is the same top-left pill
+              the Super deals row uses. */}
+          {onSale ? (
+            <span className="absolute left-2 top-2 rounded-[6px] bg-persimmon px-1.5 py-1 text-[11px] font-bold leading-none text-white">
+              -{off}%
+            </span>
+          ) : null}
+
           {!inStock ? (
             <span className="absolute bottom-2 left-2 rounded-pill bg-ink/80 px-2 py-1 text-caption font-semibold text-inverse">
               Out of stock
+            </span>
+          ) : lowStock ? (
+            /* Kept, moved: only where stock is genuinely tracked and
+               genuinely low, and now on the photo rather than costing the
+               text block a fourth line. */
+            <span className="absolute bottom-2 left-2 rounded-[6px] bg-white/90 px-1.5 py-1 text-[11px] font-bold leading-none text-persimmon">
+              Only {stock_quantity} left
             </span>
           ) : badge ? (
             <span
@@ -241,7 +258,15 @@ export function ProductCard(props: ProductCardProps) {
         and knock the row below it out of alignment; boxing it means row N+1
         always starts at the same y for both columns.
       */}
-      <div className={`overflow-hidden ${uniform ? "h-[92px]" : "h-[86px]"}`}>
+      {/*
+        48px, which is what 2.11 asks for, and getting there took one real
+        change rather than smaller type: the price and the delivery promise
+        now share a row instead of stacking. Four stacked lines at the sizes
+        that spec itself names — 11px store, 13px title, 15px price, 11px
+        delivery — come to 50px of type before any leading at all, so 48 was
+        arithmetically out of reach while they stayed stacked.
+      */}
+      <div className={`overflow-hidden ${uniform ? "h-[54px]" : "h-[48px]"}`}>
       {/* Store first — the trust signal, and its own link. Its own colour
           too, so "who is this from" is scannable without reading the title. */}
       {partner?.name ? (
@@ -259,41 +284,41 @@ export function ProductCard(props: ProductCardProps) {
         {/* ONE line, ellipsed. Two lines of bold set every card to a
             different height for no information gained — the full title is on
             the product page, which is one tap away. */}
-        <p className="mt-0.5 truncate text-[13px] font-normal leading-snug text-ink">{title}</p>
-        <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-          <span className="text-price">{formatMoney(price)}</span>
-          {onSale ? (
-            <>
-              <span className="text-[11px] text-muted line-through">{formatMoney(compare_at_price)}</span>
-              <span className="text-[11px] font-semibold text-persimmon">-{off}%</span>
-            </>
-          ) : null}
-        </div>
-        {/* Only where stock is genuinely tracked and genuinely low. */}
-        {lowStock ? (
-          <p className="mt-0.5 text-[11px] font-semibold text-persimmon">Only {stock_quantity} left</p>
-        ) : null}
+        <p className="truncate text-[13px] font-normal leading-tight text-ink">{title}</p>
       </Link>
 
       {/*
-        THE DELIVERY LINE (spec 2.7). This replaces the hashtag row, which is
-        the right trade: a hashtag tells a shopper nothing they cannot see in
-        the photo, and "at their door tonight" is the single strongest reason
-        anyone buys a gift here. Hashtags still live on the product page.
+        PRICE AND PROMISE ON ONE ROW.
+        Nothing is lost by pairing them — they are the two things a shopper
+        compares between cards, and side by side is easier to compare than
+        stacked. The old "Only N left" line is gone from the card; it is
+        still on the product page, where there is room for it and where it
+        is actually about to matter.
 
-        The word comes from the REAL cutoff place_order enforces — before 21:00
-        Beirut it says Tonight, after it says Tomorrow. It is never a promise
-        the checkout would not keep.
+        THE DELIVERY LINE (spec 2.7) replaced the hashtag row, which is the
+        right trade: a hashtag tells a shopper nothing the photo does not,
+        and "at their door tonight" is the single strongest reason anyone
+        buys a gift here. The word comes from the REAL cutoff the server
+        enforces — before it, Tonight; after it, Tomorrow. It is never a
+        promise the checkout would not keep.
       */}
-      <p className="mt-1 flex items-center gap-1 text-[11px] font-medium leading-none text-today">
-        <span aria-hidden>🚚</span>
-        {deliveryWord()}
-        {props.gift_wrap_available ? (
-          <span className="ml-1 rounded-[4px] bg-surface-sunk px-1 py-[2px] text-[10px] font-medium text-muted">
-            Gift wrap
-          </span>
-        ) : null}
-      </p>
+      <div className="mt-0.5 flex items-baseline justify-between gap-1.5">
+        <Link to={`/product/${id}`} className="flex min-w-0 items-baseline gap-1.5">
+          <span className="text-price">{formatMoney(price)}</span>
+          {onSale ? (
+            <span className="text-[11px] text-muted line-through">{formatMoney(compare_at_price)}</span>
+          ) : null}
+        </Link>
+        <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-medium leading-none text-today">
+          <span aria-hidden>🚚</span>
+          {deliveryWord()}
+        </span>
+      </div>
+      {props.gift_wrap_available ? (
+        <span className="mt-0.5 inline-block rounded-[4px] bg-surface-sunk px-1 py-[1px] text-[10px] font-medium leading-none text-muted">
+          Gift wrap
+        </span>
+      ) : null}
       </div>
     </div>
   );

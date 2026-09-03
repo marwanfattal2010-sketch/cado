@@ -210,14 +210,17 @@ export function HomeLower() {
         </Pad>
       ) : null}
 
-      {/* 9 — New on CADO */}
+      {/* 9 — the newest PRODUCTS. Renamed from "New on CADO": 1.5 gives that
+          name to the band of newly joined STORES a few sections above, and
+          two different sections under one name on one page is the exact
+          duplication this round is removing. */}
       {newest.isLoading ? (
-        <RailSkeleton title="New on CADO" />
+        <RailSkeleton title="Just arrived" />
       ) : (newest.data?.length ?? 0) >= 4 ? (
         <Pad>
           <div className="mx-auto max-w-6xl px-4 pb-3">
             <div className="flex items-end justify-between gap-3">
-              <h2 className="font-display text-h2">New on CADO</h2>
+              <h2 className="font-display text-h2">Just arrived</h2>
             </div>
             <p className="mt-0.5 text-caption text-muted">Fresh from Lebanese stores</p>
           </div>
