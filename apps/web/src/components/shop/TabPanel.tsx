@@ -15,7 +15,6 @@ import {
 } from "../../lib/browse";
 import { BannerCarousel } from "./blocks/BannerCarousel";
 import { HeroBanners } from "./HeroBanners";
-import { GiftAssistantSheet } from "../GiftAssistantSheet";
 import { EntryCards } from "./blocks/EntryCards";
 import { OccasionStrip } from "./blocks/OccasionStrip";
 import { CategoryCircles } from "./blocks/CategoryCircles";
@@ -106,8 +105,6 @@ function PrimaryPanel({
   const [group, setGroup] = useState<string | null>(null);
   /** The sub-category circle currently narrowing the grid, by slug. */
   const [subcategory, setSubcategory] = useState<string | null>(null);
-  /** The scripted gift assistant (spec 1.10), opened from under the hero. */
-  const [aiOpen, setAiOpen] = useState(false);
   const subcategories = useSubcategories(tab.filter.category_slug);
   const subcategoryId = subcategories.data?.find((s) => s.slug === subcategory)?.id;
 
@@ -178,7 +175,9 @@ function PrimaryPanel({
             if (primary) {
               return (
                 <div key={block.id} className="pt-1">
-                  <HeroBanners onAskAi={() => setAiOpen(true)} />
+                  {/* No onAskAi: the assistant is its own route now, so both
+                      this button and slide 1 navigate to the same screen. */}
+                  <HeroBanners />
                 </div>
               );
             }
@@ -409,9 +408,6 @@ function PrimaryPanel({
         }
       })}
 
-      {/* Scripted, and labelled as such. Only mounted on the All tab, which is
-          where the "Let AI help me choose" link lives. */}
-      {primary ? <GiftAssistantSheet open={aiOpen} onClose={() => setAiOpen(false)} /> : null}
     </section>
   );
 }

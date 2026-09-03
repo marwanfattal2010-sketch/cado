@@ -39,7 +39,7 @@ const SLIDES: Slide[] = [
     subline: "Wrapped and at their door tonight.",
     cta: "Shop now",
     ctaClass: "bg-white text-[#B8321C]",
-    to: "/find",
+    to: "/assistant",
     art: "peachBox",
   },
   {
@@ -139,7 +139,7 @@ function SparkleIcon() {
   );
 }
 
-export function HeroBanners({ onAskAi }: { onAskAi: () => void }) {
+export function HeroBanners({ onAskAi }: { onAskAi?: () => void }) {
   const navigate = useNavigate();
   const railRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -212,7 +212,7 @@ export function HeroBanners({ onAskAi }: { onAskAi: () => void }) {
       <div className="mx-auto mt-3 max-w-6xl px-4">
         <button
           type="button"
-          onClick={onAskAi}
+          onClick={() => (onAskAi ? onAskAi() : navigate("/assistant"))}
           className="flex h-10 w-full items-center justify-center gap-2 rounded-pill border border-persimmon bg-surface px-4 text-[13px] font-extrabold text-persimmon shadow-rest transition-transform duration-press ease-out active:scale-[0.99]"
         >
           <SparkleIcon />

@@ -79,6 +79,9 @@ const DeliveryReturns = lazy(() =>
 );
 const Partners = lazy(() => import("./pages/Partners").then((m) => ({ default: m.Partners })));
 const Find = lazy(() => import("./pages/Find").then((m) => ({ default: m.Find })));
+const GiftAssistant = lazy(() =>
+  import("./pages/GiftAssistant").then((m) => ({ default: m.GiftAssistant }))
+);
 const Points = lazy(() => import("./pages/Points").then((m) => ({ default: m.Points })));
 const Notifications = lazy(() =>
   import("./pages/Notifications").then((m) => ({ default: m.Notifications }))
@@ -129,6 +132,11 @@ export default function App() {
             world. Replace, not push: it must not sit in history as a step to
             go "back" to. */}
         <Route path="shop" element={<Navigate to="/" replace />} />
+        {/* Outside Layout, like Home. The assistant owns the whole viewport,
+            and Layout wraps its pages in a transform-based transition — which
+            would make it the containing block for anything positioned inside.
+            Its own route also means the back gesture exits it. */}
+        <Route path="assistant" element={<GiftAssistant />} />
         <Route element={<Layout />}>
           <Route path="search" element={<Search />} />
           <Route path="orders" element={<Orders />} />
