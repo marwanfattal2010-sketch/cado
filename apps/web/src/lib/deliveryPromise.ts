@@ -2,33 +2,64 @@
  * The delivery promise (spec 2.7) — the strongest thing CADO can say, so it
  * has to be true.
  *
- * There is exactly one cutoff in the product and it is the one `place_order`
- * enforces: 21:00 Asia/Beirut. Before it, an order goes out tonight; after it,
- * tomorrow from opening. Nothing here is promotional and nothing counts down
- * to a made-up deadline — when the countdown reaches zero the wording changes
- * to the honest one rather than resetting.
+ * THE HOURS ARE NOT A CONSTANT IN THIS FILE. They are the one row in
+ * `app_settings` (opens_at / closes_at / timezone), which is the same row the
+ * server-side ordering-window trigger enforces and the same one the dashboard
+ * edits. 2.7 asked for "one config row so Marwan can change them from the
+ * dashboard later" — that row already existed, so this reads it rather than
+ * inventing a second source of truth that would drift away from the first.
+ *
+ * The values below are only what to say before that row has arrived, and they
+ * match what it currently holds (09:00–21:00 Asia/Beirut). Note that the real
+ * opening time is 09:00, not the 10:00 the spec guessed.
+ *
+ * Nothing here is promotional. When the countdown reaches zero the wording
+ * changes to the honest one rather than resetting.
  */
 
-/** Both live here so the dashboard can move them later without a code change. */
-export const CUTOFF_HOUR = 21; // 21:00 Asia/Beirut — the same cutoff place_order uses
-export const OPENING_HOUR = 10; // spec 2.7 default
-const TZ = "Asia/Beirut";
+export type DeliveryWindow = { opensHour: number; cutoffHour: number; timezone: string };
 
-/** The hour and minute right now in Beirut, wherever the browser is. */
-function beirutNow(): { hour: number; minute: number; second: number } {
+export const FALLBACK_WINDOW: DeliveryWindow = {
+  opensHour: 9,
+  cutoffHour: 21,
+  timezone: "Asia/Beirut",
+};
+
+/**
+ * Module-level, and deliberately not React state.
+ *
+ * `deliveryWord()` is called from inside ProductCard, on every card in every
+ * grid. Turning that into a hook would mean a query subscription per card for
+ * a value that changes twice a day. The provider hook below writes here once
+ * when the row loads; everything else reads a plain object.
+ */
+let current: DeliveryWindow = FALLBACK_WINDOW;
+
+export function setDeliveryWindow(w: DeliveryWindow) {
+  current = w;
+}
+
+export function deliveryWindow(): DeliveryWindow {
+  return current;
+}
+
+/** The hour and minute right now in the shop's timezone, wherever the browser is. */
+function shopNow(): { hour: number; minute: number; second: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: TZ,
+    timeZone: current.timezone,
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
     hour12: false,
   }).formatToParts(new Date());
   const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
-  return { hour: get("hour"), minute: get("minute"), second: get("second") };
+  // "24" is a legal hour-cycle output for midnight in some ICU builds.
+  const hour = get("hour") % 24;
+  return { hour, minute: get("minute"), second: get("second") };
 }
 
 export function isBeforeCutoff(): boolean {
-  return beirutNow().hour < CUTOFF_HOUR;
+  return shopNow().hour < current.cutoffHour;
 }
 
 /** "Tonight" or "Tomorrow" — the line printed under a price. */
@@ -38,9 +69,9 @@ export function deliveryWord(): "Tonight" | "Tomorrow" {
 
 /** Seconds left until the cutoff, or 0 once it has passed. */
 export function secondsToCutoff(): number {
-  const { hour, minute, second } = beirutNow();
-  if (hour >= CUTOFF_HOUR) return 0;
-  return (CUTOFF_HOUR - hour) * 3600 - minute * 60 - second;
+  const { hour, minute, second } = shopNow();
+  if (hour >= current.cutoffHour) return 0;
+  return (current.cutoffHour - hour) * 3600 - minute * 60 - second;
 }
 
 /** "2h 14m", or "14m" inside the last hour. */
@@ -50,11 +81,23 @@ export function formatCountdown(totalSeconds: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+/** How the cutoff reads in copy: "9pm", "9:30pm". */
+export function cutoffLabel(): string {
+  const h = current.cutoffHour;
+  const suffix = h >= 12 ? "pm" : "am";
+  const twelve = h % 12 === 0 ? 12 : h % 12;
+  return `${twelve}${suffix}`;
+}
+
+function openingLabel(): string {
+  return `${String(current.opensHour).padStart(2, "0")}:00`;
+}
+
 /** The cutoff bar's whole message, so the bar itself has no logic in it. */
 export function cutoffMessage(): { text: string; counting: boolean } {
   const left = secondsToCutoff();
   if (left <= 0) {
-    return { text: `Order now → delivered tomorrow from ${OPENING_HOUR}:00`, counting: false };
+    return { text: `Order now → delivered tomorrow from ${openingLabel()}`, counting: false };
   }
   return { text: `Order in ${formatCountdown(left)} → at their door tonight`, counting: true };
 }

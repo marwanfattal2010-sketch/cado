@@ -4,7 +4,8 @@ import { useAuth } from "../lib/auth";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, usePlaceGiftCardOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
 import { useWallet } from "../hooks/useWallet";
-import { CUTOFF_LABEL, getArea, getAddressDetails, sameDayOpen } from "../lib/area";
+import { getArea, getAddressDetails, sameDayOpen } from "../lib/area";
+import { cutoffLabel } from "../lib/deliveryPromise";
 import { useCadoHours, closedLabel } from "../hooks/useCadoHours";
 import { formatMoney } from "../lib/money";
 
@@ -588,7 +589,7 @@ export function Checkout() {
               <span>
                 Now
                 <span className="mt-0.5 block text-caption text-muted">
-                  Today, if you order before {CUTOFF_LABEL}
+                  Today, if you order before {cutoffLabel()}
                 </span>
               </span>
             </div>

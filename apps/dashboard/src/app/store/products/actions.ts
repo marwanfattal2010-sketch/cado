@@ -71,6 +71,46 @@ export async function setProductActive(
   return { ok: true };
 }
 
+/**
+ * The two curation flags the storefront's category tabs read (0085).
+ *
+ * `is_pick` is what makes the "Store picks" card possible at all: it is the
+ * honest stand-in for "Best sellers" on a tab where too few products have
+ * been ordered to rank anything. Without a control here nobody could ever set
+ * it, and that section could only ever be empty.
+ *
+ * `is_gift_ready` is the store owner saying this item arrives boxed or
+ * wrapped — the "Ready to gift" section, and a claim only they can make.
+ */
+export async function setProductFlag(
+  productId: string,
+  flag: "is_pick" | "is_gift_ready",
+  value: boolean
+): Promise<{ ok: boolean; message?: string }> {
+  const user = await requireStoreOwner();
+  const supabase = await createServerClient();
+
+  // Written out rather than `{ [flag]: value }`: a computed key widens to a
+  // string index signature, which the generated Update type rejects outright.
+  const patch = flag === "is_pick" ? { is_pick: value } : { is_gift_ready: value };
+
+  const { data, error } = await supabase
+    .from("products")
+    .update(patch)
+    .eq("id", productId)
+    // The ownership check is belt-and-braces beside RLS, not instead of it:
+    // it turns "someone else's product" into a clear message rather than a
+    // silent zero-row update.
+    .eq("partner_id", user.partnerId)
+    .select("id");
+
+  if (error || !data || data.length === 0) {
+    return { ok: false, message: error?.message ?? "Not your product." };
+  }
+  revalidatePath("/store/products");
+  return { ok: true };
+}
+
 export async function updateVariantStock(
   variantId: string,
   stock: number | string

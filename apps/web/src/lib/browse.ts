@@ -141,7 +141,11 @@ export const PRODUCT_CARD_COLUMNS =
   // gift_wrap_available is on the card contract because the card SAYS
   // "Arrives wrapped", and that has to be true of the item it is printed on
   // — roughly half the catalogue cannot be wrapped.
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
+  // is_gift_ready and is_pick (migration 0085) drive two whole sections on a
+  // category tab — "Ready to gift" and the Store-picks fallback for Best
+  // sellers — so they belong on the card contract rather than in a second
+  // round-trip per section.
+  "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, is_gift_ready, is_pick, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
 
 export type FeedProduct = {
   id: string;
@@ -159,6 +163,9 @@ export type FeedProduct = {
   partner_id: string;
   partner: { id: string; name: string; slug: string | null } | null;
   product_images: { storage_path: string; is_primary: boolean }[] | null;
+  gift_wrap_available?: boolean | null;
+  is_gift_ready?: boolean | null;
+  is_pick?: boolean | null;
 };
 
 /**

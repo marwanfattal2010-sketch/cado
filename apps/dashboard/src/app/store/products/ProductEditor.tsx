@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateProduct, setProductActive, updateVariantStock } from "./actions";
+import { updateProduct, setProductActive, setProductFlag, updateVariantStock } from "./actions";
 import { t } from "@/lib/dictionary";
 
 interface Variant {
@@ -21,17 +21,25 @@ export function ProductEditor({
   price,
   stock,
   isActive,
+  isPick: initialIsPick,
+  isGiftReady: initialIsGiftReady,
   variants,
 }: {
   id: string;
   price: number;
   stock: number;
   isActive: boolean;
+  isPick: boolean;
+  isGiftReady: boolean;
   variants: Variant[];
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Optimistic, so a tap on a phone feels instant; a failed save surfaces
+  // in the error line beside the row and the next render restores truth.
+  const [isPick, setIsPick] = useState(initialIsPick);
+  const [isGiftReady, setIsGiftReady] = useState(initialIsGiftReady);
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
@@ -72,6 +80,29 @@ export function ProductEditor({
         >
           {isActive ? t("prodedit.soldout") : t("prodedit.onsale")}
         </button>
+        {/* The two curation flags the storefront's category tabs read. They
+            are the ONLY way "Store picks" and "Ready to gift" ever have
+            anything in them — the storefront will not invent either. */}
+        <Toggle
+          label="Store pick"
+          on={isPick}
+          disabled={pending}
+          onClick={() => {
+            const next = !isPick;
+            setIsPick(next);
+            run(() => setProductFlag(id, "is_pick", next));
+          }}
+        />
+        <Toggle
+          label="Ready to gift"
+          on={isGiftReady}
+          disabled={pending}
+          onClick={() => {
+            const next = !isGiftReady;
+            setIsGiftReady(next);
+            run(() => setProductFlag(id, "is_gift_ready", next));
+          }}
+        />
         {saved ? <span className="pb-2 text-xs text-status-green">{t("common.saved")}</span> : null}
       </div>
 
@@ -91,6 +122,31 @@ export function ProductEditor({
 
       {error ? <p className="mt-1 text-xs text-status-red">{error}</p> : null}
     </div>
+  );
+}
+
+function Toggle({
+  label,
+  on,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  on: boolean;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={on}
+      className={`min-h-[40px] rounded-pill px-4 text-sm font-semibold disabled:opacity-50 ${
+        on ? "bg-persimmon text-white" : "border border-line text-muted"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

@@ -1,11 +1,12 @@
-import { AREAS, CUTOFF_LABEL, SAME_DAY_OPENS_HOUR } from "../lib/area";
+import { AREAS, SAME_DAY_OPENS_HOUR } from "../lib/area";
+import { cutoffLabel } from "../lib/deliveryPromise";
 
 /** Each note is a fact the customer can hold CADO to, so they're written
  *  from the same constants the rest of the site uses rather than retyped. */
 const NOTES = [
   {
     title: "Same-day delivery",
-    body: `Order before ${CUTOFF_LABEL} and it arrives the same day. Between ${CUTOFF_LABEL} and ${SAME_DAY_OPENS_HOUR}AM you choose a delivery date instead — the earliest is tomorrow.`,
+    body: `Order before ${cutoffLabel()} and it arrives the same day. Between ${cutoffLabel()} and ${SAME_DAY_OPENS_HOUR}AM you choose a delivery date instead — the earliest is tomorrow.`,
   },
   {
     title: "Where we deliver",

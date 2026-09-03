@@ -23,7 +23,7 @@ export default async function StoreProductsPage() {
   // inventory screen and must show only their own rows.
   const { data: products } = await supabase
     .from("products")
-    .select("id, title, price, stock_quantity, is_active, product_variants(id, name, stock_quantity)")
+    .select("id, title, price, stock_quantity, is_active, is_pick, is_gift_ready, product_variants(id, name, stock_quantity)")
     .eq("partner_id", user.partnerId)
     .order("created_at", { ascending: false });
 
@@ -73,6 +73,8 @@ export default async function StoreProductsPage() {
                   price={Number(p.price)}
                   stock={p.stock_quantity ?? 0}
                   isActive={!!p.is_active}
+                  isPick={!!p.is_pick}
+                  isGiftReady={!!p.is_gift_ready}
                   variants={variants}
                 />
               </li>

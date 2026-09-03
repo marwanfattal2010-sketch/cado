@@ -11,6 +11,7 @@ import { usePagerSync } from "../hooks/usePagerSync";
 import { useTabSwipe } from "../hooks/useTabSwipe";
 import { Skeleton } from "../components/Skeleton";
 import { ShopSearchBar, ShopSearchResults } from "../components/shop/ShopSearch";
+import { CutoffBar } from "../components/CutoffBar";
 
 /**
  * "/" — the home page: search, the category tabs, and a landing page per tab.
@@ -213,6 +214,12 @@ export function Home() {
           )}
         </>
       )}
+
+      {/* 2.7 — the cutoff strip, on category tabs only.
+          Mounted ONCE here rather than inside each panel: the bar is
+          position-fixed, and three mounted panels would have stacked three
+          identical bars on top of each other, each running its own timer. */}
+      {!searching && tabs[index] && tabs[index].filter.category_slug ? <CutoffBar /> : null}
 
       <BottomNav />
 

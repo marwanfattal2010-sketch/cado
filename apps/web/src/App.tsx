@@ -39,11 +39,14 @@ import { Find } from "./pages/Find";
 import { Points } from "./pages/Points";
 import { Notifications } from "./pages/Notifications";
 import { useTrackPageView } from "./hooks/useTrackPageView";
+import { useDeliveryWindow } from "./hooks/useDeliveryWindow";
 
 export default function App() {
   // CADO's own page-view count. Mounted once above every route so it sees each
   // navigation exactly once, and never blocks rendering.
   useTrackPageView();
+  // The real opening hours, published once for every delivery line on the site.
+  useDeliveryWindow();
 
   return (
     <Routes>

@@ -27,6 +27,7 @@ import { HomeLower } from "./HomeLower";
 import { TabStoreCircles, TabStoreBanners } from "./blocks/TabStores";
 import { ProductFeed } from "./blocks/ProductFeed";
 import { GiftCardSection, OccasionRail } from "./HomeSections";
+import { CategoryTab } from "./category/CategoryTab";
 
 /**
  * One tab's page: its own scroll container, its own filter state.
@@ -112,6 +113,22 @@ export function TabPanel({
   };
 
   if (!mounted) return <div className="panel" aria-hidden style={{ minHeight: "100%" }} />;
+
+  /*
+   * PART 2 REPLACES THE BLOCK PIPELINE ON CATEGORY TABS.
+   *
+   * The pipeline below is still what the All tab renders, and the blocks rows
+   * still drive it. A category tab no longer reads them: its eleven sections
+   * are derived from that category's real products, so a tab is correct the
+   * moment a product moves into it, with no editor row to keep in step.
+   */
+  if (!primary) {
+    return (
+      <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
+        <CategoryTab tab={tab} />
+      </section>
+    );
+  }
 
   /*
    * ONE LAYOUT FOR ALL NINE CATEGORY TABS.

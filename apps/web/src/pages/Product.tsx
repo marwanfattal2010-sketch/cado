@@ -12,7 +12,8 @@ import { useToast, Chip, RibbonDivider } from "../components/ui";
 import { HeartIcon, ChevronLeftIcon } from "../components/Icons";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
 import { recordRecentlyViewed } from "../hooks/useRecentlyViewed";
-import { CUTOFF_LABEL, timeUntilCutoff } from "../lib/area";
+import { timeUntilCutoff } from "../lib/area";
+import { cutoffLabel, isBeforeCutoff } from "../lib/deliveryPromise";
 import { formatMoney } from "../lib/money";
 
 /** Four ready-made lines, then a way out of them. Anything longer is a
@@ -214,8 +215,19 @@ export function Product() {
               A tinted capsule here competed with the price directly above it
               and read as a promotion rather than a fact about delivery. */}
           {sameDayEligible ? (
-            <p className={`mt-2 text-caption font-medium ${cutoff.passed ? "text-muted" : "text-today"}`}>
-              {cutoff.passed ? cutoff.label : `Arrives today if you order before ${CUTOFF_LABEL}`}
+            /* 2.13: the same promise the card makes, in the same green, plus
+               the wrap line when this seller can actually wrap this item. */
+            /* The hours come from app_settings (see useDeliveryWindow), the
+               same row the server enforces — not from area.ts's CUTOFF_HOUR
+               of 24, which predates the real config and would have had this
+               page promise "midnight" while every card said 9pm. */
+            <p className={`mt-2 text-caption font-medium ${!isBeforeCutoff() ? "text-muted" : "text-today"}`}>
+              {!isBeforeCutoff()
+                ? cutoff.label
+                : `At their door tonight — order by ${cutoffLabel()}`}
+              {product.gift_wrap_available ? (
+                <span className="mt-0.5 block font-normal text-muted">Gift wrap available</span>
+              ) : null}
             </p>
           ) : !inStock ? (
             <p className="mt-2 text-caption font-medium text-muted">Out of stock</p>
@@ -297,7 +309,7 @@ export function Product() {
             <details className="group py-3">
               <summary className="cursor-pointer list-none text-body font-medium">Delivery &amp; returns</summary>
               <p className="mt-2 text-body text-muted">
-                Order before {CUTOFF_LABEL} for same-day delivery across Lebanon. If something isn't right,
+                Order before {cutoffLabel()} for same-day delivery across Lebanon. If something isn't right,
                 contact us with your order number and we'll sort it with the store.
               </p>
             </details>

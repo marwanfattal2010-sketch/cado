@@ -1,3 +1,4 @@
+import { cutoffLabel, isBeforeCutoff } from "./deliveryPromise";
 import { useEffect, useState } from "react";
 
 /**
@@ -86,31 +87,27 @@ export function setAddressDetails(details: AddressDetails) {
 }
 
 /**
- * Same-day cut-off — MIDNIGHT, not 4PM.
+ * SUPERSEDED BY `app_settings`.
  *
- * Confirmed by Marwan 2026-08: an order placed any time before midnight is
- * delivered the same day. After midnight there is no same-day slot left to
- * promise, so the customer picks a delivery date and the earliest one is
- * tomorrow.
- *
- * SAME_DAY_OPENS_HOUR closes that overnight window. It is a judgement call,
- * not a rule Marwan gave: 08:00 is when a courier can realistically be
- * moving, so between 00:00 and 08:00 the site stops offering same-day rather
- * than promising a delivery nobody can make. Change this one constant if the
- * real operating hours differ.
- *
- * This is real information the customer needs, never manufactured urgency:
- * no countdown, no "X minutes left". It must be honest about having passed.
+ * These were a hardcoded guess (midnight, opens 08:00) made before the shop's
+ * real hours existed as data. They now do — one row, 09:00–21:00 Asia/Beirut,
+ * and it is the row the server checks when an order is placed. Leaving two
+ * numbers in the codebase meant the product card said "tonight" until 9pm
+ * while checkout offered same-day until midnight, and one of them had to be
+ * wrong. Everything below delegates to `deliveryPromise`, which reads that
+ * row; the exports stay so existing call sites keep compiling.
  */
-export const CUTOFF_HOUR = 24;
 export const SAME_DAY_OPENS_HOUR = 8;
-/** How the cut-off is written in copy. `24` has no sensible 12-hour form. */
-export const CUTOFF_LABEL = "midnight";
 
-/** True while an order placed now still earns same-day delivery. */
-export function sameDayOpen(now = new Date()) {
-  const h = now.getHours();
-  return h >= SAME_DAY_OPENS_HOUR && h < CUTOFF_HOUR;
+/**
+ * True while an order placed now still earns same-day delivery.
+ *
+ * Note this uses the SHOP's clock, not the device's. A phone with its
+ * timezone set wrong must not be able to talk itself into a same-day promise
+ * the server will refuse.
+ */
+export function sameDayOpen() {
+  return isBeforeCutoff();
 }
 
 /**
@@ -118,8 +115,8 @@ export function sameDayOpen(now = new Date()) {
  * the product card only asks `.passed` before it will say "today", the
  * product page prints `.label`.
  */
-export function timeUntilCutoff(now = new Date()) {
-  if (!sameDayOpen(now)) {
+export function timeUntilCutoff() {
+  if (!sameDayOpen()) {
     return {
       passed: true as const,
       label: "Choose your delivery date — earliest tomorrow",
@@ -127,6 +124,6 @@ export function timeUntilCutoff(now = new Date()) {
   }
   return {
     passed: false as const,
-    label: `Order before ${CUTOFF_LABEL} for delivery today`,
+    label: `Order before ${cutoffLabel()} for delivery today`,
   };
 }
