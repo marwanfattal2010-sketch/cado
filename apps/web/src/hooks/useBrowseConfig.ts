@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { byCategoryOrder, categoryRank } from "../lib/categories";
 import { supabase } from "../lib/supabase";
 import type { BrowseBanner, BrowseBlock, BrowseTab, BrowseTile } from "../lib/browse";
 
@@ -36,7 +37,7 @@ export function useBrowseConfig() {
   });
 
   const tabs = useMemo<BrowseTab[]>(() => {
-    return (query.data ?? []).map((t) => ({
+    const mapped = (query.data ?? []).map((t) => ({
       id: t.id,
       slug: t.slug,
       label: t.label,
@@ -47,6 +48,15 @@ export function useBrowseConfig() {
       // tab bar for every shopper.
       filter: t.filter && typeof t.filter === "object" && !Array.isArray(t.filter) ? t.filter : {},
     }));
+    /*
+     * Ordered by lib/categories, NOT by browse_tabs.position.
+     *
+     * The column is kept in step by migration 0088 so the dashboard and any
+     * direct reader agree, but the array is what the storefront follows —
+     * one file to edit, and no way for a stale row to reorder the shop.
+     * The All tab has no category_slug and always sorts first.
+     */
+    return byCategoryOrder(mapped, (t) => (t.filter as { category_slug?: string }).category_slug);
   }, [query.data]);
 
   /**
@@ -66,7 +76,24 @@ export function useBrowseConfig() {
         .sort((a, b) => a.position - b.position)
         .map((b) => ({
           ...b,
-          tiles: (b.tiles ?? []).filter((t) => t.is_active).sort((a, c) => a.position - c.position),
+          /*
+           * Tiles keep their own position EXCEPT category tiles, which follow
+           * lib/categories like everything else. That is the "Shop by
+           * category" row on the All tab and the grid inside the
+           * all-categories sheet — both were ordered by browse_tiles.position,
+           * the third of the three columns this consolidation removes.
+           *
+           * Non-category tiles (Stores, Under $50, Gift Cards…) are editorial
+           * and keep the order an editor gave them.
+           */
+          tiles: (b.tiles ?? [])
+            .filter((t) => t.is_active)
+            .sort((a, c) => a.position - c.position)
+            .sort((a, c) =>
+              a.link_type === "category" && c.link_type === "category"
+                ? categoryRank(a.link_value) - categoryRank(c.link_value)
+                : 0
+            ),
           banners: (b.banners ?? []).slice().sort((a, c) => a.position - c.position),
         }));
       byTab.set(tab.id, blocks);

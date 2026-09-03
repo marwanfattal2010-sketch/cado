@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useCategoryCounts } from "./useProducts";
+import { byCategoryOrder } from "../lib/categories";
 
 /**
  * Every active category, in display order. This is the raw list — it still
@@ -21,7 +22,9 @@ export function useCategories() {
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
-      return data;
+      // lib/categories decides the running order; sort_order is only the
+      // tie-break the database happened to return them in.
+      return byCategoryOrder(data ?? [], (c) => c.slug);
     },
   });
 }
