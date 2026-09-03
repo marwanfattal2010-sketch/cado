@@ -162,10 +162,12 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
       return id ? all.filter((p) => p.subcategory_id === id) : [];
     };
 
-    // 1 — the hero takes the best photo in the category first, because it is
-    // the biggest thing on the page and the only one shown at full width.
+    // 1 — the hero goes first, because it is the biggest thing on the page and
+    // the only one shown at full width. A theme may name the product it should
+    // borrow from; otherwise it falls back to whatever sorts first.
+    const named = theme.heroProduct ? all.filter((p) => p.slug === theme.heroProduct) : [];
     const hero = take(
-      [...all].sort((a, b) => Number(!!b.is_pick) - Number(!!a.is_pick))
+      named.length ? named : [...all].sort((a, b) => Number(!!b.is_pick) - Number(!!a.is_pick))
     );
 
     /*
@@ -229,7 +231,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
     }
 
     return { hero, tiles, circles };
-  }, [sections.all, sections.bestSellers, sections.giftReady, sections.deals, subcategories, slug]);
+  }, [sections.all, sections.bestSellers, sections.giftReady, sections.deals, subcategories, slug, theme]);
 
   /** The shops that actually stock this category, with their real artwork. */
   const stores = useMemo<StoreItem[]>(() => {

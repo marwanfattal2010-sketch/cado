@@ -43,6 +43,16 @@ export type CategoryTile = {
 export type CategoryTheme = {
   /** RGB channel triple, matching the project's colour-token format. */
   accent: string;
+  /**
+   * Which product the hero borrows its photo from, by slug.
+   *
+   * Without this the hero takes whatever sorts first, which on Jewels was a
+   * ring photographed on a hand — a real product, but a poor advert for a
+   * whole category. Naming one is not a step away from real photography: it
+   * is still that product's own picture, just chosen rather than stumbled on.
+   * Falls back to the old behaviour when the slug is missing or has no photo.
+   */
+  heroProduct?: string;
   heroTitle: string;
   heroSubtitle: string;
   /** Five, in order. Any that cannot be filled from real stock is dropped. */
@@ -66,6 +76,7 @@ export const DEFAULT_THEME: CategoryTheme = {
 export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   "jewelry-accessories": {
     accent: "107 63 160", // deep purple — Marwan's choice
+    heroProduct: "layered-chain-necklace",
     heroTitle: "Something that lasts longer than the day",
     heroSubtitle: "Gold, silver and stones from Lebanese ateliers",
     tiles: [

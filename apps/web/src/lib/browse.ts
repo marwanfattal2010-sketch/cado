@@ -145,11 +145,13 @@ export const PRODUCT_CARD_COLUMNS =
   // category tab — "Ready to gift" and the Store-picks fallback for Best
   // sellers — so they belong on the card contract rather than in a second
   // round-trip per section.
-  "id, title, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, is_gift_ready, is_pick, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
+  "id, title, slug, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, is_gift_ready, is_pick, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
 
 export type FeedProduct = {
   id: string;
   title: string;
+  /** Used to name a specific product from config — see CategoryTheme.heroProduct. */
+  slug?: string | null;
   price: number;
   compare_at_price: number | null;
   currency: string;

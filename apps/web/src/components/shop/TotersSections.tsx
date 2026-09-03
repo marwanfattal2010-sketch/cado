@@ -333,7 +333,9 @@ export function AllStores() {
       <div className="flex flex-col gap-3 px-4">
         {rows.map((s) => (
           <Link key={s.id} to={storePath(s)} className="overflow-hidden rounded-card bg-surface shadow-rest">
-            <span className="relative block aspect-square w-full overflow-hidden bg-surface-sunk">
+            {/* 5:4 rather than square: a full-width square card is most of a
+                phone screen per shop, so scrolling the list was a chore. */}
+            <span className="relative block aspect-[5/4] w-full overflow-hidden bg-surface-sunk">
               {s.cover_image_url ? (
                 <Img src={s.cover_image_url} className="h-full w-full object-cover" />
               ) : null}

@@ -25,8 +25,10 @@ export function CategoryHero({
   photo: string | null;
   onShopNow: () => void;
 }) {
+  // 220 tall, down from 260. The hero was pushing the tall tile row below the
+  // fold on a 390x844 screen; this keeps the first tiles in view on arrival.
   return (
-    <section className="relative h-[260px] w-full overflow-hidden">
+    <section className="relative h-[220px] w-full overflow-hidden">
       {photo ? (
         /* `eager` — this is the one image above the fold on every category
            tab, and a lazily-loaded hero is a blank hero for the first paint.
@@ -52,8 +54,8 @@ export function CategoryHero({
         }}
       />
 
-      <div className="absolute inset-x-0 bottom-0 p-5">
-        <h1 className="max-w-[15ch] font-display text-[27px] leading-[1.08] text-white">
+      <div className="absolute inset-x-0 bottom-0 p-4">
+        <h1 className="max-w-[15ch] font-display text-[24px] leading-[1.08] text-white">
           {theme.heroTitle}
         </h1>
         <p className="mt-2 max-w-[26ch] text-[13px] leading-snug text-white/85">
