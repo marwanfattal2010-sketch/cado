@@ -181,6 +181,22 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
     ],
   },
 
+  "home-appliances": {
+    // Slate blue-grey. Every other accent in the set is a warm or saturated
+    // hue; the eleventh had to be distinct from all ten, and a cool neutral
+    // is both unused and right for the category. 6.1:1 against white.
+    accent: "70 84 104",
+    heroTitle: "For the home they are still filling",
+    heroSubtitle: "Kitchen, coffee and linen worth unwrapping",
+    tiles: [
+      { label: "Housewarming", kind: { type: "subcategory", slug: "kitchen" } },
+      { label: "Coffee & tea", kind: { type: "subcategory", slug: "coffee-tea" } },
+      { label: "Bedding", kind: { type: "subcategory", slug: "bedding-towels" } },
+      { label: "Under $50", kind: { type: "price", max: 50 } },
+      { label: "New in", kind: { type: "new" } },
+    ],
+  },
+
   sport: {
     accent: "30 122 82", // deep green
     heroTitle: "For the one who never sits still",

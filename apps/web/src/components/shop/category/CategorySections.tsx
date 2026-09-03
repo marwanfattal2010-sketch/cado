@@ -256,7 +256,24 @@ export function OccasionChips({
   active: string[];
   onFilter: (f: TabFilter, scroll?: boolean) => void;
 }) {
-  const chips = CHIP_OCCASIONS.filter((o) => (sections.occasions.get(o.value) ?? 0) > 0)
+  /*
+   * A CHIP THAT MATCHES EVERYTHING IS NOT A FILTER.
+   *
+   * On a gift marketplace almost anything is a plausible birthday present,
+   * so "Birthday" sat on every product in most categories — and it is the
+   * first chip in the row, which meant the most prominent control on the
+   * section did nothing at all when you tapped it.
+   *
+   * Dropping a chip whose count equals the category total fixes that without
+   * anyone having to maintain a list: it hides itself only where it is
+   * useless, stays where it genuinely narrows, and comes back on its own as
+   * soon as a product arrives that does not carry it.
+   */
+  const total = sections.all.length;
+  const chips = CHIP_OCCASIONS.filter((o) => {
+    const n = sections.occasions.get(o.value) ?? 0;
+    return n > 0 && n < total;
+  })
     .sort((a, b) => (sections.occasions.get(b.value) ?? 0) - (sections.occasions.get(a.value) ?? 0))
     .slice(0, MAX_CHIPS);
 
