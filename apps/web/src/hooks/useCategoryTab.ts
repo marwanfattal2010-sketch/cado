@@ -1,7 +1,6 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
-import { PRODUCT_CARD_COLUMNS, type FeedProduct } from "../lib/browse";
+import { type FeedProduct } from "../lib/browse";
+import { useCatalogue } from "./useCatalogue";
 import { useHomeSignals } from "./useHomeEndless";
 
 /**
@@ -23,22 +22,21 @@ import { useHomeSignals } from "./useHomeEndless";
 /** The threshold the spec uses everywhere: below this, a section hides. */
 export const MIN_SECTION = 4;
 
+/**
+ * This tab's products, sliced out of the one catalogue request.
+ *
+ * It used to be a query per tab. Eleven tabs meant eleven round trips of
+ * about ten rows each, every one of them a fresh wait the first time you
+ * swiped to that tab — which is most of what "switching categories takes
+ * time" was. Now the first tab pays for all of them and the rest are free.
+ */
 export function useTabProducts(categoryId?: string) {
-  return useQuery({
-    queryKey: ["tab-products", categoryId],
-    enabled: !!categoryId,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(PRODUCT_CARD_COLUMNS)
-        .eq("is_active", true)
-        .eq("category_id", categoryId!)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as FeedProduct[];
-    },
-  });
+  const catalogue = useCatalogue();
+  const data = useMemo(
+    () => (categoryId ? (catalogue.data ?? []).filter((p) => p.category_id === categoryId) : []),
+    [catalogue.data, categoryId]
+  );
+  return { data, isLoading: catalogue.isLoading || !categoryId, error: catalogue.error };
 }
 
 /* -------------------------------------------------------------------------- */

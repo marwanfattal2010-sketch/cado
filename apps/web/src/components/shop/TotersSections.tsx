@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { useStoreDirectory } from "../../hooks/useCatalogue";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
@@ -108,22 +110,25 @@ function StoreMark({ store, size }: { store: PartnerRow; size: number }) {
  */
 export function PopularBrands() {
   const discounted = useDiscountedPartners();
-  const stores = useQuery({
-    queryKey: ["popular-brands"],
-    queryFn: async () => {
-      // Ordered by featured then newest: the storefront cannot read orders
-      // under RLS, and that is the fallback the brief itself names.
-      const { data } = await supabase
-        .from("partners")
-        .select("id, name, slug, city, logo_url, cover_image_url, created_at, is_featured")
-        .eq("status", "active")
-        .eq("is_live", true)
-        .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(10);
-      return (data ?? []) as PartnerRow[];
-    },
-  });
+  /* All four store rows on this page slice ONE request (useStoreDirectory).
+     They were four separate queries for the same table with four different
+     sort orders — the sorting is a line of JavaScript, and the round trips
+     were not. */
+  const directory = useStoreDirectory();
+  const stores = {
+    data: useMemo(
+      () =>
+        (directory.data ?? [])
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(!!b.is_featured) - Number(!!a.is_featured) ||
+              String(b.created_at).localeCompare(String(a.created_at))
+          )
+          .slice(0, 10) as unknown as PartnerRow[],
+      [directory.data]
+    ),
+  };
 
   const rows = stores.data ?? [];
   if (rows.length === 0) return null;
@@ -160,20 +165,17 @@ export function PopularBrands() {
  */
 export function NewOnCado() {
   const since = new Date(Date.now() - 60 * 86400000).toISOString();
-  const stores = useQuery({
-    queryKey: ["new-on-cado", since.slice(0, 10)],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("partners")
-        .select("id, name, slug, city, logo_url, cover_image_url, created_at")
-        .eq("status", "active")
-        .eq("is_live", true)
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(12);
-      return (data ?? []) as PartnerRow[];
-    },
-  });
+  const directory = useStoreDirectory();
+  const stores = {
+    data: useMemo(
+      () =>
+        (directory.data ?? [])
+          .filter((s) => String(s.created_at) >= since)
+          .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+          .slice(0, 12) as unknown as PartnerRow[],
+      [directory.data, since]
+    ),
+  };
 
   const rows = stores.data ?? [];
   const categories = useStoreCategories(rows.map((s) => s.id));
@@ -253,21 +255,21 @@ export function NewOnCado() {
 
 export function TopStoresNearYou() {
   const [area] = useArea();
-  const stores = useQuery({
-    queryKey: ["top-stores-city", area],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("partners")
-        .select("id, name, slug, city, logo_url, cover_image_url, created_at")
-        .eq("status", "active")
-        .eq("is_live", true)
-        .eq("city", area)
-        .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(12);
-      return (data ?? []) as PartnerRow[];
-    },
-  });
+  const directory = useStoreDirectory();
+  const stores = {
+    data: useMemo(
+      () =>
+        (directory.data ?? [])
+          .filter((s) => s.city === area)
+          .sort(
+            (a, b) =>
+              Number(!!b.is_featured) - Number(!!a.is_featured) ||
+              String(b.created_at).localeCompare(String(a.created_at))
+          )
+          .slice(0, 12) as unknown as PartnerRow[],
+      [directory.data, area]
+    ),
+  };
 
   const rows = stores.data ?? [];
   if (rows.length === 0) return null;
@@ -307,19 +309,19 @@ export function TopStoresNearYou() {
  * scroll — anything after it is unreachable.
  */
 export function AllStores() {
-  const stores = useQuery({
-    queryKey: ["all-stores-home"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("partners")
-        .select("id, name, slug, city, logo_url, cover_image_url, created_at, is_featured")
-        .eq("status", "active")
-        .eq("is_live", true)
-        .order("is_featured", { ascending: false })
-        .order("name");
-      return (data ?? []) as PartnerRow[];
-    },
-  });
+  const directory = useStoreDirectory();
+  const stores = {
+    data: useMemo(
+      () =>
+        (directory.data ?? [])
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(!!b.is_featured) - Number(!!a.is_featured) || a.name.localeCompare(b.name)
+          ) as unknown as PartnerRow[],
+      [directory.data]
+    ),
+  };
 
   const rows = stores.data ?? [];
   const categories = useStoreCategories(rows.map((s) => s.id));

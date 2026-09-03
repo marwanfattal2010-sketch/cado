@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { accentColor, type BrowseTab } from "../../lib/browse";
 
 /**
@@ -29,6 +29,21 @@ export function TabBar({
   // First paint should not animate: the strip is arriving, not moving.
   const mounted = useRef(false);
 
+  /**
+   * ONE underline that TRAVELS, rather than one per tab that blinks out here
+   * and in over there.
+   *
+   * A marker that appears at its destination gives no sense of having moved,
+   * and that is a surprising amount of why a tab bar feels like a web page:
+   * the panel slides, the underline teleports, and the two read as unrelated.
+   * A single element with a transition on transform/width follows the panel,
+   * so the whole bar moves as one thing.
+   *
+   * Measured from the DOM rather than computed from an assumed tab width,
+   * because these labels are full category names of very different lengths.
+   */
+  const [marker, setMarker] = useState<{ x: number; w: number } | null>(null);
+
   useEffect(() => {
     const strip = stripRef.current;
     const item = itemRefs.current[activeIndex];
@@ -39,8 +54,13 @@ export function TabBar({
     // this at both ends, so tab one and the last tab stay flush.
     const left = item.offsetLeft - (strip.clientWidth - item.clientWidth) / 2;
     strip.scrollTo({ left, behavior: mounted.current && !reduced ? "smooth" : "auto" });
+
+    // Inset a little from the label so the underline reads as belonging to
+    // the word rather than to the button's padding.
+    const inset = 10;
+    setMarker({ x: item.offsetLeft + inset, w: Math.max(16, item.offsetWidth - inset * 2) });
     mounted.current = true;
-  }, [activeIndex]);
+  }, [activeIndex, tabs]);
 
   return (
     /* z-20 so the strip stays above anything in the panel that scrolls under
@@ -70,16 +90,24 @@ export function TabBar({
               }`}
             >
               {tab.label}
-              {active ? (
-                <span
-                  aria-hidden
-                  className="absolute bottom-0 left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-full"
-                  style={{ background: accentColor(tab.accent_token) }}
-                />
-              ) : null}
             </button>
           );
         })}
+
+        {/* The travelling underline. Inside the scroller, so it stays with
+            its tab while the strip scrolls, and transformed rather than
+            positioned so the movement is composited. */}
+        {marker ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 left-0 h-[3px] rounded-full transition-[transform,width] duration-base ease-ease"
+            style={{
+              background: accentColor(),
+              width: marker.w,
+              transform: `translateX(${marker.x}px)`,
+            }}
+          />
+        ) : null}
       </div>
 
       {/* The fade is 18px of canvas so tabs vanish under the button instead of

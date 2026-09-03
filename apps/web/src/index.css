@@ -304,6 +304,12 @@ select,
 textarea,
 [role="button"] {
   -webkit-tap-highlight-color: transparent;
+  /* Kills the ~300ms wait a mobile browser holds before firing a click, in
+     case the tap turns out to be the first half of a double-tap zoom. That
+     pause is most of why a web page feels slower to press than an app: the
+     button IS responding, a third of a second after you let go. Declaring
+     that nothing here double-tap-zooms lets the click fire immediately. */
+  touch-action: manipulation;
 }
 
 a,
@@ -370,7 +376,8 @@ button:active:not(:disabled),
   display: none;
 }
 .scroll-row > * {
-  scroll-snap-align: start;
+  /* No snap-align either — the panels are positioned by the pager, not by
+     the snap engine. See .pager above. */
   /* A flex item with nothing to shrink to is still allowed to shrink; every
      card in these rows sets its own width, so let none of them squeeze. */
   flex-shrink: 0;
@@ -411,7 +418,9 @@ button:active:not(:disabled),
      in useTabSwipe. See the note there for why this is not `touch-action`. */
   overflow-x: hidden;
   overflow-y: hidden;
-  scroll-snap-type: x mandatory;
+  /* NO scroll-snap. The pager animates its own scrollLeft (see usePager), and
+     snap re-snaps behind you the instant you set that by hand — the two
+     fight, and the fight looks like stutter halfway through a swipe. */
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -422,7 +431,8 @@ button:active:not(:disabled),
 
 .panel {
   flex: 0 0 100%;
-  scroll-snap-align: start;
+  /* No snap-align either — the panels are positioned by the pager, not by
+     the snap engine. See .pager above. */
   /* Explicit, and it has to be. `overflow-y: auto` alone computes overflow-x
      to `auto` as well, so any child a few pixels wider than the screen turned
      the panel itself into a sideways scroller — which is the other half of
@@ -442,6 +452,10 @@ button:active:not(:disabled),
    active tab is centred programmatically rather than snapped. */
 .tab-strip {
   display: flex;
+  /* The travelling underline is absolutely positioned from offsetLeft, which
+     is measured against this box — so this has to be the positioned ancestor,
+     or the marker drifts as soon as the strip scrolls. */
+  position: relative;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;

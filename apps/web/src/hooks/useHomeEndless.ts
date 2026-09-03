@@ -1,3 +1,6 @@
+import { useMemo } from "react";
+import { useCatalogue } from "./useCatalogue";
+import { useCategories } from "./useCategories";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { PRODUCT_CARD_COLUMNS, type FeedProduct } from "../lib/browse";
@@ -289,84 +292,95 @@ export function useStoreOfWeek() {
 
 /* ------------------------------------------------ product pools by section */
 
-/** In-stock products, card columns, newest first. One shape for the pools. */
-async function pool(extra: (q: ReturnType<typeof base>) => ReturnType<typeof base>, limit = 60) {
-  const q = extra(base()).limit(limit);
-  const { data, error } = await q;
-  if (error) throw error;
-  return (data ?? []) as unknown as FeedProduct[];
+
+/**
+ * EVERY SECTION BELOW IS A SLICE OF ONE REQUEST.
+ *
+ * These were six separate queries — trending pool, deals, newest, category
+ * counts, and one per Best-of strip — and each asked the database for a
+ * differently-sorted view of the same hundred rows. On a Beirut connection
+ * that was six sequential ~600ms waits stacked into the first paint of the
+ * home page, and the browser's per-host connection limit meant they queued.
+ *
+ * `useCatalogue` fetches those rows once. Everything here now filters an
+ * array, so the sections all appear together, in the same frame.
+ *
+ * The in-stock rule is applied here rather than in the query because the
+ * catalogue is shared: `.gt("stock_quantity", 0)` in Postgres also drops
+ * NULLs, so `(x ?? 0) > 0` is the same test, not a looser one.
+ */
+function inStock(p: FeedProduct) {
+  return (p.stock_quantity ?? 0) > 0;
 }
-const base = () =>
-  supabase
-    .from("products")
-    .select(PRODUCT_CARD_COLUMNS)
-    .eq("is_active", true)
-    .gt("stock_quantity", 0)
-    .order("created_at", { ascending: false });
+
+/** The shared, already-newest-first pool these sections all draw from. */
+function useHomePool() {
+  const catalogue = useCatalogue();
+  return useMemo(() => (catalogue.data ?? []).filter(inStock), [catalogue.data]);
+}
+
+function asQuery<T>(data: T, isLoading: boolean) {
+  return { data, isLoading, isError: false as const };
+}
 
 export function useTrendingPool() {
-  return useQuery({
-    queryKey: ["home-trending-pool"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: () => pool((q) => q, 80),
-  });
+  const rows = useHomePool();
+  const catalogue = useCatalogue();
+  return asQuery(useMemo(() => rows.slice(0, 80), [rows]), catalogue.isLoading);
 }
 
 export function useDeals() {
-  return useQuery({
-    queryKey: ["home-deals"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      // Column-to-column comparison is not a PostgREST filter, so fetch the
-      // ones with any old price and keep the genuinely reduced. Same approach
-      // as DealPair, same reason.
-      const rows = await pool((q) => q.not("compare_at_price", "is", null), 80);
-      return rows.filter((p) => Number(p.compare_at_price) > Number(p.price));
-    },
-  });
+  const rows = useHomePool();
+  const catalogue = useCatalogue();
+  return asQuery(
+    useMemo(
+      () => rows.filter((p) => Number(p.compare_at_price) > Number(p.price)).slice(0, 80),
+      [rows]
+    ),
+    catalogue.isLoading
+  );
 }
 
 export function useNewest(limit = 10) {
-  return useQuery({
-    queryKey: ["home-newest", limit],
-    staleTime: 5 * 60 * 1000,
-    queryFn: () => pool((q) => q, limit),
-  });
+  const rows = useHomePool();
+  const catalogue = useCatalogue();
+  return asQuery(useMemo(() => rows.slice(0, limit), [rows, limit]), catalogue.isLoading);
 }
 
 /** Categories by in-stock product count, for the Best-of rotation. */
 export function useCategoryCounts() {
-  return useQuery({
-    queryKey: ["home-category-counts"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("category_id, categories(name, slug)")
-        .eq("is_active", true)
-        .gt("stock_quantity", 0)
-        .limit(1000);
-      if (error) throw error;
+  const rows = useHomePool();
+  const catalogue = useCatalogue();
+  const categories = useCategories();
+  return asQuery(
+    useMemo(() => {
       const byCat = new Map<string, { id: string; name: string; slug: string; count: number }>();
-      for (const r of data ?? []) {
-        const cat = r.categories as { name: string; slug: string } | null;
-        if (!r.category_id || !cat) continue;
-        const cur = byCat.get(r.category_id);
+      for (const p of rows) {
+        if (!p.category_id) continue;
+        const cur = byCat.get(p.category_id);
         if (cur) cur.count++;
-        else byCat.set(r.category_id, { id: r.category_id, name: cat.name, slug: cat.slug, count: 1 });
+        else {
+          const cat = categories.data?.find((c) => c.id === p.category_id);
+          if (!cat) continue;
+          byCat.set(p.category_id, { id: p.category_id, name: cat.name, slug: cat.slug, count: 1 });
+        }
       }
       return [...byCat.values()].sort((a, b) => b.count - a.count);
-    },
-  });
+    }, [rows, categories.data]),
+    catalogue.isLoading || categories.isLoading
+  );
 }
 
 export function useCategoryProducts(categoryId: string | undefined) {
-  return useQuery({
-    queryKey: ["home-cat-products", categoryId ?? "none"],
-    enabled: !!categoryId,
-    staleTime: 5 * 60 * 1000,
-    queryFn: () => pool((q) => q.eq("category_id", categoryId as string), 20),
-  });
+  const rows = useHomePool();
+  const catalogue = useCatalogue();
+  return asQuery(
+    useMemo(
+      () => (categoryId ? rows.filter((p) => p.category_id === categoryId).slice(0, 20) : []),
+      [rows, categoryId]
+    ),
+    catalogue.isLoading
+  );
 }
 
 /* ------------------------------------------------------- discover more */

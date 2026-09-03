@@ -1,21 +1,28 @@
+import { useMemo } from "react";
+import { useAllSubcategories } from "./useCatalogue";
+import { useCategories } from "./useCategories";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 
+/**
+ * One category's subcategories, sliced from the single all-rows request.
+ *
+ * This was a query per category slug. The table holds about thirty rows in
+ * total, so browsing the tabs fired ten separate requests to move a few
+ * kilobytes — and each one was a fresh ~600ms wait the first time a tab
+ * opened. Same signature, same return shape; the callers did not change.
+ */
 export function useSubcategories(categorySlug: string | undefined) {
-  return useQuery({
-    queryKey: ["subcategories", categorySlug],
-    enabled: !!categorySlug,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subcategories")
-        .select("id, name, slug, sort_order, category:categories!inner(slug)")
-        .eq("categories.slug", categorySlug as string)
-        .eq("is_active", true)
-        .order("sort_order");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const all = useAllSubcategories();
+  const categories = useCategories();
+  const categoryId = categorySlug
+    ? categories.data?.find((c) => c.slug === categorySlug)?.id
+    : undefined;
+  const data = useMemo(
+    () => (categoryId ? (all.data ?? []).filter((s) => s.category_id === categoryId) : undefined),
+    [all.data, categoryId]
+  );
+  return { data, isLoading: all.isLoading || categories.isLoading, error: all.error };
 }
 
 export function useStoresByCategory(categorySlug: string | undefined) {

@@ -41,14 +41,7 @@ import { CategoryTab } from "./category/CategoryTab";
  * $25" on Chocolate should not follow you to Perfumes, and swiping back to
  * Chocolate should find it exactly as you left it.
  */
-export function TabPanel({
-  tab,
-  blocks,
-  active,
-  mounted,
-  primary = false,
-  hrefForCategory,
-}: {
+type PanelProps = {
   tab: BrowseTab;
   blocks: BrowseBlockWithContent[];
   active: boolean;
@@ -58,7 +51,52 @@ export function TabPanel({
   /** The All tab — the landing page. Carries the three sections that came
    *  over from the old Home and belong to the page, not to a category. */
   primary?: boolean;
-}) {
+};
+
+/**
+ * A DISPATCHER, and the split is a performance fix, not tidiness.
+ *
+ * This used to be one component: the All-tab hooks ran at the top, and the
+ * category branch returned early underneath them. Hooks cannot be skipped by
+ * an early return, so every one of the ten category panels was still firing
+ * the All tab's per-category queries — tile images, hero slides, store
+ * lookups — for data that Part 2 means it never renders. Twenty wasted
+ * requests at ~600ms each, on the first load, before anything was drawn.
+ *
+ * Splitting the branch into its own component is what actually stops them:
+ * the hooks now live inside the tree that uses them.
+ */
+export function TabPanel(props: PanelProps) {
+  const { tab, active, mounted, primary } = props;
+
+  if (!mounted) return <div className="panel" aria-hidden style={{ minHeight: "100%" }} />;
+
+  /*
+   * PART 2 REPLACES THE BLOCK PIPELINE ON CATEGORY TABS.
+   *
+   * A category tab no longer reads browse_blocks rows at all: its eleven
+   * sections are derived from that category's real products, so a tab is
+   * correct the moment a product moves into it, with no editor row to keep
+   * in step.
+   */
+  if (!primary) {
+    return (
+      <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
+        <CategoryTab tab={tab} />
+      </section>
+    );
+  }
+
+  return <PrimaryPanel {...props} />;
+}
+
+function PrimaryPanel({
+  tab,
+  blocks,
+  active,
+  primary = false,
+  hrefForCategory,
+}: PanelProps) {
   const navigate = useNavigate();
   const categories = useCategories();
   const images = useTileImages();
@@ -111,24 +149,6 @@ export function TabPanel({
     const parsed = parseFilterValue(tile.link_value);
     setFilter({ ...parsed, label: tile.label });
   };
-
-  if (!mounted) return <div className="panel" aria-hidden style={{ minHeight: "100%" }} />;
-
-  /*
-   * PART 2 REPLACES THE BLOCK PIPELINE ON CATEGORY TABS.
-   *
-   * The pipeline below is still what the All tab renders, and the blocks rows
-   * still drive it. A category tab no longer reads them: its eleven sections
-   * are derived from that category's real products, so a tab is correct the
-   * moment a product moves into it, with no editor row to keep in step.
-   */
-  if (!primary) {
-    return (
-      <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
-        <CategoryTab tab={tab} />
-      </section>
-    );
-  }
 
   /*
    * ONE LAYOUT FOR ALL NINE CATEGORY TABS.

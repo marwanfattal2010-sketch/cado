@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../lib/supabase";
+import { useMemo } from "react";
+import { useStoreDirectory } from "../../hooks/useCatalogue";
 import { SectionHead } from "../SectionHead";
 import { Img } from "../Img";
 import { Skeleton } from "../Skeleton";
@@ -29,19 +29,21 @@ type StoreRow = {
 };
 
 function useAllLiveStores() {
-  return useQuery({
-    queryKey: ["stores-on-cado"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("partners")
-        .select("id, name, slug, logo_url, cover_image_url")
-        .eq("status", "active")
-        .eq("is_live", true)
-        .order("is_featured", { ascending: false })
-        .order("name");
-      return (data ?? []) as StoreRow[];
-    },
-  });
+  // Sliced from the one store request the whole page shares.
+  const directory = useStoreDirectory();
+  return {
+    data: useMemo(
+      () =>
+        (directory.data ?? [])
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(!!b.is_featured) - Number(!!a.is_featured) || a.name.localeCompare(b.name)
+          ) as unknown as StoreRow[],
+      [directory.data]
+    ),
+    isLoading: directory.isLoading,
+  };
 }
 
 export function FeaturedStores() {
