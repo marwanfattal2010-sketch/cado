@@ -55,15 +55,27 @@ export function AllCategoriesSheet({
   return (
     <Sheet open={open} onClose={onClose} title="All categories" fullHeight>
       <div className="flex h-full min-h-0">
-        <div className="w-[72px] shrink-0 overflow-y-auto border-r border-line">
+        {/*
+          EVERY CATEGORY IN THIS RAIL CARRIES ITS PHOTO.
+          It was a column of plain text — the one place in the app where a
+          category was listed without a picture of anything in it, which read
+          as an unfinished menu next to the illustrated grid beside it. The
+          thumbnails come from the same `useTileImages` source the circles on
+          the page use, so a category can never show one photo here and a
+          different one there.
+        */}
+        <div className="w-[82px] shrink-0 overflow-y-auto border-r border-line">
           {tabs.map((t, i) => {
             const active = i === selected;
+            const slug = t.filter.category_slug;
+            const path = slug ? images.byCategory.get(slug) : undefined;
+            const thumb = path ? productImageUrl(path) : null;
             return (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setSelected(i)}
-                className={`relative block w-full px-2 py-3 text-left text-[12px] leading-tight ${
+                className={`relative flex w-full flex-col items-center gap-1 px-1.5 py-2.5 text-center text-[11px] leading-tight ${
                   active ? "bg-surface font-bold text-ink" : "font-medium text-muted"
                 }`}
               >
@@ -74,7 +86,13 @@ export function AllCategoriesSheet({
                     style={{ background: accentColor(t.accent_token) }}
                   />
                 ) : null}
-                {t.label}
+                <span
+                  className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-[14px]"
+                  style={{ background: accentColor(t.accent_token, 0.1) }}
+                >
+                  {thumb ? <Img src={thumb} className="h-full w-full object-cover" /> : null}
+                </span>
+                <span className="line-clamp-2">{t.label}</span>
               </button>
             );
           })}

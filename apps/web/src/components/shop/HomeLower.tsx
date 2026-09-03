@@ -42,7 +42,9 @@ export function HomeLower() {
   const signals = useHomeSignals();
   const trendingPool = useTrendingPool();
   const deals = useDeals();
-  const storesOfWeek = useStoresOfWeek(3);
+  // 8, up from 3 (Marwan). "See all" stays — the row scrolls sideways, so
+  // eight is a row worth swiping rather than three and a link.
+  const storesOfWeek = useStoresOfWeek(8);
   const catCounts = useCategoryCounts();
   const newest = useNewest(10);
   const recent = useRecentlyViewed();

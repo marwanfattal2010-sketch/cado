@@ -158,7 +158,10 @@ export function useFeaturedStores() {
         .eq("is_live", true)
         .eq("is_featured", true)
         .order("featured_rank", { ascending: true, nullsFirst: false })
-        .limit(4);
+        // 12, not 4. Stores of the Week now asks for eight and this is its
+        // pool — capped at four, the row could never show more than four
+        // however large the slice above it was.
+        .limit(12);
       if (error) {
         if (missingMigration(error)) return [];
         throw error;
@@ -183,7 +186,7 @@ export function useFeaturedStores() {
  * Stores with nothing in stock are dropped rather than padded — a "store of
  * the week" you cannot buy anything from is not one.
  */
-export function useStoresOfWeek(count = 3) {
+export function useStoresOfWeek(count = 8) {
   const featured = useFeaturedStores();
   return useQuery({
     queryKey: ["home-stores-of-week", count, featured.data?.map((f) => f.id).join(",") ?? ""],
@@ -197,7 +200,35 @@ export function useStoresOfWeek(count = 3) {
       if (cfgErr && !missingMigration(cfgErr)) throw cfgErr;
       const pinned: string | null = cfg?.[0]?.store_of_week_partner_id ?? null;
 
-      const poolAll = featured.data ?? [];
+      /*
+       * FEATURED FIRST, THEN TOPPED UP.
+       *
+       * Only four shops carry `is_featured`, so a row asking for eight could
+       * never fill from that flag alone — it would silently show four and
+       * look like the change had not worked. The editorially featured shops
+       * still lead; the rest of the row is filled from live shops that have
+       * something in stock, and any shop flagged later takes priority
+       * automatically without anyone touching this code.
+       */
+      const featuredRows = featured.data ?? [];
+      let poolAll = featuredRows;
+      if (featuredRows.length < count) {
+        const { data: more, error: moreErr } = await supabase
+          .from("partners")
+          .select(
+            "id, name, slug, logo_url, cover_image_url, tagline, description, city, featured_rank"
+          )
+          .eq("status", "active")
+          .eq("is_live", true)
+          .order("name")
+          .limit(40);
+        if (moreErr && !missingMigration(moreErr)) throw moreErr;
+        const seen = new Set(featuredRows.map((f) => f.id));
+        poolAll = [
+          ...featuredRows,
+          ...((more ?? []) as FeaturedStore[]).filter((s) => !seen.has(s.id)),
+        ];
+      }
       if (poolAll.length === 0) return [];
 
       // How much each featured store actually has on the shelf right now.
@@ -211,9 +242,16 @@ export function useStoresOfWeek(count = 3) {
       const byStore = new Map<string, number>();
       for (const r of counts.data ?? []) byStore.set(r.partner_id, (byStore.get(r.partner_id) ?? 0) + 1);
 
+      // Featured shops keep the front of the row whatever their stock; the
+      // top-ups behind them are ordered by how much they actually have.
+      const isFeatured = new Set(featuredRows.map((f) => f.id));
       const stocked = poolAll
         .filter((p) => (byStore.get(p.id) ?? 0) > 0)
-        .sort((a, b) => (byStore.get(b.id) ?? 0) - (byStore.get(a.id) ?? 0));
+        .sort(
+          (a, b) =>
+            Number(isFeatured.has(b.id)) - Number(isFeatured.has(a.id)) ||
+            (byStore.get(b.id) ?? 0) - (byStore.get(a.id) ?? 0)
+        );
       if (stocked.length === 0) return [];
 
       const start = isoWeek() % stocked.length;

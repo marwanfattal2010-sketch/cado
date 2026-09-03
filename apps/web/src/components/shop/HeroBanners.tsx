@@ -11,10 +11,11 @@ import { useNavigate } from "react-router-dom";
  * The illustrations are drawn in CSS, exactly as in the mockup — no stock
  * photos, no placeholder images.
  *
- * SCROLL CONTAINMENT (spec 1.8): the rail is `touch-action: pan-x`, so the
- * browser hands it horizontal gestures and keeps vertical ones for the page,
- * and it stops horizontal touchmove from reaching the tab-swipe handler above
- * it. The rail is never wider than the viewport — it scrolls inside itself.
+ * SCROLL CONTAINMENT: the rail sets NO touch-action at all. It used to be
+ * pan-x, which meant a finger landing on a slide could ONLY move it sideways
+ * — dragging up or down over the hero scrolled nothing, which is the bug this
+ * fixed. The browser locks the axis itself, and usePager ignores any gesture
+ * that starts inside a horizontal scroller, so nothing is lost.
  */
 
 type Slide = {
@@ -127,6 +128,17 @@ function Art({ kind }: { kind: Slide["art"] }) {
   );
 }
 
+/** A four-point sparkle plus two smaller ones — the usual 'assist' mark. */
+function SparkleIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      <path d="M7 1.2 8.1 4.6 11.5 5.7 8.1 6.8 7 10.2 5.9 6.8 2.5 5.7 5.9 4.6 7 1.2Z" />
+      <path d="M12.4 8.6 13 10.3 14.7 10.9 13 11.5 12.4 13.2 11.8 11.5 10.1 10.9 11.8 10.3 12.4 8.6Z" />
+      <path d="M4.2 10.6 4.6 11.8 5.8 12.2 4.6 12.6 4.2 13.8 3.8 12.6 2.6 12.2 3.8 11.8 4.2 10.6Z" />
+    </svg>
+  );
+}
+
 export function HeroBanners({ onAskAi }: { onAskAi: () => void }) {
   const navigate = useNavigate();
   const railRef = useRef<HTMLDivElement>(null);
@@ -144,10 +156,8 @@ export function HeroBanners({ onAskAi }: { onAskAi: () => void }) {
       <div
         ref={railRef}
         onScroll={onScroll}
-        // pan-x hands vertical gestures back to the page, so scrolling down
-        // over the hero never drags the rail (spec 1.8).
-        style={{ touchAction: "pan-x" }}
-        onTouchMove={(e) => e.stopPropagation()}
+        // No touch-action: the browser decides the axis, so a vertical drag
+        // starting on a slide scrolls the page instead of being swallowed.
         className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {SLIDES.map((s) => (
@@ -187,13 +197,28 @@ export function HeroBanners({ onAskAi }: { onAskAi: () => void }) {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={onAskAi}
-        className="mx-auto mt-3 block text-center text-[13px] font-extrabold text-[#B8321C]"
-      >
-        Let AI help me choose
-      </button>
+      {/*
+        A BUTTON, not a text link.
+
+        As a bare coral line under the dots it read as a footnote and got
+        skipped. It now matches the search field directly above it — same
+        page gutter, same 40px height, same pill — so the two read as a pair
+        of things you can do rather than a control and an afterthought.
+        Cream fill with a coral hairline keeps it secondary to the hero's
+        own buttons; it is a helper, not the main action.
+      */}
+      {/* Drawn inline rather than pulled from the icon sheet: this is the one
+          place a wand appears, and it keeps the button self-contained. */}
+      <div className="mx-auto mt-3 max-w-6xl px-4">
+        <button
+          type="button"
+          onClick={onAskAi}
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-pill border border-persimmon bg-surface px-4 text-[13px] font-extrabold text-persimmon shadow-rest transition-transform duration-press ease-out active:scale-[0.99]"
+        >
+          <SparkleIcon />
+          Let AI help me choose
+        </button>
+      </div>
     </div>
   );
 }

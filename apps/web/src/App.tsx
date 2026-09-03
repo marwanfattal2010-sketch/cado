@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 import { Skeleton } from "./components/Skeleton";
 import { useTrackPageView } from "./hooks/useTrackPageView";
 import { useDeliveryWindow } from "./hooks/useDeliveryWindow";
+import { useTapGuard } from "./hooks/useTapGuard";
 
 /**
  * ROUTE-LEVEL CODE SPLITTING.
@@ -111,6 +112,9 @@ export default function App() {
   useTrackPageView();
   // The real opening hours, published once for every delivery line on the site.
   useDeliveryWindow();
+  // A drag is never a tap: swiping a rail must not open whatever card the
+  // finger happened to lift on.
+  useTapGuard();
 
   return (
     <Suspense fallback={<RouteFallback />}>

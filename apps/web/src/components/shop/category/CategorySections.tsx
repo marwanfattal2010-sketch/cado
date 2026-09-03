@@ -196,7 +196,9 @@ export function StoresRow({
       <TabSectionHead title={`Stores in ${categoryName}`} theme={theme} to="/stores" />
       <div className="scroll-row -mx-[var(--page-x)] px-[var(--page-x)]" style={{ ["--row-gap" as string]: "16px" }}>
         {stores.slice(0, 5).map((s) => {
-          const art = s.logo_url ?? s.cover_image_url;
+          // The shop's own photograph first, its logo only if it has no
+          // photo, and no lettered fallback at all — see StoreMark.
+          const art = s.cover_image_url ?? s.logo_url;
           const clean = s.name.replace(/\[.*?\]\s*/g, "");
           return (
             <Link
@@ -204,27 +206,23 @@ export function StoresRow({
               to={storePath(s)}
               className="flex w-[62px] shrink-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
             >
-              {/*
-                48px whether it holds a picture or two letters. The old row
-                used a 58px circle and dropped initials into it when a shop
-                had no logo, which is 25 of the 27 shops — a screen of large
-                empty rings. Smaller, and the same size for both, reads as a
-                deliberate mark rather than a missing image.
-              */}
+              {/* 56px, and it holds the shop's own photograph. No initials
+                  fallback: an unphotographed shop shows an empty tint and
+                  goes on the list to be shot properly. */}
               <span
-                className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-pill border border-line bg-white"
+                className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-pill border border-line bg-white"
                 style={art ? undefined : { background: accent(theme, 0.1) }}
               >
                 {art ? (
                   <Img
                     src={art}
-                    className={s.logo_url ? "h-full w-full object-contain p-1" : "h-full w-full object-cover"}
+                    className={
+                      s.cover_image_url
+                        ? "h-full w-full object-cover"
+                        : "h-full w-full object-contain p-1"
+                    }
                   />
-                ) : (
-                  <span className="text-[13px] font-black" style={{ color: accent(theme) }}>
-                    {clean.slice(0, 2).toUpperCase()}
-                  </span>
-                )}
+                ) : null}
               </span>
               <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-ink">
                 {clean}

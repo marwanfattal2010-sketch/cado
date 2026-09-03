@@ -69,27 +69,27 @@ export function FeaturedStores() {
     <section className="pt-7">
       <SectionHead title="Stores on CADO" to="/stores" />
       <div
-        // pan-x so a vertical scroll over this row still scrolls the page
-        // (spec 1.8), and the touchmove stops here so a sideways drag inside
-        // the row never reaches the tab-swipe handler.
-        style={{ touchAction: "pan-x" }}
-        onTouchMove={(e) => e.stopPropagation()}
+        /* NO touch-action here, deliberately. A rail with pan-x can only be
+           panned sideways, so a finger landing on a card could not scroll the
+           page at all — that was the whole scroll bug. The browser locks the
+           axis itself, and usePager already ignores any gesture that starts
+           inside a horizontal scroller. */
         className="grid auto-cols-[60px] grid-flow-col grid-rows-2 gap-x-4 gap-y-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {list.map((s) => (
           <Link key={s.id} to={storePath(s)} className="flex w-[60px] flex-col items-center gap-1">
             <span className="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-pill border border-line bg-surface">
-              {s.logo_url ? (
-                /* The real logo file, contained rather than cropped — a logo
-                   blown up to fill a circle is the pixelated look 2.6 bans. */
-                <Img src={s.logo_url} className="h-full w-full object-contain p-1.5" />
-              ) : s.cover_image_url ? (
+              {/* THE SHOP'S OWN PHOTO FIRST. This preferred the logo, and
+                  since only two shops have one the row was mostly letters in
+                  circles. A real logo file still wins over nothing, but a
+                  photograph of the shop beats both — and there is no
+                  lettered fallback: a shop with no picture shows an empty
+                  tint and goes on the list to be photographed. */}
+              {s.cover_image_url ? (
                 <Img src={s.cover_image_url} className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-caption font-bold text-persimmon">
-                  {s.name.replace(/\[.*?\]\s*/g, "").slice(0, 2).toUpperCase()}
-                </span>
-              )}
+              ) : s.logo_url ? (
+                <Img src={s.logo_url} className="h-full w-full object-contain p-1.5" />
+              ) : null}
             </span>
             <span className="line-clamp-2 text-center text-[11px] leading-tight text-ink">{s.name}</span>
           </Link>

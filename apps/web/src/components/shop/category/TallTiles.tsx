@@ -36,7 +36,7 @@ export function TallTiles({
   return (
     <div
       className="scroll-row"
-      style={{ ["--row-gap" as string]: "10px", touchAction: "pan-x" }}
+      style={{ ["--row-gap" as string]: "10px" }}
     >
       {tiles.map((t) => (
         <button

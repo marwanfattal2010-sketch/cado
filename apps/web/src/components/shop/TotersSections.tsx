@@ -84,18 +84,28 @@ function useStoreCategories(partnerIds: string[]) {
  * brand-imitation rule. Initials are legibly CADO's own placeholder, not a
  * pretend logo, and they disappear the moment a shop uploads the real thing.
  */
-function StoreMark({ store, size }: { store: PartnerRow; size: number }) {
-  const initials = store.name.replace(/\[.*?\]\s*/g, "").slice(0, 2).toUpperCase();
-  if (store.logo_url) {
-    return <Img src={store.logo_url} className="h-full w-full object-contain p-1.5" />;
-  }
+/**
+ * A shop's own PHOTOGRAPH, every time.
+ *
+ * This used to prefer `logo_url` and fall back to two initials in a circle.
+ * Two shops have a real logo file; the rest showed letters, which is what
+ * made these rows look like a wireframe rather than a shop. The photo comes
+ * first now and there is no lettered fallback at all — a store with no
+ * picture gets a plain tinted panel, and it belongs on a list to be
+ * photographed rather than papered over with a monogram.
+ *
+ * The logo is still used when a shop has a real one, because a proper mark
+ * beats a stock interior shot — but it is second, not first.
+ */
+function StoreMark({ store }: { store: PartnerRow; size?: number }) {
+  const art = store.cover_image_url ?? store.logo_url;
+  if (!art) return <span aria-hidden className="block h-full w-full bg-surface-sunk" />;
+  const isLogo = !store.cover_image_url && store.logo_url;
   return (
-    <span
-      className="flex h-full w-full items-center justify-center font-bold text-persimmon"
-      style={{ fontSize: Math.round(size * 0.34) }}
-    >
-      {initials}
-    </span>
+    <Img
+      src={art}
+      className={isLogo ? "h-full w-full object-contain p-1.5" : "h-full w-full object-cover"}
+    />
   );
 }
 
@@ -208,8 +218,6 @@ export function NewOnCado() {
   const Row = ({ items }: { items: PartnerRow[] }) =>
     items.length === 0 ? null : (
       <div
-        style={{ touchAction: "pan-x" }}
-        onTouchMove={(e) => e.stopPropagation()}
         className="flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {items.map((s) => (
@@ -280,8 +288,6 @@ export function TopStoresNearYou() {
           whichever city is selected. */}
       <h2 className="px-4 pb-3 font-hero text-[17px] font-extrabold text-ink">Top stores near you</h2>
       <div
-        style={{ touchAction: "pan-x" }}
-        onTouchMove={(e) => e.stopPropagation()}
         className="flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {rows.map((s) => (
