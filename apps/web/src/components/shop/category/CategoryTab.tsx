@@ -73,7 +73,24 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
     const panel = el?.closest<HTMLElement>(".panel");
     if (!el || !panel) return;
     const top = el.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
-    panel.scrollTo({ top: Math.max(0, top - 8), behavior: "smooth" });
+    const target = Math.max(0, top - 8);
+
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    panel.scrollTo({ top: target, behavior: reduced ? "auto" : "smooth" });
+
+    /*
+     * The animation is not allowed to be the only thing that lands it.
+     *
+     * Smooth scrolling is a browser animation, and a browser does not run
+     * animations in a hidden or backgrounded tab — tap a chip, switch apps,
+     * come back, and the grid never moved. It can also be cancelled outright
+     * by any scroll that happens while it is in flight. A short timer checks
+     * whether we actually arrived and finishes the job if not, so tapping a
+     * chip always ends with the grid on screen.
+     */
+    window.setTimeout(() => {
+      if (Math.abs(panel.scrollTop - target) > 4) panel.scrollTop = target;
+    }, 500);
   };
 
   const subcategories = useMemo(
@@ -97,15 +114,46 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
    */
   const art = useMemo(() => {
     const used = new Set<string>();
-    const take = (pool: FeedProduct[]): string | null => {
+
+    /**
+     * Unique first; a correct repeat before a blank.
+     *
+     * The rule is no photo twice on a page, and on most tabs that holds. It
+     * cannot hold on the thin ones: Perfume has SEVEN products, every product
+     * has exactly one image, and the page has nine decorative slots — one
+     * hero, three circles, five tiles. Two of them are going to want a photo
+     * that does not exist.
+     *
+     * Faced with that, showing the same correct photo in a small circle and
+     * on a tile is a much smaller cost than two blank diamonds in a row of
+     * five. So: take an unused photo if there is one; otherwise take a photo
+     * that still MATCHES the label even though a slot above used it; only
+     * return null — and get the neutral mark — when nothing matches at all.
+     *
+     * `row` keeps a repeat out of the row it would be most obvious in: a
+     * photo is never used twice inside the tiles, or twice inside the
+     * circles, only across two different sections.
+     *
+     * The real fix is more product photography, not more code.
+     */
+    const perRow = new Map<string, Set<string>>();
+    const take = (pool: FeedProduct[], row = "page"): string | null => {
+      const inRow = perRow.get(row) ?? new Set<string>();
+      perRow.set(row, inRow);
+
+      let fallback: string | null = null;
       for (const p of pool) {
         const photo = primaryPhoto(p);
-        if (photo && !used.has(photo)) {
+        if (!photo || inRow.has(photo)) continue;
+        if (!used.has(photo)) {
           used.add(photo);
+          inRow.add(photo);
           return photo;
         }
+        if (!fallback) fallback = photo;
       }
-      return null;
+      if (fallback) inRow.add(fallback);
+      return fallback;
     };
 
     const all = sections.all;
@@ -135,7 +183,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
       // One product is enough for a circle: it is a shortcut into the grid,
       // not a claim about depth.
       if (pool.length === 0) continue;
-      circles.push({ id: s.id, name: s.name, photo: take(pool) });
+      circles.push({ id: s.id, name: s.name, photo: take(pool, "circles") });
     }
 
     // 3 — the five tall tiles, in the theme's order.
@@ -177,7 +225,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
       }
       // A tile with nothing behind it is dropped, not shown empty.
       if (pool.length === 0) continue;
-      tiles.push({ label: t.label, photo: take(pool), apply: filterForTile(t.kind, subId) });
+      tiles.push({ label: t.label, photo: take(pool, "tiles"), apply: filterForTile(t.kind, subId) });
     }
 
     return { hero, tiles, circles };

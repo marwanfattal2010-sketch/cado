@@ -4,10 +4,10 @@ import { ProductCard } from "../../ProductCard";
 import { productImageUrl } from "../../../lib/images";
 import { formatMoney } from "../../../lib/money";
 import { storePath } from "../../../lib/routes";
-import { OCCASIONS } from "../../../lib/filters";
+
 import { EMPTY_FILTER, type TabFilter } from "../../../lib/tabFilter";
 import { discountPercent, type TabSections } from "../../../hooks/useCategoryTab";
-import { accent, type CategoryTheme } from "../../../lib/categoryTheme";
+import { CHIP_OCCASIONS, accent, type CategoryTheme } from "../../../lib/categoryTheme";
 import type { FeedProduct } from "../../../lib/browse";
 
 /**
@@ -256,7 +256,7 @@ export function OccasionChips({
   active: string[];
   onFilter: (f: TabFilter, scroll?: boolean) => void;
 }) {
-  const chips = OCCASIONS.filter((o) => (sections.occasions.get(o.value) ?? 0) > 0)
+  const chips = CHIP_OCCASIONS.filter((o) => (sections.occasions.get(o.value) ?? 0) > 0)
     .sort((a, b) => (sections.occasions.get(b.value) ?? 0) - (sections.occasions.get(a.value) ?? 0))
     .slice(0, MAX_CHIPS);
 

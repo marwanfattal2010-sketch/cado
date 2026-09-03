@@ -122,8 +122,8 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
     heroSubtitle: "Boxes, pralines and sweets from Lebanese makers",
     tiles: [
       { label: "Boxes", kind: { type: "subcategory", slug: "chocolate-boxes" } },
+      { label: "Cakes", kind: { type: "subcategory", slug: "cakes" } },
       { label: "Under $50", kind: { type: "price", max: 50 } },
-      { label: "Ready to gift", kind: { type: "giftReady" } },
       { label: "On offer", kind: { type: "sale" } },
       { label: "New in", kind: { type: "new" } },
     ],
@@ -174,7 +174,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
     heroSubtitle: "Audio, gadgets and smart watches, delivered tonight",
     tiles: [
       { label: "For him", kind: { type: "recipient", value: "him" } },
-      { label: "For her", kind: { type: "recipient", value: "her" } },
+      { label: "Audio", kind: { type: "subcategory", slug: "audio" } },
       { label: "Under $100", kind: { type: "price", max: 100 } },
       { label: "On offer", kind: { type: "sale" } },
       { label: "New in", kind: { type: "new" } },
@@ -187,13 +187,46 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
     heroSubtitle: "Kit and equipment, not another gym t-shirt",
     tiles: [
       { label: "For him", kind: { type: "recipient", value: "him" } },
-      { label: "For her", kind: { type: "recipient", value: "her" } },
+      { label: "For kids", kind: { type: "recipient", value: "child" } },
       { label: "Training", kind: { type: "subcategory", slug: "training" } },
       { label: "Under $100", kind: { type: "price", max: 100 } },
       { label: "On offer", kind: { type: "sale" } },
     ],
   },
 };
+
+/**
+ * The occasions a CATEGORY TAB may offer as chips.
+ *
+ * Deliberately its own list rather than `OCCASIONS` from lib/filters, and the
+ * reason is a real gap: three tags that products genuinely carry —
+ * `valentine` (17 products), `housewarming` (15) and `mothers-day` (5) — are
+ * missing from that list, so those products were unreachable by occasion
+ * anywhere on the site. Perfume had four real occasions in its data and could
+ * only show two, which is why its chip row was hidden entirely.
+ *
+ * They are NOT added to `OCCASIONS` itself because that list also drives the
+ * All tab's photo rail, where every entry needs artwork — adding them there
+ * would put broken tiles on a page that is meant to stay untouched. Chips
+ * need only a label, so the category tabs can carry the fuller vocabulary.
+ *
+ * Order is the order they are offered in, most useful first; the row then
+ * keeps whichever have stock, by count.
+ */
+export const CHIP_OCCASIONS: { value: string; label: string }[] = [
+  { value: "birthday", label: "Birthday" },
+  { value: "anniversary", label: "Anniversary" },
+  { value: "visiting-someone", label: "Visiting someone" },
+  { value: "graduation", label: "Graduation" },
+  { value: "valentine", label: "Valentine's" },
+  { value: "housewarming", label: "Housewarming" },
+  { value: "mothers-day", label: "Mother's Day" },
+  { value: "get-well", label: "Get well" },
+  { value: "newborn", label: "New baby" },
+  { value: "engagement", label: "Engagement" },
+  { value: "wedding", label: "Wedding" },
+  { value: "eid", label: "Eid" },
+];
 
 export function themeFor(categorySlug: string | undefined): CategoryTheme {
   return (categorySlug && CATEGORY_THEMES[categorySlug]) || DEFAULT_THEME;
