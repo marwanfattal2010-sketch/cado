@@ -1,7 +1,39 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "cado-web", "runtimeExecutable": "pnpm", "runtimeArgs": ["--filter", "web", "dev"], "port": 5173 },
-    { "name": "cado-dashboard", "runtimeExecutable": "pnpm", "runtimeArgs": ["--filter", "dashboard", "dev"], "port": 3000 }
+    {
+      "name": "cado-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "dev"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "cado-dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "dashboard",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "cado-web-built",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "exec",
+        "vite",
+        "preview",
+        "--port",
+        "4173"
+      ],
+      "port": 4173
+    }
   ]
 }
