@@ -5,19 +5,13 @@ import { EMPTY_FILTER, type TabFilter } from "./tabFilter";
  *
  * Every category tab renders the identical skeleton — hero, tall tiles, shop
  * by category, super deals, stores, occasions, grid — and differs only by
- * what is in this file: an accent colour, the words in the hero, and which
+ * what is in this file: the words in the hero and which
  * five tiles it offers. That is the whole point of a skin: put two tabs side
  * by side and the structure is the same, so the shop feels like one place
  * rather than ten small sites.
  *
- * ACCENTS were each measured against white before being written here, because
- * white type sits on them in the hero gradient and on every tile label bar.
- * All ten clear WCAG AA (4.5:1); the tightest is Fashion at 4.50 and the
- * loosest Electronics at 8.82. If one is ever changed, re-measure it — below
- * 4.5 the labels stop being readable on a phone in daylight.
- *
- * They are also all DIFFERENT. Toys and Electronics were both blue in the old
- * palette and read as the same tab; Electronics is indigo here.
+ * THERE IS NO PER-CATEGORY COLOUR. One accent, persimmon, on every tab —
+ * see accent() at the bottom. Tabs differ by their PHOTOGRAPHS.
  *
  * THE COPY IS WRITTEN PER CATEGORY, not templated. "Jewellery that gets
  * noticed" does not become "Chocolate that gets noticed" — a headline built
@@ -41,8 +35,6 @@ export type CategoryTile = {
 };
 
 export type CategoryTheme = {
-  /** RGB channel triple, matching the project's colour-token format. */
-  accent: string;
   /**
    * Which product the hero borrows its photo from, by slug.
    *
@@ -61,7 +53,6 @@ export type CategoryTheme = {
 
 /** Falls back to persimmon for a category nobody has skinned yet. */
 export const DEFAULT_THEME: CategoryTheme = {
-  accent: "249 78 51",
   heroTitle: "Gifts they will actually keep",
   heroSubtitle: "Chosen from Lebanese shops, at their door tonight",
   tiles: [
@@ -75,7 +66,6 @@ export const DEFAULT_THEME: CategoryTheme = {
 
 export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   "jewelry-accessories": {
-    accent: "107 63 160", // deep purple — Marwan's choice
     heroProduct: "layered-chain-necklace",
     heroTitle: "Something that lasts longer than the day",
     heroSubtitle: "Gold, silver and stones from Lebanese ateliers",
@@ -89,7 +79,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   fashion: {
-    accent: "196 85 31", // orange — Marwan's choice
     heroTitle: "Wear it the day it arrives",
     heroSubtitle: "Pieces from Beirut boutiques, wrapped and delivered",
     tiles: [
@@ -102,7 +91,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   "flowers-gifts": {
-    accent: "180 74 110", // rose
     heroTitle: "Cut this morning, at their door tonight",
     heroSubtitle: "Bouquets and plants from Lebanese florists",
     tiles: [
@@ -115,7 +103,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   perfumes: {
-    accent: "46 125 107", // teal
     heroTitle: "A scent they will be asked about",
     heroSubtitle: "Perfume, skincare and beauty sets, boxed to give",
     tiles: [
@@ -128,7 +115,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   chocolate: {
-    accent: "122 74 34", // brown
     heroTitle: "Never turn up empty-handed",
     heroSubtitle: "Boxes, pralines and sweets from Lebanese makers",
     tiles: [
@@ -141,7 +127,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   shoes: {
-    accent: "168 80 48", // terracotta
     heroTitle: "The pair they keep reaching for",
     heroSubtitle: "Heels, sneakers and boots, delivered the same day",
     tiles: [
@@ -154,7 +139,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   toys: {
-    accent: "42 100 196", // blue
     heroTitle: "The one they open first",
     heroSubtitle: "Toys and games for every age, wrapped and ready",
     tiles: [
@@ -167,7 +151,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   "gift-sets": {
-    accent: "142 62 104", // plum
     heroTitle: "Everything chosen, boxed and tied",
     heroSubtitle: "Nothing left to do but sign the card",
     tiles: [
@@ -180,7 +163,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   electronics: {
-    accent: "59 66 146", // indigo — deliberately not Toys' blue
     heroTitle: "The upgrade they keep putting off",
     heroSubtitle: "Audio, gadgets and smart watches, delivered tonight",
     tiles: [
@@ -193,10 +175,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   "home-appliances": {
-    // Slate blue-grey. Every other accent in the set is a warm or saturated
-    // hue; the eleventh had to be distinct from all ten, and a cool neutral
-    // is both unused and right for the category. 6.1:1 against white.
-    accent: "70 84 104",
     heroTitle: "For the home they are still filling",
     heroSubtitle: "Kitchen, coffee and linen worth unwrapping",
     tiles: [
@@ -209,7 +187,6 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   sport: {
-    accent: "30 122 82", // deep green
     heroTitle: "For the one who never sits still",
     heroSubtitle: "Kit and equipment, not another gym t-shirt",
     tiles: [
@@ -260,8 +237,21 @@ export function themeFor(categorySlug: string | undefined): CategoryTheme {
 }
 
 /** `rgb(...)`, optionally with alpha, from a stored channel triple. */
-export function accent(theme: CategoryTheme, alpha?: number) {
-  return alpha == null ? `rgb(${theme.accent})` : `rgb(${theme.accent} / ${alpha})`;
+/**
+ * PERSIMMON, ON EVERY TAB. The theme argument is ignored.
+ *
+ * Each category used to carry its own hue — terracotta Fashion, purple
+ * Jewels, rose Flowers — and eleven tabs in eleven colours read as eleven
+ * different shops rather than one. The values are DELETED, not merely
+ * unused: there is no per-category accent left in the data for a future
+ * edit to read, so a hue cannot quietly come back.
+ *
+ * The signature keeps its optional theme parameter so the two dozen call
+ * sites did not all have to change at once — which is itself the point, as
+ * a half-finished migration is exactly how one tab keeps its old colour.
+ */
+export function accent(_theme?: CategoryTheme, alpha?: number) {
+  return alpha == null ? "rgb(var(--persimmon))" : `rgb(var(--persimmon) / ${alpha})`;
 }
 
 /** The filter a tile applies when tapped. */

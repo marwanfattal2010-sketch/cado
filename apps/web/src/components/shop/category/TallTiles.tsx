@@ -1,5 +1,5 @@
 import { Img } from "../../Img";
-import { accent, type CategoryTheme } from "../../../lib/categoryTheme";
+import type { CategoryTheme } from "../../../lib/categoryTheme";
 import type { TabFilter } from "../../../lib/tabFilter";
 
 export type ResolvedTile = {
@@ -24,11 +24,10 @@ export type ResolvedTile = {
  */
 export function TallTiles({
   tiles,
-  theme,
   onSelect,
 }: {
   tiles: ResolvedTile[];
-  theme: CategoryTheme;
+  theme?: CategoryTheme;
   onSelect: (filter: TabFilter) => void;
 }) {
   if (tiles.length === 0) return null;
@@ -60,14 +59,18 @@ export function TallTiles({
             <span
               aria-hidden
               className="absolute inset-x-0 top-0 flex h-[140px] items-center justify-center text-[26px]"
-              style={{ background: accent(theme, 0.12), color: accent(theme, 0.55) }}
+              style={{ background: "rgb(var(--surface-sunk))", color: "rgb(var(--persimmon) / 0.5)" }}
             >
               ◇
             </span>
           )}
           <span
+            /* NEAR-BLACK, not the accent. These bands were solid orange,
+               purple or rose — a whole row of filled colour, which is what
+               made persimmon stop meaning anything. Persimmon is reserved
+               for discount badges and buttons now. */
             className="absolute inset-x-0 bottom-0 flex h-[32px] items-center justify-center px-1.5 text-[12px] font-bold leading-none text-white"
-            style={{ background: accent(theme) }}
+            style={{ background: "rgb(var(--ink) / 0.85)" }}
           >
             {t.label}
           </span>

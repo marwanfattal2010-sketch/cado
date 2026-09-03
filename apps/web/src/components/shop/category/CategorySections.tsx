@@ -181,6 +181,9 @@ export type StoreItem = {
   cover_image_url: string | null;
 };
 
+/** More than this and the row keeps "See all" rather than growing forever. */
+const MAX_STORES = 10;
+
 export function StoresRow({
   categoryName,
   stores,
@@ -190,12 +193,24 @@ export function StoresRow({
   stores: StoreItem[];
   theme: CategoryTheme;
 }) {
+  // Rendered with whatever exists, even one or two — the section is never
+  // hidden for being short, and it is never padded with unrelated shops.
   if (stores.length === 0) return null;
   return (
     <section>
-      <TabSectionHead title={`Stores in ${categoryName}`} theme={theme} to="/stores" />
-      <div className="scroll-row -mx-[var(--page-x)] px-[var(--page-x)]" style={{ ["--row-gap" as string]: "16px" }}>
-        {stores.slice(0, 5).map((s) => {
+      <TabSectionHead
+        title={`Stores in ${categoryName}`}
+        theme={theme}
+        to={stores.length > MAX_STORES ? "/stores" : undefined}
+      />
+      {/*
+        A WRAPPING GRID, not a carousel.
+        As a horizontal rail it showed five and clipped the sixth against the
+        right edge, so a category with nine shops looked like it had five and
+        a half. Five per row, wrapping to as many rows as it takes.
+      */}
+      <div className="grid grid-cols-5 gap-x-2 gap-y-4">
+        {stores.slice(0, MAX_STORES).map((s) => {
           // The shop's own photograph first, its logo only if it has no
           // photo, and no lettered fallback at all — see StoreMark.
           const art = s.cover_image_url ?? s.logo_url;
@@ -204,7 +219,7 @@ export function StoresRow({
             <Link
               key={s.id}
               to={storePath(s)}
-              className="flex w-[62px] shrink-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
+              className="flex min-w-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
             >
               {/* 56px, and it holds the shop's own photograph. No initials
                   fallback: an unphotographed shop shows an empty tint and
@@ -224,7 +239,11 @@ export function StoresRow({
                   />
                 ) : null}
               </span>
-              <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-ink">
+              {/* Wraps to two lines and BREAKS long words rather than
+                 ellipsing. "Anchor &", "Lumiere Fine..." and "Maison
+                 Zahra..." were all the fixed 62px column cutting the name
+                 off; the cell is fluid now and the text wraps inside it. */}
+              <span className="line-clamp-2 w-full break-words text-center text-[11px] font-medium leading-tight text-ink">
                 {clean}
               </span>
             </Link>
@@ -239,9 +258,14 @@ export function StoresRow({
 /* 6 — Shopping for an occasion? (white card)                                 */
 /* -------------------------------------------------------------------------- */
 
-/** Four to six. More than six and it stops being a shortlist. */
-const MAX_CHIPS = 6;
-const MIN_CHIPS = 3;
+/*
+ * NO CAP. The row wraps, so there is no reason to trim it.
+ *
+ * It used to be a horizontal strip capped at six, which cut the last chip in
+ * half against the right edge — "Valentine'…" — and hid the rest entirely.
+ * Every occasion that has stock in this category is now shown, on as many
+ * rows as it takes.
+ */
 
 export function OccasionChips({
   sections,
@@ -272,16 +296,16 @@ export function OccasionChips({
     const n = sections.occasions.get(o.value) ?? 0;
     return n > 0 && n < total;
   })
-    .sort((a, b) => (sections.occasions.get(b.value) ?? 0) - (sections.occasions.get(a.value) ?? 0))
-    .slice(0, MAX_CHIPS);
+    .sort((a, b) => (sections.occasions.get(b.value) ?? 0) - (sections.occasions.get(a.value) ?? 0));
 
-  // Under three the row is not a choice worth making, so the section goes.
-  if (chips.length < MIN_CHIPS) return null;
+  // One real occasion is still a real shortcut; only an empty row goes.
+  if (chips.length === 0) return null;
 
   return (
     <TabCard>
       <TabSectionHead title="Shopping for an occasion?" theme={theme} />
-      <div className="scroll-row -mx-3 px-3" style={{ ["--row-gap" as string]: "8px" }}>
+      {/* WRAPS. Not a scroller — every chip is fully visible. */}
+      <div className="flex flex-wrap gap-2">
         {chips.map((o) => {
           const on = active.includes(o.value);
           return (
@@ -291,11 +315,18 @@ export function OccasionChips({
               onClick={() =>
                 onFilter(on ? EMPTY_FILTER : { ...EMPTY_FILTER, occasions: [o.value] }, true)
               }
-              className="flex h-9 shrink-0 items-center rounded-pill border px-3.5 text-[13px] font-medium transition-colors"
+              /* Near-black hairline when off; persimmon FILL with white text
+                 only when selected, so the accent marks the choice rather
+                 than decorating the row. */
+              className="flex h-9 items-center rounded-pill border px-3.5 text-[13px] font-medium transition-colors"
               style={
                 on
-                  ? { borderColor: accent(theme), background: accent(theme, 0.1), color: accent(theme) }
-                  : { borderColor: accent(theme, 0.35), color: "rgb(var(--ink))" }
+                  ? {
+                      borderColor: "rgb(var(--persimmon))",
+                      background: "rgb(var(--persimmon))",
+                      color: "#fff",
+                    }
+                  : { borderColor: "rgb(var(--ink) / 0.25)", color: "rgb(var(--ink))" }
               }
             >
               {o.label}
@@ -325,5 +356,116 @@ export function TabGrid({ products }: { products: FeedProduct[] }) {
         <ProductCard key={p.id} {...p} compact />
       ))}
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2 — Gift for… (recipient row)                                              */
+/* -------------------------------------------------------------------------- */
+
+/** The seven the brief names, in its order. */
+export const GIFT_FOR = [
+  { label: "Her", value: "her" },
+  { label: "Him", value: "him" },
+  { label: "Mom", value: "mother" },
+  { label: "Dad", value: "father" },
+  { label: "Kids", value: "child" },
+  { label: "Partner", value: "partner" },
+  { label: "Friend", value: "friend" },
+] as const;
+
+export function GiftForRow({
+  sections,
+  theme,
+  photoFor,
+  onFilter,
+}: {
+  sections: TabSections;
+  theme: CategoryTheme;
+  /** A real product photo for that recipient, or null. */
+  photoFor: (value: string) => string | null;
+  onFilter: (f: TabFilter, scroll?: boolean) => void;
+}) {
+  // Only recipients this category can actually serve. A tile that opens an
+  // empty grid is worse than one fewer tile.
+  const shown = GIFT_FOR.filter((r) => (sections.recipients.get(r.value) ?? 0) > 0);
+  if (shown.length === 0) return null;
+
+  return (
+    <section>
+      <TabSectionHead title="Gift for…" theme={theme} />
+      <div className="scroll-row -mx-[var(--page-x)]" style={{ ["--row-gap" as string]: "12px" }}>
+        {shown.map((r) => (
+          <button
+            key={r.value}
+            type="button"
+            onClick={() => onFilter({ ...EMPTY_FILTER, recipients: [r.value] }, true)}
+            className="flex w-[66px] shrink-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
+          >
+            <span className="h-[66px] w-[66px] overflow-hidden rounded-pill bg-surface-sunk">
+              {photoFor(r.value) ? (
+                <Img src={photoFor(r.value)} className="h-full w-full object-cover" />
+              ) : null}
+            </span>
+            <span className="text-center text-[11px] font-medium leading-tight text-ink">
+              {r.label}
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7 / 8 / 9 — New arrivals, Best sellers, Ready to gift                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A titled row of product cards.
+ *
+ * `MIN` is 4 on purpose: below that the row is shorter than the screen and
+ * reads as a section that failed to load rather than a short list. The
+ * section hides instead, and the caller reports it as hidden.
+ */
+const MIN_STRIP = 4;
+
+export function ProductStrip({
+  title,
+  products,
+  theme,
+  onSeeAll,
+}: {
+  title: string;
+  products: FeedProduct[];
+  theme: CategoryTheme;
+  onSeeAll?: () => void;
+}) {
+  if (products.length < MIN_STRIP) return null;
+  return (
+    <section>
+      <TabSectionHead title={title} theme={theme} onSeeAll={onSeeAll} />
+      {/* Every card the same width and the same fixed ratio, so no row is
+          ever ragged. The rail carries the page gutter at both ends. */}
+      <div className="scroll-row -mx-[var(--page-x)]" style={{ ["--row-gap" as string]: "10px" }}>
+        {products.slice(0, 10).map((p) => (
+          <Link
+            key={p.id}
+            to={`/product/${p.id}`}
+            className="block w-[132px] shrink-0"
+          >
+            <span className="block aspect-[3/4] w-full overflow-hidden rounded-[10px] bg-surface-sunk">
+              <Img src={primaryPhoto(p)} className="h-full w-full object-cover" />
+            </span>
+            <span className="mt-1.5 line-clamp-2 block h-[32px] text-[12px] leading-tight text-ink">
+              {p.title}
+            </span>
+            <span className="mt-0.5 block text-[13px] font-bold leading-none text-ink">
+              {formatMoney(p.price)}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

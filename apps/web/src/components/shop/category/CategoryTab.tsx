@@ -5,10 +5,13 @@ import { useStoreDirectory } from "../../../hooks/useCatalogue";
 import { useTabSections } from "../../../hooks/useCategoryTab";
 import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
 import { TabFilterBar } from "./TabFilterBar";
-import { CategoryHero } from "./CategoryHero";
+import { CategoryHero, type HeroSlide } from "./CategoryHero";
 import { TallTiles, type ResolvedTile } from "./TallTiles";
 import {
+  GIFT_FOR,
+  GiftForRow,
   OccasionChips,
+  ProductStrip,
   StoresRow,
   SubcategoryCircles,
   SuperDeals,
@@ -18,7 +21,7 @@ import {
   type CircleItem,
   type StoreItem,
 } from "./CategorySections";
-import { filterForTile, themeFor } from "../../../lib/categoryTheme";
+import { filterForTile, themeFor, type CategoryTile } from "../../../lib/categoryTheme";
 import { EMPTY_FILTER, applyFilter, sortProducts, type Sort, type TabFilter } from "../../../lib/tabFilter";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
@@ -26,8 +29,12 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
  * ONE category tab.
  *
  * Section order, and nothing else on the page:
- *   1 hero · 2 tall tiles · 3 shop by category · 4 super deals ·
- *   5 stores · 6 occasions · 7 the grid
+ *   1 hero · 2 gift for… · 3 entry tiles · 4 shop by category ·
+ *   5 stores · 6 super deals · 7 new arrivals · 8 best sellers ·
+ *   9 ready to gift · 10 occasions · 11 the grid
+ *
+ * A section with nothing real behind it renders NOTHING. The page gets
+ * shorter, never padded.
  *
  * Everything is derived from this category's real products, so a tab is
  * correct the moment a product moves into it — there is no editor row to keep
@@ -162,13 +169,33 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
       return id ? all.filter((p) => p.subcategory_id === id) : [];
     };
 
-    // 1 — the hero goes first, because it is the biggest thing on the page and
-    // the only one shown at full width. A theme may name the product it should
-    // borrow from; otherwise it falls back to whatever sorts first.
+    /*
+     * 1 — THREE HERO SLIDES, and they go first because they take the best
+     * photographs. Slide 1 sells the category; slides 2 and 3 each carry a
+     * real product and its real price.
+     */
     const named = theme.heroProduct ? all.filter((p) => p.slug === theme.heroProduct) : [];
-    const hero = take(
-      named.length ? named : [...all].sort((a, b) => Number(!!b.is_pick) - Number(!!a.is_pick))
-    );
+    const heroPool = named.length
+      ? [...named, ...all.filter((p) => p.slug !== theme.heroProduct)]
+      : [...all].sort((a, b) => Number(!!b.is_pick) - Number(!!a.is_pick));
+    const heroSlides: HeroSlide[] = [];
+    for (let i = 0; i < 3; i++) {
+      const photo = take(heroPool, "hero");
+      if (!photo) break;
+      const product = heroPool.find((x) => primaryPhoto(x) === photo);
+      heroSlides.push(
+        i === 0
+          ? { key: "lead", photo, headline: theme.heroTitle, subline: theme.heroSubtitle }
+          : {
+              key: product?.id ?? String(i),
+              photo,
+              headline: product?.title ?? theme.heroTitle,
+              subline: product?.partner?.name ?? theme.heroSubtitle,
+              productId: product?.id,
+              price: product?.price,
+            }
+      );
+    }
 
     /*
      * 2 — THE CIRCLES GO BEFORE THE TILES, and the order is the point.
@@ -188,9 +215,29 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
       circles.push({ id: s.id, name: s.name, photo: take(pool, "circles") });
     }
 
-    // 3 — the five tall tiles, in the theme's order.
+    /*
+     * 3 — THE ENTRY TILES, and the set is now the same on every tab:
+     * New in · Best sellers · Under $X · Ready to gift · Deals.
+     *
+     * They used to be chosen per category, so no two tabs offered the same
+     * shortcuts and none of them was predictable. "Under $X" is the one that
+     * varies, and it is computed from that category's real price spread, so
+     * it can never open an empty grid. "Best sellers" becomes "Store picks"
+     * where there is no order history to justify the claim.
+     */
+    const tier = sections.tier;
+    const entryTiles: CategoryTile[] = [
+      { label: "New in", kind: { type: "new" } },
+      {
+        label: sections.bestSellersAreReal ? "Best sellers" : "Store picks",
+        kind: { type: "picks" },
+      },
+      ...(tier ? [{ label: tier.label, kind: { type: "price" as const, max: tier.max } }] : []),
+      { label: "Ready to gift", kind: { type: "giftReady" } },
+      { label: "Deals", kind: { type: "sale" } },
+    ];
     const tiles: ResolvedTile[] = [];
-    for (const t of themeFor(slug).tiles) {
+    for (const t of entryTiles) {
       let pool: FeedProduct[] = [];
       let subId: string | undefined;
       // Switched on a local alias of the whole `kind`, not on `t.kind.type`.
@@ -230,7 +277,14 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
       tiles.push({ label: t.label, photo: take(pool, "tiles"), apply: filterForTile(t.kind, subId) });
     }
 
-    return { hero, tiles, circles };
+    // A real product photo per recipient, for the Gift for… row.
+    const recipientPhoto = new Map<string, string | null>();
+    for (const r of GIFT_FOR) {
+      const pool = all.filter((x) => (x.recipient_tags ?? []).includes(r.value));
+      recipientPhoto.set(r.value, pool.length ? take(pool, "giftfor") : null);
+    }
+
+    return { heroSlides, tiles, circles, recipientPhoto };
   }, [sections.all, sections.bestSellers, sections.giftReady, sections.deals, subcategories, slug, theme]);
 
   /** The shops that actually stock this category, with their real artwork. */
@@ -274,32 +328,60 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
 
   return (
     <>
-      {/* 1 — hero, full-bleed. */}
-      <CategoryHero
-        theme={theme}
-        photo={art.hero}
-        onShopNow={() => apply(EMPTY_FILTER, true)}
-      />
+      {/* 1 — hero: three slides, full-bleed photography. */}
+      <CategoryHero slides={art.heroSlides} onShopNow={() => apply(EMPTY_FILTER, true)} />
 
       {/*
-        ONE spacing token between every section, top to bottom. `space-y-6`
-        is 24px on this scale; nothing below sets its own vertical margin, so
-        the rhythm cannot drift section by section.
+        ONE spacing token between every section, top to bottom. Nothing below
+        sets its own vertical margin, so the rhythm cannot drift section by
+        section, and every section carries the same page gutter.
       */}
-      <div className="space-y-6 px-[var(--page-x)] pt-6">
-        {/* 2 — tall tiles, on the plain background. */}
-        <TallTiles tiles={art.tiles} theme={theme} onSelect={(f) => apply(f, true)} />
+      <div className="space-y-6 px-[var(--page-x)] pt-5">
+        {/* 2 — Gift for… */}
+        <GiftForRow
+          sections={sections}
+          theme={theme}
+          photoFor={(v) => art.recipientPhoto.get(v) ?? null}
+          onFilter={apply}
+        />
 
-        {/* 3 — card */}
+        {/* 3 — entry tiles */}
+        <TallTiles tiles={art.tiles} onSelect={(f) => apply(f, true)} />
+
+        {/* 4 — shop by category */}
         <SubcategoryCircles circles={art.circles} theme={theme} onFilter={apply} />
 
-        {/* 4 — card */}
-        <SuperDeals sections={sections} theme={theme} onFilter={apply} />
-
-        {/* 5 — plain */}
+        {/* 5 — stores */}
         <StoresRow categoryName={categoryName} stores={stores} theme={theme} />
 
-        {/* 6 — card */}
+        {/* 6 — super deals */}
+        <SuperDeals sections={sections} theme={theme} onFilter={apply} />
+
+        {/* 7 — new arrivals */}
+        <ProductStrip
+          title="New arrivals"
+          products={sections.newArrivals}
+          theme={theme}
+          onSeeAll={() => apply(EMPTY_FILTER, true)}
+        />
+
+        {/* 8 — best sellers, or store picks where there is no order history
+            to justify the stronger claim. */}
+        <ProductStrip
+          title={sections.bestSellersAreReal ? "Best sellers" : "Store picks"}
+          products={sections.bestSellers}
+          theme={theme}
+        />
+
+        {/* 9 — ready to gift */}
+        <ProductStrip
+          title="Ready to gift"
+          products={sections.giftReady}
+          theme={theme}
+          onSeeAll={() => apply({ ...EMPTY_FILTER, giftReady: true }, true)}
+        />
+
+        {/* 10 — occasion chips */}
         <OccasionChips
           sections={sections}
           theme={theme}
@@ -307,7 +389,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
           onFilter={apply}
         />
 
-        {/* 7 — the grid */}
+        {/* 11 — the endless grid */}
         <div ref={gridRef}>
           <TabSectionHead title={`All ${categoryName.toLowerCase()}`} theme={theme} />
           <TabFilterBar
