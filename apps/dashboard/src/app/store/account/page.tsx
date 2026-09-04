@@ -5,6 +5,8 @@ import { PageHeader, Card, StatusPill } from "@/components/ui";
 import { PasswordForm } from "./PasswordForm";
 import { PayoutForm, type PayoutValues } from "./PayoutForm";
 import { PauseToggle } from "./PauseToggle";
+import { LogoUpload } from "@/components/LogoUpload";
+import { uploadOwnLogo, removeOwnLogo } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +30,7 @@ export default async function StoreAccountPage() {
 
   const { data: partner } = await supabase
     .from("partners")
-    .select("status")
+    .select("status, name, logo_url")
     .eq("id", user.partnerId)
     .single();
 
@@ -76,6 +78,16 @@ export default async function StoreAccountPage() {
             <StatusPill status={partner.status} />
           </p>
         ) : null}
+      </Card>
+
+      {/* --------------------------------------------------- store logo --- */}
+      <Card title="Store logo">
+        <LogoUpload
+          name={partner?.name ?? "Your store"}
+          logoUrl={partner?.logo_url ?? null}
+          upload={uploadOwnLogo}
+          remove={removeOwnLogo}
+        />
       </Card>
 
       {/* ------------------------------------------------- §5.7 payouts --- */}

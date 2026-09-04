@@ -7,7 +7,8 @@ import { useTabSections } from "../../../hooks/useCategoryTab";
 import { useHomeSignals } from "../../../hooks/useHomeEndless";
 import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
 import { Img } from "../../Img";
-import { StaggeredGrid, type CollectionCard } from "../StaggeredGrid";
+import { StaggeredGrid, CollectionTile, type CollectionCard } from "../StaggeredGrid";
+import { StoreLogoCircle } from "../StoreLogoCircle";
 import { storePath } from "../../../lib/routes";
 import { formatMoney } from "../../../lib/money";
 import { productImageUrl } from "../../../lib/images";
@@ -62,6 +63,9 @@ const STORE_LOGOS = new Map(
 /** How many circles the row shows: four across, two rows, nothing hidden. */
 const STORE_ROW_MAX = 8;
 
+/** The "Shop for" order, by subcategory slug. See `circles` below. */
+const CIRCLE_ORDER = ["women", "men", "kids-fashion", "bags", "caps", "belts", "scarves"];
+
 export function TabTemplate({ tab }: { tab: BrowseTab }) {
   const categories = useCategories();
   const slug = tab.filter.category_slug ?? "";
@@ -100,6 +104,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         id: s.id,
         slug: s.slug as string,
         name: storeDisplayName(s.name),
+        logo_url: s.logo_url,
       })),
     [directory.data, all, category?.id]
   );
@@ -114,12 +119,25 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     [subcategoriesQuery.data, directory.data, signals.data]
   );
 
-  /** "Shop for" — only values that actually have products. */
+  /**
+   * "Shop for" — only values that actually have products, in a stated order.
+   *
+   * The order used to be whatever PostgREST returned, which put Scarves and
+   * Belts ahead of Bags because of the order the rows were inserted in. It is
+   * a merchandising decision, not a database artefact: people first, then the
+   * things they carry, then the things they wear on top. Anything not named
+   * here keeps its natural position at the end rather than disappearing.
+   */
   const circles = useMemo(() => {
     const counts = new Map<string, number>();
     for (const p of all) if (p.subcategory_id) counts.set(p.subcategory_id, (counts.get(p.subcategory_id) ?? 0) + 1);
+    const rank = (s: string) => {
+      const i = CIRCLE_ORDER.indexOf(s);
+      return i === -1 ? CIRCLE_ORDER.length : i;
+    };
     return (subcategoriesQuery.data ?? [])
       .filter((s) => (counts.get(s.id) ?? 0) > 0)
+      .sort((a, b) => rank(a.slug) - rank(b.slug))
       .map((s) => ({ slug: s.slug, name: s.name, photo: circleArt(slug, s.slug) }));
   }, [subcategoriesQuery.data, all, slug]);
 
@@ -131,10 +149,9 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     [all]
   );
 
-  const newArrivals = useMemo(
-    () => [...all].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
-    [all]
-  );
+  /* The newest-first ordering went with the "New arrivals" row when it was
+     deleted from this tab. The New in tile still leads to the same products
+     through the results page, which sorts them there. */
   const bestPicks = useMemo(
     () => [...all].sort((a, b) => lookup.orders(b.id) - lookup.orders(a.id)),
     [all, lookup]
@@ -227,7 +244,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       {shownStores.length > 0 ? (
       <section className="px-[var(--page-x)] pt-4">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-[16px] font-bold tracking-[-0.2px] text-ink">
+          <h2 className="text-[16px] font-bold tracking-[-0.2px] text-persimmon">
             Stores in {categoryName}
           </h2>
           <Link to={`/stores/${slug}`} className="shrink-0 text-[12.5px] font-semibold text-persimmon">
@@ -245,7 +262,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               style={{ width: storeCircleW }}
               className="min-w-0 text-center"
             >
-              <StoreCircle slug={s.slug} name={s.name} />
+              <StoreLogoCircle name={s.name} logoUrl={s.logo_url ?? STORE_LOGOS.get(s.slug)} />
               {/* ONE LINE, ALWAYS. "Pull & Bear" and "LC Waikiki" both fit at
                   12px inside a quarter of the gutter; anything longer clips
                   with an ellipsis rather than pushing its circle out of line
@@ -259,23 +276,34 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       </section>
       ) : null}
 
-      {/* 3 — Shop for */}
+      {/* 3 — Shop for. FIRST OF THE TINTED BANDS: persimmon at about 4%, which
+          is enough to separate a section from the one above it without
+          becoming a second colour. White is still the base; these bands and
+          the deals band are the only three places it is broken. */}
       {circles.length ? (
-        <section className="pt-5">
-          <h2 className="px-[var(--page-x)] pb-3 text-[16px] font-bold tracking-[-0.2px] text-ink">
+        <section className="mt-5 bg-[#FFF6F4] pb-5 pt-5">
+          <h2 className="px-[var(--page-x)] pb-3 text-[16px] font-bold tracking-[-0.2px] text-persimmon">
             Shop for
           </h2>
-          <div className="scroll-row" style={{ ["--row-gap" as string]: "16px" }}>
+          {/* FOUR ACROSS, WRAPPING — not a swipe row. Seven values fit in two
+              rows at 375px, and a row you have to drag hides half of what the
+              tab sells behind a gesture nobody is told about. The last row is
+              left-aligned rather than centred so the columns line up with the
+              row above it. */}
+          <div className="flex flex-wrap gap-x-2 gap-y-3.5 px-[var(--page-x)]">
             {circles.map((c) => (
               <Link
                 key={c.slug}
                 to={browseHref(slug, { type: [c.slug] })}
-                className="w-[66px] shrink-0 text-center transition-transform duration-press ease-out active:scale-[0.96]"
+                style={{ width: "calc((100% - 3 * 8px) / 4)" }}
+                className="min-w-0 text-center transition-transform duration-press ease-out active:scale-[0.96]"
               >
-                <span className="block h-[66px] w-[66px] overflow-hidden rounded-pill bg-[#EEEAE4]">
+                <span className="block aspect-square w-full overflow-hidden rounded-pill bg-[#EEEAE4]">
                   {c.photo ? <Img src={c.photo} className="h-full w-full object-cover" /> : null}
                 </span>
-                <span className="mt-1.5 block text-[12px] font-semibold text-ink">{c.name}</span>
+                <span className="mt-1.5 block truncate text-[12px] font-semibold text-ink">
+                  {c.name}
+                </span>
               </Link>
             ))}
           </div>
@@ -328,7 +356,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       {deals.length >= 3 ? (
         <section className="mt-5 px-[var(--page-x)] pb-[18px] pt-4" style={{ background: "#FFF4EF" }}>
           <div className="flex items-baseline justify-between gap-3 pb-3">
-            <h2 className="text-[17px] font-bold text-ink">Super deals</h2>
+            <h2 className="text-[17px] font-bold text-persimmon">Super deals</h2>
             <Link to={browseHref(slug, { tile: "deals" })} className="text-[12.5px] font-semibold text-persimmon">
               See all
             </Link>
@@ -347,27 +375,42 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         </section>
       ) : null}
 
-      {/* 6 / 7 — two swipe rows */}
-      <Strip
-        title="New arrivals"
-        products={newArrivals}
-        seeAll={browseHref(slug, { tile: "new-in" })}
-      />
-      <Strip
-        title="Best picks"
-        products={bestPicks}
-        seeAll={browseHref(slug, { tile: "most-gifted" })}
-      />
+      {/* 6 — one swipe row. "New arrivals" was deleted from this tab: it and
+          Best picks were two rows of the same shape doing the same job, and
+          the new-in tile above already leads to everything recent. */}
+      {/* Second tinted band. */}
+      <div className="mt-5 bg-[#FFF6F4] pb-5">
+        <Strip
+          title="Best picks"
+          products={bestPicks}
+          seeAll={browseHref(slug, { tile: "most-gifted" })}
+        />
+      </div>
 
-      {/* 8 — the staggered grid */}
-      <section className="pt-5">
+      {/* 7 — the two collection cards, side by side, immediately above the
+          grid they introduce. They used to be the first two items INSIDE the
+          staggered grid, which put them in a column flow that could stack them
+          one above the other and made them read as two unusually smart product
+          cards rather than as a pair. */}
+      {collections.length ? (
+        <section className="px-[var(--page-x)] pt-5">
+          <div className="grid grid-cols-2 gap-2">
+            {collections.map((c) => (
+              <CollectionTile key={c.key} card={c} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* 8 — the staggered grid, directly beneath them. */}
+      <section className="pt-4">
         <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-2">
-          <h2 className="text-[17px] font-bold text-ink">All {categoryName.toLowerCase()}</h2>
+          <h2 className="text-[17px] font-bold text-persimmon">All {categoryName.toLowerCase()}</h2>
           <Link to={browseHref(slug)} className="shrink-0 text-[12.5px] font-semibold text-persimmon">
             See all {all.length} →
           </Link>
         </div>
-        <StaggeredGrid products={all} collections={collections} tone="fashion" />
+        <StaggeredGrid products={all} tone="fashion" />
       </section>
     </div>
   );
@@ -386,56 +429,6 @@ function photoOf(p: FeedProduct) {
   const imgs = p.product_images ?? [];
   const path = (imgs.find((i) => i.is_primary) ?? imgs[0])?.storage_path;
   return path ? productImageUrl(path) : null;
-}
-
-/**
- * ONE CIRCLE, AND EVERY CIRCLE IS THIS CIRCLE.
- *
- * The row used to mix two treatments — a bordered logo on white for the shops
- * that had a logo, a full-bleed storefront photograph for the ones that did
- * not — and eight discs in two different costumes read as a broken component
- * rather than a set. So:
- *
- *   - a 1px #EDE7DF hairline on all eight, no exceptions
- *   - a PHOTOGRAPH IS NEVER THE BACKGROUND. `cover_image_url` is a picture of
- *     a shop front; it does not say which shop it is, and at 82px it is a
- *     brown smudge. It is not read here at all any more.
- *   - the logo sits inside 18% padding. That is what makes a wide wordmark and
- *     a round monogram look the same size: `object-contain` alone fits the
- *     long axis to the box, so a 4:1 wordmark would touch the hairline while a
- *     square mark floated in the middle.
- *
- * With no file for this slug the disc is CREAM WITH THE NAME IN TEXT. Never a
- * coloured letter block, and never a mark we drew ourselves: a brand's logo is
- * theirs, so the honest placeholder is their name in our own type.
- */
-function StoreCircle({ slug, name }: { slug: string; name: string }) {
-  const logo = STORE_LOGOS.get(slug);
-
-  if (!logo) {
-    return (
-      <span
-        className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-pill border border-[#EDE7DF] bg-canvas"
-        /* A smaller inset than the logo's 18%: the padding on a logo is there
-           to normalise optical size, which text does not need, and at 82px
-           every pixel back is another character that fits on a line. */
-        style={{ padding: "12%" }}
-      >
-        <span className="line-clamp-3 break-words text-center text-[10.5px] font-semibold leading-[1.15] text-ink">
-          {name}
-        </span>
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-pill border border-[#EDE7DF] bg-white"
-      style={{ padding: "18%" }}
-    >
-      <Img src={logo} alt={name} className="h-full w-full object-contain" />
-    </span>
-  );
 }
 
 /*
@@ -624,7 +617,7 @@ function Strip({
   return (
     <section className="pt-5">
       <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
-        <h2 className="text-[16px] font-bold tracking-[-0.2px] text-ink">{title}</h2>
+        <h2 className="text-[16px] font-bold tracking-[-0.2px] text-persimmon">{title}</h2>
         <Link to={seeAll} className="shrink-0 text-[12.5px] font-semibold text-persimmon">
           See all
         </Link>

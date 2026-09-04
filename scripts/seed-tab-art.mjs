@@ -29,6 +29,66 @@
  *   1781263538938  best    — Kit Kat, Dairy Milk and Galaxy wrappers
  *   1598634222670  dad     — legible brand on the bottle
  *
+ * REJECTED ON THE FASHION PEOPLE-AND-STYLING ROUND (eleven slots, Sep 2026).
+ * This round reverses the "no faces, cutouts on white, warm neutrals only" rule
+ * for these eleven slots — Marwan looked at the sterile version and asked for
+ * people, styling and editorial energy instead. The no-third-party-brand rule
+ * did NOT relax, and it is what killed almost everything below. Every one of
+ * these was opened at full size; NOT ONE of them could have been caught from
+ * its alt text, which is the whole argument for looking:
+ *   1578102718171  women   — very nearly shipped: a PRADA plate on the bag
+ *   1764179690246  women   — YVES SAINT LAURENT printed along the headscarf
+ *   1601324389523  women   — a HUBLOT shopfront sign behind the model
+ *   1616847220575  women   — lettered designer buckle, and legs fill the frame
+ *   1684283377169  women   — repeating designer-style monogram on the jacket
+ *   1779305585195  women   — greyscale; mono in a colour row
+ *   1645058493373  kids    — Ralph Lauren pony on the boy's polo
+ *   1503944583220  kids    — "…& WHYTE" printed across the girl's t-shirt
+ *   1692782380041  kids    — lettered backpack, and neon studio light
+ *   1672223303533  bags    — "SIDESPIN" across the holdall
+ *   1715761195783  bags    — LEONE gloves and an Italian flag in the bag
+ *   1774560745344  bags    — Under Armour logo on the duffel
+ *   1768929096123  bags    — logo on the bag and on the sunglasses
+ *   1692506530242  bags    — NEW BALANCE, repeated the length of the strap
+ *   1699319656128  bags    — "E<hil>" printed on the side
+ *   1689007657910  bags    — "R.U.F.F" on the bag
+ *   1683394305929  bags    — a branded creatine tub in the bag's mouth
+ *   1567159169514  bags    — Nike
+ *   1778854290307  bags    — logo'd trainers beside the bag
+ *   1702604585541  caps    — "HYDRO / PREMIUM HEADWEAR / DESIGNED IN
+ *                            AUSTRALIA" sticker on every brim; so are
+ *                            1702604588062, 1702604865155, 1702604865117 —
+ *                            the whole of that studio set is stickered
+ *   1777455163870  caps    — NEW BALANCE; 1777455163879 is the same shoot
+ *   1611537823172  caps    — Titleist, New Era, a baseball franchise
+ *   1569520045266  caps    — NBA team marks (Bulls, Lakers)
+ *   1736143151756  caps    — a national coat of arms embroidered on the patch
+ *   1681583663936  caps    — woven brand labels on three of the five
+ *   1684941062179  caps    — "Pink Dot." embroidered
+ *   1653704841996  caps    — embroidered wordmarks along the shelf
+ *   1521369909029  caps    — tone-on-tone embroidery on the side panel
+ *   1718539364357  caps    — NOT CAPS AT ALL. Alt text says "a bunch of hats
+ *                            stacked on top of each other"; the photograph is
+ *                            a pile of woven round TABLE MATS. It survived two
+ *                            square-crop contact sheets looking like fanned
+ *                            cap brims and only died at full size.
+ *   pexels 31162881 caps   — AC/DC lettering and a "GASOLINE" patch
+ *   pexels 38622783 caps   — Nike, Ralph Lauren, LA Dodgers, "New Jeans"
+ *   1608461864721  belts   — GG buckle
+ *   1711443982852  belts   — three belts, and the brief says one
+ *   1457545195570  scarves — a folded flat-grey stack, banned by name
+ *   1598568290157  scarves — brick wall, and the scarf reads as noise at 80px
+ *   1590033951631  tiles   — adidas trefoil on the tee and adidas stripes on
+ *                            the trousers, plus Converse; 1590033951589 is the
+ *                            next frame of the same shoot and adds FILA
+ *   1777628530456  tiles   — "…TA WEAR" shop sign lit above the rail
+ *   1775740396820  tiles   — SALE tags, which are already banned; so are
+ *                            1775740396822, 1775740396839, 1775740397180
+ *   1759421965457  tiles   — Uniqlo shopfront
+ *   1610765431323  tiles   — greyscale, so it cannot join a colour row
+ *   1704642406929  tiles   — the softbox and light stand are in frame; that is
+ *                            a behind-the-scenes photo, not a campaign one
+ *
  * Rejected on the Fashion re-shoot (all nine slots, Sep 2026):
  *   1645276241987  bags    — Coach signature monogram and logo plate
  *   1680295456691  caps    — Fred Perry laurel embroidered on the crown
@@ -172,27 +232,46 @@ const TILES = {
  */
 const CATEGORY_TILES = {
   /*
-   * Fashion, re-shot. The four tiles were clothing already, but two of them
-   * were the wrong clothing: "Most gifted" was a jewellery photograph on a
-   * fashion tab, and "Under $75" was a rack shot in colours that fought the
-   * page. All four are now warm neutrals — cream, camel, sand, white, soft
-   * black — with no faces and no busy scene, and no two share a composition:
-   * a rail, a knit close-up, a single flat garment, a hanging coat.
+   * FASHION, RE-SHOT AS EDITORIAL PHOTOGRAPHY (Sep 2026) — and this reverses
+   * the round above rather than refining it.
+   *
+   * The four it replaces were a rail of shirts, a knit close-up, a shirt laid
+   * flat and a hanging coat: four pictures of clothes with nobody in them.
+   * Marwan looked at the result and said the tab reads sterile, so the brief
+   * is now editorial fashion — styled models, campaign-style, faces in frame —
+   * and explicitly NOT isolated packshots on white.
+   *
+   * All four are one register so the row reads as one campaign: a full-length
+   * styled figure on a pale seamless studio ground, daylight-soft, in cream,
+   * camel, white and black and nothing louder. Two women, one woman, one man,
+   * so the row is not four of the same person. 600x800 in the FILE, identical
+   * for all four, which is what "identical crop ratio" in the brief means —
+   * the ratio is settled before the browser sees it, not left to object-fit.
+   *
+   * What made this hard is not composition, it is trademarks: styled people
+   * wear branded clothes. The whole adidas/Converse/FILA studio set, a lit
+   * "…TA WEAR" shop sign, SALE tags and a Uniqlo shopfront all died at full
+   * size. See the rejection log at the top of this file.
    */
   fashion: {
-    // Pale shirts on white hangers against a white wall — a rail of unworn
-    // stock, which is what "New in" means. Dinh Ng.
-    "new-in": { ...TALL, id: "1580682312385-e94d8de1cf3c" },
-    // Cream cable-knit cardigan over a warm brown knit, close. Replaces the
-    // jewellery photo: knitwear is the thing people actually gift off a
-    // clothes tab. Nataliya Melnychuk.
-    "most-gifted": { ...TALL, id: "1670080514836-2a007ec86f6a" },
-    // A plain white shirt laid on a pale table. Replaces the clothes rack,
-    // and says everyday basics rather than a shop floor. Milli und Gold.
-    "under-75": { ...TALL, id: "1693048737398-c63e70f27da0" },
-    // Cream trench coat hanging, two soft-black jackets behind it, on white
-    // panelling. The one full-length garment in the four. Lisa Anna.
-    deals: { ...TALL, id: "1722859031306-4c81e8d83957" },
+    // Two women against white seamless in mirrored cropped blazers — cream
+    // over black trousers, black over camel trousers. The brightest and most
+    // obviously "new season" of the four, and the only one with two figures,
+    // which is why it leads the row. Peyman Farmani.
+    "new-in": { ...TALL, id: "1715559522419-db7face19c1c" },
+    // A woman in a cream double-breasted trench, black tights and boots,
+    // seated on a black chair in a pale grey studio with soft window light
+    // falling across the wall. The most "considered present" of the four.
+    // Ionela Mat.
+    "most-gifted": { ...TALL, id: "1771243791734-dfeebf162af0" },
+    // White shirt over black trousers and black heels on pale grey seamless —
+    // the everyday basics look, which is what a price-capped tile should say.
+    // Tatiana Getikova.
+    "under-75": { ...TALL, id: "1733392226806-876e2fdee027" },
+    // A man in a black printed short-sleeve shirt and black trousers on pale
+    // grey. The one menswear frame, so the row is not four women, and the
+    // darkest of the four. Naeem Ad.
+    deals: { ...TALL, id: "1726509319288-01d7e9d50ca9" },
   },
   /*
    * Flowers, re-shot as a SET (Sep 2026). The four it replaces were four
@@ -305,31 +384,98 @@ const CIRCLES = {
     "vase-arrangements": "1686125616977-34f6d5979eb1",
   },
   /*
-   * Fashion, re-shot as a SET rather than five separate good pictures.
+   * FASHION — SEVEN CIRCLES, AND THE "NO FACES" RULE IS DEAD HERE.
    *
-   * The row it replaces mixed full-body models, a legs-only shot on brick and
-   * two product cutouts, so it read as five photographs that had never met.
-   * At 62px a face is unreadable noise and a street scene is mud, so every one
-   * of these five is now: the garment or the product only, no face, one
-   * subject centred, a light neutral or cream ground, and warm neutrals only —
-   * cream, camel, sand, white, soft black. Nothing red, blue or green.
+   * The five above were folded knits, hanging shirts, a flat-laid baby outfit,
+   * a cut-out handbag and a blank cap: five product cutouts on cream, chosen
+   * under a brief that banned faces. Marwan reversed that after looking at the
+   * tab — a "Women" circle showing a pile of jumpers does not say Women, and a
+   * woman wearing a full outfit does. So Women, Men and Kids are now PEOPLE,
+   * with their faces in frame, and that is correct rather than an oversight.
    *
-   * They are cropped square in the FILE, not by the browser, so the five
+   * Belts and scarves are NEW slots — they did not exist in this row before.
+   *
+   * What did not change is the size the row is judged at. A circle renders at
+   * about 80px and is masked round, so a full-length model is a smudge: every
+   * one of these is cropped so the OUTFIT fills the disc, and where the source
+   * frame would not do that centre-out, `rect` picks the part of the frame
+   * that does — see Women, Kids and Bags below.
+   *
+   * They are cropped square in the FILE, not by the browser, so the seven
    * arrive at the same zoom instead of being re-cropped at display time.
    */
   fashion: {
-    // Folded cream and camel knits, soft light. Kateryna Hliznitsova.
-    women: { ...SQUARE, id: "1633943934209-31b7f3775fee" },
-    // Cream linen shirts on wooden hangers, close. Pew Nguyen.
-    men: { ...SQUARE, id: "1687405181716-4107f1d84a0c" },
-    // A cream baby dress, a wooden toy camera and tan sandals on white
-    // muslin — a small outfit, no child in it. Amanda Selby.
-    "kids-fashion": { ...SQUARE, id: "1777397660834-67c6d0eabe15" },
-    // One tan leather handbag, cut out on white. personalgraphic.com.
-    bags: { ...SQUARE, id: "1691480250099-a63081ecfcb8" },
-    // One plain white cap on white — no crest, no wordmark, nothing that
-    // could be mistaken for somebody's brand. Mediamodifier.
-    caps: { ...SQUARE, id: "1588850561407-ed78c282e89b" },
+    /*
+     * A camel wool coat over a sage knit top and midi skirt with tan block
+     * heels, against a white shopfront. A full styled outfit, head to toe, in
+     * even daylight.
+     *
+     * The rect is doing two jobs. Centred, the square crop runs head-to-shin
+     * and the outfit is too small to read at 80px, so this takes a tighter box
+     * — head to upper thigh — which is where the coat and the knit actually
+     * are. It also starts at x=800, and a small red fire notice screwed to the
+     * wall at x≈505-629 falls outside that. Illegible at 80px either way, but
+     * a printed sign is exactly the thing this project keeps shipping by
+     * accident, so it is cropped out rather than argued about.
+     * The AW Creative Digital Marketing.
+     */
+    women: { ...SQUARE, id: "1618333452884-5c8d211ed2ad", rect: "800,1090,1410,1410" },
+    // A man in a grey herringbone blazer over a navy shirt, against an
+    // olive-grey studio wall. Smart rather than corporate, warm-lit, and the
+    // centre square lands on face-to-hips without help. Three Throne
+    // Productions.
+    men: { ...SQUARE, id: "1649712041612-021cf78bca23" },
+    /*
+     * One boy and one girl, which is what the brief asked for: a girl in a
+     * mustard textured dress and a boy in a navy-and-grey striped knit,
+     * against a white-painted brick wall.
+     *
+     * The frame is landscape and the children sit right of centre with a lot
+     * of empty wall to their left, so the centred square would be mostly wall.
+     * The rect keeps the pair filling the disc. Jennifer Kalenberg.
+     */
+    "kids-fashion": { ...SQUARE, id: "1706306611201-305dba63850e", rect: "1556,1000,2147,2147" },
+    /*
+     * A tan canvas holdall — the barrel-shaped gym-bag silhouette — on a
+     * wooden floor in warm window light.
+     *
+     * NOT the athletic bag the brief asked for, and that is a deliberate
+     * substitution, not an oversight: every gym or sports holdall in the free
+     * pool carried a maker's mark across the side (New Balance, Under Armour,
+     * Nike, SIDESPIN, "E<hil>", "R.U.F.F"), and the no-brand rule outranks the
+     * styling note. This is the closest logo-free thing to a gym bag there is.
+     * The rect crops off the Eames chair that owns the right half of the
+     * frame. Erol Ahmed.
+     */
+    bags: { ...SQUARE, id: "1448582649076-3981753123b5", rect: "330,748,2900,2900" },
+    /*
+     * ONE cap, not the stack the brief asked for — and this is the one slot
+     * that could not be delivered as written.
+     *
+     * A stack or flat-lay of caps is easy to find and impossible to ship: the
+     * flat-lays are Nike, Ralph Lauren, LA Dodgers, New Balance, Titleist,
+     * NBA teams, AC/DC, a national coat of arms, or a "HYDRO / PREMIUM
+     * HEADWEAR" sticker on every brim, on both Unsplash and Pexels. One of
+     * them was not even caps — see 1718539364357 in the log above. A logo is
+     * a hard no and "stack" is a composition note, so the composition gave.
+     *
+     * This is a completely blank black-and-white trucker cap on pale grey: no
+     * crest, no wordmark, nothing to mistake for anybody's brand, and it still
+     * says CAP unmistakably at 80px, which is the circle's actual job.
+     * Different photograph from the white-cap-on-white it replaces. Fabio T.
+     */
+    caps: { ...SQUARE, id: "1678721938524-1a3ee398de2a" },
+    // NEW SLOT. A single tan leather belt worn over blue trousers under an
+    // untucked white shirt, cropped tight at the waist — "single leather belt,
+    // styled, close crop", exactly. The plain pin buckle matters: every belt
+    // shot with an interesting buckle turned out to have a monogram on it.
+    // Hermes Rivera.
+    belts: { ...SQUARE, id: "1611937685025-8d1df67a80b6" },
+    // NEW SLOT. An oversized camel-and-brown check mohair scarf wound high
+    // over a white shirt, against a dark doorway. Styled on a person and warm,
+    // which is the brief's "not a flat grey one" — the folded grey stacks a
+    // scarf search returns are banned by name. amin naderloei.
+    scarves: { ...SQUARE, id: "1760551938129-01da7f950fe1" },
   },
 };
 

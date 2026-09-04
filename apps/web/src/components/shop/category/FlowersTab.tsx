@@ -8,6 +8,7 @@ import { useHomeSignals } from "../../../hooks/useHomeEndless";
 import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
 import { Img } from "../../Img";
 import { StaggeredGrid } from "../StaggeredGrid";
+import { StoreLogoCircle } from "../StoreLogoCircle";
 import { storePath } from "../../../lib/routes";
 import { formatMoney } from "../../../lib/money";
 import { productImageUrl } from "../../../lib/images";
@@ -139,7 +140,10 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
         id: s.id,
         slug: s.slug as string,
         name: s.name.replace(/\[.*?\]\s*/g, ""),
-        art: s.cover_image_url ?? s.logo_url,
+        // The shared circle takes a MARK, never a storefront photograph: a
+        // picture of a shop front does not say which shop it is, and at this
+        // size it is a brown smudge.
+        logoUrl: s.logo_url,
       }));
   }, [directory.data, all]);
 
@@ -385,6 +389,37 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
         </div>
       </section>
 
+      {/* 8 — the florists, directly after Most popular.
+
+          They used to sit last and small, at the very foot of the page, on the
+          reasoning that nobody picks a florist — they pick the bouquet. They
+          now sit here as the same logo circle Fashion uses, and they appear
+          exactly ONCE on the tab: the old bottom section is gone rather than
+          duplicated. */}
+      {florists.length ? (
+        <section className="pt-5">
+          <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
+            <H inline>Florists on CADO</H>
+            <Link to={`/stores/${slug}`} className="text-[13px] font-semibold" style={{ color: ROSE }}>
+              See all {florists.length}
+            </Link>
+          </div>
+          <div
+            className={`scroll-row${spread(florists.length)}`}
+            style={{ ["--row-gap" as string]: "16px" }}
+          >
+            {florists.map((f) => (
+              <Link key={f.id} to={storePath({ slug: f.slug })} className="w-[72px] shrink-0 text-center">
+                <StoreLogoCircle name={f.name} logoUrl={f.logoUrl} />
+                <span className="mt-1.5 line-clamp-2 block min-h-[26px] break-words text-[10.5px] leading-tight text-[#5a544e]">
+                  {f.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {/* 8 — the staggered grid */}
       <section className="pt-5">
         <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-2">
@@ -396,32 +431,6 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
         <StaggeredGrid products={all} tone="cream" />
       </section>
 
-      {/* 9 — florists, small and last */}
-      {florists.length ? (
-        <section className="pb-4 pt-5">
-          <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
-            <h2 className="font-hero text-[19px] font-normal text-ink">Florists on CADO</h2>
-            <Link to={`/stores/${slug}`} className="text-[13px] font-semibold" style={{ color: ROSE }}>
-              See all {florists.length}
-            </Link>
-          </div>
-          <div
-            className={`scroll-row${spread(florists.length)}`}
-            style={{ ["--row-gap" as string]: "16px" }}
-          >
-            {florists.map((f) => (
-              <Link key={f.id} to={storePath({ slug: f.slug })} className="w-[56px] shrink-0 text-center">
-                <span className="block h-[56px] w-[56px] overflow-hidden rounded-pill bg-[#E7D8DB]">
-                  {f.art ? <Img src={f.art} className="h-full w-full object-cover" /> : null}
-                </span>
-                <span className="mt-1.5 line-clamp-2 block min-h-[26px] break-words text-[10.5px] leading-tight text-[#5a544e]">
-                  {f.name}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

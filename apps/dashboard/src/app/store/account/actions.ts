@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireDashboardUser, requireStoreOwner } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
+import { uploadPartnerLogo, clearPartnerLogo } from "@/lib/partnerLogo";
 
 /**
  * Password change for the logged-in account. Same rules as the invite flow's
@@ -183,4 +184,34 @@ export async function setStorePaused(
     ok: true,
     message: paused ? "Your store is paused." : "Your store is live again.",
   };
+}
+
+/* ========================================================= the shop's logo === */
+
+/**
+ * A shop uploading its own logo.
+ *
+ * `requireStoreOwner` fixes which partner this can touch — the id comes from
+ * the session, never from the form — so there is no id to tamper with. Storage
+ * policy `partner writes own partner-logos` enforces the same thing a second
+ * time at the database, which is where it actually matters.
+ */
+export async function uploadOwnLogo(formData: FormData): Promise<{ ok: boolean; message: string }> {
+  const user = await requireStoreOwner();
+  const result = await uploadPartnerLogo(user.partnerId, formData.get("logo") as File);
+  if (result.ok) {
+    revalidatePath("/store/account");
+    revalidatePath("/store");
+  }
+  return result;
+}
+
+export async function removeOwnLogo(): Promise<{ ok: boolean; message: string }> {
+  const user = await requireStoreOwner();
+  const result = await clearPartnerLogo(user.partnerId);
+  if (result.ok) {
+    revalidatePath("/store/account");
+    revalidatePath("/store");
+  }
+  return result;
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { createServerClient } from "@/lib/supabase/server";
+import { uploadPartnerLogo, clearPartnerLogo } from "@/lib/partnerLogo";
 
 /**
  * Store detail mutations (§4.3), admin only.
@@ -258,4 +259,36 @@ export async function saveStoreSettings(formData: FormData): Promise<void> {
     backTo(id.data, "settings", error?.message ?? "Settings did not save.");
   }
   backTo(id.data, "settings", "Settings saved.");
+}
+
+/* ==================================================== a shop's logo, by us === */
+
+/**
+ * CADO uploading a logo on a shop's behalf.
+ *
+ * This is the common case, not the exception: most shops email their logo to
+ * CADO rather than logging in to upload it. `requireAdmin` gates the action and
+ * storage policy `admin writes partner-logos` (0098) gates the write itself.
+ *
+ * `partnerId` is bound at the call site from the page's own route param, so it
+ * cannot be swapped by editing the form — and an admin is allowed on every
+ * shop anyway, which is exactly why the audit trail matters more than the id.
+ */
+export async function uploadLogoForStore(
+  partnerId: string,
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
+  await requireAdmin();
+  const result = await uploadPartnerLogo(partnerId, formData.get("logo") as File);
+  if (result.ok) revalidatePath(`/admin/stores/${partnerId}`);
+  return result;
+}
+
+export async function removeLogoForStore(
+  partnerId: string
+): Promise<{ ok: boolean; message: string }> {
+  await requireAdmin();
+  const result = await clearPartnerLogo(partnerId);
+  if (result.ok) revalidatePath(`/admin/stores/${partnerId}`);
+  return result;
 }

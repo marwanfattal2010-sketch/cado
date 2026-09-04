@@ -51,6 +51,12 @@ const CATEGORY_TILE_ART: Record<string, Record<string, string>> = {
   // Fashion circles below, which explains why the crop lives in the file
   // rather than in CSS. The extension is part of the path, so these cannot be
   // edited here without re-running scripts/seed-tab-art.mjs.
+  //
+  // All four are editorial fashion photography as of Sep 2026 — styled models
+  // on a pale studio ground, campaign-style — replacing four packshots of
+  // empty clothes. Identical 600x800 for all four, so the row is uniform
+  // before the browser gets a say. The paths are unchanged, so this file did
+  // not have to move; the bytes behind them did.
   fashion: {
     "new-in": "art/tile/fashion--new-in.webp",
     "most-gifted": "art/tile/fashion--most-gifted.webp",
@@ -234,18 +240,25 @@ const CIRCLE_ART: Record<string, Record<string, string>> = {
     "vase-arrangements": "art/circle/flowers-gifts--vase-arrangements.jpg",
   },
   /*
-   * Fashion's five are WebP, cropped square at 400x400 in the file.
+   * Fashion's SEVEN are WebP, cropped square at 400x400 in the file.
    *
-   * A circle is 62px, and at that size the only thing a photograph can say is
-   * its shape and its colour. So these five were chosen to say the same thing
-   * five ways: one garment or product, no face, centred, on a light neutral or
-   * cream ground, in cream / camel / sand / white / soft black and nothing
-   * else. The row they replaced had a full-body model next to a legs-only shot
-   * on brick, which read as five pictures that had never met.
+   * THE KEYS ARE THE SUBCATEGORY SLUGS, and `kids-fashion` is the slug — not
+   * `kids`. Getting that wrong is a silent miss: `circleArt` returns null and
+   * the circle renders empty.
+   *
+   * `belts` and `scarves` are new here as of Sep 2026, and the other five now
+   * point at different photographs behind the same paths. That round reversed
+   * the previous one: Women, Men and Kids are PEOPLE with faces in frame, not
+   * folded knits on cream, because a pile of jumpers does not say "Women" and
+   * a woman in a full outfit does. Belts and Scarves are the accessory styled
+   * on a person; Bags and Caps stay object shots because at 80px they have to.
    *
    * The crop is baked into the file rather than left to `object-fit: cover`,
    * because a browser cropping a 3:2 source at display time throws away a
    * third of the picture — so the row that was judged is the row that ships.
+   * Three of the seven also carry a `rect` in seed-tab-art.mjs, picking the
+   * part of the frame where the outfit actually is; the centre of a full-length
+   * fashion frame is usually a knee.
    */
   fashion: {
     women: "art/circle/fashion--women.webp",
@@ -253,6 +266,8 @@ const CIRCLE_ART: Record<string, Record<string, string>> = {
     "kids-fashion": "art/circle/fashion--kids-fashion.webp",
     bags: "art/circle/fashion--bags.webp",
     caps: "art/circle/fashion--caps.webp",
+    belts: "art/circle/fashion--belts.webp",
+    scarves: "art/circle/fashion--scarves.webp",
   },
 };
 

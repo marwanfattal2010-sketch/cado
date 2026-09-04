@@ -13,7 +13,10 @@ import {
   approveApplication,
   rejectApplication,
   saveStoreSettings,
+  uploadLogoForStore,
+  removeLogoForStore,
 } from "./actions";
+import { LogoUpload } from "@/components/LogoUpload";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +106,7 @@ export default async function AdminStoreDetail({
   const { data: partner } = await supabase
     .from("partners")
     .select(
-      "id, name, slug, status, is_live, city, description, commission_rate, tagline, is_featured, featured_rank, offers_gift_wrap, store_of_week, is_demo, pickup_address, driver_contact, application_text, applied_at, reviewed_at, rejection_reason, created_at"
+      "id, name, slug, logo_url, status, is_live, city, description, commission_rate, tagline, is_featured, featured_rank, offers_gift_wrap, store_of_week, is_demo, pickup_address, driver_contact, application_text, applied_at, reviewed_at, rejection_reason, created_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -808,6 +811,8 @@ function SettingsTab({
     offers_gift_wrap: boolean;
     slug: string;
     city: string | null;
+    name: string;
+    logo_url: string | null;
   };
 }) {
   const lifecycle: { key: "active" | "paused" | "closed"; label: string; note: string }[] = [
@@ -855,6 +860,17 @@ function SettingsTab({
             </form>
           ))}
         </div>
+      </Card>
+
+      {/* Outside the settings form on purpose: a file upload posts on its own,
+          and a form inside a form is invalid HTML. */}
+      <Card title="Store logo">
+        <LogoUpload
+          name={partner.name}
+          logoUrl={partner.logo_url ?? null}
+          upload={uploadLogoForStore.bind(null, partner.id)}
+          remove={removeLogoForStore.bind(null, partner.id)}
+        />
       </Card>
 
       <form action={saveStoreSettings} className="space-y-4">

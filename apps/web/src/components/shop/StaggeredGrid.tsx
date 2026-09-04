@@ -79,7 +79,7 @@ export function StaggeredGrid({
   );
 }
 
-function CollectionTile({ card }: { card: CollectionCard }) {
+export function CollectionTile({ card }: { card: CollectionCard }) {
   return (
     <Link to={card.href} className="block rounded-[8px] bg-white px-2.5 pb-3 pt-2.5">
       <span className="mb-2 flex items-center justify-between text-[14px] font-extrabold italic text-ink">

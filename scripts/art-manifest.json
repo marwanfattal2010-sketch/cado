@@ -1,0 +1,150 @@
+{
+  "$comment": [
+    "Provenance for the curated Fashion artwork, so any of it can be swapped later",
+    "without redoing the detective work. Written by hand alongside the picks in",
+    "scripts/seed-tab-art.mjs; that file is what actually uploads, this one is what",
+    "records where each photograph came from and why it was chosen.",
+    "",
+    "Every photo_page_url below was opened AT FULL SIZE before it was chosen. On this",
+    "project alt text has been wrong repeatedly - one candidate described as a stack of",
+    "caps turned out to be woven table mats - so nothing here was picked from a filename",
+    "or a description. The rejects, with the reason each one died, are in the header",
+    "comment of scripts/seed-tab-art.mjs rather than duplicated here.",
+    "",
+    "storage_path is relative to the 'product-images' bucket on Supabase. The public URL",
+    "is <SUPABASE_URL>/storage/v1/object/public/product-images/<storage_path>.",
+    "crop is what the file was baked to; a rect is in the ORIGINAL photograph's pixels",
+    "and is applied before the resize."
+  ],
+  "generated": "2026-09-04",
+  "round": "Fashion tab - people, styling and editorial energy (eleven slots)",
+  "source_rules": {
+    "licence": "Licensed free stock only - Unsplash Licence. No Unsplash+ (paid): its download endpoint 403s, which is a licence gate.",
+    "content": "Real photography only, no AI-generated people. No visible third-party brand logos or wordmarks in frame. No baked-in text, watermarks or price tags. No image used twice, and none duplicating an image already in tabArt.ts or an existing product photograph.",
+    "dedupe_check": "Every id below was grepped against the whole repo (which is where every product-photo seed script records its source id) and against the existing tabArt.ts / seed-tab-art.mjs constants. Zero matches."
+  },
+  "bucket": "product-images",
+  "circles": {
+    "$comment": "CIRCLE_ART['fashion'] in apps/web/src/lib/tabArt.ts. Keys are the Fashion subcategory slugs. Rendered at ~80px, masked round. All 400x400 WebP.",
+    "women": {
+      "slot_key": "women",
+      "storage_path": "art/circle/fashion--women.webp",
+      "photo_id": "1618333452884-5c8d211ed2ad",
+      "photo_page_url": "https://unsplash.com/photos/woman-in-brown-coat-and-gray-pants-standing-on-white-concrete-stairs-5c8d211ed2ad",
+      "photographer": "The AW Creative Digital Marketing",
+      "licence": "Unsplash Licence",
+      "shows": "A woman in a camel wool coat over a sage knit top and midi skirt with tan block heels, leaning against a white shopfront pillar in even daylight. Full styled outfit, face in frame.",
+      "crop": { "w": 400, "h": 400, "format": "webp", "rect": "800,1090,1410,1410" },
+      "rect_reason": "Centred, the square crop runs head-to-shin and the outfit is too small to read at 80px. This box is head-to-upper-thigh, and starting at x=800 also puts a small red fire notice on the wall (x 505-629) outside the frame."
+    },
+    "men": {
+      "slot_key": "men",
+      "storage_path": "art/circle/fashion--men.webp",
+      "photo_id": "1649712041612-021cf78bca23",
+      "photo_page_url": "https://unsplash.com/photos/a-man-in-a-suit-posing-for-a-picture-o23agsLwGr4",
+      "photographer": "Three Throne Productions",
+      "licence": "Unsplash Licence",
+      "shows": "A man in a grey herringbone blazer over a navy shirt against an olive-grey studio wall. Smart rather than corporate, warm-lit.",
+      "crop": { "w": 400, "h": 400, "format": "webp" }
+    },
+    "kids-fashion": {
+      "slot_key": "kids-fashion",
+      "storage_path": "art/circle/fashion--kids-fashion.webp",
+      "photo_id": "1706306611201-305dba63850e",
+      "photo_page_url": "https://unsplash.com/photos/a-little-girl-and-a-little-boy-hugging-each-other-yjR8ZUXQZV0",
+      "photographer": "Jennifer Kalenberg",
+      "licence": "Unsplash Licence",
+      "shows": "One girl and one boy together: she is in a mustard textured dress, he is in a navy-and-grey striped knit, against a white-painted brick wall. Both faces in frame.",
+      "crop": { "w": 400, "h": 400, "format": "webp", "rect": "1556,1000,2147,2147" },
+      "rect_reason": "Landscape frame with the children right of centre and a lot of empty white wall to their left; the centred square would be mostly wall."
+    },
+    "bags": {
+      "slot_key": "bags",
+      "storage_path": "art/circle/fashion--bags.webp",
+      "photo_id": "1448582649076-3981753123b5",
+      "photo_page_url": "https://unsplash.com/photos/brown-duffel-bag-beside-white-and-brown-wooden-chair-9XiN0r2NWSM",
+      "photographer": "Erol Ahmed",
+      "licence": "Unsplash Licence",
+      "shows": "A tan canvas holdall - the barrel-shaped gym-bag silhouette - on a wooden floor in warm window light.",
+      "crop": { "w": 400, "h": 400, "format": "webp", "rect": "330,748,2900,2900" },
+      "rect_reason": "Crops off the Eames chair that owns the right half of the frame.",
+      "deviation": "The brief asked for a sports/gym holdall in an athletic style. Every athletic holdall in the free pool carried a maker's mark across the side, so this logo-free canvas holdall is a deliberate substitution."
+    },
+    "caps": {
+      "slot_key": "caps",
+      "storage_path": "art/circle/fashion--caps.webp",
+      "photo_id": "1678721938524-1a3ee398de2a",
+      "photo_page_url": "https://unsplash.com/photos/a-black-and-white-trucker-hat-on-a-white-background-1a3ee398de2a",
+      "photographer": "Fabio T.",
+      "licence": "Unsplash Licence",
+      "shows": "A completely blank trucker cap - white front panel, charcoal mesh sides, black brim - on a plain pale grey ground. No crest, no wordmark, no text.",
+      "crop": { "w": 400, "h": 400, "format": "webp" },
+      "deviation": "The brief asked for a stack or flat-lay of caps. Every stack and flat-lay found on Unsplash and Pexels carried a legible third-party brand (Nike, New Balance, Ralph Lauren, LA Dodgers, Titleist, NBA teams, AC/DC, a national coat of arms, or a 'HYDRO / PREMIUM HEADWEAR' sticker on every brim). One apparent stack turned out to be woven table mats. A single blank cap was shipped instead: the no-logo rule is absolute, the composition note is not."
+    },
+    "belts": {
+      "slot_key": "belts",
+      "storage_path": "art/circle/fashion--belts.webp",
+      "photo_id": "1611937685025-8d1df67a80b6",
+      "photo_page_url": "https://unsplash.com/photos/black-leather-belt-on-blue-denim-jeans-KhpPdaFGQvY",
+      "photographer": "Hermes Rivera",
+      "licence": "Unsplash Licence",
+      "shows": "A single tan leather belt with a plain pin buckle, worn over blue trousers under an untucked white shirt, cropped tight at the waist.",
+      "crop": { "w": 400, "h": 400, "format": "webp" },
+      "note": "NEW SLOT - did not exist in CIRCLE_ART before this round."
+    },
+    "scarves": {
+      "slot_key": "scarves",
+      "storage_path": "art/circle/fashion--scarves.webp",
+      "photo_id": "1760551938129-01da7f950fe1",
+      "photo_page_url": "https://unsplash.com/photos/a-woman-wearing-a-scarf-and-white-shirt-ErlWRydhR-g",
+      "photographer": "amin naderloei",
+      "licence": "Unsplash Licence",
+      "shows": "An oversized camel-and-brown check mohair scarf wound high over a white shirt, against a dark doorway. Styled on a person, warm - not a folded flat grey stack.",
+      "crop": { "w": 400, "h": 400, "format": "webp" },
+      "note": "NEW SLOT - did not exist in CIRCLE_ART before this round."
+    }
+  },
+  "tiles": {
+    "$comment": "CATEGORY_TILE_ART['fashion'] in apps/web/src/lib/tabArt.ts. All four are 600x800 WebP - identical crop ratio, as the brief requires - and all four are editorial fashion photography: a full-length styled figure on a pale seamless studio ground, in cream / camel / white / black.",
+    "new-in": {
+      "slot_key": "new-in",
+      "storage_path": "art/tile/fashion--new-in.webp",
+      "photo_id": "1715559522419-db7face19c1c",
+      "photo_page_url": "https://unsplash.com/photos/two-women-standing-next-to-each-other-in-front-of-a-white-background-CRYY5UlnEcM",
+      "photographer": "Peyman Farmani",
+      "licence": "Unsplash Licence",
+      "shows": "Two women against white seamless in mirrored cropped blazers - cream over black trousers, black over camel trousers. The brightest of the four and the only one with two figures.",
+      "crop": { "w": 600, "h": 800, "format": "webp" }
+    },
+    "most-gifted": {
+      "slot_key": "most-gifted",
+      "storage_path": "art/tile/fashion--most-gifted.webp",
+      "photo_id": "1771243791734-dfeebf162af0",
+      "photo_page_url": "https://unsplash.com/photos/woman-in-trench-coat-sitting-on-chair-E5Msp1_ZhoE",
+      "photographer": "Ionela Mat",
+      "licence": "Unsplash Licence",
+      "shows": "A woman in a cream double-breasted trench, black tights and black boots, seated on a black chair in a pale grey studio with soft window light on the wall behind.",
+      "crop": { "w": 600, "h": 800, "format": "webp" }
+    },
+    "under-75": {
+      "slot_key": "under-75",
+      "storage_path": "art/tile/fashion--under-75.webp",
+      "photo_id": "1733392226806-876e2fdee027",
+      "photo_page_url": "https://unsplash.com/photos/a-woman-in-a-white-shirt-and-black-pants-876e2fdee027",
+      "photographer": "Tatiana Getikova",
+      "licence": "Unsplash Licence",
+      "shows": "A woman in an oversized white shirt, black tailored trousers and black heels on pale grey seamless - the everyday-basics look.",
+      "crop": { "w": 600, "h": 800, "format": "webp" }
+    },
+    "deals": {
+      "slot_key": "deals",
+      "storage_path": "art/tile/fashion--deals.webp",
+      "photo_id": "1726509319288-01d7e9d50ca9",
+      "photo_page_url": "https://unsplash.com/photos/a-man-in-a-black-shirt-and-black-pants-01d7e9d50ca9",
+      "photographer": "Naeem Ad",
+      "licence": "Unsplash Licence",
+      "shows": "A man in a black floral-print short-sleeve shirt, black trousers and unbranded white trainers on pale grey. The one menswear frame in the row, and the darkest.",
+      "crop": { "w": 600, "h": 800, "format": "webp" }
+    }
+  }
+}
