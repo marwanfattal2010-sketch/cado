@@ -538,7 +538,7 @@ function Results({
                 {/* .tap-44 because this sits inside a sentence — growing the
                     link itself would break the line, and nothing else
                     tappable is near enough to have its tap stolen. */}
-                <Link to="/browse" className="tap-44 font-medium text-ink underline underline-offset-4">
+                <Link to="/browse-all" className="tap-44 font-medium text-ink underline underline-offset-4">
                   Browse every category
                 </Link>
               </p>
@@ -576,7 +576,7 @@ function Results({
               </button>
             ) : (
               <Link
-                to="/browse"
+                to="/browse-all"
                 className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
               >
                 Browse categories

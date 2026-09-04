@@ -1,11 +1,12 @@
+import { Link } from "react-router-dom";
 import { Img } from "../../Img";
 import type { CategoryTheme } from "../../../lib/categoryTheme";
-import type { TabFilter } from "../../../lib/tabFilter";
 
 export type ResolvedTile = {
   label: string;
   photo: string | null;
-  apply: TabFilter;
+  /** Where the tile goes — a saved view on the results page. */
+  href: string;
 };
 
 /**
@@ -22,14 +23,7 @@ export type ResolvedTile = {
  * is always of the thing the tile says. Nothing here falls back to stock
  * imagery or a neutral swatch with a hopeful caption.
  */
-export function TallTiles({
-  tiles,
-  onSelect,
-}: {
-  tiles: ResolvedTile[];
-  theme?: CategoryTheme;
-  onSelect: (filter: TabFilter) => void;
-}) {
+export function TallTiles({ tiles }: { tiles: ResolvedTile[]; theme?: CategoryTheme }) {
   if (tiles.length === 0) return null;
 
   return (
@@ -38,10 +32,9 @@ export function TallTiles({
       style={{ ["--row-gap" as string]: "10px" }}
     >
       {tiles.map((t) => (
-        <button
+        <Link
           key={t.label}
-          type="button"
-          onClick={() => onSelect(t.apply)}
+          to={t.href}
           className="relative block h-[172px] w-[124px] shrink-0 overflow-hidden rounded-[10px] bg-surface-sunk transition-transform duration-press ease-out active:scale-[0.97]"
         >
           {t.photo ? (
@@ -74,7 +67,7 @@ export function TallTiles({
           >
             {t.label}
           </span>
-        </button>
+        </Link>
       ))}
     </div>
   );

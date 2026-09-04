@@ -25,6 +25,9 @@ import { useTapGuard } from "./hooks/useTapGuard";
 import { Home } from "./pages/Home";
 
 const Browse = lazy(() => import("./pages/Browse").then((m) => ({ default: m.Browse })));
+const BrowseResults = lazy(() =>
+  import("./pages/BrowseResults").then((m) => ({ default: m.BrowseResults }))
+);
 const Stores = lazy(() => import("./pages/Stores").then((m) => ({ default: m.Stores })));
 const CategoryOccasion = lazy(() =>
   import("./pages/CategoryOccasion").then((m) => ({ default: m.CategoryOccasion }))
@@ -137,6 +140,9 @@ export default function App() {
             would make it the containing block for anything positioned inside.
             Its own route also means the back gesture exits it. */}
         <Route path="assistant" element={<GiftAssistant />} />
+        {/* The results page. Outside Layout: it owns its own sticky chrome and
+            must not sit under the app header as well. */}
+        <Route path="browse" element={<BrowseResults />} />
         <Route element={<Layout />}>
           <Route path="search" element={<Search />} />
           <Route path="orders" element={<Orders />} />
@@ -148,7 +154,7 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="help" element={<HelpCenter />} />
           <Route path="language" element={<Language />} />
-          <Route path="browse" element={<Browse />} />
+          <Route path="browse-all" element={<Browse />} />
           {/* Every live store, one card each — the See-all behind "Stores on CADO". */}
           <Route path="stores" element={<Stores />} />
           {/* One category page, and it is a tab on "/". This only keeps old

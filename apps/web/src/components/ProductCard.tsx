@@ -242,7 +242,12 @@ export function ProductCard(props: ProductCardProps) {
             <span className="absolute bottom-2 left-2 rounded-[6px] bg-white/90 px-1.5 py-1 text-[11px] font-bold leading-none text-persimmon">
               Only {stock_quantity} left
             </span>
-          ) : badge ? (
+          ) : badge && !onSale ? (
+            /* !onSale is the fix for the duplicate badge. badgeFor() returns
+               the discount first, and the discount ALSO renders top-left, so
+               a reduced item wore -25% twice — once in each corner. The
+               top-left pill is the canonical one; this slot only shows the
+               other badges (Bestseller, Same-day, New). */
             <span
               className={`absolute bottom-2 left-2 rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none ${badge.className}`}
             >
@@ -266,7 +271,16 @@ export function ProductCard(props: ProductCardProps) {
         delivery — come to 50px of type before any leading at all, so 48 was
         arithmetically out of reach while they stayed stacked.
       */}
-      <div className={`overflow-hidden ${uniform ? "h-[54px]" : "h-[48px]"}`}>
+      {/*
+        FOUR ROWS, each on its own line: store, title, price, delivery.
+        They used to share two lines, with the price and the delivery promise
+        on one flex row — at 375px in a two-column grid that is about 178px of
+        card, and $206.50 struck through beside $165 beside "Tonight" does not
+        fit, so the price clipped and the green line ran over it. The block is
+        still a FIXED height, which is what keeps every row of the grid
+        aligned; it is simply tall enough now.
+      */}
+      <div className={`overflow-hidden ${uniform ? "h-[98px]" : "h-[92px]"}`}>
       {/* Store first — the trust signal, and its own link. Its own colour
           too, so "who is this from" is scannable without reading the title. */}
       {partner?.name ? (
@@ -284,7 +298,9 @@ export function ProductCard(props: ProductCardProps) {
         {/* ONE line, ellipsed. Two lines of bold set every card to a
             different height for no information gained — the full title is on
             the product page, which is one tap away. */}
-        <p className="truncate text-[13px] font-normal leading-tight text-ink">{title}</p>
+        {/* Two lines, then ellipsis — long titles like "Wireless Earbuds &
+            Charging Case" were being cut mid-word on one. */}
+        <p className="line-clamp-2 text-[13px] font-normal leading-tight text-ink">{title}</p>
       </Link>
 
       {/*
@@ -302,18 +318,16 @@ export function ProductCard(props: ProductCardProps) {
         enforces — before it, Tonight; after it, Tomorrow. It is never a
         promise the checkout would not keep.
       */}
-      <div className="mt-0.5 flex items-baseline justify-between gap-1.5">
-        <Link to={`/product/${id}`} className="flex min-w-0 items-baseline gap-1.5">
-          <span className="text-price">{formatMoney(price)}</span>
-          {onSale ? (
-            <span className="text-[11px] text-muted line-through">{formatMoney(compare_at_price)}</span>
-          ) : null}
-        </Link>
-        <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-medium leading-none text-today">
-          <span aria-hidden>🚚</span>
-          {deliveryWord()}
-        </span>
-      </div>
+      <Link to={`/product/${id}`} className="mt-0.5 flex min-w-0 items-baseline gap-1.5">
+        <span className="text-price">{formatMoney(price)}</span>
+        {onSale ? (
+          <span className="text-[11px] text-muted line-through">{formatMoney(compare_at_price)}</span>
+        ) : null}
+      </Link>
+      <span className="mt-0.5 flex items-center gap-0.5 text-[11px] font-medium leading-none text-today">
+        <span aria-hidden>🚚</span>
+        {deliveryWord()}
+      </span>
       {props.gift_wrap_available ? (
         <span className="mt-0.5 inline-block rounded-[4px] bg-surface-sunk px-1 py-[1px] text-[10px] font-medium leading-none text-muted">
           Gift wrap

@@ -5,7 +5,8 @@ import { productImageUrl } from "../../../lib/images";
 import { formatMoney } from "../../../lib/money";
 import { storePath } from "../../../lib/routes";
 
-import { EMPTY_FILTER, type TabFilter } from "../../../lib/tabFilter";
+import { browseHref } from "../../../lib/browseParams";
+import { recipientLabel, RECIPIENTS } from "../../../lib/facets";
 import { discountPercent, type TabSections } from "../../../hooks/useCategoryTab";
 import { CHIP_OCCASIONS, accent, type CategoryTheme } from "../../../lib/categoryTheme";
 import type { FeedProduct } from "../../../lib/browse";
@@ -72,16 +73,16 @@ export function primaryPhoto(p: FeedProduct | null | undefined) {
 /* 3 — Shop by category (white card)                                          */
 /* -------------------------------------------------------------------------- */
 
-export type CircleItem = { id: string; name: string; photo: string | null };
+export type CircleItem = { id: string; slug: string; name: string; photo: string | null };
 
 export function SubcategoryCircles({
   circles,
   theme,
-  onFilter,
+  cat,
 }: {
   circles: CircleItem[];
   theme: CategoryTheme;
-  onFilter: (f: TabFilter, scroll?: boolean) => void;
+  cat: string;
 }) {
   // Two is the floor: a "Shop by category" row with one circle in it is not a
   // choice, it is a heading with a picture under it.
@@ -92,10 +93,9 @@ export function SubcategoryCircles({
       <TabSectionHead title="Shop by category" theme={theme} />
       <div className="scroll-row -mx-3 px-3" style={{ ["--row-gap" as string]: "14px" }}>
         {circles.map((c) => (
-          <button
+          <Link
             key={c.id}
-            type="button"
-            onClick={() => onFilter({ ...EMPTY_FILTER, types: [c.id] }, true)}
+            to={browseHref(cat, { type: [c.slug] })}
             className="flex w-[62px] shrink-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
           >
             <span className="h-[62px] w-[62px] overflow-hidden rounded-pill bg-surface-sunk">
@@ -116,7 +116,7 @@ export function SubcategoryCircles({
             <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-ink">
               {c.name}
             </span>
-          </button>
+          </Link>
         ))}
       </div>
     </TabCard>
@@ -130,11 +130,11 @@ export function SubcategoryCircles({
 export function SuperDeals({
   sections,
   theme,
-  onFilter,
+  cat,
 }: {
   sections: TabSections;
   theme: CategoryTheme;
-  onFilter: (f: TabFilter, scroll?: boolean) => void;
+  cat: string;
 }) {
   if (sections.deals.length < 4) return null;
   return (
@@ -142,7 +142,7 @@ export function SuperDeals({
       <TabSectionHead
         title="Super deals"
         theme={theme}
-        onSeeAll={() => onFilter({ ...EMPTY_FILTER, onSale: true }, true)}
+        to={browseHref(cat, { tile: "deals" })}
       />
       <div className="grid grid-cols-4 gap-2">
         {sections.deals.slice(0, 4).map((p) => (
@@ -270,13 +270,11 @@ export function StoresRow({
 export function OccasionChips({
   sections,
   theme,
-  active,
-  onFilter,
+  cat,
 }: {
   sections: TabSections;
   theme: CategoryTheme;
-  active: string[];
-  onFilter: (f: TabFilter, scroll?: boolean) => void;
+  cat: string;
 }) {
   /*
    * A CHIP THAT MATCHES EVERYTHING IS NOT A FILTER.
@@ -306,33 +304,18 @@ export function OccasionChips({
       <TabSectionHead title="Shopping for an occasion?" theme={theme} />
       {/* WRAPS. Not a scroller — every chip is fully visible. */}
       <div className="flex flex-wrap gap-2">
-        {chips.map((o) => {
-          const on = active.includes(o.value);
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() =>
-                onFilter(on ? EMPTY_FILTER : { ...EMPTY_FILTER, occasions: [o.value] }, true)
-              }
-              /* Near-black hairline when off; persimmon FILL with white text
-                 only when selected, so the accent marks the choice rather
-                 than decorating the row. */
-              className="flex h-9 items-center rounded-pill border px-3.5 text-[13px] font-medium transition-colors"
-              style={
-                on
-                  ? {
-                      borderColor: "rgb(var(--persimmon))",
-                      background: "rgb(var(--persimmon))",
-                      color: "#fff",
-                    }
-                  : { borderColor: "rgb(var(--ink) / 0.25)", color: "rgb(var(--ink))" }
-              }
-            >
-              {o.label}
-            </button>
-          );
-        })}
+        {/* Real links to the results page, not in-page filters. Tapping one
+            takes you somewhere that can say what you are looking at and can
+            hold a second selection alongside it. */}
+        {chips.map((o) => (
+          <Link
+            key={o.value}
+            to={browseHref(cat, { occasion: [o.value] })}
+            className="flex h-9 items-center rounded-pill border border-ink/[0.12] bg-canvas px-3.5 text-[13px] font-medium text-ink transition-transform duration-press ease-out active:scale-[0.97]"
+          >
+            {o.label}
+          </Link>
+        ))}
       </div>
     </TabCard>
   );
@@ -364,31 +347,21 @@ export function TabGrid({ products }: { products: FeedProduct[] }) {
 /* -------------------------------------------------------------------------- */
 
 /** The seven the brief names, in its order. */
-export const GIFT_FOR = [
-  { label: "Her", value: "her" },
-  { label: "Him", value: "him" },
-  { label: "Mom", value: "mother" },
-  { label: "Dad", value: "father" },
-  { label: "Kids", value: "child" },
-  { label: "Partner", value: "partner" },
-  { label: "Friend", value: "friend" },
-] as const;
-
 export function GiftForRow({
   sections,
   theme,
+  cat,
   photoFor,
-  onFilter,
 }: {
   sections: TabSections;
   theme: CategoryTheme;
+  cat: string;
   /** A real product photo for that recipient, or null. */
   photoFor: (value: string) => string | null;
-  onFilter: (f: TabFilter, scroll?: boolean) => void;
 }) {
   // Only recipients this category can actually serve. A tile that opens an
   // empty grid is worse than one fewer tile.
-  const shown = GIFT_FOR.filter((r) => (sections.recipients.get(r.value) ?? 0) > 0);
+  const shown = RECIPIENTS.filter((r) => (sections.recipients.get(r.value) ?? 0) > 0);
   if (shown.length === 0) return null;
 
   return (
@@ -396,10 +369,9 @@ export function GiftForRow({
       <TabSectionHead title="Gift for…" theme={theme} />
       <div className="scroll-row -mx-[var(--page-x)]" style={{ ["--row-gap" as string]: "12px" }}>
         {shown.map((r) => (
-          <button
+          <Link
             key={r.value}
-            type="button"
-            onClick={() => onFilter({ ...EMPTY_FILTER, recipients: [r.value] }, true)}
+            to={browseHref(cat, { for: [r.value] })}
             className="flex w-[66px] shrink-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
           >
             <span className="h-[66px] w-[66px] overflow-hidden rounded-pill bg-surface-sunk">
@@ -407,10 +379,13 @@ export function GiftForRow({
                 <Img src={photoFor(r.value)} className="h-full w-full object-cover" />
               ) : null}
             </span>
+            {/* The SHORT label here and the full one on a chip, both from
+                the shared constant — "Him" in the circle, "For Him" on the
+                chip, and they can no longer drift apart. */}
             <span className="text-center text-[11px] font-medium leading-tight text-ink">
-              {r.label}
+              {recipientLabel(r.value, "short")}
             </span>
-          </button>
+          </Link>
         ))}
       </div>
     </section>
@@ -434,17 +409,17 @@ export function ProductStrip({
   title,
   products,
   theme,
-  onSeeAll,
+  seeAllHref,
 }: {
   title: string;
   products: FeedProduct[];
   theme: CategoryTheme;
-  onSeeAll?: () => void;
+  seeAllHref?: string;
 }) {
   if (products.length < MIN_STRIP) return null;
   return (
     <section>
-      <TabSectionHead title={title} theme={theme} onSeeAll={onSeeAll} />
+      <TabSectionHead title={title} theme={theme} to={seeAllHref} />
       {/* Every card the same width and the same fixed ratio, so no row is
           ever ragged. The rail carries the page gutter at both ends. */}
       <div className="scroll-row -mx-[var(--page-x)]" style={{ ["--row-gap" as string]: "10px" }}>

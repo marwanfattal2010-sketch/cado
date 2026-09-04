@@ -65,7 +65,7 @@ const LINK_GROUPS: { heading: string; links: { to: string; label: string }[] }[]
   {
     heading: "Shop",
     links: [
-      { to: "/browse", label: "All categories" },
+      { to: "/browse-all", label: "All categories" },
       { to: "/gift-finder?occasion=birthday", label: "Birthday gifts" },
       { to: "/gift-cards", label: "Gift cards" },
     ],

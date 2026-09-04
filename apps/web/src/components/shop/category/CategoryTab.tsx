@@ -1,14 +1,13 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useCategories } from "../../../hooks/useCategories";
 import { useSubcategories } from "../../../hooks/useStores";
 import { useStoreDirectory } from "../../../hooks/useCatalogue";
 import { useTabSections } from "../../../hooks/useCategoryTab";
 import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
-import { TabFilterBar } from "./TabFilterBar";
 import { CategoryHero, type HeroSlide } from "./CategoryHero";
 import { TallTiles, type ResolvedTile } from "./TallTiles";
 import {
-  GIFT_FOR,
   GiftForRow,
   OccasionChips,
   ProductStrip,
@@ -21,8 +20,9 @@ import {
   type CircleItem,
   type StoreItem,
 } from "./CategorySections";
-import { filterForTile, themeFor, type CategoryTile } from "../../../lib/categoryTheme";
-import { EMPTY_FILTER, applyFilter, sortProducts, type Sort, type TabFilter } from "../../../lib/tabFilter";
+import { themeFor, type CategoryTile } from "../../../lib/categoryTheme";
+import { browseHref } from "../../../lib/browseParams";
+import { RECIPIENTS, priceTierId, type TileId } from "../../../lib/facets";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
 /**
@@ -56,49 +56,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
   const subcategoriesQuery = useSubcategories(slug);
   const directory = useStoreDirectory();
 
-  const [filter, setFilter] = useState<TabFilter>(EMPTY_FILTER);
-  const [sort, setSort] = useState<Sort>("recommended");
-  const gridRef = useRef<HTMLDivElement | null>(null);
-
-  /**
-   * Filtering from a tile scrolls to the grid, because otherwise the tap
-   * appears to do nothing: the change is a screen and a half below the fold.
-   * `smooth`, not `auto` — the movement IS the feedback.
-   */
-  const apply = (next: TabFilter, scroll = false) => {
-    setFilter(next);
-    if (!scroll) return;
-    /*
-     * Scrolled by hand rather than with `scrollIntoView` inside a
-     * requestAnimationFrame. rAF does not fire in a hidden tab, and
-     * `scrollIntoView` on an element inside a nested scroller also nudges
-     * every ancestor scroller it can reach — including the pager, which
-     * would drag the page sideways to a neighbouring tab. This moves exactly
-     * one container: the panel the grid lives in.
-     */
-    const el = gridRef.current;
-    const panel = el?.closest<HTMLElement>(".panel");
-    if (!el || !panel) return;
-    const top = el.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
-    const target = Math.max(0, top - 8);
-
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    panel.scrollTo({ top: target, behavior: reduced ? "auto" : "smooth" });
-
-    /*
-     * The animation is not allowed to be the only thing that lands it.
-     *
-     * Smooth scrolling is a browser animation, and a browser does not run
-     * animations in a hidden or backgrounded tab — tap a chip, switch apps,
-     * come back, and the grid never moved. It can also be cancelled outright
-     * by any scroll that happens while it is in flight. A short timer checks
-     * whether we actually arrived and finishes the job if not, so tapping a
-     * chip always ends with the grid on screen.
-     */
-    window.setTimeout(() => {
-      if (Math.abs(panel.scrollTop - target) > 4) panel.scrollTop = target;
-    }, 500);
-  };
+  const cat = slug ?? "";
 
   const subcategories = useMemo(
     () => (subcategoriesQuery.data ?? []).map((s) => ({ id: s.id, name: s.name, slug: s.slug })),
@@ -164,11 +122,6 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
     };
 
     const all = sections.all;
-    const bySub = (subSlug: string) => {
-      const id = subcategories.find((s) => s.slug === subSlug)?.id;
-      return id ? all.filter((p) => p.subcategory_id === id) : [];
-    };
-
     /*
      * 1 — THREE HERO SLIDES, and they go first because they take the best
      * photographs. Slide 1 sells the category; slides 2 and 3 each carry a
@@ -212,7 +165,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
       // One product is enough for a circle: it is a shortcut into the grid,
       // not a claim about depth.
       if (pool.length === 0) continue;
-      circles.push({ id: s.id, name: s.name, photo: take(pool, "circles") });
+      circles.push({ id: s.id, slug: s.slug, name: s.name, photo: take(pool, "circles") });
     }
 
     /*
@@ -239,47 +192,51 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
     const tiles: ResolvedTile[] = [];
     for (const t of entryTiles) {
       let pool: FeedProduct[] = [];
-      let subId: string | undefined;
+      let href = "";
       // Switched on a local alias of the whole `kind`, not on `t.kind.type`.
       // TypeScript only narrows a discriminated union through a stable
       // reference; switching on the property path leaves each branch holding
-      // the full union and `kind.value` stops existing.
+      // the full union and `kind.max` stops existing.
       const kind = t.kind;
       switch (kind.type) {
-        case "recipient":
-          pool = all.filter((p) => (p.recipient_tags ?? []).includes(kind.value));
-          break;
         case "price":
           pool = all.filter((p) => p.price < kind.max);
+          href = browseHref(cat, { price: [priceTierId(kind.max)] });
           break;
-        case "new":
-          pool = all;
+        case "new": {
+          // The tile is a SAVED VIEW, so it must show what the view will show:
+          // added in the last 30 days, not simply "the newest we have".
+          const cutoff = Date.now() - 30 * 86400000;
+          pool = all.filter((p) => new Date(p.created_at).getTime() >= cutoff);
+          href = browseHref(cat, { tile: "new-in" });
           break;
-        case "picks":
-          pool = sections.bestSellers.length ? sections.bestSellers : all;
+        }
+        case "picks": {
+          pool = sections.bestSellers;
+          const id: TileId = sections.bestSellersAreReal ? "best-sellers" : "store-picks";
+          href = browseHref(cat, { tile: id });
           break;
+        }
         case "giftReady":
           pool = sections.giftReady;
+          href = browseHref(cat, { tile: "ready-to-gift" });
           break;
         case "sale":
           pool = sections.deals;
+          href = browseHref(cat, { tile: "deals" });
           break;
-        case "sameDay":
-          pool = all.filter((p) => p.same_day === true);
-          break;
-        case "subcategory":
-          subId = subcategories.find((x) => x.slug === kind.slug)?.id;
-          pool = bySub(kind.slug);
+        default:
           break;
       }
-      // A tile with nothing behind it is dropped, not shown empty.
-      if (pool.length === 0) continue;
-      tiles.push({ label: t.label, photo: take(pool, "tiles"), apply: filterForTile(t.kind, subId) });
+      // A tile with nothing behind it is dropped, not shown empty — and never
+      // opens a results page with no results.
+      if (pool.length === 0 || !href) continue;
+      tiles.push({ label: t.label, photo: take(pool, "tiles"), href });
     }
 
     // A real product photo per recipient, for the Gift for… row.
     const recipientPhoto = new Map<string, string | null>();
-    for (const r of GIFT_FOR) {
+    for (const r of RECIPIENTS) {
       const pool = all.filter((x) => (x.recipient_tags ?? []).includes(r.value));
       recipientPhoto.set(r.value, pool.length ? take(pool, "giftfor") : null);
     }
@@ -300,11 +257,6 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
         cover_image_url: s.cover_image_url,
       }));
   }, [directory.data, sections.all]);
-
-  const results = useMemo(
-    () => sortProducts(applyFilter(sections.all, filter), sort),
-    [sections.all, filter, sort]
-  );
 
   if (sections.isLoading) {
     return (
@@ -329,7 +281,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
   return (
     <>
       {/* 1 — hero: three slides, full-bleed photography. */}
-      <CategoryHero slides={art.heroSlides} onShopNow={() => apply(EMPTY_FILTER, true)} />
+      <CategoryHero slides={art.heroSlides} shopAllHref={browseHref(cat)} />
 
       {/*
         ONE spacing token between every section, top to bottom. Nothing below
@@ -341,28 +293,28 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
         <GiftForRow
           sections={sections}
           theme={theme}
+          cat={cat}
           photoFor={(v) => art.recipientPhoto.get(v) ?? null}
-          onFilter={apply}
         />
 
         {/* 3 — entry tiles */}
-        <TallTiles tiles={art.tiles} onSelect={(f) => apply(f, true)} />
+        <TallTiles tiles={art.tiles} />
 
         {/* 4 — shop by category */}
-        <SubcategoryCircles circles={art.circles} theme={theme} onFilter={apply} />
+        <SubcategoryCircles circles={art.circles} theme={theme} cat={cat} />
 
         {/* 5 — stores */}
         <StoresRow categoryName={categoryName} stores={stores} theme={theme} />
 
         {/* 6 — super deals */}
-        <SuperDeals sections={sections} theme={theme} onFilter={apply} />
+        <SuperDeals sections={sections} theme={theme} cat={cat} />
 
         {/* 7 — new arrivals */}
         <ProductStrip
           title="New arrivals"
           products={sections.newArrivals}
           theme={theme}
-          onSeeAll={() => apply(EMPTY_FILTER, true)}
+          seeAllHref={browseHref(cat, { tile: "new-in" })}
         />
 
         {/* 8 — best sellers, or store picks where there is no order history
@@ -371,6 +323,9 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
           title={sections.bestSellersAreReal ? "Best sellers" : "Store picks"}
           products={sections.bestSellers}
           theme={theme}
+          seeAllHref={browseHref(cat, {
+            tile: sections.bestSellersAreReal ? "best-sellers" : "store-picks",
+          })}
         />
 
         {/* 9 — ready to gift */}
@@ -378,33 +333,27 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
           title="Ready to gift"
           products={sections.giftReady}
           theme={theme}
-          onSeeAll={() => apply({ ...EMPTY_FILTER, giftReady: true }, true)}
+          seeAllHref={browseHref(cat, { tile: "ready-to-gift" })}
         />
 
         {/* 10 — occasion chips */}
-        <OccasionChips
-          sections={sections}
-          theme={theme}
-          active={filter.occasions}
-          onFilter={apply}
-        />
+        <OccasionChips sections={sections} theme={theme} cat={cat} />
 
-        {/* 11 — the endless grid */}
-        <div ref={gridRef}>
+        {/*
+          11 — PURE BROWSE. No sort row, no filter button, no applied chips
+          and no result count: all of that now lives on /browse, where a
+          selection can be described, stacked and undone. What is left here
+          is a plain look at the shelf, and one door to the filtered view.
+        */}
+        <div>
           <TabSectionHead title={`All ${categoryName.toLowerCase()}`} theme={theme} />
-          <TabFilterBar
-            products={sections.all}
-            filter={filter}
-            onFilter={setFilter}
-            sort={sort}
-            onSort={setSort}
-            resultCount={results.length}
-            stores={stores}
-            subcategories={subcategories}
-          />
-          <div className="pt-3">
-            <TabGrid products={results} />
-          </div>
+          <TabGrid products={sections.all} />
+          <Link
+            to={browseHref(cat)}
+            className="mt-4 flex min-h-[46px] w-full items-center justify-center rounded-pill border border-ink/[0.12] bg-canvas text-body font-semibold text-ink transition-transform duration-press ease-out active:scale-[0.99]"
+          >
+            See all {categoryName.toLowerCase()} gifts
+          </Link>
         </div>
       </div>
     </>

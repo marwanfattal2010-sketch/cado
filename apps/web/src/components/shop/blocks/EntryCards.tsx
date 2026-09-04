@@ -139,7 +139,7 @@ export function EntryCards({
     }
 
     const logos = storeLogos.data ?? [];
-    if (tile.link_value === "/browse" && logos.length > 0) return logos[0];
+    if (tile.link_value === "/browse-all" && logos.length > 0) return logos[0];
     return pick(() => true);
   };
 

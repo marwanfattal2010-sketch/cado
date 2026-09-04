@@ -194,7 +194,7 @@ export function Store() {
       <div key="store-missing" className="mx-auto max-w-md px-6 py-20 text-center">
         <h1 className="font-display text-h1">Store not found</h1>
         <p className="mt-2 text-body text-muted">This store may have closed, or the link is wrong.</p>
-        <ButtonLink to="/browse" className="mt-6">
+        <ButtonLink to="/browse-all" className="mt-6">
           Browse stores
         </ButtonLink>
       </div>
@@ -391,7 +391,7 @@ export function Store() {
                 </Button>
               ) : (
                 <Link
-                  to="/browse"
+                  to="/browse-all"
                   className="mt-5 inline-flex h-[52px] items-center rounded-pill bg-primary px-7 text-body font-medium text-inverse"
                 >
                   See other stores

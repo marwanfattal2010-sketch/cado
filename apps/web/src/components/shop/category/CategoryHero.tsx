@@ -36,10 +36,11 @@ const SCRIM =
 
 export function CategoryHero({
   slides,
-  onShopNow,
+  shopAllHref,
 }: {
   slides: HeroSlide[];
-  onShopNow: () => void;
+  /** Slide 1 opens the whole category on the results page. */
+  shopAllHref: string;
 }) {
   const rail = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -89,15 +90,14 @@ export function CategoryHero({
                   <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Shop</span>
                 </Link>
               ) : (
-                <button
-                  type="button"
-                  onClick={onShopNow}
+                <Link
+                  to={shopAllHref}
                   /* A white box on every tab — the one treatment that reads
                      the same over any photograph. */
                   className="mt-3 inline-flex min-h-[40px] items-center border border-white bg-white px-5 text-[12px] font-bold uppercase tracking-[0.12em] text-ink transition-transform duration-press ease-out active:scale-[0.97]"
                 >
                   Shop now
-                </button>
+                </Link>
               )}
             </div>
           </section>
