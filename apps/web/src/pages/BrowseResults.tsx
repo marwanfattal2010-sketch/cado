@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCatalogue, useAllSubcategories, useStoreDirectory } from "../hooks/useCatalogue";
 import { useCategories } from "../hooks/useCategories";
@@ -7,9 +7,12 @@ import { StaggeredGrid } from "../components/shop/StaggeredGrid";
 import { AllFiltersSheet, FacetChips, useFacets } from "../components/shop/Facets";
 import { ChevronLeftIcon } from "../components/Icons";
 import {
+  SCOPE_SORT,
+  SCOPE_TITLE,
   SORTS,
   activeCount,
   emptyBrowse,
+  inScope,
   matches,
   parseBrowse,
   serializeBrowse,
@@ -17,16 +20,18 @@ import {
   toggleValue,
   type BrowseState,
   type Lookup,
+  type Scope,
   type Sort,
 } from "../lib/browseParams";
 import {
+  CATALOGUE_FACETS,
   FLOWER_TYPES,
   TILE_LABEL,
   priceTier,
   recipientLabel,
   type FacetGroup,
 } from "../lib/facets";
-import { OCCASIONS } from "../lib/filters";
+import { OCCASIONS, budgetBySlug } from "../lib/filters";
 
 /**
  * /browse — the Results page, and the point of this whole rebuild.
@@ -51,7 +56,14 @@ import { OCCASIONS } from "../lib/filters";
 /** The sorts that are their own tap on the row, so the ▾ menu skips them. */
 const isInline = (s: Sort) => s === "popular" || s === "price-asc" || s === "price-desc";
 
-export function BrowseResults() {
+/**
+ * `scope` is what makes /deals and /new this page rather than two more.
+ *
+ * See the note on `Scope` in browseParams: it picks the pool, the heading and
+ * the opening sort. Everything below this line is the same code that runs for
+ * a category tab's results, which is the entire point of the prop existing.
+ */
+export function BrowseResults({ scope }: { scope?: Scope } = {}) {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const catalogue = useCatalogue();
@@ -69,6 +81,32 @@ export function BrowseResults() {
 
   const category = categories.data?.find((c) => c.slug === state.cat);
 
+  /*
+   * THE PAGE'S OWN ORDER, WRITTEN INTO THE URL ONCE.
+   *
+   * /deals means "biggest discount first" and /new means "newest first" —
+   * that order is half of what the page IS. Deriving it silently would have
+   * left the sort row reading "Recommended" over a discount-sorted grid, and
+   * worse, made "Recommended" in the sort menu a dead control: choosing it
+   * drops `sort=` from the URL, and a derivation would immediately map the
+   * empty value back to the scope's order.
+   *
+   * Seeding the real param once, on arrival, keeps the row honest AND leaves
+   * every sort in the menu genuinely selectable. `replace` because it is the
+   * same page, not a step to press back to; the ref because it must happen on
+   * arrival only — every later change to the query string is the shopper's.
+   */
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (!scope || seeded.current) return;
+    seeded.current = true;
+    if (params.get("sort")) return;
+    const next = new URLSearchParams(params);
+    next.set("sort", SCOPE_SORT[scope]);
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope]);
+
   const subcategories = useMemo(
     () =>
       (subcategoriesAll.data ?? [])
@@ -77,10 +115,32 @@ export function BrowseResults() {
     [subcategoriesAll.data, category?.id]
   );
 
-  /** Everything in this category — the pool every count is measured against. */
+  /**
+   * Everything this page is about — the pool every count is measured against.
+   *
+   * On a category page that is the category. On /deals and /new it is the
+   * whole shop narrowed by the scope, and narrowed there rather than through
+   * `state` on purpose: the scope is not a filter the shopper can take off,
+   * so it must not appear as a chip, must not be cleared by "Clear filters",
+   * and must be inside the base every facet count is measured against.
+   */
   const pool = useMemo(
-    () => (catalogue.data ?? []).filter((p) => !category || p.category_id === category.id),
-    [catalogue.data, category]
+    () =>
+      (catalogue.data ?? [])
+        .filter((p) => !category || p.category_id === category.id)
+        .filter((p) => !scope || inScope(p, scope)),
+    [catalogue.data, category, scope]
+  );
+
+  /**
+   * The Category facet's options — top-level categories, offered only where
+   * the page is not already one. On a category page this is empty and the
+   * group is dropped by the two-live-values rule without a special case.
+   */
+  const wholeShop = !state.cat;
+  const topCategories = useMemo(
+    () => (wholeShop ? (categories.data ?? []).map((c) => ({ slug: c.slug, name: c.name })) : []),
+    [categories.data, wholeShop]
   );
 
   const stores = useMemo(() => {
@@ -92,12 +152,13 @@ export function BrowseResults() {
 
   const lookup = useMemo<Lookup>(
     () => ({
+      catId: (slug) => (categories.data ?? []).find((c) => c.slug === slug)?.id,
       typeId: (slug) => (subcategoriesAll.data ?? []).find((s) => s.slug === slug)?.id,
       storeId: (slug) => (directory.data ?? []).find((s) => s.slug === slug)?.id,
       orders: (id) => signals.data?.get(id)?.recentOrders ?? 0,
       anyOrders: () => [...(signals.data?.values() ?? [])].some((s) => s.recentOrders > 0),
     }),
-    [subcategoriesAll.data, directory.data, signals.data]
+    [categories.data, subcategoriesAll.data, directory.data, signals.data]
   );
 
   const results = useMemo(
@@ -106,7 +167,26 @@ export function BrowseResults() {
   );
 
   /** One option model, shared by the chip row and the all-facets sheet. */
-  const facets = useFacets({ products: pool, state, lookup, subcategories, stores });
+  const facets = useFacets({
+    products: pool,
+    state,
+    lookup,
+    categories: topCategories,
+    subcategories,
+    stores,
+    /*
+     * WHICH FACET TABLE, decided by whether this page is one category — not by
+     * whether it is /deals.
+     *
+     * A budget or recipient tile lands on /browse with no `tab`, which is just
+     * as much "the whole shop" as /deals is. Keyed on `scope` this page offered
+     * those arrivals two facets, Price and Store, because FACETS_BY_CATEGORY
+     * has no row for "" and its fallback is that pair. Keyed on the category
+     * being absent, every whole-shop results page gets the same seven-group
+     * set, which is what "exactly one results page" has to mean.
+     */
+    groups: wholeShop ? CATALOGUE_FACETS : undefined,
+  });
 
   /* ---- the applied chips, in the order they read best ------------------- */
 
@@ -136,6 +216,24 @@ export function BrowseResults() {
       key: `price:${v}`,
       label: priceTier(v)?.label ?? v,
       remove: () => push(toggleValue(state, "price", v)),
+    });
+  /*
+   * The band a "Shop by budget" tile arrived with. It is not a facet — there
+   * is no Budget group in the sheet, because Price already is one — so it
+   * leads the row as its own removable chip, exactly like a tile's view. Take
+   * it off and you are still here, looking at everything.
+   */
+  if (state.budget)
+    applied.push({
+      key: "budget",
+      label: budgetBySlug(state.budget)?.label ?? state.budget,
+      remove: () => push({ ...state, budget: null }),
+    });
+  for (const v of state.category)
+    applied.push({
+      key: `category:${v}`,
+      label: topCategories.find((c) => c.slug === v)?.name ?? v,
+      remove: () => push(toggleValue(state, "category", v)),
     });
   for (const v of state.type)
     applied.push({
@@ -207,10 +305,20 @@ export function BrowseResults() {
    */
   const namesOnly = !applied.length
     ? false
-    : applied.every((a) => /^(tile|type|store|size|colour|flower):?/.test(a.key));
+    : applied.every((a) => /^(tile|category|type|store|size|colour|flower):?/.test(a.key));
   const occasionOnly =
     state.cat === "flowers-gifts" && applied.length > 0 && applied.every((a) => a.key.startsWith("occ:"));
-  const title = !applied.length
+  /*
+   * A SCOPED PAGE IS ITS OWN NAME.
+   *
+   * "Super deals" does not become "Super deals · For Her gifts" when a chip is
+   * added: the chips are on screen an inch below, saying exactly that, and the
+   * heading's job is to tell you which page you are on. The count line under
+   * it is what moves as filters change.
+   */
+  const title = scope
+    ? SCOPE_TITLE[scope]
+    : !applied.length
     ? `All ${catName}`
     : occasionOnly
       ? // "Flowers for a birthday", the way a florist would say it.
@@ -250,9 +358,22 @@ export function BrowseResults() {
           <ChevronLeftIcon className="h-5 w-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[14px] font-semibold leading-tight text-ink">{title}</h1>
-          <p className="text-[11px] leading-none text-muted">
-            {results.length} {results.length === 1 ? "piece" : "pieces"}
+          {/*
+            A SCOPED PAGE GETS THE BIG TITLE the brief asks for; a filtered one
+            keeps 14px. Both sit in the row that SCROLLS AWAY, so neither costs
+            a pixel of the sticky budget — the difference is only that "Super
+            deals" is a short page name that can carry 19px at 375px, while
+            "Gifts for Him · Anniversary +2" at 19px is an ellipsis.
+          */}
+          <h1
+            className={`truncate font-semibold leading-tight text-ink ${
+              scope ? "text-[19px]" : "text-[14px]"
+            }`}
+          >
+            {title}
+          </h1>
+          <p className={`text-[11px] leading-none text-muted ${scope ? "mt-0.5" : ""}`}>
+            {results.length} {results.length === 1 ? "gift" : "gifts"}
           </p>
         </div>
       </div>
@@ -321,6 +442,7 @@ export function BrowseResults() {
             state={state}
             onChange={push}
             facets={facets}
+            categories={topCategories}
             subcategories={subcategories}
             stores={stores}
             /*
@@ -337,6 +459,10 @@ export function BrowseResults() {
             extra={applied.filter(
               (a) =>
                 a.key === "tile" ||
+                // A budget band has no facet of its own — see the note where it
+                // is pushed onto `applied` — so this row is the only place it
+                // can be taken off.
+                a.key === "budget" ||
                 (a.key === "range" && !facets.visibleGroups.includes("price"))
             )}
             openOnMount={params.get("facet") as FacetGroup | null}
@@ -421,10 +547,16 @@ function EmptyState({
   const last = applied[applied.length - 1];
   return (
     <div className="rounded-card bg-surface p-6 text-center shadow-rest">
-      <p className="text-body font-semibold text-ink">No gifts match all of these.</p>
+      {/* With no filter on, nothing is being excluded — so blaming a filter
+          would be a lie. That case is the shelf genuinely being empty. */}
+      <p className="text-body font-semibold text-ink">
+        {last ? "No gifts match all of these." : "Nothing here right now."}
+      </p>
       {last ? (
         <p className="mt-1 text-caption text-muted">Try removing “{last.label}”.</p>
-      ) : null}
+      ) : (
+        <p className="mt-1 text-caption text-muted">Check back soon — stock changes daily.</p>
+      )}
       <div className="mt-4 flex flex-col gap-2">
         {last ? (
           <button
@@ -440,7 +572,7 @@ function EmptyState({
           onClick={onClearAll}
           className="min-h-[44px] rounded-pill border border-line text-body font-medium text-ink"
         >
-          Clear all
+          Clear filters
         </button>
       </div>
     </div>

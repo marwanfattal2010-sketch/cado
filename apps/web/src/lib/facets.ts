@@ -32,6 +32,8 @@ export type FacetGroup =
   | "for"
   | "occasion"
   | "price"
+  /** Top-level category. Only offered where the page is NOT already one. */
+  | "category"
   | "type"
   | "size"
   | "colour"
@@ -81,6 +83,29 @@ export const FACETS_BY_CATEGORY: Record<string, FacetGroup[]> = {
   "home-appliances": ["price", "type", "store"],
 };
 
+/**
+ * THE FACETS FOR A RESULTS PAGE THAT IS NOT ONE CATEGORY.
+ *
+ * /deals and /new span the whole shop, so `type` — the sub-category facet,
+ * labelled "Category" on a category page — has nothing to offer: it is scoped
+ * to one category's sub-categories, and a flat list of every sub-category in
+ * the catalogue is forty rows of noise. The honest equivalent at this altitude
+ * is the top-level category itself, which is what the `category` group is.
+ *
+ * Size and Colour are declared here and will still be dropped at runtime by
+ * the two-live-values rule if the pool does not back them. They are NOT forced
+ * to render: colour is real on a handful of products and size on three
+ * categories, and an empty group is worse than a missing one.
+ */
+export const CATALOGUE_FACETS: FacetGroup[] = [
+  "for",
+  "category",
+  "price",
+  "store",
+  "colour",
+  "size",
+];
+
 export const GROUP_LABEL: Record<FacetGroup, string> = {
   for: "For",
   occasion: "Occasion",
@@ -88,6 +113,14 @@ export const GROUP_LABEL: Record<FacetGroup, string> = {
   // "Category", not "Type": the row it filters is called Shop by category, and
   // two names for one thing is how the Him/For Him drift started.
   type: "Category",
+  /*
+   * The same word on purpose, and the two can never appear together: `type` is
+   * only ever offered by FACETS_BY_CATEGORY, which needs a category to be set,
+   * and `category` only by CATALOGUE_FACETS, which is used only where one is
+   * not. To a shopper "Category" means the same thing on both pages — the
+   * biggest division of the shop they can see from where they are standing.
+   */
+  category: "Category",
   size: "Size",
   colour: "Colour",
   flower: "Flower type",

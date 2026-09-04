@@ -50,15 +50,24 @@ export function useFacets({
   products,
   state,
   lookup,
+  categories = [],
   subcategories,
   stores,
+  groups,
 }: {
   /** Everything in this category, before filtering. */
   products: FeedProduct[];
   state: BrowseState;
   lookup: Lookup;
+  /** Top-level categories, for the `category` facet. Empty on a category page. */
+  categories?: { slug: string; name: string }[];
   subcategories: { slug: string; name: string }[];
   stores: { slug: string; name: string }[];
+  /**
+   * Which groups this page declares, overriding the per-category table.
+   * /deals and /new are not a category, so they pass CATALOGUE_FACETS.
+   */
+  groups?: FacetGroup[];
 }) {
   /** Sizes and colours are whatever the catalogue actually holds, in a stable order. */
   const sizeValues = useMemo(() => {
@@ -114,6 +123,7 @@ export function useFacets({
       for: build("for", RECIPIENTS.map((r) => ({ value: r.value, label: r.full }))),
       occasion: build("occasion", OCCASIONS.map((o) => ({ value: o.value, label: o.label }))),
       price: build("price", PRICE_TIERS.map((t) => ({ value: t.id, label: t.label }))),
+      category: build("category", categories.map((c) => ({ value: c.slug, label: c.name }))),
       type: build("type", subcategories.map((s) => ({ value: s.slug, label: s.name }))),
       size: build("size", sizeValues.map((s) => ({ value: s, label: s }))),
       colour: build("colour", colourValues.map((c) => ({ value: c, label: titleCase(c) }))),
@@ -128,7 +138,17 @@ export function useFacets({
       ),
       store: build("store", stockedStores.map((s) => ({ value: s.slug, label: s.name }))),
     } as Record<FacetGroup, Option[]>;
-  }, [products, state, lookup, subcategories, stockedStores, sizeValues, colourValues, flowerValues]);
+  }, [
+    products,
+    state,
+    lookup,
+    categories,
+    subcategories,
+    stockedStores,
+    sizeValues,
+    colourValues,
+    flowerValues,
+  ]);
 
   /*
    * WHICH CHIPS EXIST IS DECIDED BY THE CATEGORY, NOT BY THE SELECTION.
@@ -144,7 +164,7 @@ export function useFacets({
    * would return nothing is still greyed — the chip just stops moving.
    */
   const base = useMemo(() => emptyBrowse(state.cat), [state.cat]);
-  const declared = FACETS_BY_CATEGORY[state.cat] ?? ["price", "store"];
+  const declared = groups ?? FACETS_BY_CATEGORY[state.cat] ?? ["price", "store"];
   const visibleGroups = useMemo(
     () =>
       declared.filter((g) => {
@@ -195,6 +215,7 @@ export function FacetChips({
   state,
   onChange,
   facets,
+  categories = [],
   subcategories,
   stores,
   openOnMount,
@@ -205,6 +226,7 @@ export function FacetChips({
   state: BrowseState;
   onChange: (next: BrowseState) => void;
   facets: ReturnType<typeof useFacets>;
+  categories?: { slug: string; name: string }[];
   subcategories: { slug: string; name: string }[];
   stores: { slug: string; name: string }[];
   /** `?facet=occasion` — how "See all occasions" lands with the sheet already up. */
@@ -241,7 +263,7 @@ export function FacetChips({
   const chipLabel = (g: FacetGroup) => {
     const chosen = selectedIn(state, g);
     if (!chosen.length) return groupName(g);
-    const first = labelOf(g, chosen[0], { subcategories, stores });
+    const first = labelOf(g, chosen[0], { categories, subcategories, stores });
     // Flowers prints the value alone — "Birthday ✕", not "Occasion: Birthday ✕" —
     // because on that tab the value is unambiguous without its group name.
     const head = rose ? "" : `${groupName(g)}: `;
@@ -464,7 +486,13 @@ export function AllFiltersSheet({
         clearLabel="Clear all"
         onClear={() =>
           setDraft((d) =>
-            facets.visibleGroups.reduce((acc, g) => clearGroup(acc, g), { ...d, tile: null })
+            facets.visibleGroups.reduce((acc, g) => clearGroup(acc, g), {
+              ...d,
+              tile: null,
+              // Not a group in this sheet, but it IS a price constraint, and a
+              // "Clear all" that leaves a band on is not clear all.
+              budget: null,
+            })
           )
         }
         count={n}
@@ -749,13 +777,19 @@ const numOrNull = (v: string) => (v === "" ? null : Number(v));
 function labelOf(
   g: FacetGroup,
   value: string,
-  refs: { subcategories: { slug: string; name: string }[]; stores: { slug: string; name: string }[] }
+  refs: {
+    categories: { slug: string; name: string }[];
+    subcategories: { slug: string; name: string }[];
+    stores: { slug: string; name: string }[];
+  }
 ): string {
   switch (g) {
     case "for":
       return RECIPIENTS.find((r) => r.value === value)?.short ?? value;
     case "occasion":
       return OCCASIONS.find((o) => o.value === value)?.label ?? value;
+    case "category":
+      return refs.categories.find((c) => c.slug === value)?.name ?? value;
     case "type":
       return refs.subcategories.find((s) => s.slug === value)?.name ?? value;
     case "store":

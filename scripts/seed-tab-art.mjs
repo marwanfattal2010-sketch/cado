@@ -44,6 +44,40 @@
  *   1621198059871  kids    — a green branch takes a third of the frame
  *   1713881630214  men     — the top tee is navy, and blue is out
  *
+ * Rejected on the Flowers tile re-shoot (four slots, Sep 2026). The brief was
+ * one composed bouquet, clean uncluttered ground, no text and no packaging, so
+ * most of what a flower search returns fails it:
+ *   1602136303098  tiles   — the tile it replaces: a florist's printed sticker
+ *                            ("HARR…") legible on the wrapping paper
+ *   1602135452565  tiles   — the same florist's paper, same wordmark
+ *   1544249804     tiles   — the tile it replaces: bouquet half-cropped off
+ *                            the right edge, no background to speak of
+ *   1587235442308  tiles   — the tile it replaces: jugs on a near-black
+ *                            ground, nowhere near the other three for light
+ *   1599791095997  tiles   — "Just for you" printed along the ribbon
+ *   1680563094046  tiles   — printed care tag hanging off the ribbon
+ *   1689061732262  tiles   — printed label on the paper, dark wood table
+ *   1655744342825  tiles   — florist's card tied to the stems
+ *   1523693916903  tiles   — shot lying on grass
+ *   1655744348513  tiles   — leopard-print sleeve and a boot in frame
+ *   1717785386175  tiles   — near-black background; so are 1719529006092,
+ *                            1649140938067, 1773114326711
+ *   1579532648866  tiles   — loose stems flat on concrete, which the brief
+ *                            bans by name; so is 1689085055401
+ *   1674758445398  tiles   — half-cropped styling flat, not a bouquet
+ *   1729151634645  tiles   — carved cabinet and greenery behind the subject
+ *   1625382270782  tiles   — a room, a framed print and an arm; a scene
+ *   1622658641558  tiles   — very nearly shipped as Under $50, and caught at
+ *                            full size: cursive lettering printed the length
+ *                            of the ribbon. Same fault as 1622658641561, which
+ *                            is the same photographer's next frame.
+ *   1567696153798  tiles   — a printed card being clipped to the wrapping
+ *   1685270065783  tiles   — florist's bench, twine, and a printed label
+ *   1590545601547  grad    — "Arizona State University" across the folder
+ *   1747576686252  grad    — a name and a university seal on the sash
+ *   1639891673700  grad    — a school's name embossed on the cover
+ *   1559443065     grad    — "2019" on the tassel charm, and a violent blue
+ *
  * Usage:  node scripts/seed-tab-art.mjs [--dry]
  */
 import { readFileSync } from "node:fs";
@@ -160,11 +194,43 @@ const CATEGORY_TILES = {
     // panelling. The one full-length garment in the four. Lisa Anna.
     deals: { ...TALL, id: "1722859031306-4c81e8d83957" },
   },
+  /*
+   * Flowers, re-shot as a SET (Sep 2026). The four it replaces were four
+   * different photographs of flowers and nothing more: a half-cropped posy
+   * running off the right edge, a cluttered marble flat-lay with a florist's
+   * printed sticker legible in it, a tight pink-on-pink crop, and tulips in
+   * jugs on a near-black ground. Put side by side they shared no crop, no
+   * background and no light level, and one of them broke the no-brand rule.
+   *
+   * All four are now the same picture made four ways: ONE bouquet, upright and
+   * centred, filling the frame, against a plain pale ground in even daylight,
+   * in cream / blush / peach and nothing louder. No shop floor, no market
+   * stall, no loose stems on a table, no packaging or lettering in frame. The
+   * wrap colour is what separates them — mauve, ivory, blush, and one white
+   * arrangement in a pale vase so the row is not four copies of one idea.
+   *
+   * 600x800 in the FILE: a Flowers tile is 152x200, which is exactly 3:4, so
+   * the file and the tile agree and the browser crops nothing at display time.
+   */
   "flowers-gifts": {
-    "under-50": "1544249804-78bcb97b5e65", // a small mixed posy
-    "under-100": "1602136303098-f5aa2b9c9df9", // wrapped bouquet in peach paper
-    "best-picks": "1680563899402-26c3a712831f", // pink roses, wrapped
-    "new-in": "1587235442308-8980bb6e0f17", // tulips in white jugs
+    // A white and green arrangement in a pale ceramic vase against a cream
+    // wall — the one that is not a wrapped bouquet, so the row is four
+    // arrangements rather than four photographs of the same idea, and the
+    // quietest of them, which is the right note for the cheapest tile. The
+    // rect is why it holds its own beside the other three: see `photo()`.
+    // Annie Spratt.
+    "under-50": { ...TALL, id: "1646925910567-1ff71e3f32df", rect: "400,2200,3100,4133" },
+    // A blush and cream bouquet in mauve wrap with a peach ribbon, held up
+    // against plain white. shche_ team.
+    "under-100": { ...TALL, id: "1644248422980-8e0eb75a1557" },
+    // The fullest of the four — cream roses, peach carnations, eucalyptus and
+    // gypsophila in a blush wrap with a long peach ribbon. The one that has to
+    // look like the best thing on the tab. Lorena Lizeth Gonzalez Briones.
+    "best-picks": { ...TALL, id: "1667010723263-8ad9a8f5f6c6" },
+    // Cream roses and eucalyptus in an ivory wrap, held against pale grey.
+    // The crispest and coolest of the four, which is what "New in" wants.
+    // Arjun Lama.
+    "new-in": { ...TALL, id: "1652346064068-1ae0d97502c3" },
   },
 };
 
@@ -176,21 +242,46 @@ const CATEGORY_TILES = {
  * "Shop for" circle art, per category and value. A circle names a kind of
  * product, so it shows that product — never a photo borrowed from the grid.
  */
-/**
- * Occasion circles on Flowers. Each one says its occasion IN FLOWERS — a
- * bright gerbera mix for Birthday, calm white lilies for Get well, pale pink
- * for New baby. No balloons, no cards, no props.
+/*
+ * SEVEN OF THE EIGHT OCCASION CIRCLES ARE NOT UPLOADED BY THIS SCRIPT.
+ *
+ * There used to be eight Unsplash ids here — a gerbera mix for Birthday, white
+ * lilies for Get well, and so on, on the rule that every slot on a flowers tab
+ * must be flowers. Marwan reversed that for the occasion circles specifically:
+ * eight bouquets in a row cannot tell you which one is Birthday, so the row
+ * stopped meaning anything. The originals go back — the "Happy Birthday"
+ * balloons, the rings on white blooms, the newborn's feet, the pink tulip, the
+ * couple on the beach, the gift box.
+ *
+ * "The exact images this app used before" are FILES IN THIS REPO, at
+ * apps/web/public/occasions/, unchanged since August and already deployed at
+ * /occasions/*.jpg. Re-uploading copies of them into product-images would give
+ * one photograph two homes and let the copy drift from the original, so
+ * src/lib/tabArt.ts points straight at the public files instead. Nothing to
+ * upload, nothing to keep in step. See the note over OCCASION_ART there.
+ *
+ * The old flower JPEGs are still sitting at art/occasion/flowers-gifts--*.jpg
+ * in storage. Nothing reads them; they are left rather than deleted, because
+ * deleting is the irreversible half of a change that did not need to be made.
+ *
+ * GRADUATION IS THE ONE EXCEPTION, and it is here because the row was looked
+ * at at 70px rather than assumed. public/occasions/graduation.jpg is a wide
+ * shot of a cap thrown into an empty sky: cropped to a 70px disc it is a pale
+ * blue-grey circle with a speck in it, next to seven circles whose subject
+ * fills the frame. It also carries a real university's lettering on the stole.
+ * So Flowers overrides it, exactly the way a category already overrides a
+ * shared tile — and the file itself is left alone, because the All tab's
+ * occasion rail and /find still serve it through lib/filters.ts and changing
+ * it there was not what was asked for.
  */
 const OCCASIONS = {
   "flowers-gifts": {
-    birthday: "1589100534833-475e31a17b4e",
-    "visiting-someone": "1558879860-45f24b366ea1",
-    "get-well": "1631407779166-86952be9dbd7",
-    newborn: "1622296885520-bf2121072ca0",
-    anniversary: "1780948317866-d857dad38d5c",
-    wedding: "1484676681417-64a0ea3475fd",
-    engagement: "1521520368710-3ab197656d60",
-    graduation: "1779738193027-c8a3ec1633ca",
+    // A graduate in cap and gown against a plain warm beige wall — one subject,
+    // centred, no lettering and no institution's crest, in the same cream and
+    // blush register as the Wedding, Engagement and New Baby circles beside
+    // it. Cropped square in the file for the same reason the Fashion circles
+    // are. Seyi Ariyo.
+    graduation: { ...SQUARE, id: "1576997355598-a5a9def46291" },
   },
 };
 
@@ -257,7 +348,7 @@ async function upload(path, buf, fmt) {
   if (!res.ok) throw new Error(`upload ${path}: ${res.status} ${await res.text()}`);
 }
 
-async function photo({ id, w = 900, h, fmt = "jpg" }) {
+async function photo({ id, w = 900, h, fmt = "jpg", crop, rect }) {
   // 900px: these are shown at 62px in a circle and 124px on a tile, so the
   // source only has to survive a 3x screen, and a 2MB hero would be waste.
   // With `h`, Unsplash crops to that exact box centre-out, which is the same
@@ -267,7 +358,26 @@ async function photo({ id, w = 900, h, fmt = "jpg" }) {
   if (h) {
     q.set("h", String(h));
     q.set("fit", "crop");
+    // `crop` moves that box off centre — "bottom", "top", "left", "right".
+    // Centre is right for almost everything, and wrong for a photograph whose
+    // subject sits low under a lot of empty wall: centring it keeps the wall
+    // and clips the subject.
+    if (crop) q.set("crop", crop);
   }
+  /**
+   * `rect` — "x,y,w,h" in the ORIGINAL photograph's pixels, applied before the
+   * resize. It is how a slot says "this part of the frame", when neither the
+   * centre nor an edge is the answer.
+   *
+   * Used once, and only after looking: the Under $50 arrangement is a small
+   * subject at the bottom of a 4000x6000 frame, so every automatic crop either
+   * kept a third of the picture as empty wall — leaving it visibly smaller
+   * than the three tiles beside it — or zoomed in far enough to cut the
+   * arrangement off at both edges, which the brief bans by name. The rect
+   * keeps the whole arrangement AND fills the tile. Whole-subject first: a
+   * tighter number here is not an improvement.
+   */
+  if (rect) q.set("rect", rect);
   const res = await fetch(`https://images.unsplash.com/photo-${id}?${q}`);
   if (!res.ok) throw new Error(`unsplash ${id}: ${res.status}`);
   return Buffer.from(await res.arrayBuffer());
@@ -292,6 +402,7 @@ const jobs = [
   ...Object.entries(CIRCLES).flatMap(([cat, vals]) =>
     Object.entries(vals).map(([k, v]) => job(`art/circle/${cat}--${k}`, v))
   ),
+  // Graduation only — the other seven are public/occasions files. See above.
   ...Object.entries(OCCASIONS).flatMap(([cat, vals]) =>
     Object.entries(vals).map(([k, v]) => job(`art/occasion/${cat}--${k}`, v))
   ),

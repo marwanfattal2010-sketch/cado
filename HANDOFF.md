@@ -2,7 +2,7 @@
 
 Read this first. It replaces having to re-explain anything.
 
-Last updated: 2026-08-14.
+Last updated: 2026-09-04.
 
 ---
 
@@ -13,8 +13,12 @@ gift-card feature is written but switched off. The **screens** for it are not
 built yet.
 
 Live site: https://cado-web.vercel.app
-Branch everything is on: `prompt-10-storefront` (also pushed to `main` and
-`master` — all three are identical).
+
+**Branch: `dashboard-v2`.** That line used to say `prompt-10-storefront`, and
+it has not been true for a while — the three branches are no longer identical.
+`dashboard-v2` is where every storefront and dashboard commit of the last month
+landed and where the working tree is; `prompt-10-storefront` and `master` are
+old and behind. Start from `dashboard-v2` unless someone tells you otherwise.
 
 ---
 
@@ -974,6 +978,15 @@ Chocolate.
 `CategoryTab`, gated by the `FILTERED_GRID` set) both mount it. TabTemplate had
 its own copy until Flowers needed the same thing — that copy is gone.
 
+> **SUPERSEDED on Sep 4 — no tab filters in place any more.** `FILTERED_GRID`
+> in `CategoryTab.tsx` is now the EMPTY set, so `filtered` is false on every
+> tab and `FilterGridSection` renders nowhere. Flowers got its own component
+> (`FlowersTab.tsx`) and, like Fashion, every control on it opens the results
+> page instead of narrowing a grid underneath. `useTabFilters` and
+> `FilterGridSection` are still imported and still compile; they are a dormant
+> path, not a live one. Read the rest of this section as history — the two slug
+> bugs it describes are real and the fixes are still in `browseParams.ts`.
+
 **Two slug bugs the shared hook fixed, both invisible on Fashion.**
 The pager owns `?tab=`, and it wants the TAB slug. Four tabs have a tab slug
 that differs from their category slug — flowers/flowers-gifts,
@@ -1014,3 +1027,325 @@ attribute flip never triggered a recalc inside the pager's panels. `Img` writes
 `style={{opacity}}` from React state; blur and scale stay in CSS where a frame
 of lag is free. If you ever see "the image is downloaded but invisible" again,
 this is the third distinct cause and inline style is the answer.
+
+---
+
+## The Flowers tab and the Fashion store row (Sep 4, 2026)
+
+Two commits, `9dbf211` and `b285be2`, both on `dashboard-v2` and both pushed.
+Plus two migrations, **0096 and 0097, which are APPLIED to the live database**
+— verified by reading it, not by trusting the filenames.
+
+**Check `git status` before you believe the code half of this.** At the time of
+writing, `0097` is UNTRACKED and the one-results-page work below — the `/deals`
+and `/new` routes, the `scope` prop, the `budget` chip, the whole-shop
+`category` facet, the home rows that stopped linking to `/gift-finder` — is
+UNCOMMITTED in the working tree (`App.tsx`, `BrowseResults.tsx`,
+`browseParams.ts`, `facets.ts`, `tabArt.ts`, `Facets.tsx`, `HomeLower.tsx`,
+`TabPanel.tsx`, `DealPair.tsx`, `seed-tab-art.mjs`). The DATABASE half is live
+and the code half may not be. **Whether any of it is deployed to
+cado-web.vercel.app was not checked** — do not assume it is.
+
+### Migration 0096 — the store row became data
+
+`0096_partner_display_rank.sql` adds two nullable columns to `partners`:
+
+- `display_rank` — where this shop sits in a row, 1 = first
+- `display_category_id` — **which category's row that rank applies to**
+
+**The second column is the whole point and it is not optional.** The eight
+circles at the top of Fashion used to be ordered by a hardcoded list of names
+inside `TabTemplate.tsx`, so moving a shop up the row was a deploy. A bare
+global rank would have fixed that and broken something else: rank 3 would pin
+Adidas to the top of Chocolate, Flowers and Jewelry as well. With the pair, a
+rank means exactly one thing — *this shop is at this position in THIS
+category's store row*.
+
+The rest of the file is guard rails. Two checks (a rank is >= 1; a rank and a
+category are both set or both null, because half a pin is how a shop ends up
+ranked on every tab or on none), and a **partial** unique index on
+`(display_category_id, display_rank) where display_rank is not null` — partial
+so the thirty unpinned partners do not all collide on `(null, null)`.
+
+It also does two things that are easy to miss:
+
+- **`grant select (display_rank, display_category_id) on partners to anon`.**
+  0081 took the table-level SELECT grant away from `anon` and hands columns
+  back one at a time, so **any new column on `partners` is invisible to
+  logged-out visitors until it is named in a grant.** Adding a column is not
+  enough.
+- **`search_stores` was replaced** so a store must have at least one active
+  product to be returned. Harmless before; not harmless the moment a pinned,
+  product-less store exists, because typing its name would return a result
+  that opens onto a page with nothing to buy.
+
+### THE TRAP: never deploy code that selects a column before the migration lands
+
+`useStoreDirectory` names `display_rank` and `display_category_id` in its
+select. **PostgREST rejects the WHOLE select when one column is missing or
+ungranted — it 400s, it does not return the other columns** — so with 0096
+unapplied the partners request failed and **every store row on the site went
+silently empty**, along with the Store facet on `/browse`. Nothing logged an
+error a shopper could see; the rows just were not there.
+
+Migration first, then the build. This is now the third variant of the same
+lesson in this file (0046 made the database stricter than the deployed
+frontend; this one made the frontend expect more than the database had) and
+the rule that covers both is: **the deploy and the migration are one change,
+and the order is decided by which direction the strictness runs.**
+
+### The six brand shops with empty shelves
+
+`scripts/seed-fashion-store-row.mjs` (run after 0096, service-role key) created
+six partners that have **zero products**: Adidas, Nike, Pull & Bear, Bershka,
+Mango, LC Waikiki. They are ranked 3–8 in Fashion, behind **GS (1)** and
+**Zahar (2)**, which are real stocked shops. Verified against the live
+database: all eight are pinned to Fashion, all eight are `status = active`
+and `is_live`, and the six brands have 0 active products each.
+
+**Their `logo_url` is deliberately NULL, and it must stay that way until
+Marwan supplies the real files.** CADO never generates, fetches, traces or
+approximates a brand mark. The script also writes no description, tagline,
+city, phone or email — a tagline seeded by a script is a claim CADO is making
+about a company it does not speak for.
+
+The script is rerunnable: existing stores are matched by slug and never
+overwritten, only the two pin columns are rewritten, and every Fashion pin is
+cleared first so a reordering cannot collide with the unique index.
+
+### Where each store list comes from — the two rules in `lib/browse.ts`
+
+This is the answer to "why is that shop in the circle row but not in the grid",
+and both rules live in one file so they cannot drift.
+
+- **`stockedStoreIds(products, categoryId)` — THE STOCK RULE.** A shop is in a
+  category when it has an ACTIVE product in it, and nothing else. Every
+  product-derived surface measures itself against this: the grid, the strips,
+  the deals, the Store filter facet, store search.
+- **`categoryStores({stores, products, categoryId})` — THE DISPLAY RULE**, and
+  the only exception. A shop qualifies if it stocks the category **OR** is
+  pinned to it. Pinned shops lead in rank order; everyone else follows
+  alphabetically.
+
+So **a shop with an empty shelf appears in exactly two places** — the circle
+row on its tab, and the `/stores/:cat` directory behind that row's "See all" —
+**and nowhere else.** It cannot leak into a grid, a facet, a search result or a
+deal. Its store page says "Products coming soon." rather than rendering a count
+of zero (`pages/Store.tsx`).
+
+**There is no name list anywhere and there must never be one again.** Moving a
+shop is an UPDATE.
+
+### Migration 0097 — the entry tiles point at the results page
+
+`0097_entry_tiles_to_one_results_page.sql`, applied. The recipient tiles ("For
+Her", "For Him") and the budget tiles were rows in `browse_tiles` whose
+`link_value` pointed at **`/gift-finder`** — which is not an old results page,
+it is the gift QUIZ, a different feature with its own filter UI. Every one of
+those taps landed a shopper on a screen whose filters behave nothing like the
+ones they came from.
+
+**The category is preserved on the way across.** "For Her" under Jewellery is a
+different tile from "For Her" under Perfume, and dropping the category would
+have dumped both into all 121 products. `category=<slug>` becomes `tab=<slug>`.
+
+Every statement is an idempotent UPDATE keyed on the *shape* of the value
+rather than on a uuid, so it also catches any tile of the same shape added
+since. Nothing is deleted or deactivated, and `/gift-finder` itself is
+untouched — still routed, still the destination of the quiz.
+
+The file's closing comment lists what it deliberately did NOT change and why;
+read it before "finishing the job". The short version: the `{"max_price":N}`
+and `{"sort":"popular"}` filter tiles render nowhere today because category
+tabs stopped reading `browse_blocks`, and rewriting a link nobody can tap is
+changing data on a guess.
+
+### There is ONE results page. `/browse`, `/deals` and `/new` are all of it.
+
+`pages/BrowseResults.tsx` serves all three routes (`App.tsx`). `/deals` and
+`/new` are the same component with a `scope` prop — not two more grids, two
+more filter sheets and two more ideas of what a card looks like.
+
+**Why `scope` is a prop and not a URL param.** The scope is the page's
+IDENTITY, not a filter. `/deals` is a place. A removable chip that took you
+somewhere else without the address changing would be a lie — so the scope
+narrows the *pool* (before any counting), never appears as a chip, and is not
+cleared by "Clear filters". Every actual filter stays in the query string
+exactly as before.
+
+Consequences worth knowing:
+
+- The scope seeds its sort into the URL **once, on arrival** (`discount` for
+  deals, `newest` for new). Deriving it silently would have left the sort row
+  reading "Recommended" over a discount-sorted grid, and made "Recommended"
+  a dead control — choosing it drops `sort=` and the derivation would put the
+  scope's order straight back.
+- `inScope` uses the same tests as the cards whose "See all" opens the page:
+  a real `compare_at_price` above the price, and the same `NEW_IN_DAYS`
+  window. A null compare-at is **not** a discount of zero; those products are
+  simply not on the deals page and no percentage is computed from them.
+- A recipient or budget tile lands on `/browse` with no `tab`, which is just
+  as much "the whole shop" as `/deals` is. The facet table is therefore chosen
+  by **whether the page is one category** (`CATALOGUE_FACETS` vs
+  `FACETS_BY_CATEGORY`), not by whether it is scoped. Keyed on the scope, those
+  arrivals got two facets instead of seven.
+- The whole-shop pages offer a top-level **`category`** facet where a category
+  page offers **`type`** (sub-categories). Both are labelled "Category" on
+  purpose, and they can never appear together.
+- A budget band travels as its own `budget` param, tested by `inBudgetRange`
+  with an **exclusive** upper bound, and NOT folded into the `price` tiers.
+  The tiers are nested ceilings ("Under $100"); a band has a floor and a
+  ceiling and shares its edges with its neighbours, so a $100 gift would
+  otherwise land in both "$50 – $100" and "$100 – $200" and the counts would
+  stop adding up.
+
+### `PARAM` — the known foot-gun in `browseParams.ts`
+
+The state field and the URL parameter do not have the same name, and the map
+between them is `PARAM`:
+
+    state.cat   ->  ?tab=
+    state.type  ->  ?cat=
+    state.tile  ->  ?view=
+
+So `?cat=women` is the SUB-category, and the category is in `?tab=`. This has
+already produced two live bugs (`serializeBrowse` writing a category slug into
+`tab`, and `parseBrowse` reading a category back out of it), and it is
+invisible on Fashion because its tab slug and category slug are the same word.
+**Four tabs where they differ: flowers/flowers-gifts, jewelry/
+jewelry-accessories, home/gift-sets.** Test any URL change on one of those,
+never on Fashion.
+
+### Curated art: `lib/tabArt.ts` is the single source
+
+Every decorative image whose label is not the name of a thing in the catalogue
+— recipient circles, entry tiles, hero slides, occasion circles, flower-type
+pills, Fashion's sub-category circles — is a curated file listed in
+`lib/tabArt.ts`. Sub-category circles on other tabs still come from the
+catalogue on purpose: a "Rings" circle showing a ring from Rings is showing
+the labelled thing by construction.
+
+- **Images live in Supabase storage under `art/…`** (bucket `product-images`,
+  uploaded by `scripts/seed-tab-art.mjs`) **because the deployed CSP allows
+  images from `'self'` and the Supabase origin only.** Check `vercel.json`
+  before pointing at any other host — a third-party image URL will simply not
+  render in production. Repo files under `public/` are `'self'` and are fine;
+  `occasionArt` returns a leading-slash path untouched for exactly that reason.
+- **`art()` throws at import time in dev** when a slot has no entry, so a
+  blank circle fails on the first render instead of shipping. In production it
+  falls back to a neutral mark rather than taking the page down over a picture.
+- **Fashion's art is WebP with the crop baked into the file** — circles square
+  at 400x400, tiles 3:4 — rather than left to `object-fit: cover`. A browser
+  cropping a 3:2 source at display time throws away a third of the picture, so
+  the row that was judged is not the row that ships. Flowers' four tiles are
+  WebP at 600x800, which is exactly the 152x200 the tile renders at.
+
+**The house rules for any image, and they are not negotiable:**
+
+1. Every photograph is opened and looked at before use. A filename or an alt
+   tag is not proof of what is in the file.
+2. Source ids are recorded — the header of `scripts/seed-tab-art.mjs` lists
+   every rejected candidate with the reason, so nobody re-picks it.
+3. Nothing with baked-in text, a price, a watermark or a real brand's mark.
+   That is what rules out most results: a Coach monogram, a Fred Perry laurel,
+   a florist's printed sticker, a university's lettering on a graduation cap.
+4. **No image is used twice on one tab.** One Fashion candidate was rejected
+   for being the Merino Crewneck's own product photo.
+5. **Never a product's own photo in an art slot** — see 4.
+
+### Per-tab scroll restoration (`TabPanel.tsx`)
+
+Why this had to be written at all: **each tab is its own scroll container, so
+the document never scrolls, and the browser's own scroll restoration watches
+the document** — it had nothing to restore. Swiping between tabs was always
+fine (those panels never unmount), but opening a product or the results page
+unmounts `Home` entirely, so you scrolled 1400px into Flowers, tapped a tile,
+pressed back, and landed at the top.
+
+`lastOffset` is a **module-level Map**, deliberately not state — reading it
+must never cause a render — and it survives for the life of the SPA session,
+which is exactly the span the back button covers.
+
+The restore is frame-by-frame, and that is not defensive coding: a panel mounts
+nearly empty and grows as its queries land, so assigning the old offset at
+mount is silently clamped to 0. It asks each frame until the content is tall
+enough to hold the offset, with a 90-frame cap so a tab whose products never
+load does not poll forever.
+
+### Also in these two commits, briefly
+
+- **Fashion lost the blue.** Peach `#FFF4EF` behind Super deals, and each tile
+  carries a gradient scrim over its own photograph so it takes its colour from
+  the picture. The oversized deal card was NOT a missing aspect cap — the photo
+  sat in normal flow at `h-full`, which is indefinite, so the image fell back
+  to its intrinsic height and that became the card's size.
+- **Eleven "Best of" strips on the All tab**, one per category, from the
+  categories constant. The single strip was a truncation bug:
+  `name.replace(/ &.*$/)` turned "Home & Appliances" into "Home". The strips
+  are slices of a catalogue call the page already makes, so eleven rows cost
+  no extra requests.
+- **Flowers is its own component**, `category/FlowersTab.tsx`, dispatched by
+  slug in `CategoryTab.tsx` before the `REBUILT` set is consulted. Cream
+  ground, serif headings, rose accent, occasions first and florists last and
+  small — because nobody picks a florist, they pick the bouquet.
+- **Flower type lives in `products.tags` as `flower:roses`** (an existing
+  `text[]`, no new column) and colour in the existing `products.color`.
+
+---
+
+## Known open, as of Sep 4 2026 — all of these are verified
+
+Stated as open because they ARE open. None of them is broken; each is a thing
+that is honestly empty until real data or a real file arrives.
+
+- **The eleven store logo PNGs are not here yet.** The folder
+  `apps/web/src/assets/stores/` contains only its README, which lists the
+  exact filenames: `gs`, `zahar`, `adidas`, `nike`, `pull-and-bear`,
+  `bershka`, `mango`, `lc-waikiki` for the visible 4x2 row, and
+  `anchor-and-oak`, `cedar-street-fashion`, `solstice-studio` for the three
+  that appear only under "See all". PNG only — the `import.meta.glob` ignores
+  `.jpg`, `.svg` and `.webp`. Until a file lands the circle renders **cream
+  with the shop's name in text**, which is a deliberate finished-looking
+  fallback and not a broken image, so the row is safe to ship half-filled.
+  Restart the dev server after adding a file; Vite reads the folder at start.
+- **The Flowers "New in" tile is hidden**, correctly. All six active flower
+  products were created 36 days ago and the tile's test is 30 days, so nothing
+  qualifies. It will reappear on its own the day a florist adds stock.
+- **Engagement and Graduation have no flower products.** Nothing in Flowers is
+  tagged `engagement` or `graduation`, so those two occasion circles do not
+  render — the row only shows occasions with stock. Both pictures are already
+  in `OCCASION_ART` so the circle has a photograph the moment a product is
+  tagged. (Both occasions DO have products elsewhere in the catalogue —
+  graduation 42, engagement 7 — this is a Flowers-only gap.)
+- **Colour is unset on 2 of the 6 flower products**: Signature Rose Bouquet and
+  Teddy & Tulips Set. Their titles and descriptions say nothing about colour
+  and a guess is worse than a blank, so `color` is null rather than invented.
+- **Five occasion tiles still point at `/gift-finder`** — Birthday and Visiting
+  Someone on Chocolate, Birthday on Perfume, Anniversary and Get Well on
+  Flowers. `/browse` reads `occasion` natively, so the fix is a one-liner of
+  the same shape as statement 1 of 0097; it was left out because occasions were
+  not in that round's brief. Those tiles sit on category tabs, which render no
+  `browse_blocks` today, so nobody can currently tap them.
+- **Twenty-five orphaned objects under `art/` in the `product-images` bucket.**
+  Checked by listing the bucket and diffing it against every `art/…` path in
+  `tabArt.ts`: the five `art/circle/fashion--*.jpg` and four
+  `art/tile/fashion--*.jpg` superseded by their WebP versions, four
+  `art/tile/flowers-gifts--*.jpg` likewise plus an unused
+  `flowers-gifts--store-picks.jpg`, three old `art/hero/fashion-{1,2,3}.jpg`,
+  and all eight `art/occasion/flowers-gifts--*.jpg` (the occasion circles now
+  read the original files in `public/occasions/`, except Graduation which uses
+  the `.webp`). Nothing is broken by them — the same check found **zero**
+  paths named in `tabArt.ts` that are missing from the bucket. They are dead
+  bytes on a free-plan bucket; delete only after re-confirming the diff.
+- **Four `[TEST]` partner rows are still in the database**, slugs
+  `zzz-test-store-a` through `-d`: Aurora Atelier, Brass & Bloom, Cedar Loft,
+  Dune & Dusk. All are `status = pending`, which is why they do not surface —
+  `search_stores` and the storefront both want `active` — but they are real
+  rows and `storeDisplayName()` in `lib/browse.ts` exists partly to strip that
+  `[TEST]` prefix if one ever does show. Clean them up deliberately, not as a
+  side effect of something else.
+
+**Catalogue size, for calibration:** 121 active products of 187 rows, 38
+partners of which 34 are active. Every number on a screen is measured against
+a catalogue this small, which is why thresholds like the price tiles are set
+high — the rule has always been "a tile must land on a well-stocked grid".

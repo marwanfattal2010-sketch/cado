@@ -57,11 +57,15 @@ const CATEGORY_TILE_ART: Record<string, Record<string, string>> = {
     "under-75": "art/tile/fashion--under-75.webp",
     deals: "art/tile/fashion--deals.webp",
   },
+  // Flowers' four are WebP and cropped 3:4 in the file, for the same reason
+  // Fashion's are — and here the crop is exact rather than approximate: a
+  // Flowers tile renders at 152x200, which IS 3:4, so a 600x800 file arrives
+  // at the tile with nothing left for the browser to throw away.
   "flowers-gifts": {
-    "under-50": "art/tile/flowers-gifts--under-50.jpg",
-    "under-100": "art/tile/flowers-gifts--under-100.jpg",
-    "best-picks": "art/tile/flowers-gifts--best-picks.jpg",
-    "new-in": "art/tile/flowers-gifts--new-in.jpg",
+    "under-50": "art/tile/flowers-gifts--under-50.webp",
+    "under-100": "art/tile/flowers-gifts--under-100.webp",
+    "best-picks": "art/tile/flowers-gifts--best-picks.webp",
+    "new-in": "art/tile/flowers-gifts--new-in.webp",
   },
 };
 
@@ -107,23 +111,77 @@ const HERO_ART: Record<string, string[]> = {
   "flowers-gifts": ["e341146a-64dc-4689-8b63-3d632dea95de/f7b57b3d-1203-4c0e-94e7-8e2eb934df2d/real.jpg"],
 };
 
-/** Occasion circle art, keyed by category and occasion value. */
+/**
+ * Occasion circle art — THE APP'S ORIGINAL OCCASION PHOTOGRAPHS, RESTORED.
+ *
+ * These eight files have been in `apps/web/public/occasions/` since August and
+ * are the pictures the tab showed before the flowers-only round replaced them:
+ * "Happy Birthday" balloons, two rings on pale blooms, a newborn's feet in a
+ * white blanket, one pink tulip on pink, a couple on the beach at sunset, a
+ * ribboned gift box handed over. Restoring them means pointing at THOSE FILES,
+ * not re-sourcing a lookalike — so these are the same bytes `lib/filters.ts`
+ * and `OccasionStrip.tsx` already serve, and the Flowers circles can no longer
+ * disagree with the occasion chips about what "Birthday" looks like.
+ *
+ * AN OCCASION CIRCLE IS THE ONE SLOT ON FLOWERS THAT IS NOT FLOWERS.
+ *
+ * Everything else on the tab — hero, tiles, subcategory circles, flower-type
+ * pills — is a photograph of flowers, and stays that way. An occasion is not a
+ * product, so the picture has to say the OCCASION: balloons read as a birthday
+ * in a 70px disc, and a bouquet does not, because every other disc in the row
+ * would also be a bouquet. That is the whole reason the row was legible before
+ * and unreadable after.
+ *
+ * Rooted paths, not storage keys: these are repo assets served from the app's
+ * own origin, which the deployed CSP allows as `'self'`. `occasionArt` passes
+ * them through untouched — see below.
+ */
 const OCCASION_ART: Record<string, Record<string, string>> = {
   "flowers-gifts": {
-    birthday: "art/occasion/flowers-gifts--birthday.jpg",
-    "visiting-someone": "art/occasion/flowers-gifts--visiting-someone.jpg",
-    "get-well": "art/occasion/flowers-gifts--get-well.jpg",
-    newborn: "art/occasion/flowers-gifts--newborn.jpg",
-    anniversary: "art/occasion/flowers-gifts--anniversary.jpg",
-    wedding: "art/occasion/flowers-gifts--wedding.jpg",
-    engagement: "art/occasion/flowers-gifts--engagement.jpg",
-    graduation: "art/occasion/flowers-gifts--graduation.jpg",
+    birthday: "/occasions/birthday-banner.jpg",
+    "visiting-someone": "/occasions/visiting-someone.jpg",
+    "get-well": "/occasions/get-well-soon.jpg",
+    newborn: "/occasions/new-baby.jpg",
+    anniversary: "/occasions/anniversary.jpg",
+    wedding: "/occasions/wedding.jpg",
+    // Neither renders today — nothing in the catalogue is tagged `engagement`
+    // or `graduation` in Flowers, and the row only shows occasions with stock.
+    // They are filled anyway: the moment a florist tags one, the circle has a
+    // picture instead of a hole rather than a slot nobody thought about.
+    //
+    // Engagement is the original file and belongs with the other six: a
+    // solitaire in an open box, one subject, close.
+    engagement: "/occasions/engagement.jpg",
+    /*
+     * Graduation is the ONE occasion Flowers overrides, and it was overridden
+     * because the row was looked at at 70px instead of assumed.
+     * /occasions/graduation.jpg is a cap thrown into an open sky; cropped to a
+     * disc it is a pale blue-grey circle with a speck in it, beside seven
+     * circles whose subject fills the frame — and it carries a real
+     * university's lettering, which the no-trademark rule bans. This is a
+     * graduate against a plain warm wall instead: one subject, no lettering,
+     * the same cream-and-blush register as Wedding and New Baby.
+     *
+     * The public file is left exactly as it is. The All tab's occasion rail
+     * and /find still read it through lib/filters.ts, and swapping a picture
+     * on two other screens was not part of this. That is a real divergence —
+     * the same occasion, two photographs — and the fix, if Marwan wants one,
+     * is to replace public/occasions/graduation.jpg so every screen moves
+     * together, at which point this override can be deleted.
+     */
+    graduation: "art/occasion/flowers-gifts--graduation.webp",
   },
 };
 
+/**
+ * A leading "/" means a file in `public/`, already an absolute URL on this
+ * origin. Handing that to `productImageUrl` would bolt it onto the Supabase
+ * storage prefix and produce a 404 — so it is returned as-is.
+ */
 export function occasionArt(cat: string, value: string): string | null {
   const path = OCCASION_ART[cat]?.[value];
-  return path ? productImageUrl(path) : null;
+  if (!path) return null;
+  return path.startsWith("/") ? path : productImageUrl(path);
 }
 
 /** Flower-type pill art. */

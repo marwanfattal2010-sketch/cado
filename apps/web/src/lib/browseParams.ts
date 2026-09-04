@@ -1,4 +1,4 @@
-import { inBudgetRange } from "./filters";
+import { BUDGETS, budgetBySlug, inBudgetRange } from "./filters";
 import {
   NEW_IN_DAYS,
   UNDER_TILE_MAX,
@@ -53,8 +53,22 @@ export type BrowseState = {
   occasion: string[];
   /** Tier ids, e.g. "under-100". */
   price: string[];
+  /**
+   * ONE home-page budget band, e.g. "50-100" — the chip a "Shop by budget"
+   * tile arrives with.
+   *
+   * It is deliberately NOT folded into `price`. The tiers there are nested
+   * ceilings ("Under $100"); a BUDGET is a band with a floor AND a ceiling
+   * whose edges are shared with its neighbours, so it has to be tested by
+   * `inBudgetRange` — upper bound exclusive — or a $100 gift lands in both
+   * "$50 – $100" and "$100 – $200" and the counts stop adding up. Single, like
+   * `tile`: it names the page you arrived on, and it comes off in one tap.
+   */
+  budget: string | null;
   min: number | null;
   max: number | null;
+  /** Top-level category slugs. The Category facet on a whole-shop page. */
+  category: string[];
   /** Subcategory slugs. */
   type: string[];
   /** Variant names — "M", "41", "Size 5". */
@@ -69,7 +83,17 @@ export type BrowseState = {
   sort: Sort;
 };
 
-const LIST_KEYS = ["for", "occasion", "price", "type", "size", "colour", "flower", "store"] as const;
+const LIST_KEYS = [
+  "for",
+  "occasion",
+  "price",
+  "category",
+  "type",
+  "size",
+  "colour",
+  "flower",
+  "store",
+] as const;
 export type ListKey = (typeof LIST_KEYS)[number];
 
 /**
@@ -126,8 +150,12 @@ export function parseBrowse(params: URLSearchParams): BrowseState {
     for: list(params.get("for")),
     occasion: list(params.get("occasion")),
     price: list(params.get("price")).filter(isPriceTier),
+    // Validated against the real band list, so `?budget=nonsense` is simply
+    // not a filter rather than one that silently matches nothing.
+    budget: BUDGETS.some((b) => b.slug === params.get("budget")) ? params.get("budget") : null,
     min: num(params.get("min")),
     max: num(params.get("max")),
+    category: list(params.get("category")),
     type: list(params.get(PARAM.type)),
     size: list(params.get("size")),
     colour: list(params.get("colour")),
@@ -149,6 +177,7 @@ export function serializeBrowse(s: BrowseState): string {
   const p = new URLSearchParams();
   if (s.cat) p.set(PARAM.cat, s.cat);
   for (const k of LIST_KEYS) if (s[k].length) p.set(k === "type" ? PARAM.type : k, s[k].join(","));
+  if (s.budget) p.set("budget", s.budget);
   if (s.min != null) p.set("min", String(s.min));
   if (s.max != null) p.set("max", String(s.max));
   if (s.tile) p.set(PARAM.tile, s.tile);
@@ -166,6 +195,7 @@ export function serializeBrowse(s: BrowseState): string {
  */
 export const FILTER_PARAM_NAMES = [
   ...LIST_KEYS.map((k) => (k === "type" ? PARAM.type : k)),
+  "budget",
   "min",
   "max",
   PARAM.tile,
@@ -178,8 +208,10 @@ export const emptyBrowse = (cat: string): BrowseState => ({
   for: [],
   occasion: [],
   price: [],
+  budget: null,
   min: null,
   max: null,
+  category: [],
   type: [],
   size: [],
   colour: [],
@@ -200,6 +232,7 @@ export function activeCount(s: BrowseState): number {
   return (
     LIST_KEYS.reduce((n, k) => n + s[k].length, 0) +
     (s.min != null || s.max != null ? 1 : 0) +
+    (s.budget ? 1 : 0) +
     (s.tile ? 1 : 0)
   );
 }
@@ -211,6 +244,16 @@ export const hasFilters = (s: BrowseState) => activeCount(s) > 0;
 /* -------------------------------------------------------------------------- */
 
 export type Lookup = {
+  /**
+   * Top-level category slug -> id.
+   *
+   * OPTIONAL, because a page that IS one category has no such map to give and
+   * never offers the Category facet — only the whole-shop results pages do.
+   * Where it is absent a `category=` in the URL resolves to no id and matches
+   * nothing, which is the honest answer to `?tab=fashion&category=shoes`; the
+   * chip is still in `applied`, so the empty state can take it back off.
+   */
+  catId?: (slug: string) => string | undefined;
   /** Subcategory slug -> id. */
   typeId: (slug: string) => string | undefined;
   /** Partner slug -> id. */
@@ -288,9 +331,19 @@ export function matches(p: FeedProduct, s: BrowseState, look: Lookup): boolean {
     });
     if (!ok) return false;
   }
+  /*
+   * A home-page budget band, through the one function that owns band edges.
+   * Upper bound exclusive — see the note on BrowseState.budget.
+   */
+  if (s.budget && !inBudgetRange(p.price, budgetBySlug(s.budget))) return false;
+
   if (s.min != null && p.price < s.min) return false;
   if (s.max != null && p.price > s.max) return false;
 
+  if (s.category.length) {
+    const ids = s.category.map((slug) => look.catId?.(slug)).filter(Boolean) as string[];
+    if (!ids.includes(p.category_id)) return false;
+  }
   if (s.type.length) {
     const ids = s.type.map(look.typeId).filter(Boolean) as string[];
     if (!p.subcategory_id || !ids.includes(p.subcategory_id)) return false;
@@ -316,6 +369,55 @@ export function matches(p: FeedProduct, s: BrowseState, look: Lookup): boolean {
   }
   if (s.tile && !matchesTile(p, s.tile, look)) return false;
   return true;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Scopes — a results page that is a slice of the shop, not a category         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * /deals AND /new ARE THE SAME PAGE AS /browse. That is the whole point.
+ *
+ * "See all" on Super deals and on New arrivals needed a real destination, and
+ * the obvious way to give them one — two new page components — is exactly the
+ * duplication this round exists to remove. A scope is instead a PROP on the
+ * one results page: it chooses the pool, the heading and the opening sort, and
+ * everything else (sort row, facet chips, filter sheet, counts, grid, empty
+ * state) is the identical component the category tabs open.
+ *
+ * It is a prop and not a URL param on purpose. The scope is the page's
+ * IDENTITY, not a filter: `/deals` is a place, and a chip you could take off
+ * to find yourself somewhere else without the address changing would be a lie.
+ * Every actual filter stays in the query string exactly as before.
+ */
+export type Scope = "deals" | "new";
+
+export const SCOPE_TITLE: Record<Scope, string> = {
+  deals: "Super deals",
+  new: "New arrivals",
+};
+
+/** The order the page means. Seeded into the URL on arrival — see BrowseResults. */
+export const SCOPE_SORT: Record<Scope, Sort> = {
+  deals: "discount",
+  new: "newest",
+};
+
+/**
+ * REAL DISCOUNTS ONLY, and a real arrival window.
+ *
+ * `deals` is the same test the Deals tile and the Super Deals card already
+ * use: a `compare_at_price` that is genuinely above the price. A null
+ * compare-at is not a discount of zero, it is not a discount — those products
+ * are not on this page and no percentage is ever computed from them.
+ *
+ * `new` is the same NEW_IN_DAYS window as the New in tile and the New Arrivals
+ * card whose "See all" opens it, so the page and the card it came from cannot
+ * disagree about what "new" means.
+ */
+export function inScope(p: FeedProduct, scope: Scope, now = Date.now()): boolean {
+  if (scope === "deals") return p.compare_at_price != null && p.compare_at_price > p.price;
+  return new Date(p.created_at).getTime() >= now - NEW_IN_DAYS * 86400000;
 }
 
 /**

@@ -49,11 +49,9 @@ function useDealProducts(categoryId: string | undefined, enabled: boolean) {
 export function DealPair({
   categoryId,
   accentToken,
-  onSelect,
 }: {
   categoryId?: string;
   accentToken: string;
-  onSelect: (filter: { sort?: "new"; label: string }) => void;
 }) {
   const products = useDealProducts(categoryId, true);
   const rows = products.data ?? [];
@@ -64,22 +62,22 @@ export function DealPair({
   const cutoff = Date.now() - NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
   const fresh = rows.filter((p) => new Date(p.created_at).getTime() >= cutoff);
 
-  const cards: { key: string; title: string; items: FeedProduct[]; onOpen: () => void }[] = [];
+  /*
+   * THE HEADING IS A LINK NOW, NOT A FILTER SWITCH.
+   *
+   * Both halves used to call `onSelect`, which set a client-side filter object
+   * on the panel underneath and left you on the home page — "Super Deals" in
+   * particular passed no filter at all, so the tap did very little and never
+   * looked like arriving anywhere. They open /deals and /new: the one results
+   * page, with the sort row, the facet chips and the filter sheet the category
+   * tabs use.
+   */
+  const cards: { key: string; title: string; items: FeedProduct[]; to: string }[] = [];
   if (onSale.length >= MIN_PRODUCTS) {
-    cards.push({
-      key: "deals",
-      title: "Super Deals",
-      items: onSale.slice(0, 2),
-      onOpen: () => onSelect({ label: "Super Deals" }),
-    });
+    cards.push({ key: "deals", title: "Super Deals", items: onSale.slice(0, 2), to: "/deals" });
   }
   if (fresh.length >= MIN_PRODUCTS) {
-    cards.push({
-      key: "new",
-      title: "New Arrivals",
-      items: fresh.slice(0, 2),
-      onOpen: () => onSelect({ sort: "new", label: "New Arrivals" }),
-    });
+    cards.push({ key: "new", title: "New Arrivals", items: fresh.slice(0, 2), to: "/new" });
   }
   if (cards.length === 0) return null;
 
@@ -87,16 +85,16 @@ export function DealPair({
     <div className="flex gap-2 px-[var(--page-x)] pt-4">
       {cards.map((card) => (
         <div key={card.key} className="min-w-0 flex-1 rounded-[12px] bg-surface p-3 shadow-rest">
-          <button
-            type="button"
-            onClick={card.onOpen}
+          <Link
+            to={card.to}
+            aria-label={`See all ${card.title}`}
             className="mb-2 flex w-full items-center justify-between gap-2"
           >
             <span className="truncate text-[15px] font-extrabold tracking-[-0.01em]">{card.title}</span>
             <span aria-hidden className="text-[15px] leading-none" style={{ color: accentColor(accentToken) }}>
               ›
             </span>
-          </button>
+          </Link>
           <div className="flex gap-2">
             {card.items.map((p) => {
               const off =

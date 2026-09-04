@@ -7,6 +7,7 @@ import { ProductRail } from "../ProductRail";
 import { Skeleton, ProductRowSkeleton, ProductGridSkeleton } from "../Skeleton";
 import { Img } from "../Img";
 import { storePath } from "../../lib/routes";
+import { browseHref } from "../../lib/browseParams";
 import { BUDGETS, QUIZ_RECIPIENTS } from "../../lib/filters";
 import type { FeedProduct } from "../../lib/browse";
 import {
@@ -110,8 +111,10 @@ export function HomeLower() {
         <Pad>
           <div className="mx-auto flex max-w-6xl items-end justify-between gap-3 px-4 pb-3">
             <h2 className="font-display text-h2 text-persimmon">Deals</h2>
+            {/* /deals, not the gift finder. The finder is the quiz; this is a
+                results page, and there is now exactly one of those. */}
             <Link
-              to="/gift-finder?skip=1&f.onSale=1"
+              to="/deals"
               className="tap-44 shrink-0 pb-0.5 text-caption font-medium text-ink underline underline-offset-4"
             >
               See all
@@ -133,14 +136,23 @@ export function HomeLower() {
       {/* 1.3: renamed — "near you" reads right whichever city is selected. */}
       <TopStoresNearYou />
 
-      {/* 5 — Shop by budget */}
+      {/*
+        5 — Shop by budget.
+
+        THE BAND ARRIVES AS A CHIP, not as a different page. These used to open
+        the gift finder, which is a quiz with its own filter UI; they now open
+        the one results page with the band pre-applied and removable, so the
+        shopper can add "For Her" on top of it or take the band off and still
+        be somewhere. The band travels as its own param and is tested by
+        `inBudgetRange`, because these four bands share their edges.
+      */}
       <Pad>
         <SectionHead title="Shop by budget" />
         <div className="scroll-row" style={{ ["--row-gap" as string]: "12px" }}>
           {BUDGETS.map((b) => (
             <Link
               key={b.slug}
-              to={`/gift-finder?budget=${b.slug}`}
+              to={browseHref("", { budget: b.slug })}
               className="flex h-[76px] w-[132px] shrink-0 flex-col justify-center rounded-card bg-tint-sand px-4 transition-transform duration-press ease-out active:scale-[0.96]"
             >
               {/* Inter, not the display serif. Fraunces is built for words —
@@ -156,14 +168,15 @@ export function HomeLower() {
         </div>
       </Pad>
 
-      {/* 6 — Shop by recipient */}
+      {/* 6 — Shop by recipient. Same move as the budget row above: the
+          recipient arrives on the results page as a removable For chip. */}
       <Pad>
         <SectionHead title="Shop by recipient" />
         <div className="scroll-row" style={{ ["--row-gap" as string]: "12px" }}>
           {RECIPIENT_ROW.map((r) => (
             <Link
               key={r.value}
-              to={`/gift-finder?recipient=${r.value}`}
+              to={browseHref("", { for: [r.value] })}
               className="flex h-[76px] w-[104px] shrink-0 flex-col items-center justify-center gap-1 rounded-card bg-tint-sage transition-transform duration-press ease-out active:scale-[0.96]"
             >
               {/* Matched to the budget tiles above: these two rows sit next

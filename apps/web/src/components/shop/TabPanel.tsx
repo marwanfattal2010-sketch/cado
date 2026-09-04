@@ -376,11 +376,9 @@ function PrimaryPanel({
           case "deal_pair":
             return (
               <div key={block.id}>
-                <DealPair
-                  categoryId={categoryId}
-                  accentToken={tab.accent_token}
-                  onSelect={(next) => setFilter(next)}
-                />
+                {/* No onSelect any more: both headings are real links to
+                    /deals and /new — see the note in DealPair. */}
+                <DealPair categoryId={categoryId} accentToken={tab.accent_token} />
                 {/* Sits with the deals rather than being its own database
                     block: the brief's order is Super Deals, then Top of, then
                     New Arrivals, and DealPair already owns the first and

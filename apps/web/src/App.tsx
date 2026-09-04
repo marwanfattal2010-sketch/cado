@@ -146,6 +146,16 @@ export default function App() {
         {/* The results page. Outside Layout: it owns its own sticky chrome and
             must not sit under the app header as well. */}
         <Route path="browse" element={<BrowseResults />} />
+        {/*
+          THE SAME COMPONENT, TWICE MORE — not two more results pages.
+          "See all" on Super deals and on New arrivals needed a destination,
+          and the scope prop gives them one without a second grid, a second
+          filter sheet or a second idea of what a card looks like. Outside
+          Layout for the same reason /browse is: the page owns its own sticky
+          chrome.
+        */}
+        <Route path="deals" element={<BrowseResults scope="deals" />} />
+        <Route path="new" element={<BrowseResults scope="new" />} />
         <Route element={<Layout />}>
           <Route path="search" element={<Search />} />
           <Route path="orders" element={<Orders />} />
