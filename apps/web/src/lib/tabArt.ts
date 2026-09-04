@@ -47,6 +47,12 @@ const RECIPIENT_ART: Record<string, string> = {
  * the four flower tiles are price filters and have no TileId at all.
  */
 const CATEGORY_TILE_ART: Record<string, Record<string, string>> = {
+  fashion: {
+    "new-in": "art/tile/fashion--new-in.jpg",
+    "most-gifted": "art/tile/fashion--most-gifted.jpg",
+    "under-75": "art/tile/fashion--under-75.jpg",
+    deals: "art/tile/fashion--deals.jpg",
+  },
   "flowers-gifts": {
     "under-50": "art/tile/flowers-gifts--under-50.jpg",
     "under-100": "art/tile/flowers-gifts--under-100.jpg",
@@ -107,7 +113,30 @@ function art(path: string | undefined, slot: string): string | null {
 export const recipientArt = (value: string) =>
   art(RECIPIENT_ART[value], `recipient "${value}"`);
 
-export const tileArt = (id: TileId) => art(TILE_ART[id], `tile "${TILE_LABEL[id]}"`);
+/**
+ * A tab's own tile art wins over the shared set.
+ *
+ * The shared pictures are gift wrap, which is right for a gifting tile and
+ * wrong for a Fashion one — a ribboned parcel says nothing about clothes.
+ */
+export const tileArt = (id: TileId, cat?: string) =>
+  (cat ? categoryTileArt(cat, id) : null) ?? art(TILE_ART[id], `tile "${TILE_LABEL[id]}"`);
+
+/** "Shop for" circle art, keyed by category and subcategory slug. */
+const CIRCLE_ART: Record<string, Record<string, string>> = {
+  fashion: {
+    women: "art/circle/fashion--women.jpg",
+    men: "art/circle/fashion--men.jpg",
+    "kids-fashion": "art/circle/fashion--kids-fashion.jpg",
+    bags: "art/circle/fashion--bags.jpg",
+    caps: "art/circle/fashion--caps.jpg",
+  },
+};
+
+export function circleArt(cat: string, slug: string): string | null {
+  const path = CIRCLE_ART[cat]?.[slug];
+  return path ? productImageUrl(path) : null;
+}
 
 /**
  * The completeness check, run once at module load in dev.

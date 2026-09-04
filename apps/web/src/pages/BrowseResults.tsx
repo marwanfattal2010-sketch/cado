@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCatalogue, useAllSubcategories, useStoreDirectory } from "../hooks/useCatalogue";
 import { useCategories } from "../hooks/useCategories";
 import { useHomeSignals } from "../hooks/useHomeEndless";
-import { ProductCard } from "../components/ProductCard";
-import { Chip } from "../components/shop/Chip";
+import { StaggeredGrid } from "../components/shop/StaggeredGrid";
 import { AllFiltersSheet, FacetChips, useFacets } from "../components/shop/Facets";
 import { ChevronLeftIcon } from "../components/Icons";
 import {
@@ -228,29 +227,22 @@ export function BrowseResults() {
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-[14px] font-semibold leading-tight text-ink">{title}</h1>
           <p className="text-[11px] leading-none text-muted">
-            {results.length} {results.length === 1 ? "gift" : "gifts"}
+            {results.length} {results.length === 1 ? "piece" : "pieces"}
           </p>
         </div>
       </div>
 
       <div className="sticky top-0 z-20 bg-canvas">
-        {/* Row 1 — what is applied, and the way out of all of it. */}
-        {applied.length ? (
-          <div className="scroll-row py-1" style={{ ["--row-gap" as string]: "8px" }}>
-            {applied.map((a) => (
-              <Chip key={a.key} label={a.label} selected removable onClick={a.remove} />
-            ))}
-            <button
-              type="button"
-              onClick={clearAll}
-              className="shrink-0 self-center whitespace-nowrap px-1 text-caption font-medium text-muted underline underline-offset-4"
-            >
-              Clear all
-            </button>
-          </div>
-        ) : null}
+        {/*
+          ONE CHIP ROW, not two.
+          There used to be an applied row above the facet row, which meant a
+          chosen filter appeared twice — once as a chip to remove and once as
+          a facet showing its own value — and cost a whole 44px band of sticky
+          chrome to do it. Applied things now lead the single facet row, in
+          persimmon with an ✕; everything unset follows in grey.
+        */}
 
-        {/* Row 2 — sort, inline. Tapping Price toggles its direction. */}
+        {/* Row A — sort, inline. Tapping Price toggles its direction. */}
         <div className="flex items-center gap-3 px-[var(--page-x)] py-1">
           <button
             type="button"
@@ -306,6 +298,7 @@ export function BrowseResults() {
             facets={facets}
             subcategories={subcategories}
             stores={stores}
+            extra={applied.filter((a) => a.key === "tile" || a.key === "range")}
             openOnMount={params.get("facet") as FacetGroup | null}
             onOpened={() => {
               // Consumed once. Left in the URL it would reopen the sheet every
@@ -318,15 +311,15 @@ export function BrowseResults() {
         </div>
       </div>
 
-      <div className="px-[var(--page-x)] pb-24 pt-2">
+      <div className="pb-24">
         {results.length === 0 ? (
-          <EmptyState applied={applied} onClearAll={clearAll} />
-        ) : (
-          <div className="grid grid-cols-2 gap-x-2 gap-y-2.5">
-            {results.map((p) => (
-              <ProductCard key={p.id} {...(p as unknown as Parameters<typeof ProductCard>[0])} compact />
-            ))}
+          <div className="px-[var(--page-x)] pt-2">
+            <EmptyState applied={applied} onClearAll={clearAll} />
           </div>
+        ) : (
+          /* The same staggered grid the tab page uses — one component, so a
+             card cannot look like two different things on two screens. */
+          <StaggeredGrid products={results} />
         )}
       </div>
 

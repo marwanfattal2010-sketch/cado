@@ -585,3 +585,31 @@ button:active:not(:disabled),
   100% { box-shadow: 0 0 0 18px rgb(var(--persimmon) / 0); }
 }
 .glow-once { animation: cado-glow 1.4s ease-out 1; }
+
+/* ---------------------------------------------------------------------------
+   THE STAGGERED GRID (Fashion tab and the results page).
+
+   CSS columns, not a two-column flex or grid. A grid row is only as short as
+   its tallest cell, so a square cap beside a tall dress left a block of dead
+   space under the cap; columns let each card end where it ends and the next
+   one start there. That offset IS the stagger — it is not decoration, it is
+   the absence of the gap.
+
+   The cards sit on a light gutter with white cards, which is what separates
+   them. No borders, no dividing lines anywhere on this page.
+--------------------------------------------------------------------------- */
+.stagger {
+  column-count: 2;
+  column-gap: 8px;
+  background: #f2f2f2;
+  padding: 2px 8px 8px;
+}
+.stagger > * {
+  /* `inline-block` as well as break-inside: without it Chrome still splits a
+     card across the column boundary and you get half a photo at the bottom of
+     column one and the price at the top of column two. */
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 8px;
+}

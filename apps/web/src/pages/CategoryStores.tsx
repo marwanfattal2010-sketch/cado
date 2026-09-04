@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { useCatalogue, useStoreDirectory } from "../hooks/useCatalogue";
-import { StoreSquare } from "../components/shop/category/TabTemplate";
+import { StoreSquare } from "../components/shop/StoreSquare";
 import { ChevronLeftIcon } from "../components/Icons";
 import { Skeleton } from "../components/Skeleton";
 

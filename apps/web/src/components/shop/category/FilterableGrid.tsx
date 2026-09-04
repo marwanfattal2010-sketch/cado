@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ProductCard } from "../../ProductCard";
+import { StaggeredGrid } from "../StaggeredGrid";
 import { Chip } from "../Chip";
 import { AllFiltersSheet, FacetChips, useFacets } from "../Facets";
 import { OCCASIONS } from "../../../lib/filters";
@@ -234,19 +234,11 @@ export function FilterGridSection({
           </div>
         </div>
 
-        <div className="px-[var(--page-x)] pb-8 pt-2">
+        <div className="pb-8">
           {results.length === 0 ? (
-            <EmptyGrid applied={applied} onClearAll={() => push(emptyBrowse(slug), false)} />
+            <div className="px-[var(--page-x)] pt-2"><EmptyGrid applied={applied} onClearAll={() => push(emptyBrowse(slug), false)} /></div>
           ) : (
-            <div className="grid grid-cols-2 gap-x-2 gap-y-2.5">
-              {results.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  {...(p as unknown as Parameters<typeof ProductCard>[0])}
-                  compact
-                />
-              ))}
-            </div>
+            <StaggeredGrid products={results} />
           )}
         </div>
       </div>

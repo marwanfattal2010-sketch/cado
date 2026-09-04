@@ -63,7 +63,10 @@ export const FLOWER_TYPES = [
 
 /** Facet order per category, exactly as the brief specifies it. */
 export const FACETS_BY_CATEGORY: Record<string, FacetGroup[]> = {
-  fashion: ["for", "occasion", "price", "type", "size", "colour", "store"],
+  // NO OCCASION ON FASHION. Clothes are not bought for an occasion the way
+  // flowers are, and every occasion value on this tab returned a near-identical
+  // set — a filter that does not narrow is a control that wastes a tap.
+  fashion: ["for", "type", "price", "size", "colour", "store"],
   shoes: ["for", "price", "type", "size", "colour", "store"],
   "jewelry-accessories": ["for", "occasion", "price", "type", "colour", "store"],
   "flowers-gifts": ["occasion", "flower", "colour", "price", "type", "for", "store"],

@@ -105,6 +105,14 @@ const TILES = {
  * repeats in the row.
  */
 const CATEGORY_TILES = {
+  fashion: {
+    // Clothing, not gift wrap. The shared tile art is ribboned parcels, which
+    // says nothing about what is behind a Fashion tile.
+    "new-in": "1603400521630-9f2de124b33b",      // neutral rail, new season
+    "most-gifted": "1763719161790-1e8edf704820", // woman in pink, on model
+    "under-75": "1490481651871-ab68de25d43d",    // light wooden hangers
+    deals: "1612423284934-2850a4ea6b0f",          // colourful blouse rail
+  },
   "flowers-gifts": {
     "under-50": "1544249804-78bcb97b5e65", // a small mixed posy
     "under-100": "1602136303098-f5aa2b9c9df9", // wrapped bouquet in peach paper
@@ -117,6 +125,20 @@ const CATEGORY_TILES = {
  * Hero slides, per tab. Fashion only for now — the other ten still take their
  * hero from a product photo, and this is the template that will replace that.
  */
+/**
+ * "Shop for" circle art, per category and value. A circle names a kind of
+ * product, so it shows that product — never a photo borrowed from the grid.
+ */
+const CIRCLES = {
+  fashion: {
+    women: "1768460608433-d3af5148832c",
+    men: "1555689502-c4b22d76c56f",
+    "kids-fashion": "1604303768345-038b79a8c47a",
+    bags: "1691480150204-66dd1eb77391",
+    caps: "1521369909029-2afed882baee",
+  },
+};
+
 const HEROES = {
   "fashion-1": "1668952135120-7d997b1b3778", // tan coat and trousers, warm studio
   "fashion-2": "1709004915865-38bc70f4cb78", // man in a cream shirt, deep teal ground
@@ -146,6 +168,9 @@ const jobs = [
   // Heroes are full-bleed, so they get a wider source than a 62px circle needs.
   ...Object.entries(CATEGORY_TILES).flatMap(([cat, tiles]) =>
     Object.entries(tiles).map(([k, id]) => ({ path: `art/tile/${cat}--${k}.jpg`, id }))
+  ),
+  ...Object.entries(CIRCLES).flatMap(([cat, vals]) =>
+    Object.entries(vals).map(([k, id]) => ({ path: `art/circle/${cat}--${k}.jpg`, id }))
   ),
   ...Object.entries(HEROES).map(([k, id]) => ({ path: `art/hero/${k}.jpg`, id, w: 1200 })),
 ];

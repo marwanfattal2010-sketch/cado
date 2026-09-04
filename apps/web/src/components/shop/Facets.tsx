@@ -175,6 +175,7 @@ export function FacetChips({
   stores,
   openOnMount,
   onOpened,
+  extra = [],
 }: {
   cat: string;
   state: BrowseState;
@@ -185,6 +186,14 @@ export function FacetChips({
   /** `?facet=occasion` — how "See all occasions" lands with the sheet already up. */
   openOnMount?: FacetGroup | null;
   onOpened?: () => void;
+  /**
+   * Applied things that are not facets — the view a tile opened with, a
+   * custom price range. They lead the row as persimmon chips with an ✕,
+   * because the brief is explicit that the whole selection is removable,
+   * INCLUDING the one the page opened with. A view you cannot take off is a
+   * dead end.
+   */
+  extra?: { key: string; label: string; remove: () => void }[];
 }) {
   const [open, setOpen] = useState<FacetGroup | null>(null);
 
@@ -207,26 +216,64 @@ export function FacetChips({
 
   return (
     <>
-      <div className="scroll-row" style={{ ["--row-gap" as string]: "8px" }}>
-        {facets.visibleGroups.map((g) => {
-          const on = selectedIn(state, g).length > 0;
-          return (
+      {/*
+        APPLIED FIRST, then the rest.
+        A chip you have set is a thing you may want to undo, and hunting for it
+        among six unset ones is the wrong job for a scrolling row. Applied ones
+        are persimmon and carry an ✕ that removes just that facet; the rest sit
+        after them in grey. 6px corners, not pills — a pill reads as a tag, and
+        these are controls.
+      */}
+      <div className="scroll-row" style={{ ["--row-gap" as string]: "7px" }}>
+        {extra.map((e) => (
+          <span key={e.key} className="inline-flex shrink-0">
+            <span className="inline-flex h-9 items-center rounded-l-[6px] bg-persimmon pl-3 pr-1 text-[12.5px] font-semibold text-white">
+              {e.label}
+            </span>
             <button
-              key={g}
               type="button"
-              onClick={() => setOpen(g)}
-              aria-expanded={open === g}
-              className={`inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-3 text-[13px] font-medium transition-transform duration-press ease-out active:scale-[0.97] ${
-                on ? "bg-persimmon text-white" : "border border-ink/[0.12] bg-canvas text-ink"
-              }`}
+              aria-label={`Remove ${e.label}`}
+              onClick={e.remove}
+              className="flex h-9 items-center rounded-r-[6px] bg-persimmon pl-1 pr-2.5 text-[12px] text-white"
             >
-              {chipLabel(g)}
-              <span aria-hidden className={on ? "text-white/80" : "text-muted"}>
-                ▾
-              </span>
+              ✕
             </button>
-          );
-        })}
+          </span>
+        ))}
+        {[...facets.visibleGroups]
+          .sort((a, b) => Number(selectedIn(state, b).length > 0) - Number(selectedIn(state, a).length > 0))
+          .map((g) => {
+            const on = selectedIn(state, g).length > 0;
+            return (
+              <span key={g} className="inline-flex shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOpen(g)}
+                  aria-expanded={open === g}
+                  className={`inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] px-3 text-[12.5px] transition-transform duration-press ease-out active:scale-[0.97] ${
+                    on ? "bg-persimmon font-semibold text-white" : "bg-[#F5F5F5] font-medium text-ink"
+                  }`}
+                >
+                  {chipLabel(g)}
+                  {on ? null : (
+                    <span aria-hidden className="text-muted">
+                      ▾
+                    </span>
+                  )}
+                </button>
+                {on ? (
+                  <button
+                    type="button"
+                    aria-label={`Remove ${GROUP_LABEL[g]}`}
+                    onClick={() => onChange(clearGroup(state, g))}
+                    className="-ml-1 flex h-9 shrink-0 items-center rounded-r-[6px] bg-persimmon pl-1 pr-2.5 text-[12px] text-white"
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </span>
+            );
+          })}
       </div>
 
       {open ? (
