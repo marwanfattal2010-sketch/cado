@@ -1,6 +1,6 @@
 import { inBudgetRange, budgetBySlug } from "./filters";
 import { NEW_IN_DAYS, parsePriceTier, type TileId } from "./facets";
-import type { FeedProduct } from "./browse";
+import { colourOf, sizesOf, type FeedProduct } from "./browse";
 
 /**
  * THE FILTER STATE LIVES IN THE URL. Nowhere else.
@@ -19,14 +19,21 @@ import type { FeedProduct } from "./browse";
  * AND anniversary.
  */
 
-export type Sort = "recommended" | "price-asc" | "price-desc" | "newest" | "discount";
+export type Sort =
+  | "recommended"
+  | "popular"
+  | "price-asc"
+  | "price-desc"
+  | "newest"
+  | "discount";
 
 /**
- * `short` is what fits beside the title in the sticky header; `label` is the
- * full sentence used inside the sort sheet, where there is room for it.
+ * `short` is what fits on the inline sort row; `label` is the full sentence
+ * used inside the little Recommended menu, where there is room for it.
  */
 export const SORTS: { value: Sort; label: string; short: string }[] = [
-  { value: "recommended", label: "Recommended", short: "Sort" },
+  { value: "recommended", label: "Recommended", short: "Recommended" },
+  { value: "popular", label: "Most popular", short: "Most popular" },
   { value: "price-asc", label: "Price: low to high", short: "Price ↑" },
   { value: "price-desc", label: "Price: high to low", short: "Price ↓" },
   { value: "newest", label: "Newest", short: "Newest" },
@@ -43,16 +50,28 @@ export type BrowseState = {
   max: number | null;
   /** Subcategory slugs. */
   type: string[];
+  /** Variant names — "M", "41", "Size 5". */
+  size: string[];
+  /** Real colour values only; placeholders are never offered. */
+  colour: string[];
   /** Partner slugs. */
   store: string[];
   tile: TileId | null;
   sort: Sort;
 };
 
-const LIST_KEYS = ["for", "occasion", "price", "type", "store"] as const;
+const LIST_KEYS = ["for", "occasion", "price", "type", "size", "colour", "store"] as const;
 export type ListKey = (typeof LIST_KEYS)[number];
 
-const TILES: TileId[] = ["new-in", "best-sellers", "store-picks", "ready-to-gift", "deals"];
+const TILES: TileId[] = [
+  "new-in",
+  "arrives-today",
+  "gift-wrapped",
+  "best-sellers",
+  "store-picks",
+  "ready-to-gift",
+  "deals",
+];
 
 const list = (v: string | null) =>
   (v ?? "")
@@ -76,6 +95,8 @@ export function parseBrowse(params: URLSearchParams): BrowseState {
     min: num(params.get("min")),
     max: num(params.get("max")),
     type: list(params.get("type")),
+    size: list(params.get("size")),
+    colour: list(params.get("colour")),
     store: list(params.get("store")),
     tile,
     sort,
@@ -108,6 +129,8 @@ export const emptyBrowse = (cat: string): BrowseState => ({
   min: null,
   max: null,
   type: [],
+  size: [],
+  colour: [],
   store: [],
   tile: null,
   sort: "recommended",
@@ -149,6 +172,10 @@ function matchesTile(p: FeedProduct, tile: TileId, look: Lookup): boolean {
       const cutoff = Date.now() - NEW_IN_DAYS * 86400000;
       return new Date(p.created_at).getTime() >= cutoff;
     }
+    case "arrives-today":
+      return p.same_day === true;
+    case "gift-wrapped":
+      return p.gift_wrap_available === true;
     case "best-sellers":
       return look.orders(p.id) > 0;
     case "store-picks":
@@ -187,6 +214,14 @@ export function matches(p: FeedProduct, s: BrowseState, look: Lookup): boolean {
     const ids = s.type.map(look.typeId).filter(Boolean) as string[];
     if (!p.subcategory_id || !ids.includes(p.subcategory_id)) return false;
   }
+  if (s.size.length) {
+    const have = sizesOf(p);
+    if (!have.some((n) => s.size.includes(n))) return false;
+  }
+  if (s.colour.length) {
+    const c = colourOf(p);
+    if (!c || !s.colour.includes(c)) return false;
+  }
   if (s.store.length) {
     const ids = s.store.map(look.storeId).filter(Boolean) as string[];
     if (!ids.includes(p.partner_id)) return false;
@@ -210,6 +245,17 @@ export function sortResults(rows: FeedProduct[], s: Sort, look: Lookup): FeedPro
       return out.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
     case "discount":
       return out.sort((a, b) => off(b) - off(a));
+    case "popular":
+      /*
+       * Real delivered-order counts, highest first, and nothing else.
+       *
+       * With no order history yet this lands in catalogue order rather than a
+       * different-looking list, which is the honest outcome: there is no
+       * popularity data to show, so it shows none. It is NOT seeded with views,
+       * a hash of the id, or any other stand-in that would make the sort look
+       * busy while meaning nothing.
+       */
+      return out.sort((a, b) => look.orders(b.id) - look.orders(a.id));
     default:
       // Recommended: real order counts first, then newest. No invented score.
       return out.sort(

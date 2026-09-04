@@ -28,7 +28,18 @@ export function TallTiles({ tiles }: { tiles: ResolvedTile[]; theme?: CategoryTh
 
   return (
     <div
-      className="scroll-row"
+      /*
+       * -mx-[var(--page-x)] — the bleed every other rail on the page already
+       * has, and the reason the last tile looked cut off.
+       *
+       * The row sits inside a container that is already padded by the page
+       * gutter, and `.scroll-row` adds that same gutter again. Doubled, the
+       * scrollport is 64px narrower than the screen, so the third tile ran
+       * under the right edge with no trailing space to scroll into. Pulling
+       * the row back out by one gutter lets it scroll the full width, with the
+       * leading and trailing space `.scroll-row` provides.
+       */
+      className="scroll-row -mx-[var(--page-x)]"
       style={{ ["--row-gap" as string]: "10px" }}
     >
       {tiles.map((t) => (

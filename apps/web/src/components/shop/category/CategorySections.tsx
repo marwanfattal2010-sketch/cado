@@ -181,7 +181,10 @@ export type StoreItem = {
   cover_image_url: string | null;
 };
 
-/** More than this and the row keeps "See all" rather than growing forever. */
+/**
+ * Two rows of five. Ten shops is a real choice; more than that belongs on the
+ * stores page, which the heading links to.
+ */
 const MAX_STORES = 10;
 
 export function StoresRow({
@@ -259,13 +262,32 @@ export function StoresRow({
 /* -------------------------------------------------------------------------- */
 
 /*
- * NO CAP. The row wraps, so there is no reason to trim it.
+ * SIX, IN TWO ROWS OF THREE. Nobody reads eleven.
  *
- * It used to be a horizontal strip capped at six, which cut the last chip in
- * half against the right edge — "Valentine'…" — and hid the rest entirely.
- * Every occasion that has stock in this category is now shown, on as many
- * rows as it takes.
+ * Chocolate was showing eleven chips and Jewelry five, for no reason a shopper
+ * could see — the row simply printed whatever had stock. Six is a block you
+ * can take in at a glance, and the rest are one tap away behind "See all
+ * occasions", which opens the Occasion facet on the results page.
+ *
+ * The six are chosen by real product count, not by hand, so no tab needs its
+ * own list and the block cannot drift out of step with the catalogue.
  */
+const MAX_OCCASION_CHIPS = 6;
+
+/**
+ * Occasions that lead their category regardless of count.
+ *
+ * Birthday leads everywhere it has stock because it is what most people are
+ * actually shopping for. "Visiting someone" is second on Chocolate and Flowers
+ * because that is what those two categories are bought for in Lebanon — you
+ * arrive at a house with chocolate or flowers — and a pure count sort buried it
+ * under Anniversary.
+ */
+const PINNED: Record<string, string[]> = {
+  chocolate: ["birthday", "visiting-someone"],
+  "flowers-gifts": ["birthday", "visiting-someone"],
+};
+const DEFAULT_PINNED = ["birthday"];
 
 export function OccasionChips({
   sections,
@@ -290,11 +312,29 @@ export function OccasionChips({
    * soon as a product arrives that does not carry it.
    */
   const total = sections.all.length;
-  const chips = CHIP_OCCASIONS.filter((o) => {
+  const pinned = PINNED[cat] ?? DEFAULT_PINNED;
+  /*
+   * A chip whose count equals the whole category narrows nothing, so it is
+   * normally dropped — that is why Birthday disappeared from most tabs, being
+   * a plausible occasion for almost any gift.
+   *
+   * The pinned ones are exempt, on instruction: Birthday leads the block
+   * wherever it has stock. It is a real, correct destination even when it
+   * matches everything, and a shopper looking for the birthday chip and not
+   * finding it is worse than a chip that happens to be broad.
+   */
+  const withStock = CHIP_OCCASIONS.filter((o) => {
     const n = sections.occasions.get(o.value) ?? 0;
-    return n > 0 && n < total;
-  })
-    .sort((a, b) => (sections.occasions.get(b.value) ?? 0) - (sections.occasions.get(a.value) ?? 0));
+    return n > 0 && (n < total || pinned.includes(o.value));
+  }).sort((a, b) => (sections.occasions.get(b.value) ?? 0) - (sections.occasions.get(a.value) ?? 0));
+
+  const lead = pinned
+    .map((v) => withStock.find((o) => o.value === v))
+    .filter(Boolean) as typeof withStock;
+  const chips = [...lead, ...withStock.filter((o) => !pinned.includes(o.value))].slice(
+    0,
+    MAX_OCCASION_CHIPS
+  );
 
   // One real occasion is still a real shortcut; only an empty row goes.
   if (chips.length === 0) return null;
@@ -302,8 +342,9 @@ export function OccasionChips({
   return (
     <TabCard>
       <TabSectionHead title="Shopping for an occasion?" theme={theme} />
-      {/* WRAPS. Not a scroller — every chip is fully visible. */}
-      <div className="flex flex-wrap gap-2">
+      {/* Two rows of three. A fixed grid, so every tab's block is the same
+          shape and the chips cannot reflow into a ragged four-and-two. */}
+      <div className="grid grid-cols-3 gap-2">
         {/* Real links to the results page, not in-page filters. Tapping one
             takes you somewhere that can say what you are looking at and can
             hold a second selection alongside it. */}
@@ -311,12 +352,20 @@ export function OccasionChips({
           <Link
             key={o.value}
             to={browseHref(cat, { occasion: [o.value] })}
-            className="flex h-9 items-center rounded-pill border border-ink/[0.12] bg-canvas px-3.5 text-[13px] font-medium text-ink transition-transform duration-press ease-out active:scale-[0.97]"
+            className="flex h-9 items-center justify-center rounded-pill border border-ink/[0.12] bg-canvas px-2 text-[12px] font-medium leading-tight text-ink transition-transform duration-press ease-out active:scale-[0.97]"
           >
-            {o.label}
+            <span className="truncate">{o.label}</span>
           </Link>
         ))}
       </div>
+      {withStock.length > chips.length ? (
+        <Link
+          to={`${browseHref(cat)}&facet=occasion`}
+          className="mt-3 inline-block text-caption font-semibold text-persimmon"
+        >
+          See all occasions →
+        </Link>
+      ) : null}
     </TabCard>
   );
 }

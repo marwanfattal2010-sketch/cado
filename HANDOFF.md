@@ -886,3 +886,42 @@ Everyday Hoodie really is a woman in a hoodie and correctly stays in Women.
 the intended price and now use it; the other two are priced against the shelf.
 None was flagged `price_is_placeholder`, so nothing marked them as unfinished —
 worth checking that flag is actually being set when prices are provisional.
+
+---
+
+## Facet chips, curated tab art, and accessories back in Fashion
+
+**Filters are SHEIN-shaped now.** A row of dropdown chips (`For ▾`, `Price: Under $100 ▾`),
+each opening a short sheet with only its own options, plus a `Filter ⛛` sheet
+that stacks the same facets as accordions. `components/shop/Facets.tsx` is the
+single implementation — chips and sheet share `FacetBody` and both write
+`BrowseState`, so they cannot disagree; a check that they produce identical
+URLs for identical selections is part of the verification. `useFacets` drops
+any facet with fewer than two options that would return something, which is
+what keeps Colour hidden without a hard-coded exception list.
+
+**The title row on `/browse` is deliberately NOT sticky.** Four sticky rows
+measured 152px against a 120px budget. The three control rows come to 110px.
+
+**Tab art is curated, and the tabs must never derive it again.**
+`lib/tabArt.ts` holds one image per recipient and one per tile, uploaded by
+`scripts/seed-tab-art.mjs` to `product-images/art/...`. Recipient circles used
+to take the first product matching the tag, which is how "For Him" on Fashion
+became a girls' t-shirt and Perfume's "Dad" rendered as an empty disc — there
+was nothing tagged `father` to pick. `tabArt.ts` throws at import time in dev
+if a recipient or tile has no entry, so a blank slot fails on the first render
+instead of shipping. Subcategory circles still come from the catalogue on
+purpose: a "Rings" circle showing a ring from Rings is showing the labelled
+thing by construction.
+
+**Bags, belts and scarves are Fashion, not Jewelry** (0092, reversing part of
+0089). Jewelry & Accessories is jewellery and watches only. `0093` reactivates
+Fashion › Accessories, which 0089 had switched off when it emptied it — a
+deactivated subcategory is invisible in circles and in the Category facet even
+when it holds products, which is worth remembering the next time a bucket
+looks empty.
+
+**Sizes are real product data now.** `product_variants` was always the size
+mechanism; it just held twelve rows, all on [TEST] products.
+`scripts/seed-sizes.mjs` sized Fashion (22), Shoes (8) and Sport (4). Sport is
+four on purpose — a dumbbell has a weight and a bottle has a volume.

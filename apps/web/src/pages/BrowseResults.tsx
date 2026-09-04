@@ -5,7 +5,7 @@ import { useCategories } from "../hooks/useCategories";
 import { useHomeSignals } from "../hooks/useHomeEndless";
 import { ProductCard } from "../components/ProductCard";
 import { Chip } from "../components/shop/Chip";
-import { FilterSheet } from "../components/shop/FilterSheet";
+import { AllFiltersSheet, FacetChips, useFacets } from "../components/shop/Facets";
 import { ChevronLeftIcon } from "../components/Icons";
 import {
   SORTS,
@@ -20,7 +20,13 @@ import {
   type Lookup,
   type Sort,
 } from "../lib/browseParams";
-import { TILE_LABEL, priceTierLabel, parsePriceTier, recipientLabel } from "../lib/facets";
+import {
+  TILE_LABEL,
+  priceTierLabel,
+  parsePriceTier,
+  recipientLabel,
+  type FacetGroup,
+} from "../lib/facets";
 import { OCCASIONS } from "../lib/filters";
 
 /**
@@ -43,6 +49,9 @@ import { OCCASIONS } from "../lib/filters";
  * When the catalogue grows past a few thousand this is the first thing to
  * move back to the server.
  */
+/** The sorts that are their own tap on the row, so the ▾ menu skips them. */
+const isInline = (s: Sort) => s === "popular" || s === "price-asc" || s === "price-desc";
+
 export function BrowseResults() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
@@ -96,6 +105,9 @@ export function BrowseResults() {
     [pool, state, lookup]
   );
 
+  /** One option model, shared by the chip row and the all-facets sheet. */
+  const facets = useFacets({ products: pool, state, lookup, subcategories, stores });
+
   /* ---- the applied chips, in the order they read best ------------------- */
 
   type Applied = { key: string; label: string; remove: () => void };
@@ -130,6 +142,18 @@ export function BrowseResults() {
       key: `type:${v}`,
       label: subcategories.find((s) => s.slug === v)?.name ?? v,
       remove: () => push(toggleValue(state, "type", v)),
+    });
+  for (const v of state.size)
+    applied.push({
+      key: `size:${v}`,
+      label: `Size ${v}`,
+      remove: () => push(toggleValue(state, "size", v)),
+    });
+  for (const v of state.colour)
+    applied.push({
+      key: `colour:${v}`,
+      label: v.charAt(0).toUpperCase() + v.slice(1),
+      remove: () => push(toggleValue(state, "colour", v)),
     });
   for (const v of state.store)
     applied.push({
@@ -169,7 +193,7 @@ export function BrowseResults() {
    */
   const namesOnly = !applied.length
     ? false
-    : applied.every((a) => /^(tile|type|store):?/.test(a.key));
+    : applied.every((a) => /^(tile|type|store|size|colour):?/.test(a.key));
   const title = !applied.length
     ? `All ${catName}`
     : namesOnly
@@ -183,52 +207,41 @@ export function BrowseResults() {
   return (
     <div className="min-h-[100dvh] bg-canvas">
       {/*
-        STICKY CHROME, and it is measured.
-        ONE control row, not two: back + title + Sort + Filter on a single
-        line, then the applied chips. That comes to ~86px at 375px against the
-        120px the brief allows, and it buys back a third of the first screen.
+        STICKY CHROME — header, applied chips, sort row, facet chips.
+        Measured at 375px and kept under the 120px the brief allows: the header
+        and the two chip rows are 36-40px each and the sort row is text only.
         Heights are written in px on purpose — this project replaces Tailwind's
         spacing scale (h-8 is 64px here, not 32), so scale classes lie.
       */}
-      <div className="sticky top-0 z-20 bg-canvas">
-        <div className="flex items-center gap-1 px-2 pt-1.5">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-ink"
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[14px] font-semibold leading-tight text-ink">{title}</h1>
-            <p className="text-[11px] leading-none text-muted">
-              {results.length} {results.length === 1 ? "gift" : "gifts"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSortOpen(true)}
-            className="shrink-0 whitespace-nowrap px-1.5 text-caption font-medium text-ink"
-          >
-            {SORTS.find((s) => s.value === state.sort)?.short} ▾
-          </button>
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            className="flex h-[32px] shrink-0 items-center gap-1.5 rounded-pill border border-ink/[0.12] px-3 text-caption font-semibold text-ink"
-          >
-            Filter
-            {activeCount(state) > 0 ? (
-              <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-black text-white">
-                {activeCount(state)}
-              </span>
-            ) : null}
-          </button>
+      {/*
+        THE TITLE ROW SCROLLS AWAY; the three control rows stick.
+        Kept sticky, the four rows measured 152px against the 120px the brief
+        allows. The brief's own list of what sticks is applied chips, sort and
+        facet chips — the title is not in it — and those three come to 110px.
+        The controls are what you need while scrolling a grid; the title is
+        what you needed when you arrived.
+      */}
+      <div className="flex items-center gap-1 px-2 pt-1.5">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Back"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-ink"
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[14px] font-semibold leading-tight text-ink">{title}</h1>
+          <p className="text-[11px] leading-none text-muted">
+            {results.length} {results.length === 1 ? "gift" : "gifts"}
+          </p>
         </div>
+      </div>
 
+      <div className="sticky top-0 z-20 bg-canvas">
+        {/* Row 1 — what is applied, and the way out of all of it. */}
         {applied.length ? (
-          <div className="scroll-row py-1.5" style={{ ["--row-gap" as string]: "8px" }}>
+          <div className="scroll-row py-1" style={{ ["--row-gap" as string]: "8px" }}>
             {applied.map((a) => (
               <Chip key={a.key} label={a.label} selected removable onClick={a.remove} />
             ))}
@@ -241,6 +254,73 @@ export function BrowseResults() {
             </button>
           </div>
         ) : null}
+
+        {/* Row 2 — sort, inline. Tapping Price toggles its direction. */}
+        <div className="flex items-center gap-3 px-[var(--page-x)] py-1">
+          <button
+            type="button"
+            onClick={() => setSortOpen(true)}
+            className={`whitespace-nowrap text-caption ${
+              state.sort === "recommended" || state.sort === "newest" || state.sort === "discount"
+                ? "font-semibold text-ink"
+                : "font-medium text-muted"
+            }`}
+          >
+            {SORTS.find((s) => s.value === state.sort && !isInline(s.value))?.short ?? "Recommended"} ▾
+          </button>
+          <button
+            type="button"
+            onClick={() => push({ ...state, sort: "popular" })}
+            className={`whitespace-nowrap text-caption ${
+              state.sort === "popular" ? "font-semibold text-ink" : "font-medium text-muted"
+            }`}
+          >
+            Most popular
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              push({ ...state, sort: state.sort === "price-asc" ? "price-desc" : "price-asc" })
+            }
+            className={`whitespace-nowrap text-caption ${
+              state.sort.startsWith("price") ? "font-semibold text-ink" : "font-medium text-muted"
+            }`}
+          >
+            Price {state.sort === "price-asc" ? "↑" : state.sort === "price-desc" ? "↓" : "⇅"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap text-caption font-semibold text-ink"
+          >
+            Filter ⛛
+            {activeCount(state) > 0 ? (
+              <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-black text-white">
+                {activeCount(state)}
+              </span>
+            ) : null}
+          </button>
+        </div>
+
+        {/* Row 3 — one dropdown chip per facet. */}
+        <div className="pb-1">
+          <FacetChips
+            cat={state.cat}
+            state={state}
+            onChange={push}
+            facets={facets}
+            subcategories={subcategories}
+            stores={stores}
+            openOnMount={params.get("facet") as FacetGroup | null}
+            onOpened={() => {
+              // Consumed once. Left in the URL it would reopen the sheet every
+              // time a filter changed, because every change rewrites the query.
+              const next = new URLSearchParams(params);
+              next.delete("facet");
+              setParams(next, { replace: true });
+            }}
+          />
+        </div>
       </div>
 
       <div className="px-[var(--page-x)] pb-24 pt-2">
@@ -255,7 +335,7 @@ export function BrowseResults() {
         )}
       </div>
 
-      <FilterSheet
+      <AllFiltersSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onApply={(next) => {
@@ -263,18 +343,20 @@ export function BrowseResults() {
           push(next);
         }}
         state={state}
-        products={pool}
-        lookup={lookup}
-        subcategories={subcategories}
-        stores={stores}
+        facets={facets}
       />
 
+      {/*
+        The little menu behind "Recommended ▾" — only the sorts that are NOT
+        already a tap on the row itself, so the row and the menu never offer
+        the same thing twice.
+      */}
       {sortOpen ? (
         <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40">
           <button type="button" aria-label="Close" className="flex-1" onClick={() => setSortOpen(false)} />
           <div className="rounded-t-[18px] bg-canvas pb-3">
             <p className="px-4 py-3 text-body font-semibold text-ink">Sort</p>
-            {SORTS.map((s) => (
+            {SORTS.filter((s) => !isInline(s.value)).map((s) => (
               <button
                 key={s.value}
                 type="button"

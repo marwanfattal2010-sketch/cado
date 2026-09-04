@@ -27,6 +27,7 @@ export type TileKind =
   | { type: "giftReady" }
   | { type: "sale" }
   | { type: "sameDay" }
+  | { type: "giftWrap" }
   | { type: "subcategory"; slug: string };
 
 export type CategoryTile = {

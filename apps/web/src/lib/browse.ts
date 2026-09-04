@@ -145,7 +145,10 @@ export const PRODUCT_CARD_COLUMNS =
   // category tab — "Ready to gift" and the Store-picks fallback for Best
   // sellers — so they belong on the card contract rather than in a second
   // round-trip per section.
-  "id, title, slug, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, is_gift_ready, is_pick, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary)" as const;
+  // color/color_is_placeholder and product_variants back the Colour and Size
+  // facets. Both are embedded rather than fetched per product: a size filter
+  // that costs one request per card would be slower than no size filter.
+  "id, title, slug, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, is_gift_ready, is_pick, color, color_is_placeholder, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary), product_variants(name, is_active)" as const;
 
 export type FeedProduct = {
   id: string;
@@ -168,7 +171,23 @@ export type FeedProduct = {
   gift_wrap_available?: boolean | null;
   is_gift_ready?: boolean | null;
   is_pick?: boolean | null;
+  /**
+   * A made-up colour is worse than no colour, so `color_is_placeholder` rides
+   * along and the Colour facet ignores any row that has it set.
+   */
+  color?: string | null;
+  color_is_placeholder?: boolean | null;
+  /** Sizes live in product_variants — the size mechanism the schema shipped with. */
+  product_variants?: { name: string; is_active: boolean }[] | null;
 };
+
+/** The active sizes on a product, in the order the store listed them. */
+export const sizesOf = (p: FeedProduct): string[] =>
+  (p.product_variants ?? []).filter((v) => v.is_active).map((v) => v.name);
+
+/** The colour of a product, or null when nobody has set a real one. */
+export const colourOf = (p: FeedProduct): string | null =>
+  p.color && !p.color_is_placeholder ? p.color : null;
 
 /**
  * The slice of the PostgREST builder this helper touches.

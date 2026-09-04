@@ -23,6 +23,7 @@ import {
 import { themeFor, type CategoryTile } from "../../../lib/categoryTheme";
 import { browseHref } from "../../../lib/browseParams";
 import { RECIPIENTS, priceTierId, type TileId } from "../../../lib/facets";
+import { recipientArt, tileArt } from "../../../lib/tabArt";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
 /**
@@ -181,18 +182,25 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
     const tier = sections.tier;
     const entryTiles: CategoryTile[] = [
       { label: "New in", kind: { type: "new" } },
-      {
-        label: sections.bestSellersAreReal ? "Best sellers" : "Store picks",
-        kind: { type: "picks" },
-      },
+      { label: "Arrives today", kind: { type: "sameDay" } },
       ...(tier ? [{ label: tier.label, kind: { type: "price" as const, max: tier.max } }] : []),
-      { label: "Ready to gift", kind: { type: "giftReady" } },
+      { label: "Gift wrapped", kind: { type: "giftWrap" } },
       { label: "Deals", kind: { type: "sale" } },
+      // Last two on purpose: they are the ones with no data behind them on
+      // most tabs, so when they drop the row still ends on a full tile rather
+      // than a gap in the middle.
+      ...(sections.bestSellersAreReal
+        ? [{ label: "Best sellers", kind: { type: "picks" as const } }]
+        : []),
+      { label: "Ready to gift", kind: { type: "giftReady" } },
     ];
     const tiles: ResolvedTile[] = [];
     for (const t of entryTiles) {
       let pool: FeedProduct[] = [];
       let href = "";
+      // The tile's own id, captured here rather than re-derived, so the
+      // picture, the link and the saved view can never name different things.
+      let tileId: TileId | null = null;
       // Switched on a local alias of the whole `kind`, not on `t.kind.type`.
       // TypeScript only narrows a discriminated union through a stable
       // reference; switching on the property path leaves each branch holding
@@ -208,38 +216,57 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
           // added in the last 30 days, not simply "the newest we have".
           const cutoff = Date.now() - 30 * 86400000;
           pool = all.filter((p) => new Date(p.created_at).getTime() >= cutoff);
-          href = browseHref(cat, { tile: "new-in" });
+          tileId = "new-in";
           break;
         }
-        case "picks": {
+        case "sameDay":
+          pool = all.filter((p) => p.same_day === true);
+          tileId = "arrives-today";
+          break;
+        case "giftWrap":
+          pool = all.filter((p) => p.gift_wrap_available === true);
+          tileId = "gift-wrapped";
+          break;
+        case "picks":
           pool = sections.bestSellers;
-          const id: TileId = sections.bestSellersAreReal ? "best-sellers" : "store-picks";
-          href = browseHref(cat, { tile: id });
+          tileId = sections.bestSellersAreReal ? "best-sellers" : "store-picks";
           break;
-        }
         case "giftReady":
           pool = sections.giftReady;
-          href = browseHref(cat, { tile: "ready-to-gift" });
+          tileId = "ready-to-gift";
           break;
         case "sale":
           pool = sections.deals;
-          href = browseHref(cat, { tile: "deals" });
+          tileId = "deals";
           break;
         default:
           break;
       }
+      if (tileId) href = browseHref(cat, { tile: tileId });
       // A tile with nothing behind it is dropped, not shown empty — and never
       // opens a results page with no results.
       if (pool.length === 0 || !href) continue;
-      tiles.push({ label: t.label, photo: take(pool, "tiles"), href });
+      // CURATED ART, not a borrowed product photo. A tile names a view rather
+      // than an object, so there is no product that "is" New in; the picture
+      // has to be chosen. See lib/tabArt.ts.
+      // The price tile is the one without a TileId — it is a price filter, not
+      // a saved view — so it keeps a real photo of something inside the tier.
+      tiles.push({
+        label: t.label,
+        photo: tileId ? tileArt(tileId) : take(pool, "tiles"),
+        href,
+      });
     }
 
-    // A real product photo per recipient, for the Gift for… row.
+    /*
+     * The Gift for… row is curated too, and for the two reasons the brief
+     * gives: "For Him" was picking a girls' t-shirt because that was the first
+     * product tagged `him` in Fashion, and Perfume & Beauty had nothing tagged
+     * `father` at all, so Dad rendered as an empty disc. A recipient is not a
+     * thing in the catalogue, so nothing in the catalogue can stand for one.
+     */
     const recipientPhoto = new Map<string, string | null>();
-    for (const r of RECIPIENTS) {
-      const pool = all.filter((x) => (x.recipient_tags ?? []).includes(r.value));
-      recipientPhoto.set(r.value, pool.length ? take(pool, "giftfor") : null);
-    }
+    for (const r of RECIPIENTS) recipientPhoto.set(r.value, recipientArt(r.value));
 
     return { heroSlides, tiles, circles, recipientPhoto };
   }, [sections.all, sections.bestSellers, sections.giftReady, sections.deals, subcategories, slug, theme]);
@@ -303,10 +330,7 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
         {/* 4 — shop by category */}
         <SubcategoryCircles circles={art.circles} theme={theme} cat={cat} />
 
-        {/* 5 — stores */}
-        <StoresRow categoryName={categoryName} stores={stores} theme={theme} />
-
-        {/* 6 — super deals */}
+        {/* 5 — super deals */}
         <SuperDeals sections={sections} theme={theme} cat={cat} />
 
         {/* 7 — new arrivals */}
@@ -338,6 +362,15 @@ export function CategoryTab({ tab }: { tab: BrowseTab }) {
 
         {/* 10 — occasion chips */}
         <OccasionChips sections={sections} theme={theme} cat={cat} />
+
+        {/*
+          11 — STORES, and they are the last section before the grid now.
+          Mid-page they interrupted a run of product rows with a row of logos;
+          at the bottom they read as "and here is who you would be buying
+          from", which is the question a shopper has once they have seen the
+          goods rather than before.
+        */}
+        <StoresRow categoryName={categoryName} stores={stores} theme={theme} />
 
         {/*
           11 — PURE BROWSE. No sort row, no filter button, no applied chips
