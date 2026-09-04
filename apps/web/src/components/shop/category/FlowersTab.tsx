@@ -32,6 +32,29 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
 const ROSE = "#A64E62";
 
+/**
+ * A SHORT ROW SITS ACROSS THE CARD, NOT BUNCHED AT ITS LEFT.
+ *
+ * Three subcategories in a 361px row left about 150px of white to the right of
+ * the last circle, which reads as a row that failed to load rather than a row
+ * that is three long. At three or fewer, the items are spread — one on the
+ * left edge, one centred, one on the right — and from four up the row goes
+ * back to its normal left-aligned scrolling gaps.
+ *
+ * Written as `justify-content` on the existing `.scroll-row`, so nothing about
+ * the scrolling, snapping or gutters changes: with four or more items the row
+ * overflows, free space is negative and the property has nothing to do.
+ * The threshold is applied per row from that row's own length, because every
+ * one of them is built from real rows and any of them can come back short.
+ *
+ * TWO IS THE EXCEPTION. `justify-between` on a pair pins one circle to each
+ * end with ~250px of nothing between them, which reads as two things that have
+ * lost each other rather than as a row. `space-around` fills the same width
+ * and keeps them a pair — the florist row is at two today.
+ */
+const spread = (n: number) =>
+  n === 2 ? " justify-around" : n <= 3 ? " justify-between" : "";
+
 /** Circle labels, as the brief writes them. A 70px circle has no room for "Visiting someone". */
 const SHORT: Record<string, string> = {
   "visiting-someone": "Visiting",
@@ -162,7 +185,10 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
       {occasions.length ? (
         <section className="pt-4">
           <H>Flowers for…</H>
-          <div className="scroll-row" style={{ ["--row-gap" as string]: "16px" }}>
+          <div
+            className={`scroll-row${spread(occasions.length)}`}
+            style={{ ["--row-gap" as string]: "16px" }}
+          >
             {occasions.map((o) => (
               <Link
                 key={o.value}
@@ -194,7 +220,10 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
       {flowers.length ? (
         <section className="pt-5">
           <H>Shop by flower</H>
-          <div className="scroll-row" style={{ ["--row-gap" as string]: "9px" }}>
+          <div
+            className={`scroll-row${spread(flowers.length)}`}
+            style={{ ["--row-gap" as string]: "9px" }}
+          >
             {flowers.map((f) => (
               <Link
                 key={f.value}
@@ -241,7 +270,24 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
       {circles.length ? (
         <Card>
           <CardH>Shop by category</CardH>
-          <div className="scroll-row -mx-3.5 px-3.5" style={{ ["--row-gap" as string]: "16px" }}>
+          <div
+            className={`scroll-row${spread(circles.length)}`}
+            /*
+             * The negative margin has to cancel `.scroll-row`'s OWN gutter,
+             * not the card's. `-mx-3.5` assumed the row was padded by the 14px
+             * `px-3.5` beside it, but `.scroll-row { padding-inline:
+             * var(--page-x) }` wins that and pads 16px — so the row was left
+             * 2px inside the card's text column and the first circle did not
+             * line up with the heading above it. Cancelling `--page-x`
+             * exactly puts the row edge-to-edge with the card's content, which
+             * is what "spread across the full card width" has to measure
+             * against.
+             */
+            style={{
+              ["--row-gap" as string]: "16px",
+              marginInline: "calc(var(--page-x) * -1)",
+            }}
+          >
             {circles.map((c) => (
               <Link
                 key={c.slug}
@@ -269,7 +315,14 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
               See all
             </Link>
           </div>
-          <div className="scroll-row -mx-3.5 px-3.5" style={{ ["--row-gap" as string]: "11px" }}>
+          <div
+            className="scroll-row"
+            /* Same 14px-vs-16px correction as the category row above. */
+            style={{
+              ["--row-gap" as string]: "11px",
+              marginInline: "calc(var(--page-x) * -1)",
+            }}
+          >
             {deals.map((p) => (
               <Link key={p.id} to={`/product/${p.id}`} className="w-[142px] shrink-0">
                 <span className="relative block aspect-[1/1.15] overflow-hidden rounded-[12px] bg-[#EFE3E5]">
@@ -352,7 +405,10 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
               See all {florists.length}
             </Link>
           </div>
-          <div className="scroll-row" style={{ ["--row-gap" as string]: "16px" }}>
+          <div
+            className={`scroll-row${spread(florists.length)}`}
+            style={{ ["--row-gap" as string]: "16px" }}
+          >
             {florists.map((f) => (
               <Link key={f.id} to={storePath({ slug: f.slug })} className="w-[56px] shrink-0 text-center">
                 <span className="block h-[56px] w-[56px] overflow-hidden rounded-pill bg-[#E7D8DB]">

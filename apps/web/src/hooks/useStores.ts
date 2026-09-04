@@ -55,15 +55,26 @@ export function useSearchStores(query: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, name, slug, description, cover_image_url")
+        // `products!inner` is the whole point: it drops any partner with no
+        // ACTIVE product, which since 0096 is a real category of store — six
+        // Fashion shops exist whose catalogue has not been loaded in yet. They
+        // are pinned into that tab's circle row deliberately; they must not
+        // turn up in a search, where a hit is a promise that tapping it lands
+        // on something to buy.
+        .select("id, name, slug, description, cover_image_url, products!inner(id)")
         .eq("status", "active")
         // Coming-soon stores (is_live=false) stay out of search — they'd be
         // clickable links to a store with nothing in it.
         .eq("is_live", true)
+        .eq("products.is_active", true)
         .or(`name.ilike.%${term}%,description.ilike.%${term}%`)
-        .limit(20);
+        .limit(60);
       if (error) throw error;
-      return data;
+      // De-dupe: the embed can repeat a partner once per matching product.
+      const seen = new Set<string>();
+      return (data ?? [])
+        .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
+        .slice(0, 20);
     },
   });
 }

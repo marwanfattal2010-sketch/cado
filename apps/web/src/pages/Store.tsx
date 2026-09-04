@@ -68,6 +68,24 @@ export function Store() {
 
   const favorite = useIsFavoriteStore(storeId);
   const rows = useMemo(() => (products.data ?? []) as Row[], [products.data]);
+
+  /**
+   * THE SHELF IS EMPTY — not "your filters emptied it".
+   *
+   * Six Fashion stores exist with no products at all (0096: they are pinned
+   * into the tab's circle row so a shopper can see who is coming, and the
+   * circle has to lead somewhere). Everything below the header is machinery for
+   * narrowing a catalogue, and pointing it at nothing produces exactly the
+   * screen this app is not allowed to show: "0 gifts", a filter bar whose every
+   * sheet is empty, a sort control over nothing, and a "Clear filters" button
+   * for filters nobody set.
+   *
+   * So when a store has nothing listed, the page stops after the header and
+   * says so in one line. No count, no bar, no grid, no invented "coming in
+   * September". The two states are kept apart on purpose: this one is about the
+   * store, the one further down is about the filters.
+   */
+  const shelfEmpty = !products.isLoading && rows.length === 0;
   const variants = useVariantOptionsForProducts(useMemo(() => rows.map((p) => p.id), [rows]));
   const sizes = variants.data?.byProduct;
 
@@ -223,7 +241,7 @@ export function Store() {
           >
             <ChevronLeftIcon className="h-5 w-5" />
           </button>
-          {searchOpen ? (
+          {searchOpen && !shelfEmpty ? (
             <form
               role="search"
               onSubmit={(e) => e.preventDefault()}
@@ -244,15 +262,20 @@ export function Store() {
           ) : (
             <p className="min-w-0 flex-1 truncate font-display text-h2">{s.name}</p>
           )}
-          <button
-            type="button"
-            onClick={() => setSearchOpen((v) => !v)}
-            aria-label={searchOpen ? "Close search" : `Search ${s.name}`}
-            aria-expanded={searchOpen}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-ink"
-          >
-            {searchOpen ? <span aria-hidden>×</span> : <SearchIcon className="h-5 w-5" />}
-          </button>
+          {/* A search box over an empty shelf can only ever say "no results",
+              which reads as a fault in the shop rather than the truth that it
+              has not listed anything yet. */}
+          {shelfEmpty ? null : (
+            <button
+              type="button"
+              onClick={() => setSearchOpen((v) => !v)}
+              aria-label={searchOpen ? "Close search" : `Search ${s.name}`}
+              aria-expanded={searchOpen}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-ink"
+            >
+              {searchOpen ? <span aria-hidden>×</span> : <SearchIcon className="h-5 w-5" />}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => storeId && toggleFavoriteStore(storeId)}
@@ -303,13 +326,17 @@ export function Store() {
           {s.description ? (
             <p className="mt-1 line-clamp-2 text-body text-muted">{s.description}</p>
           ) : null}
-          <p className="mt-1 text-caption text-muted">
-            {products.isLoading ? (
-              <span className="skeleton inline-block h-[9px] w-16 rounded-pill align-middle" />
-            ) : (
-              `${visible.length} ${visible.length === 1 ? "gift" : "gifts"}`
-            )}
-          </p>
+          {/* The count is a fact about a shelf. A store with no shelf gets no
+              line here rather than "0 gifts". */}
+          {shelfEmpty ? null : (
+            <p className="mt-1 text-caption text-muted">
+              {products.isLoading ? (
+                <span className="skeleton inline-block h-[9px] w-16 rounded-pill align-middle" />
+              ) : (
+                `${visible.length} ${visible.length === 1 ? "gift" : "gifts"}`
+              )}
+            </p>
+          )}
         </div>
       </header>
 
@@ -336,6 +363,15 @@ export function Store() {
         </div>
       ) : null}
 
+      {/* 4 — NOTHING LISTED YET. The header above already carries the two
+          things that are true — the store's name and its logo — and this is
+          the third: one line, no count, no grid, no date we cannot keep. */}
+      {shelfEmpty ? (
+        <div className="mx-auto max-w-6xl px-4 pt-6">
+          <p className="text-body text-muted">Products coming soon.</p>
+        </div>
+      ) : (
+        <>
       {/* 4 + 5 — the shared filter bar, then the grid. */}
       <div className="mx-auto max-w-6xl px-4 pt-5">
         <BrowseFilterBar
@@ -414,6 +450,8 @@ export function Store() {
         initialGroup={panelGroup}
         sizesByProduct={sizes}
       />
+        </>
+      )}
     </div>
   );
 }

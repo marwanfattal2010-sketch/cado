@@ -1,25 +1,24 @@
 import { NewOnCado, PopularBrands, TopStoresNearYou, AllStores } from "./TotersSections";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { SectionHead } from "../SectionHead";
 import { ProductCard } from "../ProductCard";
 import { ProductRail } from "../ProductRail";
-import { ProductRowSkeleton, ProductGridSkeleton } from "../Skeleton";
+import { Skeleton, ProductRowSkeleton, ProductGridSkeleton } from "../Skeleton";
 import { Img } from "../Img";
 import { storePath } from "../../lib/routes";
 import { BUDGETS, QUIZ_RECIPIENTS } from "../../lib/filters";
 import type { FeedProduct } from "../../lib/browse";
 import {
-  isoWeek,
   rankProducts,
-  useCategoryCounts,
-  useCategoryProducts,
+  useBestOfStrips,
   useDeals,
   useDiscoverMore,
   useHomeSignals,
   useNewest,
   useStoresOfWeek,
   useTrendingPool,
+  type BestOfStrip,
   type FeaturedStore,
 } from "../../hooks/useHomeEndless";
 import { useRecentlyViewed } from "../../hooks/useRecentlyViewed";
@@ -45,9 +44,11 @@ export function HomeLower() {
   // 8, up from 3 (Marwan). "See all" stays — the row scrolls sideways, so
   // eight is a row worth swiping rather than three and a link.
   const storesOfWeek = useStoresOfWeek(8);
-  const catCounts = useCategoryCounts();
   const newest = useNewest(10);
   const recent = useRecentlyViewed();
+  // One strip per category, in the tab order. Eleven strips, no extra request
+  // — see useBestOfStrips.
+  const strips = useBestOfStrips();
 
   /* ---- 2. Trending this week / Popular picks -------------------------- */
 
@@ -66,22 +67,9 @@ export function HomeLower() {
     [signals.data, trendingPool.data]
   );
 
-  /* ---- 7. Best of {category} strips, rotating weekly ------------------- */
-
-  const stripCats = useMemo(() => {
-    const eligible = (catCounts.data ?? []).filter((c) => c.count >= 6);
-    if (eligible.length <= 3) return eligible;
-    const start = isoWeek() % eligible.length;
-    return [0, 1, 2].map((i) => eligible[(start + i) % eligible.length]);
-  }, [catCounts.data]);
-  const strip0 = useCategoryProducts(stripCats[0]?.id);
-  const strip1 = useCategoryProducts(stripCats[1]?.id);
-  const strip2 = useCategoryProducts(stripCats[2]?.id);
-  const strips = [strip0, strip1, strip2];
-
   /* ---- 10. Discover more: exclude everything already on the page ------- */
 
-  const contributors = [trendingPool, deals, newest, strip0, strip1, strip2];
+  const contributors = [trendingPool, deals, newest, strips];
   const excludeReady =
     contributors.every((q) => !q.isLoading) && !signals.isLoading && !recent.isLoading;
   const exclude = useMemo(() => {
@@ -90,11 +78,9 @@ export function HomeLower() {
     for (const p of deals.data ?? []) s.add(p.id);
     for (const p of newest.data ?? []) s.add(p.id);
     for (const p of recent.data ?? []) s.add(p.id);
-    for (const [i] of strips.entries())
-      for (const p of rankedStrip(strips[i].data, signals.data).slice(0, 8)) s.add(p.id);
+    for (const strip of strips.data) for (const p of strip.products) s.add(p.id);
     return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trending, deals.data, newest.data, recent.data, strip0.data, strip1.data, strip2.data, signals.data]);
+  }, [trending, deals.data, newest.data, recent.data, strips.data]);
 
   return (
     <div className="pb-6">
@@ -138,8 +124,8 @@ export function HomeLower() {
       {/* Popular Brands — between Popular picks and Deals, per the brief. */}
       <PopularBrands />
 
-      {/* New on CADO — hides itself when no shop joined in the last 60 days. */}
-      <NewOnCado />
+      {/* New on CADO used to sit here. The brief puts it near the foot of the
+          page, between Recently viewed and All stores — see section 11. */}
 
       {/* 4 — Stores of the Week */}
       <StoresOfWeekBlock stores={storesOfWeek.data ?? []} />
@@ -190,19 +176,21 @@ export function HomeLower() {
         </div>
       </Pad>
 
-      {/* 7 — Best of {category}, rotating weekly */}
-      {stripCats.map((cat, i) =>
-        strips[i].isLoading ? (
-          <RailSkeleton key={cat.id} title={`Best of ${cat.name}`} />
-        ) : (
-          <BestOfStrip
-            key={cat.id}
-            name={cat.name}
-            slug={cat.slug}
-            products={rankedStrip(strips[i].data, signals.data).slice(0, 8)}
-          />
-        )
-      )}
+      {/*
+        7 — Best of {category}: ONE STRIP PER CATEGORY, ALL ELEVEN.
+
+        The weekly rotation of three is gone. The order is the tab order and
+        comes out of useBestOfStrips already sorted by CATEGORY_ORDER, so this
+        map is deliberately dumb — there is no list of category names here to
+        drift out of step with the chips at the top of the page.
+      */}
+      {strips.isLoading
+        ? [0, 1, 2].map((i) => <StripSkeleton key={i} />)
+        : strips.data.map((strip, i) => (
+            // The first two rows are on screen the moment someone reaches
+            // this part of the page, so they paint with the rest of it.
+            <BestOfRow key={strip.id} strip={strip} eager={i < 2} />
+          ))}
 
       {/* 8 — Recently viewed: exists only when there is something to show */}
       {(recent.data?.length ?? 0) > 0 ? (
@@ -212,10 +200,9 @@ export function HomeLower() {
         </Pad>
       ) : null}
 
-      {/* 9 — the newest PRODUCTS. Renamed from "New on CADO": 1.5 gives that
-          name to the band of newly joined STORES a few sections above, and
-          two different sections under one name on one page is the exact
-          duplication this round is removing. */}
+      {/* 9 — the newest PRODUCTS. Not called "New on CADO": that name belongs
+          to the band of newly joined STORES just below, and two different
+          sections under one name on one page is duplication, not emphasis. */}
       {newest.isLoading ? (
         <RailSkeleton title="Just arrived" />
       ) : (newest.data?.length ?? 0) >= 4 ? (
@@ -230,13 +217,21 @@ export function HomeLower() {
         </Pad>
       ) : null}
 
-      {/* 1.7 — All stores, BEFORE Discover more. Discover more really is an
-          infinite scroll (DiscoverMore pages forever on a sentinel), so
-          anything placed after it is unreachable. */}
-      <AllStores />
-
-      {/* 10 — Discover more, the endless part */}
+      {/* 10 — Discover more, the endless part.
+          It is no longer last. The order below it is fixed by the brief —
+          New on CADO, then All stores as the final section on the page — and
+          that only works because DiscoverMore's paging now measures its own
+          sentinel rather than the distance to the bottom of the panel. With
+          the old test, everything after it would have had to be scrolled past
+          before the next page would load. */}
       <DiscoverMore exclude={exclude} excludeReady={excludeReady} />
+
+      {/* 11 — the newly joined STORES band, moved down here from above
+          Stores of the Week so the page ends on the two store sections. */}
+      <NewOnCado />
+
+      {/* 12 — All stores. THE LAST SECTION ON THE PAGE. */}
+      <AllStores />
     </div>
   );
 }
@@ -247,11 +242,6 @@ const RECIPIENT_ROW = [
   { value: "him", label: "Him" },
   ...QUIZ_RECIPIENTS.filter((r): r is { value: string; label: string } => r.value != null),
 ];
-
-function rankedStrip(rows: FeedProduct[] | undefined, signals: Parameters<typeof rankProducts>[1] | undefined) {
-  if (!rows) return [];
-  return signals ? rankProducts(rows, signals) : rows;
-}
 
 /** One vertical rhythm for every section — rule 4 of the brief. */
 function Pad({ children }: { children: React.ReactNode }) {
@@ -279,22 +269,112 @@ function RailSkeleton({ title }: { title: string }) {
   );
 }
 
-function BestOfStrip({ name, slug, products }: { name: string; slug: string; products: FeedProduct[] }) {
-  if (products.length < 4) return null;
+/**
+ * ONE Best-of strip.
+ *
+ * The title and the "See all" both come from the tab row, so the words match
+ * the chip at the top of the page and the link lands on the tab that chip
+ * opens. Nothing here truncates the label: the old version cut it at the
+ * ampersand, which is how "Home & Appliances" became "Best of Home" and
+ * "Perfume & Beauty" became "Best of Perfume".
+ *
+ * THE CARDS COME FROM ProductRail, LIKE EVERY OTHER ROW ON THIS PAGE. That is
+ * the whole answer to "every card in every strip identical in size" — one
+ * component owns the 152px width, the square photo and the 98px text block,
+ * so strip one and strip eleven cannot disagree.
+ *
+ * The rail below the fold is mounted on approach. Every image on this page is
+ * `loading="eager"` on purpose (see Img — lazy loading does not fire inside
+ * these nested scroll containers), so eleven strips mounted at once would be
+ * eighty-eight photographs in flight before the shopper had scrolled to any of
+ * them. The HEADING always renders, and the placeholder is exactly the height
+ * of the real row, so the page's length and its section order are the same
+ * whether or not you have scrolled — nothing shifts under you.
+ */
+function BestOfRow({ strip, eager }: { strip: BestOfStrip; eager: boolean }) {
+  const host = useRef<HTMLDivElement | null>(null);
+  const [shown, setShown] = useState(eager);
+
+  useEffect(() => {
+    if (shown) return;
+    const el = host.current;
+    if (!el) return;
+    // The scroll container is the tab panel, not the window — the same trap
+    // DiscoverMore documents below, and the same two-belt answer: an observer
+    // rooted on the panel, plus a plain scroll listener for the environments
+    // where the observer never fires.
+    const root = el.closest(".panel") as HTMLElement | null;
+    const near = () => {
+      const r = el.getBoundingClientRect();
+      const bottom = root ? root.getBoundingClientRect().bottom : window.innerHeight;
+      return r.top - bottom < 1000;
+    };
+    if (near()) {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setShown(true);
+      },
+      { root, rootMargin: "1000px 0px" }
+    );
+    io.observe(el);
+    const onScroll = () => {
+      if (near()) setShown(true);
+    };
+    root?.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      io.disconnect();
+      root?.removeEventListener("scroll", onScroll);
+    };
+  }, [shown]);
+
   return (
     <Pad>
-      <SectionHead title={`Best of ${name.replace(/ &.*$/, "")}`} to={`/?tab=${TAB_OF[slug] ?? slug}`} />
-      <Rail products={products} />
+      <SectionHead title={`Best of ${strip.label}`} to={`/?tab=${strip.tab}`} />
+      <div ref={host} data-best-of={strip.tab}>
+        {shown ? <Rail products={strip.products} /> : <RailPlaceholder count={strip.products.length} />}
+      </div>
     </Pad>
   );
 }
 
-/** Tab slug is not always the category slug — the standing trap. */
-const TAB_OF: Record<string, string> = {
-  "jewelry-accessories": "jewelry",
-  "flowers-gifts": "flowers",
-  "gift-sets": "home",
-};
+/**
+ * A stand-in the exact height of a rail card: a 152px square photo over the
+ * 98px text block ProductCard fixes for every card. Same width, same gap, so
+ * revealing the real row changes nothing about the layout.
+ */
+function RailPlaceholder({ count }: { count: number }) {
+  return (
+    <div className="scroll-row" style={{ ["--row-gap" as string]: "12px" }}>
+      {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+        <div key={i} className="w-[152px] shrink-0">
+          <Skeleton className="aspect-square w-full rounded-card" />
+          <div className="h-[98px]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The loading state for the run of strips. No title: which categories qualify
+ * is not known until the catalogue lands, and a placeholder heading would be
+ * naming a section that may not exist a moment later.
+ */
+function StripSkeleton() {
+  return (
+    <Pad>
+      <div className="mx-auto max-w-6xl px-4 pb-3">
+        <Skeleton className="h-6 w-[180px] rounded-card" />
+      </div>
+      <div className="px-4">
+        <ProductRowSkeleton count={3} />
+      </div>
+    </Pad>
+  );
+}
 
 /**
  * Stores of the Week: a swipe row of two or three, every card the same size.
@@ -375,9 +455,21 @@ function DiscoverMore({ exclude, excludeReady }: { exclude: Set<string>; exclude
      * keep firing. The listener costs one subtraction per scroll and makes
      * the endless grid load everywhere, not just where the compositor runs.
      */
+    /*
+     * MEASURED AGAINST THE SENTINEL, NOT AGAINST THE BOTTOM OF THE PANEL.
+     *
+     * It used to ask "are we within 600px of the end of the scroll?", which
+     * was the same question only while Discover more was the last thing on
+     * the page. It no longer is — New on CADO and All stores now sit under it
+     * — and that version would have refused to page until the shopper had
+     * scrolled past every store card. Comparing the sentinel's own top to the
+     * bottom of the panel is the same 600px rule, independent of what follows.
+     */
     const onScroll = () => {
       if (isFetchingNextPage || !root) return;
-      if (root.scrollHeight - root.scrollTop - root.clientHeight < 600) fetchNextPage();
+      if (el.getBoundingClientRect().top - root.getBoundingClientRect().bottom < 600) {
+        fetchNextPage();
+      }
     };
     root?.addEventListener("scroll", onScroll, { passive: true });
     return () => {

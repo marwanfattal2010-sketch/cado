@@ -114,6 +114,83 @@ export function parseFilterValue(value: string): FeedFilter {
   return out;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Which shops belong to a category                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The partner fields the two rules below read. Deliberately loose so any of
+ * the store queries in the app can be passed straight in.
+ */
+export type StoreLike = {
+  id: string;
+  name: string;
+  slug: string | null;
+  /** 0096. A pinned position in `display_category_id`'s store row. */
+  display_rank?: number | null;
+  display_category_id?: string | null;
+};
+
+/** The `[TEST]`-style bracket prefix some seeded stores carry, stripped. */
+export const storeDisplayName = (name: string) => name.replace(/\[.*?\]\s*/g, "");
+
+/**
+ * THE STOCK RULE. Every product-derived surface starts here.
+ *
+ * A shop is "in" a category when it has an ACTIVE product in it — nothing
+ * else. The Store facet, the strips, the deals, the grid and store search all
+ * measure themselves against this, which is why a shop with an empty shelf can
+ * never put a shopper in front of an empty grid.
+ */
+export function stockedStoreIds(
+  products: { partner_id: string; category_id: string }[],
+  categoryId?: string
+): Set<string> {
+  const ids = new Set<string>();
+  for (const p of products) {
+    if (categoryId && p.category_id !== categoryId) continue;
+    ids.add(p.partner_id);
+  }
+  return ids;
+}
+
+/**
+ * THE DISPLAY RULE, and the one exception to the stock rule.
+ *
+ * The store circles on a tab and the `/stores/:cat` directory behind them are
+ * the only two places a shop with nothing on its shelves is allowed to appear.
+ * That is on purpose: CADO wants the row to say which shops you can buy from
+ * here, including the ones whose catalogue is still being loaded in, and the
+ * circle leads to a page that says "Products coming soon" in as many words.
+ *
+ * A shop qualifies if it stocks the category OR is pinned to it
+ * (`display_category_id`, migration 0096). Pinned shops lead, in
+ * `display_rank` order; everyone else follows alphabetically. There is no name
+ * list here and there must never be one — moving a shop is an UPDATE.
+ */
+export function categoryStores<T extends StoreLike>({
+  stores,
+  products,
+  categoryId,
+}: {
+  stores: T[];
+  products: { partner_id: string; category_id: string }[];
+  categoryId?: string;
+}): T[] {
+  const stocked = stockedStoreIds(products, categoryId);
+  const pinned = (s: T) =>
+    categoryId != null && s.display_category_id === categoryId && s.display_rank != null;
+
+  return stores
+    .filter((s) => s.slug && (stocked.has(s.id) || pinned(s)))
+    .sort((a, b) => {
+      const ra = pinned(a) ? (a.display_rank as number) : Infinity;
+      const rb = pinned(b) ? (b.display_rank as number) : Infinity;
+      if (ra !== rb) return ra - rb;
+      return storeDisplayName(a.name).localeCompare(storeDisplayName(b.name));
+    });
+}
+
 /**
  * A tab's accent as a CSS colour.
  *

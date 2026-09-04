@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useCatalogue } from "./useCatalogue";
 import { useCategories } from "./useCategories";
+import { useBrowseConfig } from "./useBrowseConfig";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { PRODUCT_CARD_COLUMNS, type FeedProduct } from "../lib/browse";
@@ -385,39 +386,92 @@ export function useNewest(limit = 10) {
   return asQuery(useMemo(() => rows.slice(0, limit), [rows, limit]), catalogue.isLoading);
 }
 
-/** Categories by in-stock product count, for the Best-of rotation. */
-export function useCategoryCounts() {
+/* ------------------------------------------------- best of {category} */
+
+export type BestOfStrip = {
+  /** The category row's id — the React key. */
+  id: string;
+  /** The TAB's label, so "Best of Chocolate" uses the same word as the chip. */
+  label: string;
+  /** The TAB's slug, for "See all". Not the category slug — see TAB_OF's grave. */
+  tab: string;
+  products: FeedProduct[];
+};
+
+/**
+ * How many in-stock products a category needs before it gets a strip.
+ *
+ * At 393px a 152px card plus its 12px gap means about two and a half cards
+ * are on screen, so four is the smallest number that fills the row and still
+ * leaves something to swipe to. Below it the strip is skipped outright rather
+ * than padded — there is nothing honest to pad it with.
+ */
+export const BEST_OF_MIN = 4;
+/** Cards per strip. The rail is a swipe row, not a page. */
+export const BEST_OF_SIZE = 8;
+
+/**
+ * ONE STRIP PER CATEGORY, IN THE TAB ORDER, FROM ONE REQUEST.
+ *
+ * This replaces a weekly rotation that showed three of eleven categories and
+ * three per-category hooks to feed it. Eleven strips cost exactly the same
+ * network as three did — zero: `useHomePool` is the shared catalogue that the
+ * whole page already has in memory, and this makes a single pass over it and
+ * buckets by category_id.
+ *
+ * THE ORDER IS NOT DECIDED HERE. `tabs` arrives sorted by `byCategoryOrder`,
+ * which reads CATEGORY_ORDER in lib/categories — the one place the running
+ * order lives. Walking the tabs in the order they are given IS walking that
+ * array, and it hands over the tab's own label and slug at the same time, so
+ * a strip's title and its "See all" cannot drift from the chip at the top of
+ * the page. There is deliberately no second list of category names in this
+ * file, and no `TAB_OF` map: the tab row already knows both halves.
+ */
+export function useBestOfStrips(min = BEST_OF_MIN, size = BEST_OF_SIZE) {
   const rows = useHomePool();
   const catalogue = useCatalogue();
   const categories = useCategories();
-  return asQuery(
-    useMemo(() => {
-      const byCat = new Map<string, { id: string; name: string; slug: string; count: number }>();
-      for (const p of rows) {
-        if (!p.category_id) continue;
-        const cur = byCat.get(p.category_id);
-        if (cur) cur.count++;
-        else {
-          const cat = categories.data?.find((c) => c.id === p.category_id);
-          if (!cat) continue;
-          byCat.set(p.category_id, { id: p.category_id, name: cat.name, slug: cat.slug, count: 1 });
-        }
-      }
-      return [...byCat.values()].sort((a, b) => b.count - a.count);
-    }, [rows, categories.data]),
-    catalogue.isLoading || categories.isLoading
-  );
-}
+  const signals = useHomeSignals();
+  const { tabs, isLoading: configLoading } = useBrowseConfig();
 
-export function useCategoryProducts(categoryId: string | undefined) {
-  const rows = useHomePool();
-  const catalogue = useCatalogue();
+  const data = useMemo<BestOfStrip[]>(() => {
+    const cats = categories.data ?? [];
+    if (cats.length === 0 || tabs.length === 0) return [];
+
+    const byCategory = new Map<string, FeedProduct[]>();
+    for (const p of rows) {
+      if (!p.category_id) continue;
+      const list = byCategory.get(p.category_id);
+      if (list) list.push(p);
+      else byCategory.set(p.category_id, [p]);
+    }
+
+    const bySlug = new Map(cats.map((c) => [c.slug, c]));
+    const out: BestOfStrip[] = [];
+    for (const tab of tabs) {
+      const slug = tab.filter.category_slug;
+      if (!slug) continue; // the All tab itself
+      const cat = bySlug.get(slug);
+      if (!cat) continue; // a tab pointing at a switched-off category row
+      const list = byCategory.get(cat.id) ?? [];
+      // Too thin to fill a row: skipped, never padded.
+      if (list.length < min) continue;
+      out.push({
+        id: cat.id,
+        label: tab.label,
+        tab: tab.slug,
+        // Same ranking rule as Trending — real recent orders, then real
+        // favourites, then the editorial flag, then newest. No number from
+        // it is ever printed; it only decides which eight go first.
+        products: (signals.data ? rankProducts(list, signals.data) : list).slice(0, size),
+      });
+    }
+    return out;
+  }, [rows, categories.data, tabs, signals.data, min, size]);
+
   return asQuery(
-    useMemo(
-      () => (categoryId ? rows.filter((p) => p.category_id === categoryId).slice(0, 20) : []),
-      [rows, categoryId]
-    ),
-    catalogue.isLoading
+    data,
+    catalogue.isLoading || categories.isLoading || configLoading || signals.isLoading
   );
 }
 

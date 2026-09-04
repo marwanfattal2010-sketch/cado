@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCategories } from "../../hooks/useCategories";
 import { useSubcategories } from "../../hooks/useStores";
@@ -65,8 +65,66 @@ type PanelProps = {
  * Splitting the branch into its own component is what actually stops them:
  * the hooks now live inside the tree that uses them.
  */
+/**
+ * WHERE EACH TAB WAS LEFT, KEPT OUTSIDE REACT ON PURPOSE.
+ *
+ * Every panel is its own scroll container, so swiping between tabs already
+ * preserves position — those panels never unmount. Opening a product or the
+ * results page does unmount `Home` entirely, and the browser cannot help:
+ * its own scroll restoration only tracks the document, and here the document
+ * never scrolls. So you scrolled 1400px into Flowers, tapped `Under $50`,
+ * pressed back, and landed at the top of the tab with the list you were
+ * halfway through somewhere below you.
+ *
+ * A module-level map survives that unmount for the life of the SPA session,
+ * which is exactly the span the back button covers. It is deliberately not
+ * state — reading it must never cause a render.
+ */
+const lastOffset = new Map<string, number>();
+
+function usePanelScroll(slug: string, mounted: boolean) {
+  const ref = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const remember = () => lastOffset.set(slug, el.scrollTop);
+    el.addEventListener("scroll", remember, { passive: true });
+
+    /*
+     * A panel mounts nearly empty and grows as its queries land, so the old
+     * offset cannot simply be assigned — at that instant there is nothing to
+     * scroll and the assignment is silently clamped to 0. Keep asking each
+     * frame until the content is genuinely tall enough to hold the offset,
+     * then stop. The frame cap keeps a tab whose products never load (or
+     * that has genuinely got shorter since) from polling forever.
+     */
+    const target = lastOffset.get(slug) ?? 0;
+    let frames = 0;
+    let raf = 0;
+    const restore = () => {
+      if (el.scrollHeight - el.clientHeight >= target) {
+        el.scrollTop = target;
+        return;
+      }
+      if (frames++ > 90) return;
+      raf = requestAnimationFrame(restore);
+    };
+    if (target > 0) restore();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("scroll", remember);
+    };
+  }, [slug, mounted]);
+
+  return ref;
+}
+
 export function TabPanel(props: PanelProps) {
   const { tab, active, mounted, primary } = props;
+  const panelRef = usePanelScroll(tab.slug, mounted);
 
   if (!mounted) return <div className="panel" aria-hidden style={{ minHeight: "100%" }} />;
 
@@ -80,13 +138,13 @@ export function TabPanel(props: PanelProps) {
    */
   if (!primary) {
     return (
-      <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
+      <section className="panel" ref={panelRef} aria-hidden={!active} data-tab={tab.slug}>
         <CategoryTab tab={tab} />
       </section>
     );
   }
 
-  return <PrimaryPanel {...props} />;
+  return <PrimaryPanel {...props} panelRef={panelRef} />;
 }
 
 function PrimaryPanel({
@@ -95,7 +153,8 @@ function PrimaryPanel({
   active,
   primary = false,
   hrefForCategory,
-}: PanelProps) {
+  panelRef,
+}: PanelProps & { panelRef?: React.Ref<HTMLElement> }) {
   const navigate = useNavigate();
   const categories = useCategories();
   const images = useTileImages();
@@ -163,7 +222,7 @@ function PrimaryPanel({
    * sections that belong to the landing page rather than to a category.
    */
   return (
-    <section className="panel" aria-hidden={!active} data-tab={tab.slug}>
+    <section className="panel" ref={panelRef} aria-hidden={!active} data-tab={tab.slug}>
       {blocks.map((block) => {
         switch (block.type) {
           case "banner_carousel":

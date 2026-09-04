@@ -19,7 +19,13 @@ import {
   type Lookup,
   type Sort,
 } from "../lib/browseParams";
-import { TILE_LABEL, priceTier, recipientLabel, type FacetGroup } from "../lib/facets";
+import {
+  FLOWER_TYPES,
+  TILE_LABEL,
+  priceTier,
+  recipientLabel,
+  type FacetGroup,
+} from "../lib/facets";
 import { OCCASIONS } from "../lib/filters";
 
 /**
@@ -136,6 +142,20 @@ export function BrowseResults() {
       key: `type:${v}`,
       label: subcategories.find((s) => s.slug === v)?.name ?? v,
       remove: () => push(toggleValue(state, "type", v)),
+    });
+  /*
+   * FLOWER TYPE IS A FILTER LIKE ANY OTHER, and it was the one group missing
+   * from this list. A flower pill on the Flowers tab opened /browse with one
+   * product in the grid under the heading "All Flowers", because the heading,
+   * the empty state and `namesOnly` are all derived from `applied` — and
+   * `flower` never reached it. The chip row was right the whole time, which is
+   * what made it look like only the title was broken.
+   */
+  for (const v of state.flower)
+    applied.push({
+      key: `flower:${v}`,
+      label: FLOWER_TYPES.find((t) => t.value === v)?.label ?? v,
+      remove: () => push(toggleValue(state, "flower", v)),
     });
   for (const v of state.size)
     applied.push({
@@ -303,7 +323,22 @@ export function BrowseResults() {
             facets={facets}
             subcategories={subcategories}
             stores={stores}
-            extra={applied.filter((a) => a.key === "tile" || a.key === "range")}
+            /*
+             * ONE CHIP PER FILTER, and the range was the exception.
+             *
+             * `min`/`max` belong to the Price facet — `selectedIn` already
+             * prints them on the Price chip and its ✕ already clears them —
+             * so passing the same range through `extra` drew it twice, once
+             * as "$40 – $50 ✕" and once as "$40–$50 ✕", differing only in
+             * their spaces. The chip is handed over only when the Price chip
+             * is not on the row at all, which is the one case where the range
+             * would otherwise have no ✕ of its own.
+             */
+            extra={applied.filter(
+              (a) =>
+                a.key === "tile" ||
+                (a.key === "range" && !facets.visibleGroups.includes("price"))
+            )}
             openOnMount={params.get("facet") as FacetGroup | null}
             onOpened={() => {
               // Consumed once. Left in the URL it would reopen the sheet every

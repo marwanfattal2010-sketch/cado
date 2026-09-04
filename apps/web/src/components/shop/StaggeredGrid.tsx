@@ -54,8 +54,12 @@ export function StaggeredGrid({
   tone = "white",
 }: {
   products: FeedProduct[];
-  /** Flowers sits on cream and wants no grey gutter; Fashion is the reverse. */
-  tone?: "white" | "cream";
+  /**
+   * Flowers sits on cream and wants no gutter at all; Fashion wants a gutter,
+   * but a warm one — the default is a neutral grey that reads cool beside
+   * persimmon. `white` (the results page) keeps that original grey.
+   */
+  tone?: "white" | "cream" | "fashion";
   /**
    * Two cards of a different shape at the top of the grid, one per column.
    * They break the rhythm exactly where the grid starts, which is what stops
@@ -64,7 +68,7 @@ export function StaggeredGrid({
   collections?: CollectionCard[];
 }) {
   return (
-    <div className={tone === "cream" ? "stagger stagger--cream" : "stagger"}>
+    <div className={tone === "white" ? "stagger" : `stagger stagger--${tone}`}>
       {collections.map((c) => (
         <CollectionTile key={c.key} card={c} />
       ))}

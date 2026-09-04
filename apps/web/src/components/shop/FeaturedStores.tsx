@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useMemo } from "react";
-import { useStoreDirectory } from "../../hooks/useCatalogue";
+import { useStockedStoreDirectory } from "../../hooks/useCatalogue";
 import { SectionHead } from "../SectionHead";
 import { Img } from "../Img";
 import { Skeleton } from "../Skeleton";
@@ -29,8 +29,10 @@ type StoreRow = {
 };
 
 function useAllLiveStores() {
-  // Sliced from the one store request the whole page shares.
-  const directory = useStoreDirectory();
+  // Sliced from the one store request the whole page shares. STOCKED only:
+  // "Stores on CADO" is a row of shops you can buy from, and since 0096 an
+  // active, live store is allowed to exist with an empty shelf.
+  const directory = useStockedStoreDirectory();
   return {
     data: useMemo(
       () =>

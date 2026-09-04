@@ -202,13 +202,21 @@ function Landing({
     queryFn: async () => {
       const { data } = await supabase
         .from("partners")
-        .select("id, name, slug, logo_url, cover_image_url, is_featured, featured_rank")
+        // `products!inner` keeps a store with an empty shelf off this row.
+        // Since 0096 that is a real case — six Fashion shops are pinned into
+        // the tab's circle row with nothing listed yet — and "Featured" on the
+        // search screen is a recommendation, not a directory.
+        .select("id, name, slug, logo_url, cover_image_url, is_featured, featured_rank, products!inner(id)")
         .eq("status", "active")
         .eq("is_live", true)
+        .eq("products.is_active", true)
         .order("is_featured", { ascending: false })
         .order("featured_rank", { nullsFirst: false })
-        .limit(10);
-      return data ?? [];
+        .limit(60);
+      const seen = new Set<string>();
+      return (data ?? [])
+        .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
+        .slice(0, 10);
     },
   });
 

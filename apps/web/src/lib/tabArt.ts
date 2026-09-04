@@ -47,11 +47,15 @@ const RECIPIENT_ART: Record<string, string> = {
  * the four flower tiles are price filters and have no TileId at all.
  */
 const CATEGORY_TILE_ART: Record<string, Record<string, string>> = {
+  // Fashion's four are WebP and cropped 3:4 in the file — see the note on the
+  // Fashion circles below, which explains why the crop lives in the file
+  // rather than in CSS. The extension is part of the path, so these cannot be
+  // edited here without re-running scripts/seed-tab-art.mjs.
   fashion: {
-    "new-in": "art/tile/fashion--new-in.jpg",
-    "most-gifted": "art/tile/fashion--most-gifted.jpg",
-    "under-75": "art/tile/fashion--under-75.jpg",
-    deals: "art/tile/fashion--deals.jpg",
+    "new-in": "art/tile/fashion--new-in.webp",
+    "most-gifted": "art/tile/fashion--most-gifted.webp",
+    "under-75": "art/tile/fashion--under-75.webp",
+    deals: "art/tile/fashion--deals.webp",
   },
   "flowers-gifts": {
     "under-50": "art/tile/flowers-gifts--under-50.jpg",
@@ -171,12 +175,26 @@ const CIRCLE_ART: Record<string, Record<string, string>> = {
     plants: "art/circle/flowers-gifts--plants.jpg",
     "vase-arrangements": "art/circle/flowers-gifts--vase-arrangements.jpg",
   },
+  /*
+   * Fashion's five are WebP, cropped square at 400x400 in the file.
+   *
+   * A circle is 62px, and at that size the only thing a photograph can say is
+   * its shape and its colour. So these five were chosen to say the same thing
+   * five ways: one garment or product, no face, centred, on a light neutral or
+   * cream ground, in cream / camel / sand / white / soft black and nothing
+   * else. The row they replaced had a full-body model next to a legs-only shot
+   * on brick, which read as five pictures that had never met.
+   *
+   * The crop is baked into the file rather than left to `object-fit: cover`,
+   * because a browser cropping a 3:2 source at display time throws away a
+   * third of the picture — so the row that was judged is the row that ships.
+   */
   fashion: {
-    women: "art/circle/fashion--women.jpg",
-    men: "art/circle/fashion--men.jpg",
-    "kids-fashion": "art/circle/fashion--kids-fashion.jpg",
-    bags: "art/circle/fashion--bags.jpg",
-    caps: "art/circle/fashion--caps.jpg",
+    women: "art/circle/fashion--women.webp",
+    men: "art/circle/fashion--men.webp",
+    "kids-fashion": "art/circle/fashion--kids-fashion.webp",
+    bags: "art/circle/fashion--bags.webp",
+    caps: "art/circle/fashion--caps.webp",
   },
 };
 

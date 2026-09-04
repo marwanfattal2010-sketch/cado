@@ -14,6 +14,7 @@ import { productImageUrl } from "../../../lib/images";
 import { circleArt, heroArt, tileArt } from "../../../lib/tabArt";
 import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
+import { categoryStores, storeDisplayName } from "../../../lib/browse";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
 /**
@@ -30,6 +31,37 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
  * cards against its light gutter. Every `border-bottom` that used to divide a
  * section is gone.
  */
+
+/**
+ * STORE LOGOS ARE FILES ON DISK, KEYED BY SLUG — never generated, never
+ * downloaded, never drawn.
+ *
+ * A glob rather than eleven imports: dropping `nike.png` into
+ * `src/assets/stores/` is then the ENTIRE change needed to give Nike its
+ * logo, and a slug with no file is simply absent from this map, which is what
+ * selects the text fallback below. Measured: dropping a PNG into the folder
+ * with the dev server already running hot-reloaded this module and the circle
+ * swapped from text to the file with no restart.
+ *
+ * The folder ships with only a README, so today every circle is the fallback.
+ * That is the correct state: we do not have the marks, and inventing one is
+ * worse than a name in text. See `assets/stores/README.md`.
+ */
+const STORE_LOGO_FILES = import.meta.glob("../../../assets/stores/*.png", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+const STORE_LOGOS = new Map(
+  Object.entries(STORE_LOGO_FILES).map(([path, url]) => [
+    path.slice(path.lastIndexOf("/") + 1).replace(/\.png$/i, ""),
+    url,
+  ])
+);
+
+/** How many circles the row shows: four across, two rows, nothing hidden. */
+const STORE_ROW_MAX = 8;
+
 export function TabTemplate({ tab }: { tab: BrowseTab }) {
   const categories = useCategories();
   const slug = tab.filter.category_slug ?? "";
@@ -43,25 +75,34 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
 
   const all = sections.all;
 
-  const stores = useMemo(() => {
-    const ids = new Set(all.map((p) => p.partner_id));
-    return (directory.data ?? [])
-      .filter((s) => ids.has(s.id) && s.slug)
-      .map((s) => ({
+  /*
+   * THE ROW IS `display_rank`-DRIVEN, AND IT IS THE ONE PLACE A SHOP WITH NO
+   * PRODUCTS IS SHOWN ON PURPOSE.
+   *
+   * The rule itself is `categoryStores` in lib/browse.ts, shared with the
+   * `/stores/:cat` directory this section's "See all" opens, so the row and
+   * the page behind it cannot disagree about who is in Fashion. Both take:
+   * a shop stocking the category, OR a shop pinned to it by
+   * `display_category_id` + `display_rank` (migration 0096). Pinned shops lead
+   * in rank order.
+   *
+   * NO NAME LIST LIVES HERE. The order used to come from a hardcoded array of
+   * recognisable brands, which meant moving a shop up the row was a deploy.
+   * It is an UPDATE now.
+   */
+  const stores = useMemo(
+    () =>
+      categoryStores({
+        stores: directory.data ?? [],
+        products: all,
+        categoryId: category?.id,
+      }).map((s) => ({
         id: s.id,
         slug: s.slug as string,
-        name: s.name.replace(/\[.*?\]\s*/g, ""),
-        logo: s.logo_url,
-        cover: s.cover_image_url,
-      }))
-      /*
-       * Recognition first. A shopper scanning eight circles is looking for a
-       * name they know, and finding one is what makes the row worth having;
-       * the independents are the reason they stay. Ranked by name rather than
-       * by product count, because count measures our seeding, not fame.
-       */
-      .sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name));
-  }, [directory.data, all]);
+        name: storeDisplayName(s.name),
+      })),
+    [directory.data, all, category?.id]
+  );
 
   const lookup = useMemo<Lookup>(
     () => ({
@@ -152,6 +193,21 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     (p) => Date.now() - new Date(p.created_at).getTime() < 30 * 86400000
   ).length;
 
+  /*
+   * STORES: FOUR ACROSS, TWO ROWS, NO SWIPE.
+   *
+   * Eight ranked shops fill the grid exactly. It is a wrapping flex row rather
+   * than `grid-cols-4` so that a count which is not a multiple of four centres
+   * its last row instead of stranding circles hard left — which is the state
+   * the tab is in until the six new partners exist.
+   *
+   * The 31 rather than 30 in the width is slack, not arithmetic: four columns
+   * plus three 10px gaps come to exactly 100%, and a sub-pixel rounding error
+   * at that width wraps the fourth circle onto a line of its own.
+   */
+  const shownStores = stores.slice(0, STORE_ROW_MAX);
+  const storeCircleW = "calc((100% - 31px) / 4)";
+
   const tiles: { id: TileId; label: string; show: boolean }[] = [
     { id: "new-in", label: "New in", show: newCount > 0 },
     { id: "most-gifted", label: "Most gifted", show: all.length > 0 },
@@ -163,7 +219,12 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     <div className="bg-white">
       <Hero cat={slug} />
 
-      {/* 2 — stores: eight logo circles, four across, nothing behind a swipe. */}
+      {/* 2 — stores: eight logo circles, four across, nothing behind a swipe.
+          Not rendered at all with nothing to show: a heading, a line of copy
+          and a "See all 0" over an empty strip is worse than the section being
+          absent, and it is a state the tab really can reach — the directory
+          query is a single request that can fail. */}
+      {shownStores.length > 0 ? (
       <section className="px-[var(--page-x)] pt-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-[16px] font-bold tracking-[-0.2px] text-ink">
@@ -176,27 +237,27 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         <p className="mb-3 mt-1 text-[12px] text-muted">
           Shop Lebanon&rsquo;s boutiques and brands in one order
         </p>
-        <div className="grid grid-cols-4 gap-x-2.5 gap-y-3.5">
-          {stores.slice(0, 8).map((s) => (
-            <Link key={s.id} to={storePath({ slug: s.slug })} className="min-w-0 text-center">
-              {/* The LOGO, not a shop photo: a rack of clothes does not say
-                  which shop it is; a wordmark does. Falls back to the cover
-                  only where no logo exists, and those stores are reported. */}
-              <span className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-pill border border-[#ECECEC] bg-white">
-                {s.logo || s.cover ? (
-                  <Img
-                    src={s.logo ?? s.cover}
-                    className={s.logo ? "h-full w-full object-contain p-2" : "h-full w-full object-cover"}
-                  />
-                ) : null}
-              </span>
-              <span className="mt-1.5 line-clamp-2 block break-words text-[10.5px] leading-tight text-[#4a4a4a]">
+        <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-3.5">
+          {shownStores.map((s) => (
+            <Link
+              key={s.id}
+              to={storePath({ slug: s.slug })}
+              style={{ width: storeCircleW }}
+              className="min-w-0 text-center"
+            >
+              <StoreCircle slug={s.slug} name={s.name} />
+              {/* ONE LINE, ALWAYS. "Pull & Bear" and "LC Waikiki" both fit at
+                  12px inside a quarter of the gutter; anything longer clips
+                  with an ellipsis rather than pushing its circle out of line
+                  with the seven beside it. */}
+              <span className="mt-1.5 block truncate text-[12px] leading-[16px] text-ink">
                 {s.name}
               </span>
             </Link>
           ))}
         </div>
       </section>
+      ) : null}
 
       {/* 3 — Shop for */}
       {circles.length ? (
@@ -230,16 +291,28 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               <Link
                 key={t.id}
                 to={browseHref(slug, { tile: t.id })}
-                className="relative flex h-[196px] w-[148px] shrink-0 items-end overflow-hidden rounded-[12px] bg-[#EEEAE4] transition-transform duration-press ease-out active:scale-[0.97]"
+                className="relative block h-[196px] w-[148px] shrink-0 overflow-hidden rounded-[12px] bg-[#EEEAE4] transition-transform duration-press ease-out active:scale-[0.97]"
               >
                 <Img
                   src={tileArt(t.id, slug) ?? ""}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
+                {/* A SCRIM, NOT A LABEL BAR. The solid block that used to sit
+                    here painted every tile the same colour, so four different
+                    photographs arrived under one flat bar and the row fought
+                    the page. A gradient over the photo itself lets each tile
+                    take its colour from its own picture, and the type still
+                    clears 4.5:1 because the darkest part of the ramp is under
+                    it. */}
                 <span
-                  className="relative z-[2] w-full py-2.5 text-center text-[14px] font-semibold text-white"
-                  style={{ background: "#5B8FB0" }}
-                >
+                  aria-hidden
+                  className="absolute inset-0 z-[1]"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,.62) 0%, rgba(0,0,0,0) 55%)",
+                  }}
+                />
+                <span className="absolute bottom-[12px] left-[12px] right-[12px] z-[2] text-[15px] font-semibold leading-tight text-white">
                   {t.label}
                 </span>
               </Link>
@@ -247,18 +320,26 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         </div>
       </section>
 
-      {/* 5 — Super deals, on its own pale band */}
+      {/* 5 — Super deals, on its own pale band.
+          PALE PEACH, NOT PALE BLUE. The band used to be a pale steel blue, and
+          a cool field is the one thing on this page that cannot sit next to a
+          persimmon badge without both of them looking wrong. The peach below is
+          the same brightness, on the warm side of the page. */}
       {deals.length >= 3 ? (
-        <section className="mt-5 px-[var(--page-x)] pb-[18px] pt-4" style={{ background: "#DCE9F1" }}>
+        <section className="mt-5 px-[var(--page-x)] pb-[18px] pt-4" style={{ background: "#FFF4EF" }}>
           <div className="flex items-baseline justify-between gap-3 pb-3">
             <h2 className="text-[17px] font-bold text-ink">Super deals</h2>
             <Link to={browseHref(slug, { tile: "deals" })} className="text-[12.5px] font-semibold text-persimmon">
               See all
             </Link>
           </div>
-          <div className="grid grid-cols-[1.35fr_1fr] gap-2.5">
+          {/* The big card sets the row height (1 : 1.25) and the right-hand
+              column stretches to it, so the two small cards stack to exactly
+              the same total. Before this the big card had no cap and a tall
+              scarf photograph made it a full screen high. */}
+          <div className="grid grid-cols-[1.35fr_1fr] items-stretch gap-2.5">
             <DealBig p={deals[0]} />
-            <div className="flex flex-col gap-2.5">
+            <div className="flex min-h-0 flex-col gap-2.5">
               <DealSmall p={deals[1]} />
               <DealSmall p={deals[2]} />
             </div>
@@ -286,7 +367,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
             See all {all.length} →
           </Link>
         </div>
-        <StaggeredGrid products={all} collections={collections} />
+        <StaggeredGrid products={all} collections={collections} tone="fashion" />
       </section>
     </div>
   );
@@ -307,13 +388,62 @@ function photoOf(p: FeedProduct) {
   return path ? productImageUrl(path) : null;
 }
 
-/** Names a Lebanese shopper recognises before they recognise us. */
-const KNOWN = ["gs", "adidas", "zahar", "dkny", "geox", "bugatti"];
-const rank = (name: string) => {
-  const n = name.toLowerCase();
-  const i = KNOWN.findIndex((k) => n.includes(k));
-  return i === -1 ? 99 : i;
-};
+/**
+ * ONE CIRCLE, AND EVERY CIRCLE IS THIS CIRCLE.
+ *
+ * The row used to mix two treatments — a bordered logo on white for the shops
+ * that had a logo, a full-bleed storefront photograph for the ones that did
+ * not — and eight discs in two different costumes read as a broken component
+ * rather than a set. So:
+ *
+ *   - a 1px #EDE7DF hairline on all eight, no exceptions
+ *   - a PHOTOGRAPH IS NEVER THE BACKGROUND. `cover_image_url` is a picture of
+ *     a shop front; it does not say which shop it is, and at 82px it is a
+ *     brown smudge. It is not read here at all any more.
+ *   - the logo sits inside 18% padding. That is what makes a wide wordmark and
+ *     a round monogram look the same size: `object-contain` alone fits the
+ *     long axis to the box, so a 4:1 wordmark would touch the hairline while a
+ *     square mark floated in the middle.
+ *
+ * With no file for this slug the disc is CREAM WITH THE NAME IN TEXT. Never a
+ * coloured letter block, and never a mark we drew ourselves: a brand's logo is
+ * theirs, so the honest placeholder is their name in our own type.
+ */
+function StoreCircle({ slug, name }: { slug: string; name: string }) {
+  const logo = STORE_LOGOS.get(slug);
+
+  if (!logo) {
+    return (
+      <span
+        className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-pill border border-[#EDE7DF] bg-canvas"
+        /* A smaller inset than the logo's 18%: the padding on a logo is there
+           to normalise optical size, which text does not need, and at 82px
+           every pixel back is another character that fits on a line. */
+        style={{ padding: "12%" }}
+      >
+        <span className="line-clamp-3 break-words text-center text-[10.5px] font-semibold leading-[1.15] text-ink">
+          {name}
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-pill border border-[#EDE7DF] bg-white"
+      style={{ padding: "18%" }}
+    >
+      <Img src={logo} alt={name} className="h-full w-full object-contain" />
+    </span>
+  );
+}
+
+/*
+ * The hardcoded list of recognisable brand names that used to order the store
+ * row lived here. It is gone: the order is `partners.display_rank` now, so
+ * moving a shop is an UPDATE and not a deploy. See `categoryStores` in
+ * lib/browse.ts.
+ */
 
 /**
  * 200px, full-bleed, one slide per entry in HERO_ART, swiped by hand.
@@ -394,7 +524,7 @@ function Hero({ cat }: { cat: string }) {
               className="h-[5px] rounded-pill"
               style={{
                 width: i === active ? 14 : 5,
-                background: i === active ? "rgb(var(--persimmon))" : "#ddd",
+                background: i === active ? "rgb(var(--persimmon))" : "#E3DCD3",
               }}
             />
           ))}
@@ -404,25 +534,42 @@ function Hero({ cat }: { cat: string }) {
   );
 }
 
+/**
+ * The lead deal, capped at 1 : 1.25 (w : h).
+ *
+ * The cap is a padding-bottom sizer rather than `aspect-ratio`, and the reason
+ * matters: this card is an `fr` grid item whose default `align-self: stretch`
+ * competes with an aspect ratio for the block size. A percentage padding
+ * resolves against the ALREADY-SIZED column, so it contributes a definite
+ * height to row sizing — which is what makes the right-hand column stretch to
+ * exactly this card's height instead of the other way round.
+ */
 function DealBig({ p }: { p: FeedProduct }) {
   return (
     <Link
       to={`/product/${p.id}`}
-      className="relative flex min-h-[206px] flex-col overflow-hidden rounded-[12px] bg-white"
+      className="relative block overflow-hidden rounded-[12px] bg-white"
     >
-      <Flag pct={off(p)} />
-      <span className="flex-1 bg-[#EFEBE5]">
-        <Img src={photoOf(p)} className="h-full w-full object-cover" />
-      </span>
-      <span className="block px-2.5 pb-3 pt-2">
-        <span className="line-clamp-2 block h-[30px] text-[12.5px] leading-tight text-ink">
-          {p.title}
+      <span aria-hidden className="block w-full pb-[125%]" />
+      <span className="absolute inset-0 flex flex-col">
+        <Flag pct={off(p)} />
+        {/* The photo is taken OUT OF FLOW. `h-full` on an in-flow image is
+            indefinite, so the image falls back to its intrinsic height and
+            becomes the card's max-content contribution — which is how a tall
+            scarf photograph used to set the height of this whole row. */}
+        <span className="relative min-h-0 flex-1 overflow-hidden bg-[#EFEBE5]">
+          <Img src={photoOf(p)} className="absolute inset-0 h-full w-full object-cover" />
         </span>
-        <span className="block text-[17px] font-extrabold text-persimmon">
-          {formatMoney(p.price)}
-          <s className="ml-1.5 text-[12px] font-normal text-muted">
-            {formatMoney(p.compare_at_price!)}
-          </s>
+        <span className="block px-2.5 pb-3 pt-2">
+          <span className="line-clamp-2 block h-[30px] text-[12.5px] leading-tight text-ink">
+            {p.title}
+          </span>
+          <span className="block text-[17px] font-extrabold text-persimmon">
+            {formatMoney(p.price)}
+            <s className="ml-1.5 text-[12px] font-normal text-muted">
+              {formatMoney(p.compare_at_price!)}
+            </s>
+          </span>
         </span>
       </span>
     </Link>
@@ -431,10 +578,13 @@ function DealBig({ p }: { p: FeedProduct }) {
 
 function DealSmall({ p }: { p: FeedProduct }) {
   return (
-    <Link to={`/product/${p.id}`} className="relative flex flex-1 flex-col overflow-hidden rounded-[12px] bg-white">
+    <Link to={`/product/${p.id}`} className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] bg-white">
       <Flag pct={off(p)} />
-      <span className="flex-1 bg-[#EFEBE5]">
-        <Img src={photoOf(p)} className="h-full w-full object-cover" />
+      {/* Out of flow, for the reason spelled out in DealBig: an in-flow
+          `h-full` image contributes its intrinsic height, and two of them
+          stacked here were setting the height of the big card beside them. */}
+      <span className="relative min-h-0 flex-1 overflow-hidden bg-[#EFEBE5]">
+        <Img src={photoOf(p)} className="absolute inset-0 h-full w-full object-cover" />
       </span>
       <span className="block px-2.5 pb-2 pt-1.5">
         <span className="block text-[14px] font-extrabold text-persimmon">

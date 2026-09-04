@@ -73,6 +73,30 @@ export function useFacets({
     return seen;
   }, [products]);
 
+  /**
+   * THE STORE FACET ONLY EVER LISTS SHOPS WITH STOCK.
+   *
+   * Callers already pass a list derived from the products in view, so this is
+   * a guard rather than a fix — but it is the guard that matters, because the
+   * cost of getting it wrong is a filter that returns an empty grid, and
+   * migration 0096 made shops with no products a real thing rather than a
+   * theoretical one (six of them sit in the Fashion tab's circle row with
+   * their catalogues still to come).
+   *
+   * Enforcing it HERE and not in each caller means the rule holds however the
+   * list was built. Note it is measured against `products` — everything in the
+   * category, before any filtering — so an option cannot disappear because
+   * some other facet narrowed the results, which is the failure mode
+   * `visibleGroups` below is written to avoid.
+   */
+  const stockedStores = useMemo(() => {
+    const ids = new Set(products.map((p) => p.partner_id));
+    return stores.filter((s) => {
+      const id = lookup.storeId(s.slug);
+      return id != null && ids.has(id);
+    });
+  }, [products, stores, lookup]);
+
   const colourValues = useMemo(() => {
     const seen = new Set<string>();
     for (const p of products) {
@@ -102,9 +126,9 @@ export function useFacets({
           label: t.label,
         }))
       ),
-      store: build("store", stores.map((s) => ({ value: s.slug, label: s.name }))),
+      store: build("store", stockedStores.map((s) => ({ value: s.slug, label: s.name }))),
     } as Record<FacetGroup, Option[]>;
-  }, [products, state, lookup, subcategories, stores, sizeValues, colourValues, flowerValues]);
+  }, [products, state, lookup, subcategories, stockedStores, sizeValues, colourValues, flowerValues]);
 
   /*
    * WHICH CHIPS EXIST IS DECIDED BY THE CATEGORY, NOT BY THE SELECTION.
@@ -237,7 +261,13 @@ export function FacetChips({
       <div className="scroll-row" style={{ ["--row-gap" as string]: "7px" }}>
         {extra.map((e) => (
           <span key={e.key} className="inline-flex shrink-0">
-            <span className="inline-flex h-9 items-center rounded-l-[6px] bg-persimmon pl-3 pr-1 text-[12.5px] font-semibold text-white">
+            {/* Both halves take the tab's accent and the tab's corner. They used
+                to disagree — the label hardcoded persimmon while the ✕ switched
+                to rose — so on Flowers a tile chip arrived half orange, half
+                rose, split down the middle. */}
+            <span
+              className={`inline-flex h-9 items-center ${rose ? "rounded-l-pill bg-[#A64E62]" : "rounded-l-[6px] bg-persimmon"} pl-3 pr-1 text-[12.5px] font-semibold text-white`}
+            >
               {e.label}
             </span>
             <button

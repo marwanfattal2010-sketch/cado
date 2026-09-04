@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { PRODUCT_CARD_COLUMNS, type FeedProduct } from "../lib/browse";
@@ -60,6 +61,15 @@ export type StoreRow = {
   featured_rank: number | null;
   created_at: string | null;
   is_lebanese_brand: boolean | null;
+  /**
+   * 0096 — where this store sits in `display_category_id`'s store row, and
+   * which row that is. The pair is the ONLY thing that puts a store with no
+   * products in front of a shopper, and it puts it in exactly two places: the
+   * circles on that category's tab and the `/stores/:cat` directory. See
+   * `categoryStores` in lib/browse.ts — the rule lives there, once.
+   */
+  display_rank: number | null;
+  display_category_id: string | null;
 };
 
 /** Every live store, once. The store rows on Home all slice this. */
@@ -71,7 +81,7 @@ export function useStoreDirectory() {
       const { data, error } = await supabase
         .from("partners")
         .select(
-          "id, name, slug, logo_url, cover_image_url, tagline, city, is_live, is_featured, featured_rank, created_at, is_lebanese_brand"
+          "id, name, slug, logo_url, cover_image_url, tagline, city, is_live, is_featured, featured_rank, created_at, is_lebanese_brand, display_rank, display_category_id"
         )
         .eq("status", "active")
         .eq("is_live", true)
@@ -80,6 +90,32 @@ export function useStoreDirectory() {
       return (data ?? []) as unknown as StoreRow[];
     },
   });
+}
+
+/**
+ * The same directory, minus every store with an empty shelf.
+ *
+ * `useStoreDirectory` deliberately includes them: migration 0096 lets a store
+ * with no products be PINNED into one category's circle row, which is how a
+ * shopper sees who is arriving, and the circle needs a row to sit in.
+ *
+ * Nothing else on the site wants them. A merchandising row — "Popular brands",
+ * "New on CADO", "Stores on CADO" — is a recommendation, and recommending a
+ * shop with nothing in it is both a blank tile and a dead end. This slices the
+ * two shared queries that are already in memory, so it costs no request.
+ *
+ * The two places a shelf-less store is still correct — the category circle row
+ * and `/stores/:cat` — go through `categoryStores` in lib/browse.ts instead.
+ */
+export function useStockedStoreDirectory() {
+  const directory = useStoreDirectory();
+  const catalogue = useCatalogue();
+  const data = useMemo(() => {
+    if (!directory.data) return undefined;
+    const stocked = new Set((catalogue.data ?? []).map((p) => p.partner_id));
+    return directory.data.filter((s) => stocked.has(s.id));
+  }, [directory.data, catalogue.data]);
+  return { data, isLoading: directory.isLoading || catalogue.isLoading };
 }
 
 export type SubcategoryRow = {

@@ -614,6 +614,16 @@ button:active:not(:disabled),
   margin-bottom: 8px;
 }
 
+/* Fashion: the same white cards and the same 8px rhythm, but the gutter behind
+   them is white, not #f2f2f2. A neutral grey is not blue, but it is not warm
+   either, and beside a persimmon badge it reads cool — which is the one thing
+   this tab is not allowed to do. Cream was the first attempt and Marwan ruled
+   it out: Fashion is white, full stop. Flowers keeps --cream below; the results
+   page keeps the grey. */
+.stagger--fashion {
+  background: #ffffff;
+}
+
 /* Flowers: no grey gutter (the page is cream), 9px gaps, 14px side padding. */
 .stagger--cream {
   background: transparent;

@@ -29,6 +29,21 @@
  *   1781263538938  best    — Kit Kat, Dairy Milk and Galaxy wrappers
  *   1598634222670  dad     — legible brand on the bottle
  *
+ * Rejected on the Fashion re-shoot (all nine slots, Sep 2026):
+ *   1645276241987  bags    — Coach signature monogram and logo plate
+ *   1680295456691  caps    — Fred Perry laurel embroidered on the crown
+ *   1680295536578  caps    — the same laurel, closer
+ *   1603129700763  caps    — Carhartt logo, and a dark room besides
+ *   1580981440054  men     — brand name printed on the shirt's neck tape
+ *   1562157873     tiles   — "swella" wordmark embroidered on both sweatshirts
+ *   1624879944018  tiles   — hung on a brick wall; the brief bans brick
+ *   1601379327928  women   — already the Merino Crewneck's product photo on
+ *                            this very tab, so it would have appeared twice
+ *   1633008004535  women   — olive headband on the stack
+ *   1641642231157  tiles   — two forest-green sweaters in the pile
+ *   1621198059871  kids    — a green branch takes a third of the frame
+ *   1713881630214  men     — the top tee is navy, and blue is out
+ *
  * Usage:  node scripts/seed-tab-art.mjs [--dry]
  */
 import { readFileSync } from "node:fs";
@@ -54,6 +69,23 @@ function env() {
 }
 const { url, key } = env();
 const headers = { apikey: key, Authorization: `Bearer ${key}` };
+
+/**
+ * A slot's value is either a bare Unsplash id — 900px wide, JPEG, uncropped,
+ * which is what every slot took when there was only one shape to serve — or an
+ * object that asks for a specific crop and format.
+ *
+ * The Fashion row needed the second kind. Five circles only read as a set if
+ * they are cropped identically, and cropping in CSS is not the same as cropping
+ * the file: `object-fit: cover` on a 3:2 source throws away a third of the
+ * picture at display time, so what was judged on a contact sheet is not what
+ * ships. Asking Unsplash for the exact square means the file on disk IS the
+ * picture, and the tall tiles get 3:4 for the same reason.
+ */
+const SQUARE = { w: 400, h: 400, fmt: "webp" }; // "Shop for" circles
+const TALL = { w: 600, h: 800, fmt: "webp" }; // entry tiles
+const spec = (v) => (typeof v === "string" ? { id: v } : v);
+const MIME = { jpg: "image/jpeg", webp: "image/webp" };
 
 /**
  * Recipient art. Each one has to be unmistakably a different person's gift
@@ -105,13 +137,28 @@ const TILES = {
  * repeats in the row.
  */
 const CATEGORY_TILES = {
+  /*
+   * Fashion, re-shot. The four tiles were clothing already, but two of them
+   * were the wrong clothing: "Most gifted" was a jewellery photograph on a
+   * fashion tab, and "Under $75" was a rack shot in colours that fought the
+   * page. All four are now warm neutrals — cream, camel, sand, white, soft
+   * black — with no faces and no busy scene, and no two share a composition:
+   * a rail, a knit close-up, a single flat garment, a hanging coat.
+   */
   fashion: {
-    // Clothing, not gift wrap. The shared tile art is ribboned parcels, which
-    // says nothing about what is behind a Fashion tile.
-    "new-in": "1603400521630-9f2de124b33b",      // neutral rail, new season
-    "most-gifted": "1763719161790-1e8edf704820", // woman in pink, on model
-    "under-75": "1490481651871-ab68de25d43d",    // light wooden hangers
-    deals: "1612423284934-2850a4ea6b0f",          // colourful blouse rail
+    // Pale shirts on white hangers against a white wall — a rail of unworn
+    // stock, which is what "New in" means. Dinh Ng.
+    "new-in": { ...TALL, id: "1580682312385-e94d8de1cf3c" },
+    // Cream cable-knit cardigan over a warm brown knit, close. Replaces the
+    // jewellery photo: knitwear is the thing people actually gift off a
+    // clothes tab. Nataliya Melnychuk.
+    "most-gifted": { ...TALL, id: "1670080514836-2a007ec86f6a" },
+    // A plain white shirt laid on a pale table. Replaces the clothes rack,
+    // and says everyday basics rather than a shop floor. Milli und Gold.
+    "under-75": { ...TALL, id: "1693048737398-c63e70f27da0" },
+    // Cream trench coat hanging, two soft-black jackets behind it, on white
+    // panelling. The one full-length garment in the four. Lisa Anna.
+    deals: { ...TALL, id: "1722859031306-4c81e8d83957" },
   },
   "flowers-gifts": {
     "under-50": "1544249804-78bcb97b5e65", // a small mixed posy
@@ -166,12 +213,32 @@ const CIRCLES = {
     plants: "1583846712268-a77d97b7fd68",
     "vase-arrangements": "1686125616977-34f6d5979eb1",
   },
+  /*
+   * Fashion, re-shot as a SET rather than five separate good pictures.
+   *
+   * The row it replaces mixed full-body models, a legs-only shot on brick and
+   * two product cutouts, so it read as five photographs that had never met.
+   * At 62px a face is unreadable noise and a street scene is mud, so every one
+   * of these five is now: the garment or the product only, no face, one
+   * subject centred, a light neutral or cream ground, and warm neutrals only —
+   * cream, camel, sand, white, soft black. Nothing red, blue or green.
+   *
+   * They are cropped square in the FILE, not by the browser, so the five
+   * arrive at the same zoom instead of being re-cropped at display time.
+   */
   fashion: {
-    women: "1768460608433-d3af5148832c",
-    men: "1555689502-c4b22d76c56f",
-    "kids-fashion": "1604303768345-038b79a8c47a",
-    bags: "1691480150204-66dd1eb77391",
-    caps: "1521369909029-2afed882baee",
+    // Folded cream and camel knits, soft light. Kateryna Hliznitsova.
+    women: { ...SQUARE, id: "1633943934209-31b7f3775fee" },
+    // Cream linen shirts on wooden hangers, close. Pew Nguyen.
+    men: { ...SQUARE, id: "1687405181716-4107f1d84a0c" },
+    // A cream baby dress, a wooden toy camera and tan sandals on white
+    // muslin — a small outfit, no child in it. Amanda Selby.
+    "kids-fashion": { ...SQUARE, id: "1777397660834-67c6d0eabe15" },
+    // One tan leather handbag, cut out on white. personalgraphic.com.
+    bags: { ...SQUARE, id: "1691480250099-a63081ecfcb8" },
+    // One plain white cap on white — no crest, no wordmark, nothing that
+    // could be mistaken for somebody's brand. Mediamodifier.
+    caps: { ...SQUARE, id: "1588850561407-ed78c282e89b" },
   },
 };
 
@@ -181,46 +248,70 @@ const HEROES = {
   "fashion-3": "1780566758158-86894dcae8e8", // white oversized tee, orange trousers
 };
 
-async function upload(path, buf) {
+async function upload(path, buf, fmt) {
   const res = await fetch(`${url}/storage/v1/object/${BUCKET}/${path}`, {
     method: "POST",
-    headers: { ...headers, "Content-Type": "image/jpeg", "x-upsert": "true" },
+    headers: { ...headers, "Content-Type": MIME[fmt], "x-upsert": "true" },
     body: buf,
   });
   if (!res.ok) throw new Error(`upload ${path}: ${res.status} ${await res.text()}`);
 }
 
-async function photo(id, w = 900) {
+async function photo({ id, w = 900, h, fmt = "jpg" }) {
   // 900px: these are shown at 62px in a circle and 124px on a tile, so the
   // source only has to survive a 3x screen, and a 2MB hero would be waste.
-  const res = await fetch(`https://images.unsplash.com/photo-${id}?w=${w}&q=80&fm=jpg`);
+  // With `h`, Unsplash crops to that exact box centre-out, which is the same
+  // point `object-fit: cover` would have chosen — so the file matches what was
+  // judged on the contact sheet.
+  const q = new URLSearchParams({ w: String(w), q: "80", fm: fmt });
+  if (h) {
+    q.set("h", String(h));
+    q.set("fit", "crop");
+  }
+  const res = await fetch(`https://images.unsplash.com/photo-${id}?${q}`);
   if (!res.ok) throw new Error(`unsplash ${id}: ${res.status}`);
   return Buffer.from(await res.arrayBuffer());
 }
 
+/**
+ * The extension follows the format, so a slot that switches to WebP lands at a
+ * new storage path and cannot be silently served as the old JPEG. tabArt.ts
+ * carries the same path, and the two have to be edited together.
+ */
+const job = (base, v, extra = {}) => {
+  const s = { ...spec(v), ...extra };
+  return { ...s, path: `${base}.${s.fmt ?? "jpg"}` };
+};
+
 const jobs = [
-  ...Object.entries(RECIPIENTS).map(([k, id]) => ({ path: `art/recipient/${k}.jpg`, id })),
-  ...Object.entries(TILES).map(([k, id]) => ({ path: `art/tile/${k}.jpg`, id })),
-  // Heroes are full-bleed, so they get a wider source than a 62px circle needs.
+  ...Object.entries(RECIPIENTS).map(([k, v]) => job(`art/recipient/${k}`, v)),
+  ...Object.entries(TILES).map(([k, v]) => job(`art/tile/${k}`, v)),
   ...Object.entries(CATEGORY_TILES).flatMap(([cat, tiles]) =>
-    Object.entries(tiles).map(([k, id]) => ({ path: `art/tile/${cat}--${k}.jpg`, id }))
+    Object.entries(tiles).map(([k, v]) => job(`art/tile/${cat}--${k}`, v))
   ),
   ...Object.entries(CIRCLES).flatMap(([cat, vals]) =>
-    Object.entries(vals).map(([k, id]) => ({ path: `art/circle/${cat}--${k}.jpg`, id }))
+    Object.entries(vals).map(([k, v]) => job(`art/circle/${cat}--${k}`, v))
   ),
   ...Object.entries(OCCASIONS).flatMap(([cat, vals]) =>
-    Object.entries(vals).map(([k, id]) => ({ path: `art/occasion/${cat}--${k}.jpg`, id }))
+    Object.entries(vals).map(([k, v]) => job(`art/occasion/${cat}--${k}`, v))
   ),
-  ...Object.entries(FLOWERS).map(([k, id]) => ({ path: `art/flower/${k}.jpg`, id })),
-  ...Object.entries(HEROES).map(([k, id]) => ({ path: `art/hero/${k}.jpg`, id, w: 1200 })),
+  ...Object.entries(FLOWERS).map(([k, v]) => job(`art/flower/${k}`, v)),
+  // Heroes are full-bleed, so they get a wider source than a 62px circle needs.
+  ...Object.entries(HEROES).map(([k, v]) => job(`art/hero/${k}`, v, { w: 1200 })),
 ];
 
+// One slot, one file. A repeated path means two slots would fight over the
+// same object and the loser would be whichever ran second.
+const dupes = jobs.map((j) => j.path).filter((p, i, a) => a.indexOf(p) !== i);
+if (dupes.length) throw new Error(`Two slots claim the same path: ${dupes.join(", ")}`);
+
 for (const j of jobs) {
+  const size = j.h ? ` ${j.w}x${j.h}` : "";
   if (DRY) {
-    console.log(`  + ${j.path}  <- photo-${j.id} — dry run`);
+    console.log(`  + ${j.path}${size}  <- photo-${j.id} — dry run`);
     continue;
   }
-  await upload(j.path, await photo(j.id, j.w));
-  console.log(`  + ${j.path}  <- photo-${j.id}`);
+  await upload(j.path, await photo(j), j.fmt ?? "jpg");
+  console.log(`  + ${j.path}${size}  <- photo-${j.id}`);
 }
 console.log(`\n${DRY ? "Would upload" : "Uploaded"} ${jobs.length} curated images.`);

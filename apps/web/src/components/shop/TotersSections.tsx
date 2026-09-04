@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useStoreDirectory } from "../../hooks/useCatalogue";
+import { useStockedStoreDirectory, useStoreDirectory } from "../../hooks/useCatalogue";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
@@ -123,8 +123,12 @@ export function PopularBrands() {
   /* All four store rows on this page slice ONE request (useStoreDirectory).
      They were four separate queries for the same table with four different
      sort orders — the sorting is a line of JavaScript, and the round trips
-     were not. */
-  const directory = useStoreDirectory();
+     were not.
+
+     STOCKED only here: "Popular brands" is a recommendation, and since 0096 a
+     live store may have an empty shelf — it would render as a blank tile that
+     leads nowhere. The two directory rows further down still list everyone. */
+  const directory = useStockedStoreDirectory();
   const stores = {
     data: useMemo(
       () =>
@@ -175,7 +179,10 @@ export function PopularBrands() {
  */
 export function NewOnCado() {
   const since = new Date(Date.now() - 60 * 86400000).toISOString();
-  const directory = useStoreDirectory();
+  // STOCKED only. This row is "new AND worth opening": a store created today
+  // with nothing listed is the newest thing on CADO and the worst card on the
+  // page. It joins the row the day its first product goes live.
+  const directory = useStockedStoreDirectory();
   const stores = {
     data: useMemo(
       () =>
