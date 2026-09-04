@@ -7,7 +7,7 @@ import {
   priceTierFloor,
   type TileId,
 } from "./facets";
-import { colourOf, sizesOf, type FeedProduct } from "./browse";
+import { colourOf, flowerTypesOf, sizesOf, type FeedProduct } from "./browse";
 
 /**
  * THE FILTER STATE LIVES IN THE URL. Nowhere else.
@@ -61,13 +61,15 @@ export type BrowseState = {
   size: string[];
   /** Real colour values only; placeholders are never offered. */
   colour: string[];
+  /** Flower type values, held as `flower:<value>` in products.tags. */
+  flower: string[];
   /** Partner slugs. */
   store: string[];
   tile: TileId | null;
   sort: Sort;
 };
 
-const LIST_KEYS = ["for", "occasion", "price", "type", "size", "colour", "store"] as const;
+const LIST_KEYS = ["for", "occasion", "price", "type", "size", "colour", "flower", "store"] as const;
 export type ListKey = (typeof LIST_KEYS)[number];
 
 /**
@@ -95,6 +97,7 @@ const PARAM = {
 const TILES: TileId[] = [
   "new-in",
   "most-gifted",
+  "best-picks",
   "under-75",
   "arrives-today",
   "gift-wrapped",
@@ -128,6 +131,7 @@ export function parseBrowse(params: URLSearchParams): BrowseState {
     type: list(params.get(PARAM.type)),
     size: list(params.get("size")),
     colour: list(params.get("colour")),
+    flower: list(params.get("flower")),
     store: list(params.get("store")),
     tile,
     sort,
@@ -179,6 +183,7 @@ export const emptyBrowse = (cat: string): BrowseState => ({
   type: [],
   size: [],
   colour: [],
+  flower: [],
   store: [],
   tile: null,
   sort: "recommended",
@@ -225,6 +230,7 @@ function matchesTile(p: FeedProduct, tile: TileId, look: Lookup): boolean {
     case "under-75":
       return p.price < UNDER_TILE_MAX;
     case "most-gifted":
+    case "best-picks":
       /*
        * A SORT WEARING A FILTER'S CLOTHES, and honest about it.
        *
@@ -297,6 +303,13 @@ export function matches(p: FeedProduct, s: BrowseState, look: Lookup): boolean {
     const c = colourOf(p);
     if (!c || !s.colour.includes(c)) return false;
   }
+  if (s.flower.length) {
+    // Unset means "nobody could tell from the title or the description", and
+    // an unclassified bouquet must not turn up under Roses just because the
+    // photograph looks red. No tag, no match.
+    const types = flowerTypesOf(p);
+    if (!types.some((t) => s.flower.includes(t))) return false;
+  }
   if (s.store.length) {
     const ids = s.store.map(look.storeId).filter(Boolean) as string[];
     if (!ids.includes(p.partner_id)) return false;
@@ -312,7 +325,7 @@ export function matches(p: FeedProduct, s: BrowseState, look: Lookup): boolean {
  */
 export function effectiveSort(s: BrowseState): Sort {
   if (s.sort !== "recommended") return s.sort;
-  if (s.tile === "most-gifted") return "popular";
+  if (s.tile === "most-gifted" || s.tile === "best-picks") return "popular";
   if (s.tile === "new-in") return "newest";
   if (s.tile === "deals") return "discount";
   return "recommended";

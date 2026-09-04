@@ -96,13 +96,26 @@ const TILES = {
 };
 
 /**
+ * Per-category tile art, where the generic gift photography would be wrong.
+ *
+ * On a flowers tab every tile has to be flowers. The shared "Under $100" tile
+ * is a stack of wrapped parcels, which is a perfectly good picture of a gift
+ * and a bad picture of a bouquet — and the tab was showing a candle box and a
+ * linen basket for exactly that reason. Four different flowers, so no image
+ * repeats in the row.
+ */
+const CATEGORY_TILES = {
+  "flowers-gifts": {
+    "under-50": "1544249804-78bcb97b5e65", // a small mixed posy
+    "under-100": "1602136303098-f5aa2b9c9df9", // wrapped bouquet in peach paper
+    "best-picks": "1680563899402-26c3a712831f", // pink roses, wrapped
+    "new-in": "1587235442308-8980bb6e0f17", // tulips in white jugs
+  },
+};
+
+/**
  * Hero slides, per tab. Fashion only for now — the other ten still take their
  * hero from a product photo, and this is the template that will replace that.
- *
- * Clothing on a model, three different photographs, no bags or leather goods
- * and no lettering in frame. A hero is the first thing on the page, so a
- * borrowed product shot of whatever sorted first was always the weakest image
- * on the tab doing the most important job.
  */
 const HEROES = {
   "fashion-1": "1668952135120-7d997b1b3778", // tan coat and trousers, warm studio
@@ -131,6 +144,9 @@ const jobs = [
   ...Object.entries(RECIPIENTS).map(([k, id]) => ({ path: `art/recipient/${k}.jpg`, id })),
   ...Object.entries(TILES).map(([k, id]) => ({ path: `art/tile/${k}.jpg`, id })),
   // Heroes are full-bleed, so they get a wider source than a 62px circle needs.
+  ...Object.entries(CATEGORY_TILES).flatMap(([cat, tiles]) =>
+    Object.entries(tiles).map(([k, id]) => ({ path: `art/tile/${cat}--${k}.jpg`, id }))
+  ),
   ...Object.entries(HEROES).map(([k, id]) => ({ path: `art/hero/${k}.jpg`, id, w: 1200 })),
 ];
 

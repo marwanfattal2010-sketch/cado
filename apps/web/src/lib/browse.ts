@@ -148,7 +148,7 @@ export const PRODUCT_CARD_COLUMNS =
   // color/color_is_placeholder and product_variants back the Colour and Size
   // facets. Both are embedded rather than fetched per product: a size filter
   // that costs one request per card would be slower than no size filter.
-  "id, title, slug, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, is_gift_ready, is_pick, color, color_is_placeholder, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary), product_variants(name, is_active)" as const;
+  "id, title, slug, price, compare_at_price, currency, same_day, stock_quantity, created_at, occasion_tags, recipient_tags, gift_wrap_available, is_gift_ready, is_pick, tags, color, color_is_placeholder, category_id, subcategory_id, partner_id, partner:partners(id, name, slug), product_images(storage_path, is_primary), product_variants(name, is_active)" as const;
 
 export type FeedProduct = {
   id: string;
@@ -171,6 +171,8 @@ export type FeedProduct = {
   gift_wrap_available?: boolean | null;
   is_gift_ready?: boolean | null;
   is_pick?: boolean | null;
+  /** Free-form catalogue tags. Flower type rides here as `flower:roses`. */
+  tags?: string[] | null;
   /**
    * A made-up colour is worse than no colour, so `color_is_placeholder` rides
    * along and the Colour facet ignores any row that has it set.
@@ -188,6 +190,17 @@ export const sizesOf = (p: FeedProduct): string[] =>
 /** The colour of a product, or null when nobody has set a real one. */
 export const colourOf = (p: FeedProduct): string | null =>
   p.color && !p.color_is_placeholder ? p.color : null;
+
+/**
+ * Flower types on a product, read out of the existing `tags` array.
+ *
+ * `flower:roses` rather than a new column: `tags` is already a text[] on
+ * products, already editable by a store owner, and already how other
+ * catalogue facts ride along. A product with no `flower:` tag returns an empty
+ * list and can never match a flower-type filter.
+ */
+export const flowerTypesOf = (p: FeedProduct): string[] =>
+  (p.tags ?? []).filter((t) => t.startsWith("flower:")).map((t) => t.slice("flower:".length));
 
 /**
  * The slice of the PostgREST builder this helper touches.

@@ -191,10 +191,22 @@ export function StoresRow({
   categoryName,
   stores,
   theme,
+  cat,
+  swipe = false,
 }: {
   categoryName: string;
   stores: StoreItem[];
   theme: CategoryTheme;
+  cat?: string;
+  /**
+   * A swipeable rail instead of a wrapping grid.
+   *
+   * The grid caps at ten and simply stops; a rail reaches every shop in the
+   * category by swiping, which is what a category with more shops than fit
+   * needs. `See all` still goes to the full page for the ones who would
+   * rather scan than swipe.
+   */
+  swipe?: boolean;
 }) {
   // Rendered with whatever exists, even one or two — the section is never
   // hidden for being short, and it is never padded with unrelated shops.
@@ -204,16 +216,24 @@ export function StoresRow({
       <TabSectionHead
         title={`Stores in ${categoryName}`}
         theme={theme}
-        to={stores.length > MAX_STORES ? "/stores" : undefined}
+        to={swipe && cat ? `/stores/${cat}` : stores.length > MAX_STORES ? "/stores" : undefined}
       />
       {/*
-        A WRAPPING GRID, not a carousel.
-        As a horizontal rail it showed five and clipped the sixth against the
-        right edge, so a category with nine shops looked like it had five and
-        a half. Five per row, wrapping to as many rows as it takes.
+        A WRAPPING GRID by default, a rail where the tab asks for one.
+        As a rail it once showed five and clipped the sixth against the right
+        edge — that was a missing trailing gutter, which `.scroll-row` now
+        provides along with the leading one, so a rail reaches every shop
+        without cutting the last in half.
       */}
-      <div className="grid grid-cols-5 gap-x-2 gap-y-4">
-        {stores.slice(0, MAX_STORES).map((s) => {
+      <div
+        className={
+          swipe
+            ? "scroll-row -mx-[var(--page-x)]"
+            : "grid grid-cols-5 gap-x-2 gap-y-4"
+        }
+        style={swipe ? ({ ["--row-gap" as string]: "12px" } as React.CSSProperties) : undefined}
+      >
+        {(swipe ? stores : stores.slice(0, MAX_STORES)).map((s) => {
           // The shop's own photograph first, its logo only if it has no
           // photo, and no lettered fallback at all — see StoreMark.
           const art = s.cover_image_url ?? s.logo_url;
@@ -222,7 +242,9 @@ export function StoresRow({
             <Link
               key={s.id}
               to={storePath(s)}
-              className="flex min-w-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
+              className={`flex min-w-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96] ${
+                swipe ? "w-[62px] shrink-0" : ""
+              }`}
             >
               {/* 56px, and it holds the shop's own photograph. No initials
                   fallback: an unphotographed shop shows an empty tint and

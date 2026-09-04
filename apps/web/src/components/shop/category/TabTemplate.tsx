@@ -1,35 +1,18 @@
 import { useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useCategories } from "../../../hooks/useCategories";
 import { useSubcategories } from "../../../hooks/useStores";
 import { useStoreDirectory } from "../../../hooks/useCatalogue";
 import { useTabSections } from "../../../hooks/useCategoryTab";
 import { useHomeSignals } from "../../../hooks/useHomeEndless";
 import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
-import { ProductCard } from "../../ProductCard";
 import { Img } from "../../Img";
-import { Chip } from "../Chip";
-import { AllFiltersSheet, FacetChips, useFacets } from "../Facets";
 import { storePath } from "../../../lib/routes";
 import { heroArt, tileArt } from "../../../lib/tabArt";
-import { UNDER_TILE_MAX, TILE_LABEL, type FacetGroup, type TileId } from "../../../lib/facets";
-import {
-  FILTER_PARAM_NAMES,
-  SORTS,
-  activeCount,
-  effectiveSort,
-  emptyBrowse,
-  matches,
-  parseBrowse,
-  serializeBrowse,
-  sortResults,
-  toggleValue,
-  type BrowseState,
-  type Lookup,
-  type Sort,
-} from "../../../lib/browseParams";
-import { OCCASIONS } from "../../../lib/filters";
-import { recipientLabel, priceTier } from "../../../lib/facets";
+import { AiLine } from "./AiLine";
+import { FilterGridSection, useTabFilters } from "./FilterableGrid";
+import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
+import { type BrowseState, type Lookup } from "../../../lib/browseParams";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
 /**
@@ -57,7 +40,6 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
  * strip and their scroll position in the panel.
  */
 export function TabTemplate({ tab }: { tab: BrowseTab }) {
-  const [params, setParams] = useSearchParams();
   const categories = useCategories();
   const slug = tab.filter.category_slug ?? "";
   const category = categories.data?.find((c) => c.slug === slug);
@@ -68,32 +50,6 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
   const directory = useStoreDirectory();
   const signals = useHomeSignals();
 
-  const gridTop = useRef<HTMLDivElement | null>(null);
-  const [allOpen, setAllOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
-
-  /* ---- filter state, straight out of the URL --------------------------- */
-
-  /*
-   * `parseBrowse` reads `tab` as the category, so the state it returns is
-   * already scoped to this panel — but only the ACTIVE tab's panel should act
-   * on it. Three panels are mounted at once (the one you are on and its two
-   * neighbours), and without this every one of them would filter itself to
-   * whatever the active tab's chips say.
-   */
-  const urlState = useMemo(() => parseBrowse(params), [params]);
-  const isMine = urlState.cat === slug;
-  const state: BrowseState = isMine ? urlState : emptyBrowse(slug);
-
-  const push = (next: BrowseState, scroll = true) => {
-    const qs = new URLSearchParams(serializeBrowse({ ...next, cat: slug }));
-    // Anything the shell keeps in the query string that is not ours survives.
-    params.forEach((v, k) => {
-      if (!FILTER_PARAM_NAMES.includes(k) && k !== "tab") qs.set(k, v);
-    });
-    setParams(qs, { replace: false });
-    if (scroll) requestAnimationFrame(() => gridTop.current?.scrollIntoView({ block: "start" }));
-  };
 
   const subcategories = useMemo(
     () => (subcategoriesQuery.data ?? []).map((s) => ({ slug: s.slug, name: s.name })),
@@ -123,61 +79,25 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     [subcategoriesQuery.data, directory.data, signals.data]
   );
 
-  const results = useMemo(
-    () =>
-      sortResults(
-        sections.all.filter((p) => matches(p, state, lookup)),
-        effectiveSort(state),
-        lookup
-      ),
-    [sections.all, state, lookup]
-  );
-
-  const facets = useFacets({
-    products: sections.all,
-    state,
-    lookup,
+  /*
+   * THE SAME HOOK THE FLOWERS TAB USES. Not a copy of it.
+   *
+   * This component had its own state, its own push and its own applied-chip
+   * list until Flowers needed the same thing; two of them is exactly the fork
+   * that let a filter behave differently on two tabs. The shared hook also
+   * carries the tab-slug fix, which this file's own version had wrong and got
+   * away with only because Fashion's tab slug and category slug are the same
+   * word.
+   */
+  const filters = useTabFilters({
+    slug,
+    tabSlug: tab.slug,
+    all: sections.all,
     subcategories,
     stores,
+    lookup,
   });
-
-  /* ---- the applied chips ------------------------------------------------ */
-
-  type Applied = { key: string; label: string; remove: () => void };
-  const applied: Applied[] = [];
-  if (state.tile) {
-    applied.push({
-      key: "view",
-      label: TILE_LABEL[state.tile],
-      remove: () => push({ ...state, tile: null }, false),
-    });
-  }
-  const listChip = (
-    group: "for" | "occasion" | "price" | "type" | "size" | "colour" | "store",
-    label: (v: string) => string
-  ) => {
-    for (const v of state[group]) {
-      applied.push({
-        key: `${group}:${v}`,
-        label: label(v),
-        remove: () => push(toggleValue(state, group, v), false),
-      });
-    }
-  };
-  listChip("for", (v) => recipientLabel(v));
-  listChip("occasion", (v) => OCCASIONS.find((o) => o.value === v)?.label ?? v);
-  listChip("price", (v) => priceTier(v)?.label ?? v);
-  listChip("type", (v) => subcategories.find((s) => s.slug === v)?.name ?? v);
-  listChip("size", (v) => `Size ${v}`);
-  listChip("colour", (v) => v.charAt(0).toUpperCase() + v.slice(1));
-  listChip("store", (v) => stores.find((s) => s.slug === v)?.name ?? v);
-  if (state.min != null || state.max != null) {
-    applied.push({
-      key: "range",
-      label: `$${state.min ?? 0} – $${state.max ?? "∞"}`,
-      remove: () => push({ ...state, min: null, max: null }, false),
-    });
-  }
+  const { state, push } = filters;
 
   if (sections.isLoading) {
     return (
@@ -209,91 +129,12 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         <Tiles all={sections.all} lookup={lookup} state={state} push={push} />
       </div>
 
-      {/* ---- the grid, and the bar that sticks to it --------------------- */}
-      <div ref={gridTop} className="pt-6">
-        <h2 className="px-[var(--page-x)] pb-2 text-h2 text-ink">
-          All {categoryName.toLowerCase()} · {results.length}{" "}
-          {results.length === 1 ? "gift" : "gifts"}
-        </h2>
-
-        {/*
-          STICKY FROM HERE DOWN, and only here. The header, the search field
-          and the tab strip are outside the scroller and permanently in place,
-          so this is the only thing on the page that has to stick, and it
-          sticks to the top of the panel it lives in.
-        */}
-        <div className="sticky top-0 z-20 bg-canvas">
-          <SortRow
-            state={state}
-            push={push}
-            onOpenAll={() => setAllOpen(true)}
-            openSort={() => setSortOpen(true)}
-          />
-
-          {applied.length ? (
-            <div className="scroll-row py-1" style={{ ["--row-gap" as string]: "8px" }}>
-              {applied.map((a) => (
-                <Chip key={a.key} label={a.label} selected removable onClick={a.remove} />
-              ))}
-              <button
-                type="button"
-                onClick={() => push({ ...emptyBrowse(slug), sort: state.sort }, false)}
-                className="shrink-0 self-center whitespace-nowrap px-1 text-caption font-medium text-muted underline underline-offset-4"
-              >
-                Clear all
-              </button>
-            </div>
-          ) : null}
-
-          <div className="pb-1">
-            <FacetChips
-              cat={slug}
-              state={state}
-              onChange={(next) => push(next, false)}
-              facets={facets}
-              subcategories={subcategories}
-              stores={stores}
-              openOnMount={isMine ? (params.get("facet") as FacetGroup | null) : null}
-              onOpened={() => {
-                const next = new URLSearchParams(params);
-                next.delete("facet");
-                setParams(next, { replace: true });
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="px-[var(--page-x)] pb-8 pt-2">
-          {results.length === 0 ? (
-            <EmptyGrid applied={applied} onClearAll={() => push(emptyBrowse(slug), false)} />
-          ) : (
-            <div className="grid grid-cols-2 gap-x-2 gap-y-2.5">
-              {results.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  {...(p as unknown as Parameters<typeof ProductCard>[0])}
-                  compact
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <AllFiltersSheet
-        open={allOpen}
-        onClose={() => setAllOpen(false)}
-        onApply={(next) => {
-          setAllOpen(false);
-          push(next, false);
-        }}
-        state={state}
-        facets={facets}
+      <FilterGridSection
+        filters={filters}
+        heading={`All ${categoryName.toLowerCase()}`}
+        subcategories={subcategories}
+        stores={stores}
       />
-
-      {sortOpen ? (
-        <SortSheet state={state} push={push} onClose={() => setSortOpen(false)} />
-      ) : null}
     </>
   );
 }
@@ -414,21 +255,6 @@ function Hero({
 /* The rest of the page                                                       */
 /* -------------------------------------------------------------------------- */
 
-/** One line, outlined not filled — it is an offer, not the main action. */
-function AiLine() {
-  return (
-    <Link
-      to="/assistant"
-      className="flex h-[46px] w-full items-center justify-center gap-1 rounded-[12px] border text-[14px] font-semibold transition-transform duration-press ease-out active:scale-[0.99]"
-      style={{ borderColor: "rgb(var(--persimmon) / 0.3)", color: "rgb(var(--persimmon))" }}
-    >
-      ✨ Let AI help me choose
-      <span aria-hidden className="text-[16px] leading-none opacity-70">
-        ›
-      </span>
-    </Link>
-  );
-}
 
 function StoresBlock({
   categoryName,
@@ -563,130 +389,5 @@ function Tiles({
   );
 }
 
-function SortRow({
-  state,
-  push,
-  onOpenAll,
-  openSort,
-}: {
-  state: BrowseState;
-  push: (s: BrowseState, scroll?: boolean) => void;
-  onOpenAll: () => void;
-  openSort: () => void;
-}) {
-  const menuSorts: Sort[] = ["recommended", "newest", "discount"];
-  const current = SORTS.find((s) => s.value === state.sort);
-  return (
-    <div className="flex items-center gap-3 px-[var(--page-x)] py-1">
-      <button
-        type="button"
-        onClick={openSort}
-        className={`whitespace-nowrap text-caption ${
-          menuSorts.includes(state.sort) ? "font-semibold text-ink" : "font-medium text-muted"
-        }`}
-      >
-        {menuSorts.includes(state.sort) ? current?.short : "Recommended"} ▾
-      </button>
-      <button
-        type="button"
-        onClick={() => push({ ...state, sort: "popular" }, false)}
-        className={`whitespace-nowrap text-caption ${
-          state.sort === "popular" ? "font-semibold text-ink" : "font-medium text-muted"
-        }`}
-      >
-        Most popular
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          push({ ...state, sort: state.sort === "price-asc" ? "price-desc" : "price-asc" }, false)
-        }
-        className={`whitespace-nowrap text-caption ${
-          state.sort.startsWith("price") ? "font-semibold text-ink" : "font-medium text-muted"
-        }`}
-      >
-        Price {state.sort === "price-asc" ? "↑" : state.sort === "price-desc" ? "↓" : "⇅"}
-      </button>
-      <button
-        type="button"
-        onClick={onOpenAll}
-        className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap text-caption font-semibold text-ink"
-      >
-        Filter ⛛
-        {activeCount(state) > 0 ? (
-          <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-black text-white">
-            {activeCount(state)}
-          </span>
-        ) : null}
-      </button>
-    </div>
-  );
-}
 
-function SortSheet({
-  state,
-  push,
-  onClose,
-}: {
-  state: BrowseState;
-  push: (s: BrowseState, scroll?: boolean) => void;
-  onClose: () => void;
-}) {
-  const menuSorts: Sort[] = ["recommended", "newest", "discount"];
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40">
-      <button type="button" aria-label="Close" className="flex-1" onClick={onClose} />
-      <div className="rounded-t-[18px] bg-canvas pb-3">
-        <p className="px-4 py-3 text-body font-semibold text-ink">Sort</p>
-        {SORTS.filter((s) => menuSorts.includes(s.value)).map((s) => (
-          <button
-            key={s.value}
-            type="button"
-            onClick={() => {
-              onClose();
-              push({ ...state, sort: s.value }, false);
-            }}
-            className="flex h-12 w-full items-center justify-between border-t border-line px-4 text-left text-body text-ink"
-          >
-            {s.label}
-            {state.sort === s.value ? <span className="text-persimmon">✓</span> : null}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-function EmptyGrid({
-  applied,
-  onClearAll,
-}: {
-  applied: { label: string; remove: () => void }[];
-  onClearAll: () => void;
-}) {
-  const last = applied[applied.length - 1];
-  return (
-    <div className="rounded-card bg-surface p-6 text-center shadow-rest">
-      <p className="text-body font-semibold text-ink">No gifts match all of these.</p>
-      {last ? <p className="mt-1 text-caption text-muted">Try removing “{last.label}”.</p> : null}
-      <div className="mt-4 flex flex-col gap-2">
-        {last ? (
-          <button
-            type="button"
-            onClick={last.remove}
-            className="min-h-[44px] rounded-pill bg-persimmon text-body font-semibold text-white"
-          >
-            Remove last filter
-          </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={onClearAll}
-          className="min-h-[44px] rounded-pill border border-line text-body font-medium text-ink"
-        >
-          Clear all
-        </button>
-      </div>
-    </div>
-  );
-}

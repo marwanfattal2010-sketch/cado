@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { colourOf, sizesOf, type FeedProduct } from "../../lib/browse";
+import { colourOf, flowerTypesOf, sizesOf, type FeedProduct } from "../../lib/browse";
 import {
   FACETS_BY_CATEGORY,
   GROUP_LABEL,
+  FLOWER_TYPES,
   PRICE_TIERS,
   RECIPIENTS,
   priceTier,
@@ -10,6 +11,7 @@ import {
 } from "../../lib/facets";
 import { OCCASIONS } from "../../lib/filters";
 import {
+  emptyBrowse,
   matches,
   optionCount,
   toggleValue,
@@ -65,6 +67,12 @@ export function useFacets({
     return [...seen.keys()].sort(bySizeOrder);
   }, [products]);
 
+  const flowerValues = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of products) for (const t of flowerTypesOf(p)) seen.add(t);
+    return seen;
+  }, [products]);
+
   const colourValues = useMemo(() => {
     const seen = new Set<string>();
     for (const p of products) {
@@ -85,13 +93,45 @@ export function useFacets({
       type: build("type", subcategories.map((s) => ({ value: s.slug, label: s.name }))),
       size: build("size", sizeValues.map((s) => ({ value: s, label: s }))),
       colour: build("colour", colourValues.map((c) => ({ value: c, label: titleCase(c) }))),
+      // Only the types this category actually stocks, in the canonical order,
+      // so the sheet never offers Sunflowers to a shop that has none.
+      flower: build(
+        "flower",
+        FLOWER_TYPES.filter((t) => flowerValues.has(t.value)).map((t) => ({
+          value: t.value,
+          label: t.label,
+        }))
+      ),
       store: build("store", stores.map((s) => ({ value: s.slug, label: s.name }))),
     } as Record<FacetGroup, Option[]>;
-  }, [products, state, lookup, subcategories, stores, sizeValues, colourValues]);
+  }, [products, state, lookup, subcategories, stores, sizeValues, colourValues, flowerValues]);
 
+  /*
+   * WHICH CHIPS EXIST IS DECIDED BY THE CATEGORY, NOT BY THE SELECTION.
+   *
+   * Counted against the current selection, the row emptied itself: picking
+   * "Under $50" on Flowers left three products, most facets dropped below two
+   * live options, and five of the seven chips vanished — so the row you were
+   * about to use disappeared underneath you the moment you used it, and there
+   * was no way back to Occasion except Clear all.
+   *
+   * A facet earns its chip if the CATEGORY has two or more values for it. The
+   * counts inside the sheet still respond to the selection, and an option that
+   * would return nothing is still greyed — the chip just stops moving.
+   */
+  const base = useMemo(() => emptyBrowse(state.cat), [state.cat]);
   const declared = FACETS_BY_CATEGORY[state.cat] ?? ["price", "store"];
-  const visibleGroups = declared.filter(
-    (g) => optionsFor[g].filter((o) => o.count > 0).length >= 2
+  const visibleGroups = useMemo(
+    () =>
+      declared.filter((g) => {
+        const key = g as ListKey;
+        const raw = optionsFor[g];
+        return (
+          raw.filter((o) => optionCount(products, base, key, o.value, lookup) > 0).length >= 2
+        );
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [products, base, lookup, optionsFor]
   );
 
   const countWith = (draft: BrowseState) =>
@@ -637,6 +677,8 @@ function labelOf(
       return refs.stores.find((s) => s.slug === value)?.name ?? value;
     case "colour":
       return titleCase(value);
+    case "flower":
+      return FLOWER_TYPES.find((t) => t.value === value)?.label ?? value;
     default:
       // price arrives already formatted; size is its own label.
       return value;

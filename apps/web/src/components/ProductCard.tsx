@@ -225,31 +225,32 @@ export function ProductCard(props: ProductCardProps) {
               48px (2.11). It reads better here anyway — it is a fact about
               the item, next to the item, and it is the same top-left pill
               the Super deals row uses. */}
-          {onSale ? (
+          {onSale && inStock ? (
             <span className="absolute left-2 top-2 rounded-[6px] bg-persimmon px-1.5 py-1 text-[11px] font-bold leading-none text-white">
               -{off}%
             </span>
           ) : null}
 
+          {/*
+            ONE BADGE, TOP-LEFT, AND ONLY ONE.
+            A reduced item with two left in stock wore "-20%" top-left and
+            "Only 2 left" bottom-left at the same time — two badges shouting
+            from opposite corners of a 178px photo. There is now a single slot
+            and a priority order: out of stock beats a discount (there is no
+            point selling the saving on something you cannot buy), a discount
+            beats low stock, and low stock beats the softer claims.
+          */}
           {!inStock ? (
-            <span className="absolute bottom-2 left-2 rounded-pill bg-ink/80 px-2 py-1 text-caption font-semibold text-inverse">
+            <span className="absolute left-2 top-2 rounded-pill bg-ink/80 px-2 py-1 text-caption font-semibold text-inverse">
               Out of stock
             </span>
-          ) : lowStock ? (
-            /* Kept, moved: only where stock is genuinely tracked and
-               genuinely low, and now on the photo rather than costing the
-               text block a fourth line. */
-            <span className="absolute bottom-2 left-2 rounded-[6px] bg-white/90 px-1.5 py-1 text-[11px] font-bold leading-none text-persimmon">
+          ) : onSale ? null /* already drawn above, top-left */ : lowStock ? (
+            <span className="absolute left-2 top-2 rounded-[6px] bg-white/90 px-1.5 py-1 text-[11px] font-bold leading-none text-persimmon">
               Only {stock_quantity} left
             </span>
-          ) : badge && !onSale ? (
-            /* !onSale is the fix for the duplicate badge. badgeFor() returns
-               the discount first, and the discount ALSO renders top-left, so
-               a reduced item wore -25% twice — once in each corner. The
-               top-left pill is the canonical one; this slot only shows the
-               other badges (Bestseller, Same-day, New). */
+          ) : badge ? (
             <span
-              className={`absolute bottom-2 left-2 rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none ${badge.className}`}
+              className={`absolute left-2 top-2 rounded-[6px] px-2 py-1 text-[11px] font-bold leading-none ${badge.className}`}
             >
               {badge.label}
             </span>
@@ -328,11 +329,15 @@ export function ProductCard(props: ProductCardProps) {
         <span aria-hidden>🚚</span>
         {deliveryWord()}
       </span>
-      {props.gift_wrap_available ? (
-        <span className="mt-0.5 inline-block rounded-[4px] bg-surface-sunk px-1 py-[1px] text-[10px] font-medium leading-none text-muted">
-          Gift wrap
-        </span>
-      ) : null}
+      {/*
+        THE "Gift wrap" CHIP IS GONE, and that is what the faint rule under
+        the price row was.
+        The text block is a fixed 92-98px holding four rows — store, title
+        (two lines), price, delivery. The chip was a fifth, so `overflow:
+        hidden` sliced it to a two-pixel strip of `bg-surface-sunk` that read
+        as a stray border. Gift wrapping is still on the product page and is
+        still a filter; it was never legible here.
+      */}
       </div>
     </div>
   );

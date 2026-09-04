@@ -964,3 +964,34 @@ Chocolate.
 
 **`npx tsc -p tsconfig.json` CHECKS NOTHING.** That file is a solution stub with
 `"files": []`. Use `npx tsc -b`, which is what `npm run build` runs.
+
+---
+
+## Flowers tab, and one filter engine for real
+
+`components/shop/category/FilterableGrid.tsx` now holds `useTabFilters` and
+`FilterGridSection`. Fashion (via `TabTemplate`) and Flowers (via the legacy
+`CategoryTab`, gated by the `FILTERED_GRID` set) both mount it. TabTemplate had
+its own copy until Flowers needed the same thing — that copy is gone.
+
+**Two slug bugs the shared hook fixed, both invisible on Fashion.**
+The pager owns `?tab=`, and it wants the TAB slug. Four tabs have a tab slug
+that differs from their category slug — flowers/flowers-gifts,
+jewelry/jewelry-accessories, home/gift-sets. Fashion's are the same word, so:
+
+1. `serializeBrowse` wrote the CATEGORY into `tab`, producing
+   `?tab=flowers-gifts` — a tab that does not exist. `push` now overwrites it
+   with the tab slug.
+2. `parseBrowse` reads the category back OUT of `tab`, so it then parsed
+   `cat: "flowers"`, nothing matched `FACETS_BY_CATEGORY`, and the chip row
+   fell back to its two-item default. `state.cat` is now forced from the panel.
+
+**Facet chips are decided by the category, not the selection.** Counted against
+the live selection the row emptied itself: one filter on a six-product category
+dropped five of seven chips, so the control you had just used vanished. Options
+inside a sheet still respond to the selection and still grey at zero.
+
+**Flower type lives in `products.tags` as `flower:roses`** — an existing text[],
+no new column. Colour uses the existing `products.color`. Only what a product's
+own title or description states: 6 of 6 flower types, 4 of 6 colours, and the
+two that say nothing about colour are now null rather than a guess.

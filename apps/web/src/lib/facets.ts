@@ -28,14 +28,45 @@
  *            adds no columns. Toys therefore shows no Age facet. Reported.
  */
 
-export type FacetGroup = "for" | "occasion" | "price" | "type" | "size" | "colour" | "store";
+export type FacetGroup =
+  | "for"
+  | "occasion"
+  | "price"
+  | "type"
+  | "size"
+  | "colour"
+  | "flower"
+  | "store";
+
+/**
+ * Flower type, held in `products.tags` as `flower:roses`.
+ *
+ * No column was added for this. `tags` is an existing text[] on products and
+ * a prefixed value is the same trick the rest of the catalogue already uses,
+ * so a flower type is data a store owner can set rather than a schema change.
+ *
+ * A product only gets one where its own title or description names the flower
+ * — "Soft pink peonies", "A dozen premium roses". Nothing is inferred from a
+ * photograph, and a bouquet that does not say what is in it stays unset and
+ * simply does not appear under any type.
+ */
+export const FLOWER_TAG = "flower:";
+export const FLOWER_TYPES = [
+  { value: "roses", label: "Roses" },
+  { value: "tulips", label: "Tulips" },
+  { value: "peonies", label: "Peonies" },
+  { value: "lilies", label: "Lilies" },
+  { value: "orchids", label: "Orchids" },
+  { value: "sunflowers", label: "Sunflowers" },
+  { value: "mixed", label: "Mixed" },
+];
 
 /** Facet order per category, exactly as the brief specifies it. */
 export const FACETS_BY_CATEGORY: Record<string, FacetGroup[]> = {
   fashion: ["for", "occasion", "price", "type", "size", "colour", "store"],
   shoes: ["for", "price", "type", "size", "colour", "store"],
   "jewelry-accessories": ["for", "occasion", "price", "type", "colour", "store"],
-  "flowers-gifts": ["occasion", "price", "type", "colour", "store"],
+  "flowers-gifts": ["occasion", "flower", "colour", "price", "type", "for", "store"],
   chocolate: ["occasion", "price", "type", "size", "store"],
   perfumes: ["for", "price", "type", "store"],
   // Toys asks for Age, which has no backing field. The facet is omitted rather
@@ -56,6 +87,7 @@ export const GROUP_LABEL: Record<FacetGroup, string> = {
   type: "Category",
   size: "Size",
   colour: "Colour",
+  flower: "Flower type",
   store: "Store",
 };
 
@@ -102,6 +134,7 @@ export function recipientLabel(value: string, form: "full" | "short" = "full") {
 export type TileId =
   | "new-in"
   | "most-gifted"
+  | "best-picks"
   | "under-75"
   | "arrives-today"
   | "gift-wrapped"
@@ -113,6 +146,7 @@ export type TileId =
 export const TILE_LABEL: Record<TileId, string> = {
   "new-in": "New in",
   "most-gifted": "Most gifted",
+  "best-picks": "Best picks",
   "under-75": "Under $75",
   "arrives-today": "Arrives today",
   "gift-wrapped": "Gift wrapped",

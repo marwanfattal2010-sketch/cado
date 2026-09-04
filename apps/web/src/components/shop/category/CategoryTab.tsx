@@ -23,7 +23,11 @@ import {
 import { themeFor, type CategoryTile } from "../../../lib/categoryTheme";
 import { browseHref } from "../../../lib/browseParams";
 import { RECIPIENTS, priceTierId, type TileId } from "../../../lib/facets";
-import { recipientArt, tileArt } from "../../../lib/tabArt";
+import { categoryTileArt, recipientArt, tileArt } from "../../../lib/tabArt";
+import { useHomeSignals } from "../../../hooks/useHomeEndless";
+import { FilterGridSection, useTabFilters, type TabFilters } from "./FilterableGrid";
+import { AiLine } from "./AiLine";
+import type { BrowseState, Lookup } from "../../../lib/browseParams";
 import { TabTemplate } from "./TabTemplate";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
@@ -54,6 +58,16 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
  * slug here is the whole migration — there is no per-tab code below it.
  */
 const REBUILT = new Set(["fashion"]);
+
+/**
+ * Tabs whose bottom grid is the filtered one rather than a plain shelf.
+ *
+ * Flowers keeps its whole existing layout — hero, circles, tiles, stores,
+ * strips — and swaps only the "All flowers" section at the bottom for the
+ * filter bar and grid. Everything above it now applies its filter to that grid
+ * and scrolls down to it instead of navigating away.
+ */
+const FILTERED_GRID = new Set(["flowers-gifts"]);
 
 export function CategoryTab({ tab }: { tab: BrowseTab }) {
   if (REBUILT.has(tab.filter.category_slug ?? "")) return <TabTemplate tab={tab} />;
@@ -300,6 +314,35 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
       }));
   }, [directory.data, sections.all]);
 
+  const signals = useHomeSignals();
+  const filterLookup = useMemo<Lookup>(
+    () => ({
+      typeId: (s) => (subcategoriesQuery.data ?? []).find((x) => x.slug === s)?.id,
+      storeId: (s) => (directory.data ?? []).find((x) => x.slug === s)?.id,
+      orders: (id) => signals.data?.get(id)?.recentOrders ?? 0,
+      anyOrders: () => [...(signals.data?.values() ?? [])].some((x) => x.recentOrders > 0),
+    }),
+    [subcategoriesQuery.data, directory.data, signals.data]
+  );
+
+  /*
+   * FLOWERS FILTERS ITS OWN GRID, using the same engine as Fashion.
+   *
+   * `useTabFilters` is the one filter implementation — same hook, same sheets,
+   * same BrowseState — so a URL built here means what it means on Fashion. The
+   * hook is called unconditionally because hooks must be; only the Flowers
+   * branch renders anything with it.
+   */
+  const filters = useTabFilters({
+    slug: cat,
+    tabSlug: tab.slug,
+    all: sections.all,
+    subcategories: subcategories.map((s) => ({ slug: s.slug, name: s.name })),
+    stores: stores.map((s) => ({ slug: s.slug ?? "", name: s.name.replace(/\[.*?\]\s*/g, "") })),
+    lookup: filterLookup,
+  });
+  const filtered = FILTERED_GRID.has(cat);
+
   if (sections.isLoading) {
     return (
       <>
@@ -331,6 +374,9 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
         section, and every section carries the same page gutter.
       */}
       <div className="space-y-6 px-[var(--page-x)] pt-5">
+        {/* 1b — the gift finder, offered once, directly under the hero. */}
+        {filtered ? <AiLine /> : null}
+
         {/* 2 — Gift for… */}
         <GiftForRow
           sections={sections}
@@ -339,8 +385,11 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
           photoFor={(v) => art.recipientPhoto.get(v) ?? null}
         />
 
-        {/* 3 — entry tiles */}
-        <TallTiles tiles={art.tiles} />
+        {/*
+          3 — entry tiles. On a tab that filters its own grid the tiles narrow
+          it in place; everywhere else they still link to the results page.
+        */}
+        <TallTiles tiles={filtered ? flowerTiles(cat, filters) : art.tiles} />
 
         {/* 4 — shop by category */}
         <SubcategoryCircles circles={art.circles} theme={theme} cat={cat} />
@@ -385,7 +434,13 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
           from", which is the question a shopper has once they have seen the
           goods rather than before.
         */}
-        <StoresRow categoryName={categoryName} stores={stores} theme={theme} />
+        <StoresRow
+          categoryName={categoryName}
+          stores={stores}
+          theme={theme}
+          cat={cat}
+          swipe={filtered}
+        />
 
         {/*
           11 — PURE BROWSE. No sort row, no filter button, no applied chips
@@ -393,17 +448,64 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
           selection can be described, stacked and undone. What is left here
           is a plain look at the shelf, and one door to the filtered view.
         */}
-        <div>
-          <TabSectionHead title={`All ${categoryName.toLowerCase()}`} theme={theme} />
-          <TabGrid products={sections.all} />
-          <Link
-            to={browseHref(cat)}
-            className="mt-4 flex min-h-[46px] w-full items-center justify-center rounded-pill border border-ink/[0.12] bg-canvas text-body font-semibold text-ink transition-transform duration-press ease-out active:scale-[0.99]"
-          >
-            See all {categoryName.toLowerCase()} gifts
-          </Link>
-        </div>
+        {filtered ? null : (
+          <div>
+            <TabSectionHead title={`All ${categoryName.toLowerCase()}`} theme={theme} />
+            <TabGrid products={sections.all} />
+            <Link
+              to={browseHref(cat)}
+              className="mt-4 flex min-h-[46px] w-full items-center justify-center rounded-pill border border-ink/[0.12] bg-canvas text-body font-semibold text-ink transition-transform duration-press ease-out active:scale-[0.99]"
+            >
+              See all {categoryName.toLowerCase()} gifts
+            </Link>
+          </div>
+        )}
       </div>
+
+      {/*
+        The filtered grid sits OUTSIDE the padded column, because its sticky
+        bar has to run the full width of the panel — a bar inset by the page
+        gutter reads as a floating card rather than a toolbar.
+      */}
+      {filtered ? (
+        <FilterGridSection
+          filters={filters}
+          heading={`All ${categoryName.toLowerCase()}`}
+          subcategories={subcategories.map((s) => ({ slug: s.slug, name: s.name }))}
+          stores={stores.map((s) => ({
+            slug: s.slug ?? "",
+            name: s.name.replace(/\[.*?\]\s*/g, ""),
+          }))}
+        />
+      ) : null}
     </>
   );
+}
+
+/**
+ * The Flowers tile row: Under $50 · Under $100 · Best picks · New in.
+ *
+ * Anniversary and Get Well used to sit here, directly under circles for the
+ * same two occasions — the same control twice on one screen. These four are
+ * things the circles above cannot say.
+ *
+ * Every one narrows the grid at the bottom of this page and scrolls to it. The
+ * two price tiles go through the shared price tiers, which run on
+ * `inBudgetRange()`; "Best picks" is the popularity view, which ranks on real
+ * delivered orders and, with none yet, leaves the catalogue order alone rather
+ * than inventing a score.
+ */
+function flowerTiles(cat: string, filters: TabFilters): ResolvedTile[] {
+  const { state, push } = filters;
+  const defs: { key: string; label: string; next: () => BrowseState }[] = [
+    { key: "under-50", label: "Under $50", next: () => ({ ...state, price: ["under-50"] }) },
+    { key: "under-100", label: "Under $100", next: () => ({ ...state, price: ["under-100"] }) },
+    { key: "best-picks", label: "Best picks", next: () => ({ ...state, tile: "best-picks" }) },
+    { key: "new-in", label: "New in", next: () => ({ ...state, tile: "new-in" }) },
+  ];
+  return defs.map((d) => ({
+    label: d.label,
+    photo: categoryTileArt(cat, d.key),
+    onSelect: () => push(d.next()),
+  }));
 }

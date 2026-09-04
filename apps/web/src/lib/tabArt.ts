@@ -37,9 +37,36 @@ const RECIPIENT_ART: Record<string, string> = {
   child: "art/recipient/child.jpg",
 };
 
+/**
+ * Tile art a category overrides, because the shared picture would be wrong.
+ *
+ * On Flowers every tile has to be flowers. The shared "Under $100" tile is a
+ * stack of wrapped parcels — a fine picture of a gift and a bad picture of a
+ * bouquet, which is exactly how a candle box and a linen basket ended up on
+ * the flowers tab. Keyed by a plain string rather than TileId, because two of
+ * the four flower tiles are price filters and have no TileId at all.
+ */
+const CATEGORY_TILE_ART: Record<string, Record<string, string>> = {
+  "flowers-gifts": {
+    "under-50": "art/tile/flowers-gifts--under-50.jpg",
+    "under-100": "art/tile/flowers-gifts--under-100.jpg",
+    "best-picks": "art/tile/flowers-gifts--best-picks.jpg",
+    "new-in": "art/tile/flowers-gifts--new-in.jpg",
+  },
+};
+
+/** A category's own tile art, or null to fall back to the shared set. */
+export function categoryTileArt(cat: string, key: string): string | null {
+  const path = CATEGORY_TILE_ART[cat]?.[key];
+  return path ? productImageUrl(path) : null;
+}
+
 const TILE_ART: Record<TileId, string> = {
   "new-in": "art/tile/new-in.jpg",
   "most-gifted": "art/tile/most-gifted.jpg",
+  // Same behaviour as most-gifted, different label. Only Flowers renders it,
+  // and Flowers overrides the picture above, so this is the safety net.
+  "best-picks": "art/tile/most-gifted.jpg",
   "under-75": "art/tile/under-75.jpg",
   "arrives-today": "art/tile/arrives-today.jpg",
   "gift-wrapped": "art/tile/gift-wrapped.jpg",

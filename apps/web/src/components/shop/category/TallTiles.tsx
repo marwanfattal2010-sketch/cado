@@ -5,8 +5,16 @@ import type { CategoryTheme } from "../../../lib/categoryTheme";
 export type ResolvedTile = {
   label: string;
   photo: string | null;
-  /** Where the tile goes — a saved view on the results page. */
-  href: string;
+  /**
+   * Where the tile goes — a saved view on the results page.
+   *
+   * A tab that filters its own grid in place passes `onSelect` instead, and
+   * the tile renders as a button. Same tile, same size, same label bar: the
+   * only difference is whether tapping it navigates or narrows the grid
+   * further down the page you are already on.
+   */
+  href?: string;
+  onSelect?: () => void;
 };
 
 /**
@@ -42,11 +50,18 @@ export function TallTiles({ tiles }: { tiles: ResolvedTile[]; theme?: CategoryTh
       className="scroll-row -mx-[var(--page-x)]"
       style={{ ["--row-gap" as string]: "10px" }}
     >
-      {tiles.map((t) => (
-        <Link
+      {tiles.map((t) => {
+        // A button when the tile narrows the grid below, a link when it goes
+        // somewhere. Identical geometry either way.
+        const Shell = (t.onSelect ? "button" : Link) as React.ElementType;
+        const shellProps = t.onSelect
+          ? { type: "button" as const, onClick: t.onSelect }
+          : { to: t.href as string };
+        return (
+        <Shell
           key={t.label}
-          to={t.href}
-          className="relative block h-[172px] w-[124px] shrink-0 overflow-hidden rounded-[10px] bg-surface-sunk transition-transform duration-press ease-out active:scale-[0.97]"
+          {...shellProps}
+          className="relative block h-[172px] w-[124px] shrink-0 overflow-hidden rounded-[10px] bg-surface-sunk text-left transition-transform duration-press ease-out active:scale-[0.97]"
         >
           {t.photo ? (
             <Img src={t.photo} className="absolute inset-x-0 top-0 h-[140px] w-full object-cover" />
@@ -78,8 +93,9 @@ export function TallTiles({ tiles }: { tiles: ResolvedTile[]; theme?: CategoryTh
           >
             {t.label}
           </span>
-        </Link>
-      ))}
+        </Shell>
+        );
+      })}
     </div>
   );
 }
