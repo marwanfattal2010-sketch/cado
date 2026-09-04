@@ -127,8 +127,11 @@ export function HomeLower() {
       {/* Popular Brands — between Popular picks and Deals, per the brief. */}
       <PopularBrands />
 
-      {/* New on CADO used to sit here. The brief puts it near the foot of the
-          page, between Recently viewed and All stores — see section 11. */}
+      {/* New on CADO, back where it has always been. A written brief moved it
+          to the foot of the page between Recently viewed and All stores;
+          Marwan asked for it here again, and it is his page. Three store
+          sections in a row at the bottom read as one long tail anyway. */}
+      <NewOnCado />
 
       {/* 4 — Stores of the Week */}
       <StoresOfWeekBlock stores={storesOfWeek.data ?? []} />
@@ -231,19 +234,14 @@ export function HomeLower() {
       ) : null}
 
       {/* 10 — Discover more, the endless part.
-          It is no longer last. The order below it is fixed by the brief —
-          New on CADO, then All stores as the final section on the page — and
-          that only works because DiscoverMore's paging now measures its own
-          sentinel rather than the distance to the bottom of the panel. With
-          the old test, everything after it would have had to be scrolled past
-          before the next page would load. */}
+          It is no longer last: All stores closes the page. That only works
+          because DiscoverMore's paging now measures its own sentinel rather
+          than the distance to the bottom of the panel — under the old test,
+          every store card below would have had to be scrolled past before the
+          next page would load. */}
       <DiscoverMore exclude={exclude} excludeReady={excludeReady} />
 
-      {/* 11 — the newly joined STORES band, moved down here from above
-          Stores of the Week so the page ends on the two store sections. */}
-      <NewOnCado />
-
-      {/* 12 — All stores. THE LAST SECTION ON THE PAGE. */}
+      {/* 11 — All stores. THE LAST SECTION ON THE PAGE. */}
       <AllStores />
     </div>
   );
