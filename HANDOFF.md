@@ -863,3 +863,26 @@ dark area touching an edge. `--apply` therefore only touches paths listed in its
 **Still needs real catalogue work:** Fashion has no menswear; "Merino Crewneck"
 is a satin dress in its photograph and "Everyday Hoodie" is a woman's hoodie,
 both title/photo mismatches from seeding; Chocolate is down to six products.
+
+### Catalogue added for Fashion and Chocolate
+
+`scripts/seed-menswear-and-chocolate.mjs` adds four menswear products (Anchor &
+Oak, Cedar Street Fashion) and five chocolate products (Cocoa & Co., Sucré
+Bakehouse), and re-photographs the Merino Crewneck. Fashion > Men exists again;
+Chocolate is back to eleven products. Every Unsplash id is recorded next to its
+product, and the six candidates rejected on sight are listed in the file header
+with the reason, so nobody re-picks them. The test they failed is nearly always
+the same one: baked-in text or a real brand mark in the frame.
+
+**A correction that matters if you read migration 0090.** Its comment says the
+Merino Crewneck was "a woman in a navy satin dress". That was a mix-up — the
+dress is the Silk Wrap Dress. The crewneck's photo was a flat-lay of several
+knits on autumn leaves: no product you could point at, and no reason in it to
+call the garment womenswear. It has been re-photographed and moved back to Men.
+Everyday Hoodie really is a woman in a hoodie and correctly stays in Women.
+
+`0091` fixes four Chocolate products priced at $1, which rendered as "-98%" and
+"-99%" badges on the live shelf. Two had a `compare_at_price` that was clearly
+the intended price and now use it; the other two are priced against the shelf.
+None was flagged `price_is_placeholder`, so nothing marked them as unfinished —
+worth checking that flag is actually being set when prices are provisional.

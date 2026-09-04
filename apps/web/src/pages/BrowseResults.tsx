@@ -158,17 +158,25 @@ export function BrowseResults() {
       ? labels.join(" · ")
       : `${labels[0]} · ${labels[1]} +${labels.length - 2}`;
   const first = labels[0] ?? "";
+  /*
+   * A NAME IS ALREADY A HEADING; A DESCRIPTION NEEDS THE NOUN.
+   *
+   * "Anniversary" describes gifts, so it takes one: "Anniversary gifts". A
+   * type or a shop IS the thing you are looking at, so bolting the noun on
+   * gives "Men gifts" and "Necklaces gifts". Same for a tile — "Ready to gift
+   * gifts". Those stand alone, with the count line underneath carrying the
+   * noun.
+   */
+  const namesOnly = !applied.length
+    ? false
+    : applied.every((a) => /^(tile|type|store):?/.test(a.key));
   const title = !applied.length
     ? `All ${catName}`
-    : state.tile
-      ? // Tile labels ("New in", "Ready to gift") are already section names;
-        // wrapping them in "Gifts …" produces "Ready to gift gifts".
-        phrase
+    : namesOnly
+      ? phrase
       : first.startsWith("For ")
         ? `Gifts ${phrase.replace(/^For /, "for ")}`
-        : // "Anniversary gifts", "Under $100 gifts" — the noun goes last, or
-          // the sentence reads "Gifts Anniversary".
-          `${phrase} gifts`;
+        : `${phrase} gifts`;
 
   const clearAll = () => push({ ...emptyBrowse(state.cat), sort: state.sort });
 
