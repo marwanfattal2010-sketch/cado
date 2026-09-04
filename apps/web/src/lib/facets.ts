@@ -177,7 +177,16 @@ export type TileId =
   | "best-sellers"
   | "store-picks"
   | "ready-to-gift"
-  | "deals";
+  | "deals"
+  /*
+   * GARMENT CUT, from products.tags (migration 0099). These are tiles rather
+   * than subcategories because `subcategory_id` holds one value: filing the
+   * Merino Crewneck under a "tops" subcategory would take it out of "men" and
+   * empty the Women / Men / Kids circles this row sits under.
+   */
+  | "tops"
+  | "sets"
+  | "shirts";
 
 export const TILE_LABEL: Record<TileId, string> = {
   "new-in": "New in",
@@ -190,6 +199,9 @@ export const TILE_LABEL: Record<TileId, string> = {
   "store-picks": "Store picks",
   "ready-to-gift": "Ready to gift",
   deals: "Deals",
+  tops: "Tops",
+  sets: "Sets",
+  shirts: "Shirts",
 };
 
 /** The ceiling the "Under $75" tile filters on. */

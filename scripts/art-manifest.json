@@ -16,47 +16,55 @@
     "crop is what the file was baked to; a rect is in the ORIGINAL photograph's pixels",
     "and is applied before the resize."
   ],
-  "generated": "2026-09-04",
-  "round": "Fashion tab - people, styling and editorial energy (eleven slots)",
+  "generated": "2026-09-05",
+  "round": "Fashion tab - lookbook circles (3) and the 'What are you looking for?' type tiles (7)",
   "source_rules": {
-    "licence": "Licensed free stock only - Unsplash Licence. No Unsplash+ (paid): its download endpoint 403s, which is a licence gate.",
-    "content": "Real photography only, no AI-generated people. No visible third-party brand logos or wordmarks in frame. No baked-in text, watermarks or price tags. No image used twice, and none duplicating an image already in tabArt.ts or an existing product photograph.",
-    "dedupe_check": "Every id below was grepped against the whole repo (which is where every product-photo seed script records its source id) and against the existing tabArt.ts / seed-tab-art.mjs constants. Zero matches."
+    "licence": "Licensed free stock only - Unsplash Licence or Pexels Licence. No Unsplash+ (paid): its download endpoint 403s, which is a licence gate.",
+    "content": "Real photography only, no AI-generated people. No visible third-party brand logos or wordmarks in frame. No baked-in text, watermarks or price tags. No image used twice, and none duplicating an image already in tabArt.ts, in apps/web/public/tiles/, or an existing product photograph.",
+    "dedupe_check": "Every id below was grepped against the whole repo - which is where every product-photo seed script AND apps/web/public/tiles/SOURCES.txt record their source ids - and against the existing tabArt.ts / seed-tab-art.mjs constants. Zero matches. That grep is not ceremony: it is what caught photo-1619603364937-8d7af41ef206, the best men's frame of this round, already shipped as apps/web/public/tiles/fashion-men-circle.jpg and still served through browse_tiles.",
+    "crop_control": "Unsplash honours `rect` (x,y,w,h in the ORIGINAL photograph's pixels, applied before the resize). PEXELS DOES NOT - it accepts w/h/fit=crop/fm and the named crop anchors, and silently ignores both `rect` and `crop=focalpoint`, returning 200 with the uncropped frame. The two Pexels slots below are therefore framed by the source photograph and take the centre box; seed-tab-art.mjs throws if a rect is ever added to one."
   },
   "bucket": "product-images",
   "circles": {
-    "$comment": "CIRCLE_ART['fashion'] in apps/web/src/lib/tabArt.ts. Keys are the Fashion subcategory slugs. Rendered at ~80px, masked round. All 400x400 WebP.",
+    "$comment": "CIRCLE_ART['fashion'] in apps/web/src/lib/tabArt.ts. Keys are the Fashion subcategory slugs. Rendered at ~80px, masked round. All 400x400 WebP. The 'Shop for' row is now THREE - women, men, kids-fashion, re-shot this round as one lookbook; bags/caps/belts/scarves stay in the map but have moved to the type-tile row and their entries are left below unchanged.",
+    "$brief": "Fashion-brand lookbook photography of the kind Zara / SHEIN / Trendyol use on category tiles: full styled outfit, considered lighting, clean or plain-toned background, cropped so the CLOTHES read at small circle size rather than the face. No busy backgrounds, no obvious stock-photo posing, no real brand logos. The three below were chosen as a ROW and judged side by side as 88px discs, which is where two individually-better frames lost.",
     "women": {
       "slot_key": "women",
       "storage_path": "art/circle/fashion--women.webp",
-      "photo_id": "1618333452884-5c8d211ed2ad",
-      "photo_page_url": "https://unsplash.com/photos/woman-in-brown-coat-and-gray-pants-standing-on-white-concrete-stairs-5c8d211ed2ad",
-      "photographer": "The AW Creative Digital Marketing",
+      "source": "unsplash",
+      "photo_id": "1704775988086-f899d6566a4c",
+      "photo_page_url": "https://unsplash.com/photos/woman-in-white-pants-and-purple-shirt-posing-J3CaPOQBrRs",
+      "photographer": "GLOBALDSIO IT SOLUTION",
       "licence": "Unsplash Licence",
-      "shows": "A woman in a camel wool coat over a sage knit top and midi skirt with tan block heels, leaning against a white shopfront pillar in even daylight. Full styled outfit, face in frame.",
-      "crop": { "w": 400, "h": 400, "format": "webp", "rect": "800,1090,1410,1410" },
-      "rect_reason": "Centred, the square crop runs head-to-shin and the outfit is too small to read at 80px. This box is head-to-upper-thigh, and starting at x=800 also puts a small red fire notice on the wall (x 505-629) outside the frame."
+      "shows": "A woman in a deep aubergine satin shirt over ivory wide-leg trousers and silver strappy sandals, against a cream draped fabric backdrop in soft even light. Full styled outfit; the crop takes her from the chin to mid-calf, so the disc is the shirt and trousers rather than a portrait.",
+      "crop": { "w": 400, "h": 400, "format": "webp", "rect": "757,1300,2800,2800" },
+      "rect_reason": "The source is a full-length 3858x5787 frame; centred, the square would be hips-to-ankles. This box starts at the chin and ends mid-calf so the garments fill the disc."
     },
     "men": {
       "slot_key": "men",
       "storage_path": "art/circle/fashion--men.webp",
-      "photo_id": "1649712041612-021cf78bca23",
-      "photo_page_url": "https://unsplash.com/photos/a-man-in-a-suit-posing-for-a-picture-o23agsLwGr4",
-      "photographer": "Three Throne Productions",
-      "licence": "Unsplash Licence",
-      "shows": "A man in a grey herringbone blazer over a navy shirt against an olive-grey studio wall. Smart rather than corporate, warm-lit.",
-      "crop": { "w": 400, "h": 400, "format": "webp" }
+      "source": "pexels",
+      "photo_id": "6211656",
+      "photo_page_url": "https://www.pexels.com/photo/6211656/",
+      "photographer": "Dima Valkov",
+      "licence": "Pexels Licence",
+      "shows": "A man in a camel wool overcoat over a burgundy roll-neck, navy trousers and black leather loafers, on a plain white studio ground. Full styled outfit head to toe in the source; the centre square lands on collar-to-knee, which is the coat.",
+      "crop": { "w": 400, "h": 400, "format": "webp" },
+      "no_rect_reason": "Pexels ignores `rect`. This frame needs none - the centre box is already the coat.",
+      "checked": "The only hardware on the coat is a small silver leaf-shaped pin on the lapel, opened at 6x magnification to confirm it is an ornament and not a wordmark."
     },
     "kids-fashion": {
       "slot_key": "kids-fashion",
       "storage_path": "art/circle/fashion--kids-fashion.webp",
-      "photo_id": "1706306611201-305dba63850e",
-      "photo_page_url": "https://unsplash.com/photos/a-little-girl-and-a-little-boy-hugging-each-other-yjR8ZUXQZV0",
-      "photographer": "Jennifer Kalenberg",
-      "licence": "Unsplash Licence",
-      "shows": "One girl and one boy together: she is in a mustard textured dress, he is in a navy-and-grey striped knit, against a white-painted brick wall. Both faces in frame.",
-      "crop": { "w": 400, "h": 400, "format": "webp", "rect": "1556,1000,2147,2147" },
-      "rect_reason": "Landscape frame with the children right of centre and a lot of empty white wall to their left; the centred square would be mostly wall."
+      "source": "pexels",
+      "photo_id": "5560033",
+      "photo_page_url": "https://www.pexels.com/photo/5560033/",
+      "photographer": "Amina Filkins",
+      "licence": "Pexels Licence",
+      "shows": "A boy in a sage ribbed knit jumper and tan waffle joggers with white trainers, on white seamless. Styled kidswear from a studio lookbook shoot, not a candid snapshot - which is what the brief asked for.",
+      "crop": { "w": 400, "h": 400, "format": "webp" },
+      "no_rect_reason": "Pexels ignores `rect`, so this frame cannot be tightened.",
+      "known_compromise": "Its subject sits smaller in the disc than Women or Men, because the crop cannot be pulled in. The one kidswear photograph that COULD be tightened - Unsplash photo-1759313560181-de61e7235355, clean, no marks, outfit filling the frame - is on a saturated yellow seamless that broke the row of three. Both were rendered as 88px discs beside Women and Men before this was chosen; the row won over the single disc. Swap to that id if a louder Kids circle is ever wanted."
     },
     "bags": {
       "slot_key": "bags",
@@ -104,8 +112,102 @@
       "note": "NEW SLOT - did not exist in CIRCLE_ART before this round."
     }
   },
+  "type_tiles": {
+    "$comment": "TYPE_TILE_ART['fashion'] in apps/web/src/lib/tabArt.ts, read through typeTileArt(cat, key). The 'What are you looking for?' row, new this round, in this order: tops, sets, shirts, bags, caps, belts, scarves. All seven are 600x800 WebP - one ratio for the whole row, baked into the file rather than left to object-fit, so the row that was judged is the row that ships.",
+    "$brief": "Same quality bar as the circles, plus one literal rule: the photograph must match its label. A shirt on Shirts, a cap on Caps. Bags / caps / belts / scarves REUSE the four accessory-circle photographs at a second, portrait crop - explicitly permitted, and worth more than novelty here because those four were already opened at full size and cleared of brand marks on an earlier round (a cap search is a minefield of embroidered logos). They are separate storage objects under art/type/, not shared files: a 600x800 tile cannot share an object with a 400x400 circle.",
+    "tops": {
+      "slot_key": "tops",
+      "storage_path": "art/type/fashion--tops.webp",
+      "source": "unsplash",
+      "photo_id": "1780566759986-b09893d22b3d",
+      "photo_page_url": "https://unsplash.com/photos/stylish-woman-in-brown-shirt-and-black-pants-on-white-GgO2z2nMF7s",
+      "photographer": "Anton K Wibowo",
+      "licence": "Unsplash Licence",
+      "shows": "A washed brown oversized t-shirt over black trousers, on a woman seated on white seamless, with a gold pendant. The t-shirt fills the tile.",
+      "crop": { "w": 600, "h": 800, "format": "webp", "rect": "715,500,2200,2933" },
+      "rect_reason": "The uncropped frame is a whole seated figure and the t-shirt is a detail in the middle of it - it read as 'an outfit', not 'a top'. This box crops in on the tee.",
+      "note": "Same shoot (photo-1780566xxxxx) as art/hero/fashion-3.jpg, which is a different frame and is not currently rendered - HERO_ART['fashion'] points at art/hero/fashion-cedar-street.jpg. Different image, so not a duplicate, but worth knowing before either is changed."
+    },
+    "sets": {
+      "slot_key": "sets",
+      "storage_path": "art/type/fashion--sets.webp",
+      "source": "unsplash",
+      "photo_id": "1779406166955-371cb625567d",
+      "photo_page_url": "https://unsplash.com/photos/young-woman-in-light-blue-suit-stands-near-dried-flowers-b9M1ZKZr3LM",
+      "photographer": "ola szkolda",
+      "licence": "Unsplash Licence",
+      "shows": "A light blue two-piece - cropped blazer and matching high-waisted belted trousers - worn head to toe with blue suede heeled sandals, on a cream seamless. A vase of dried grasses stands at her feet.",
+      "crop": { "w": 600, "h": 800, "format": "webp", "rect": "0,250,4000,5333" },
+      "rect_reason": "The only tile that has to say 'these two pieces match', so it keeps the whole figure instead of cropping in.",
+      "checked": "The vase and dried grasses are a plain studio prop with no lettering on them."
+    },
+    "shirts": {
+      "slot_key": "shirts",
+      "storage_path": "art/type/fashion--shirts.webp",
+      "source": "unsplash",
+      "photo_id": "1603252109612-24fa03d145c8",
+      "photo_page_url": "https://unsplash.com/photos/man-in-white-button-up-shirt-GDebkNryTd4",
+      "photographer": "Nimble Made",
+      "licence": "Unsplash Licence",
+      "shows": "A crisp white button-up shirt - collar, placket, buttons and shoulder - on a man against a warm sand ground, cropped just above the mouth. No lettering anywhere on the garment.",
+      "crop": { "w": 600, "h": 800, "format": "webp", "rect": "2496,0,3360,4480" },
+      "rect_reason": "The source is a 6720x4480 landscape frame with the shirt right of centre; this takes the right-hand 3360px, which is the full height and the shirt."
+    },
+    "bags": {
+      "slot_key": "bags",
+      "storage_path": "art/type/fashion--bags.webp",
+      "source": "unsplash",
+      "photo_id": "1448582649076-3981753123b5",
+      "photo_page_url": "https://unsplash.com/photos/brown-duffel-bag-beside-white-and-brown-wooden-chair-9XiN0r2NWSM",
+      "photographer": "Erol Ahmed",
+      "licence": "Unsplash Licence",
+      "shows": "A tan canvas holdall - the barrel-shaped gym-bag silhouette - on a wooden floor in warm window light.",
+      "crop": { "w": 600, "h": 800, "format": "webp", "rect": "700,500,2100,2800" },
+      "rect_reason": "Tighter than the circle's rect: at 3:4 the wider box let the Eames chair back into the frame, which is the thing the circle's rect exists to remove.",
+      "reuse_of": "art/circle/fashion--bags.webp (same photograph, 400x400 square crop)"
+    },
+    "caps": {
+      "slot_key": "caps",
+      "storage_path": "art/type/fashion--caps.webp",
+      "source": "unsplash",
+      "photo_id": "1678721938524-1a3ee398de2a",
+      "photo_page_url": "https://unsplash.com/photos/a-black-and-white-trucker-hat-on-a-white-background-1a3ee398de2a",
+      "photographer": "Fabio T.",
+      "licence": "Unsplash Licence",
+      "shows": "A completely blank trucker cap - white front panel, charcoal mesh sides, black brim - on a plain pale grey ground. No crest, no wordmark, no text.",
+      "crop": { "w": 600, "h": 800, "format": "webp", "rect": "1800,400,2400,3200" },
+      "rect_reason": "Centres the cap in a portrait box; the uncropped 6000x4000 frame has it small in a wide field of grey.",
+      "reuse_of": "art/circle/fashion--caps.webp (same photograph, 400x400 square crop)"
+    },
+    "belts": {
+      "slot_key": "belts",
+      "storage_path": "art/type/fashion--belts.webp",
+      "source": "unsplash",
+      "photo_id": "1611937685025-8d1df67a80b6",
+      "photo_page_url": "https://unsplash.com/photos/black-leather-belt-on-blue-denim-jeans-KhpPdaFGQvY",
+      "photographer": "Hermes Rivera",
+      "licence": "Unsplash Licence",
+      "shows": "A single tan leather belt with a plain pin buckle, worn over blue trousers under an untucked white shirt, cropped tight at the waist.",
+      "crop": { "w": 600, "h": 800, "format": "webp", "rect": "1800,400,2400,3200" },
+      "reuse_of": "art/circle/fashion--belts.webp (same photograph, 400x400 square crop)",
+      "known_compromise": "The darkest tile in the row. The belt still reads first, but if the row is ever rebalanced for light this is the one to replace."
+    },
+    "scarves": {
+      "slot_key": "scarves",
+      "storage_path": "art/type/fashion--scarves.webp",
+      "source": "unsplash",
+      "photo_id": "1760551938129-01da7f950fe1",
+      "photo_page_url": "https://unsplash.com/photos/a-woman-wearing-a-scarf-and-white-shirt-ErlWRydhR-g",
+      "photographer": "amin naderloei",
+      "licence": "Unsplash Licence",
+      "shows": "An oversized camel-and-brown check mohair scarf with a fringed end, wound over a white shirt with turned-back cuffs. THE HEAD IS CROPPED OUT: the scarf fills the tile.",
+      "crop": { "w": 600, "h": 800, "format": "webp", "rect": "816,2100,3000,4000" },
+      "rect_reason": "The circle's crop of this photograph includes the model's face against a dark brick doorway, which at tile size reads as a portrait with a scarf in it rather than as a scarf. Starting below the chin gives the frame to the garment and pushes the dark doorway into a corner.",
+      "reuse_of": "art/circle/fashion--scarves.webp (same photograph, 400x400 square crop including the face)"
+    }
+  },
   "tiles": {
-    "$comment": "CATEGORY_TILE_ART['fashion'] in apps/web/src/lib/tabArt.ts. All four are 600x800 WebP - identical crop ratio, as the brief requires - and all four are editorial fashion photography: a full-length styled figure on a pale seamless studio ground, in cream / camel / white / black.",
+    "$comment": "CATEGORY_TILE_ART['fashion'] in apps/web/src/lib/tabArt.ts - the four SAVED-VIEW tiles (New in / Most gifted / Under $75 / Deals), untouched this round and listed here for provenance only. All four are 600x800 WebP - identical crop ratio, as the brief requires - and all four are editorial fashion photography: a full-length styled figure on a pale seamless studio ground, in cream / camel / white / black.",
     "new-in": {
       "slot_key": "new-in",
       "storage_path": "art/tile/fashion--new-in.webp",

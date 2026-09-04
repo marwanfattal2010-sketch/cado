@@ -81,6 +81,50 @@ export function categoryTileArt(cat: string, key: string): string | null {
   return path ? productImageUrl(path) : null;
 }
 
+/**
+ * "What are you looking for?" — the TYPE tiles.
+ *
+ * A separate map from CATEGORY_TILE_ART on purpose. Those four are saved
+ * VIEWS ("New in", "Under $75") and their pictures are the idea of the view;
+ * these seven are PRODUCT TYPES, and the rule for them is literal — the Shirts
+ * tile shows a shirt, the Caps tile shows a cap. Mixing the two maps would put
+ * a tile whose picture may be anything next to a tile whose picture may not.
+ *
+ * Also a separate storage prefix, `art/type/`, rather than `art/tile/`. Four
+ * of these seven — bags, caps, belts, scarves — are the SAME PHOTOGRAPHS as
+ * the accessory circles, re-cropped from 400x400 square to 600x800 portrait,
+ * and one path per crop is what keeps the two rows from fighting over a file:
+ * a tile is a different shape from a circle, so it cannot share the object.
+ *
+ * All seven are 600x800 WebP — one ratio for the whole row, baked into the
+ * file rather than left to `object-fit`, for the reason set out over
+ * CATEGORY_TILE_ART above. Re-run scripts/seed-tab-art.mjs to change any of
+ * them; the extension is part of the path, so a format change moves the file.
+ */
+const TYPE_TILE_ART: Record<string, Record<string, string>> = {
+  fashion: {
+    tops: "art/type/fashion--tops.webp",
+    sets: "art/type/fashion--sets.webp",
+    shirts: "art/type/fashion--shirts.webp",
+    bags: "art/type/fashion--bags.webp",
+    caps: "art/type/fashion--caps.webp",
+    belts: "art/type/fashion--belts.webp",
+    scarves: "art/type/fashion--scarves.webp",
+  },
+};
+
+/**
+ * A type tile's picture, or null when that category has no type row.
+ *
+ * Deliberately returns null rather than throwing the way `art()` does: the
+ * type row exists on Fashion only, so an unknown category here is the normal
+ * case and not a missing image. The caller decides whether to render the row.
+ */
+export function typeTileArt(cat: string, key: string): string | null {
+  const path = TYPE_TILE_ART[cat]?.[key];
+  return path ? productImageUrl(path) : null;
+}
+
 const TILE_ART: Record<TileId, string> = {
   "new-in": "art/tile/new-in.jpg",
   "most-gifted": "art/tile/most-gifted.jpg",
@@ -94,6 +138,16 @@ const TILE_ART: Record<TileId, string> = {
   deals: "art/tile/deals.jpg",
   "best-sellers": "art/tile/best-sellers.jpg",
   "store-picks": "art/tile/store-picks.jpg",
+  /*
+   * The three garment cuts are tiles too, because a tile id is what the
+   * results page reads out of the URL — so they have to appear here even
+   * though only Fashion draws them, and only ever through TYPE_TILE_ART
+   * above. Pointing them at the same files keeps this map total rather than
+   * inventing a picture that nothing renders.
+   */
+  tops: "art/type/fashion--tops.webp",
+  sets: "art/type/fashion--sets.webp",
+  shirts: "art/type/fashion--shirts.webp",
 };
 
 /**

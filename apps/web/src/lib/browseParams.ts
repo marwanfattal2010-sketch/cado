@@ -129,6 +129,9 @@ const TILES: TileId[] = [
   "store-picks",
   "ready-to-gift",
   "deals",
+  "tops",
+  "sets",
+  "shirts",
 ];
 
 const list = (v: string | null) =>
@@ -272,6 +275,15 @@ function matchesTile(p: FeedProduct, tile: TileId, look: Lookup): boolean {
     }
     case "under-75":
       return p.price < UNDER_TILE_MAX;
+    /*
+     * Cut, read off the tag migration 0099 wrote from each product title.
+     * A product whose title never said what it was carries no type tag and
+     * correctly appears behind none of these three.
+     */
+    case "tops":
+    case "sets":
+    case "shirts":
+      return (p.tags ?? []).includes(`type:${tile}`);
     case "most-gifted":
     case "best-picks":
       /*

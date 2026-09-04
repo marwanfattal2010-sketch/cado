@@ -53,6 +53,9 @@ const ROSE = "#A64E62";
  * lost each other rather than as a row. `space-around` fills the same width
  * and keeps them a pair — the florist row is at two today.
  */
+/** Ceiling on the florist row. Never a floor — see the row itself. */
+const FLORIST_ROW_MAX = 4;
+
 const spread = (n: number) =>
   n === 2 ? " justify-around" : n <= 3 ? " justify-between" : "";
 
@@ -404,12 +407,27 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
               See all {florists.length}
             </Link>
           </div>
-          <div
-            className={`scroll-row${spread(florists.length)}`}
-            style={{ ["--row-gap" as string]: "16px" }}
-          >
-            {florists.map((f) => (
-              <Link key={f.id} to={storePath({ slug: f.slug })} className="w-[72px] shrink-0 text-center">
+          {/*
+            UP TO FOUR, IN ONE ROW, AND NEVER PADDED.
+
+            The row shows every florist that actually has flowers on CADO, to a
+            ceiling of four. Today that is two, and two is what it shows — the
+            gap is not filled with invented shops, and "See all" states the real
+            number rather than the ceiling.
+
+            Each cell is a quarter of the row whatever the count, so two shops
+            do not inflate into two enormous discs; they sit at the same size
+            they would at four, spaced evenly. Holds at 375px: a quarter of the
+            content box is 78px, and the disc is capped at 72.
+          */}
+          <div className="flex justify-evenly gap-x-2 px-[var(--page-x)]">
+            {florists.slice(0, FLORIST_ROW_MAX).map((f) => (
+              <Link
+                key={f.id}
+                to={storePath({ slug: f.slug })}
+                style={{ width: "calc((100% - 3 * 8px) / 4)", maxWidth: 72 }}
+                className="min-w-0 text-center"
+              >
                 <StoreLogoCircle name={f.name} logoUrl={f.logoUrl} />
                 <span className="mt-1.5 line-clamp-2 block min-h-[26px] break-words text-[10.5px] leading-tight text-[#5a544e]">
                   {f.name}

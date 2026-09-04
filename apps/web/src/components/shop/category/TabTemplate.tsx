@@ -12,7 +12,7 @@ import { StoreLogoCircle } from "../StoreLogoCircle";
 import { storePath } from "../../../lib/routes";
 import { formatMoney } from "../../../lib/money";
 import { productImageUrl } from "../../../lib/images";
-import { circleArt, heroArt, tileArt } from "../../../lib/tabArt";
+import { circleArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
 import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
 import { categoryStores, storeDisplayName } from "../../../lib/browse";
@@ -64,7 +64,35 @@ const STORE_LOGOS = new Map(
 const STORE_ROW_MAX = 8;
 
 /** The "Shop for" order, by subcategory slug. See `circles` below. */
-const CIRCLE_ORDER = ["women", "men", "kids-fashion", "bags", "caps", "belts", "scarves"];
+/**
+ * "Shop for" is DEPARTMENTS only now — who you are shopping for.
+ *
+ * Bags, Caps, Belts and Scarves were here too, which made the row a mix of two
+ * different questions: who is it for, and what is it. They moved to the type
+ * row below, where the second question is asked properly.
+ */
+const CIRCLE_ORDER = ["women", "men", "kids-fashion"];
+
+/**
+ * "WHAT ARE YOU LOOKING FOR?" — the second question, asked properly.
+ *
+ * Seven types in a stated order. Four are real Fashion subcategories and
+ * filter on `type`; three are garment cuts that filter on a tag written by
+ * migration 0099, because `subcategory_id` holds one value and a `tops`
+ * subcategory would have emptied the department circles above.
+ *
+ * `kind` is what decides which URL a tile writes. Both land on the same
+ * results page with the same sort row and facet chips.
+ */
+const TYPE_TILES: { key: string; label: string; kind: "type" | "tile" }[] = [
+  { key: "tops", label: "Tops", kind: "tile" },
+  { key: "sets", label: "Sets", kind: "tile" },
+  { key: "shirts", label: "Shirts", kind: "tile" },
+  { key: "bags", label: "Bags", kind: "type" },
+  { key: "caps", label: "Caps", kind: "type" },
+  { key: "belts", label: "Belts", kind: "type" },
+  { key: "scarves", label: "Scarves", kind: "type" },
+];
 
 export function TabTemplate({ tab }: { tab: BrowseTab }) {
   const categories = useCategories();
@@ -136,7 +164,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       return i === -1 ? CIRCLE_ORDER.length : i;
     };
     return (subcategoriesQuery.data ?? [])
-      .filter((s) => (counts.get(s.id) ?? 0) > 0)
+      .filter((s) => (counts.get(s.id) ?? 0) > 0 && CIRCLE_ORDER.includes(s.slug))
       .sort((a, b) => rank(a.slug) - rank(b.slug))
       .map((s) => ({ slug: s.slug, name: s.name, photo: circleArt(slug, s.slug) }));
   }, [subcategoriesQuery.data, all, slug]);
@@ -225,11 +253,22 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
   const shownStores = stores.slice(0, STORE_ROW_MAX);
   const storeCircleW = "calc((100% - 31px) / 4)";
 
-  const tiles: { id: TileId; label: string; show: boolean }[] = [
-    { id: "new-in", label: "New in", show: newCount > 0 },
-    { id: "most-gifted", label: "Most gifted", show: all.length > 0 },
-    { id: "under-75", label: `Under $${UNDER_TILE_MAX}`, show: underCount > 0 },
-    { id: "deals", label: "Deals", show: deals.length > 0 && maxOff > 0 },
+  /*
+   * The four shortcuts. `note` is the second line on each card and every one
+   * of them is a real number off this tab: how many arrived in the window, how
+   * many are under the threshold, the largest live discount. Nothing here is
+   * typed in, and a card whose number is zero does not render.
+   */
+  const tiles: { id: TileId; label: string; note: string; show: boolean }[] = [
+    { id: "new-in", label: "New in", note: `${newCount} just landed`, show: newCount > 0 },
+    { id: "most-gifted", label: "Most gifted", note: "Popular picks", show: all.length > 0 },
+    {
+      id: "under-75",
+      label: `Under ${UNDER_TILE_MAX}`,
+      note: `${underCount} under ${UNDER_TILE_MAX}`,
+      show: underCount > 0,
+    },
+    { id: "deals", label: "Deals", note: `Up to -${maxOff}%`, show: deals.length > 0 && maxOff > 0 },
   ];
 
   return (
@@ -290,12 +329,16 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               tab sells behind a gesture nobody is told about. The last row is
               left-aligned rather than centred so the columns line up with the
               row above it. */}
-          <div className="flex flex-wrap gap-x-2 gap-y-3.5 px-[var(--page-x)]">
+          {/* THREE, so they sit across the row rather than bunching left.
+              Fixed 80px discs with the space distributed between them: a
+              1fr-column grid would blow each circle up to 110px and make the
+              row shout louder than the tab. */}
+          <div className="flex justify-evenly gap-x-2 px-[var(--page-x)]">
             {circles.map((c) => (
               <Link
                 key={c.slug}
                 to={browseHref(slug, { type: [c.slug] })}
-                style={{ width: "calc((100% - 3 * 8px) / 4)" }}
+                style={{ width: 80 }}
                 className="min-w-0 text-center transition-transform duration-press ease-out active:scale-[0.96]"
               >
                 <span className="block aspect-square w-full overflow-hidden rounded-pill bg-[#EEEAE4]">
@@ -310,38 +353,66 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         </section>
       ) : null}
 
-      {/* 4 — tall portrait tiles */}
+      {/* 4 — "What are you looking for?", the same tall tile the four
+          shortcuts used to be. Directly under the department circles, because
+          it is the natural follow-on question. Seven of them, so this one IS a
+          swipe row — four across would make each tile 88px wide. */}
       <section className="pt-5">
+        <h2 className="px-[var(--page-x)] pb-3 text-[16px] font-bold tracking-[-0.2px] text-persimmon">
+          What are you looking for?
+        </h2>
         <div className="scroll-row" style={{ ["--row-gap" as string]: "10px" }}>
+          {TYPE_TILES.map((t) => (
+            <Link
+              key={t.key}
+              to={
+                t.kind === "type"
+                  ? browseHref(slug, { type: [t.key] })
+                  : browseHref(slug, { tile: t.key as TileId })
+              }
+              className="relative block h-[196px] w-[148px] shrink-0 overflow-hidden rounded-[12px] bg-[#EEEAE4] transition-transform duration-press ease-out active:scale-[0.97]"
+            >
+              <Img
+                src={typeTileArt(slug, t.key) ?? ""}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-0 z-[1]"
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,.62) 0%, rgba(0,0,0,0) 55%)" }}
+              />
+              <span className="absolute bottom-[12px] left-[12px] right-[12px] z-[2] text-[15px] font-semibold leading-tight text-white">
+                {t.label}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* 4b — the four shortcuts, now horizontal cards in a 2x2 grid.
+          They were tall tiles in a swipe row, which hid two of the four behind
+          a drag. All four are on screen at once now, at one size, and the row
+          cannot scroll sideways. */}
+      <section className="px-[var(--page-x)] pt-5">
+        <div className="grid grid-cols-2 gap-2">
           {tiles
             .filter((t) => t.show)
             .map((t) => (
               <Link
                 key={t.id}
                 to={browseHref(slug, { tile: t.id })}
-                className="relative block h-[196px] w-[148px] shrink-0 overflow-hidden rounded-[12px] bg-[#EEEAE4] transition-transform duration-press ease-out active:scale-[0.97]"
+                className="flex items-center gap-2.5 overflow-hidden rounded-[12px] border border-[#EFEBE5] bg-white p-2 transition-transform duration-press ease-out active:scale-[0.97]"
               >
-                <Img
-                  src={tileArt(t.id, slug) ?? ""}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                {/* A SCRIM, NOT A LABEL BAR. The solid block that used to sit
-                    here painted every tile the same colour, so four different
-                    photographs arrived under one flat bar and the row fought
-                    the page. A gradient over the photo itself lets each tile
-                    take its colour from its own picture, and the type still
-                    clears 4.5:1 because the darkest part of the ramp is under
-                    it. */}
-                <span
-                  aria-hidden
-                  className="absolute inset-0 z-[1]"
-                  style={{
-                    background:
-                      "linear-gradient(to top, rgba(0,0,0,.62) 0%, rgba(0,0,0,0) 55%)",
-                  }}
-                />
-                <span className="absolute bottom-[12px] left-[12px] right-[12px] z-[2] text-[15px] font-semibold leading-tight text-white">
-                  {t.label}
+                <span className="block h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[9px] bg-[#EEEAE4]">
+                  <Img src={tileArt(t.id, slug) ?? ""} className="h-full w-full object-cover" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-bold leading-tight text-ink">
+                    {t.label}
+                  </span>
+                  <span className="mt-0.5 block truncate text-[11.5px] leading-tight text-muted">
+                    {t.note}
+                  </span>
                 </span>
               </Link>
             ))}

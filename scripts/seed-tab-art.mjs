@@ -138,6 +138,63 @@
  *   1639891673700  grad    — a school's name embossed on the cover
  *   1559443065     grad    — "2019" on the tassel charm, and a violent blue
  *
+ * REJECTED ON THE LOOKBOOK ROUND (three circles + seven type tiles, Sep 2026).
+ * The brief this time is Zara/SHEIN/Trendyol category-tile photography: a full
+ * styled outfit, considered light, a clean or plain-toned ground, cropped so
+ * the CLOTHES read at 80px rather than the face. Every one of these was opened
+ * at full size, and — again — not one of them could have been caught from its
+ * thumbnail, let alone its alt text:
+ *   1724365309223  kids    — nearly shipped. A styled kidswear frame on plain
+ *                            lilac-grey, and the child is holding a LOUIS
+ *                            VUITTON monogram handbag. Invisible on a 260px
+ *                            contact sheet, unmissable at full size. Her
+ *                            trainers also carry a maker's emblem.
+ *   1788500304887  men     — nearly shipped. Brown tee, tan overshirt, beige
+ *                            shorts on cream seamless, which is exactly the
+ *                            brief; it has a small tone-on-tone maker's mark
+ *                            embroidered mid-chest and another on each shoe
+ *                            tongue. Same fault as 1521369909029 above.
+ *   1575862469264  men     — camel trench on white seamless, and a black size
+ *                            label with legible lettering ("UK", "US 2…") on
+ *                            the shirt worn under it.
+ *   1787435943727  men     — a suit jacket worn on a bare chest; the brief
+ *                            says full styled outfit.
+ *   1661080561444  men     — crudely cut out of its background (orange fringe
+ *                            around one shoe) and a chest embroidery.
+ *   1766103809717  men     — greyscale, so it cannot join a colour row.
+ *   1602956280248  men     — soft focus, venetian-blind shadows, hand across
+ *                            the face. Not a lookbook frame.
+ *   1780566760434  tops    — grey oversized tee on white seamless, and a NIKE
+ *                            swoosh on both trainers.
+ *   1740711152088  shirts  — a navy linen shirt on a hanger, clean ground, and
+ *                            the printed care label on the tee behind it reads
+ *                            "100%… MADE IN CHINA… M". Same fault as the
+ *                            florist's care tag at 1680563094046.
+ *   1737687478817  tops    — shopfront signage legible behind the model.
+ *   pexels 5560013 kids    — the right shoot and the wrong frame: an OLD NAVY
+ *                            tag on the cardigan sleeve.
+ *   pexels 38778553 kids   — printed wordmarks across the boy's denim shirt,
+ *                            and an Apple Watch on his wrist.
+ *
+ * AND ONE REJECTED FOR A REASON THAT IS NOT A FAULT, so nobody re-picks it
+ * thinking it was missed:
+ *   1619603364937  men     — a camel overcoat on a warm cream wall, no marks,
+ *                            no text, the best men's frame found this round.
+ *                            It is ALREADY IN THIS REPO, as
+ *                            apps/web/public/tiles/fashion-men-circle.jpg, and
+ *                            that file is still served: browse_tiles rows of
+ *                            type `category_circles` are read by TabPanel.tsx
+ *                            and AllCategoriesSheet.tsx. Shipping it here would
+ *                            put one photograph in two places, which is the
+ *                            near-miss recorded at 1601379327928 above.
+ *   1759313560181  kids    — clean, no marks, and the best-FRAMED kidswear
+ *                            photograph found: the outfit fills the disc where
+ *                            the shipped one only half does. It is on a
+ *                            saturated yellow seamless, and beside a cream
+ *                            drape and a white studio it broke the row. Judged
+ *                            side by side at 88px before it was dropped. If the
+ *                            Kids circle is ever wanted louder, use this.
+ *
  * Usage:  node scripts/seed-tab-art.mjs [--dry]
  */
 import { readFileSync } from "node:fs";
@@ -177,9 +234,29 @@ const headers = { apikey: key, Authorization: `Bearer ${key}` };
  * picture, and the tall tiles get 3:4 for the same reason.
  */
 const SQUARE = { w: 400, h: 400, fmt: "webp" }; // "Shop for" circles
-const TALL = { w: 600, h: 800, fmt: "webp" }; // entry tiles
+const TALL = { w: 600, h: 800, fmt: "webp" }; // entry tiles and type tiles
 const spec = (v) => (typeof v === "string" ? { id: v } : v);
 const MIME = { jpg: "image/jpeg", webp: "image/webp" };
+
+/**
+ * `src: "pexels"` — the second free-licence pool, added this round.
+ *
+ * Two of the three lookbook circles came from Pexels because Unsplash's free
+ * pool did not have a usable one: every kidswear frame on a pale ground either
+ * carried a brand mark (a Louis Vuitton bag, an Old Navy sleeve tag) or was a
+ * candid snapshot, and the one clean menswear frame that fitted is already in
+ * this repo under another name. See the log at the top.
+ *
+ * THE IMPORTANT DIFFERENCE IS THAT PEXELS HAS NO `rect`.
+ *
+ * Its CDN takes w / h / fit=crop / fm and the named `crop` anchors, and
+ * silently IGNORES `rect` and `crop=focalpoint` — a rect'd URL returns 200 with
+ * the whole frame, so a bad crop looks like a working one. Both Pexels slots
+ * below are therefore framed by the photograph itself and take the centre
+ * square; `job()` throws if anyone later adds a rect to one, rather than
+ * letting it be quietly dropped.
+ */
+const PEXELS = { src: "pexels" };
 
 /**
  * Recipient art. Each one has to be unmistakably a different person's gift
@@ -314,6 +391,83 @@ const CATEGORY_TILES = {
 };
 
 /**
+ * "What are you looking for?" — SEVEN TYPE TILES, new this round.
+ *
+ * The row above these (New in / Most gifted / Under $75 / Deals) is four saved
+ * VIEWS, and its pictures are the idea of a view. This row is seven PRODUCT
+ * TYPES, and the rule is literal: the Shirts tile is a shirt, the Caps tile is
+ * a cap. That is the whole test, and it is the one a browsing shopper applies
+ * in about a fifth of a second.
+ *
+ * FOUR OF THE SEVEN ARE PHOTOGRAPHS ALREADY IN THIS FILE. Bags, caps, belts
+ * and scarves are the same sources as the accessory circles above, re-cropped
+ * from 400x400 square to 600x800 portrait and uploaded under `art/type/`. That
+ * is deliberate and it is not "the same slot twice": the circles are a
+ * different shape, so a shared file is impossible, and each crop is its own
+ * object. It also means four of these were already opened at full size and
+ * cleared of brand marks on an earlier round — which, given that a cap search
+ * is a minefield of embroidered logos, is worth more than novelty.
+ *
+ * All seven are 600x800 in the FILE. A uniform ratio is what makes a row of
+ * seven read as a row rather than seven pictures, and baking it in means the
+ * row that was judged is the row that ships — see the note over `photo()`.
+ *
+ * Every rect below was chosen by looking at the row at tile size, not by
+ * arithmetic on the subject's bounding box. Three of them moved after that
+ * look: Tops opened as a whole seated figure and the t-shirt was a detail in
+ * it, Bags kept half an Eames chair, and Scarves — cropped centre — was a face
+ * in a dark doorway with a scarf under it.
+ */
+const TYPE_TILES = {
+  fashion: {
+    // A washed brown t-shirt over black trousers, seated on white seamless,
+    // with a gold pendant. Cropped in on the tee so the TOP is the subject and
+    // not the outfit: centred, this frame is a full seated figure and the
+    // t-shirt is a detail in the middle of it. Anton K Wibowo.
+    tops: { ...TALL, id: "1780566759986-b09893d22b3d", rect: "715,500,2200,2933" },
+    // A light blue two-piece — cropped blazer and matching belted trousers —
+    // head to toe on a cream seamless. The one tile that has to say "these two
+    // things match", so it keeps the whole figure rather than cropping in. The
+    // vase of dried flowers at its feet is a plain studio prop with no
+    // lettering on it. ola szkolda.
+    sets: { ...TALL, id: "1779406166955-371cb625567d", rect: "0,250,4000,5333" },
+    // A crisp white shirt — collar, placket and shoulder — on a warm sand
+    // ground, cropped above the mouth. The source is landscape and the shirt
+    // sits right of centre, so the rect takes the right-hand 3360px of it.
+    // Nimble Made.
+    shirts: { ...TALL, id: "1603252109612-24fa03d145c8", rect: "2496,0,3360,4480" },
+    /*
+     * REUSED FROM THE CIRCLES, RE-CROPPED. All four keep their original
+     * rejection history — see the header — and none of them shares a file with
+     * its circle, only a source photograph.
+     */
+    // The tan canvas holdall, tighter than the circle takes it: at 3:4 the
+    // wider box kept the Eames chair that the circle's rect exists to remove.
+    // Erol Ahmed.
+    bags: { ...TALL, id: "1448582649076-3981753123b5", rect: "700,500,2100,2800" },
+    // The blank black-and-white trucker cap on pale grey. The one tile that is
+    // a plain object on a plain ground, which is exactly right for a cap and
+    // would be wrong for a garment. Fabio T.
+    caps: { ...TALL, id: "1678721938524-1a3ee398de2a", rect: "1800,400,2400,3200" },
+    // The single tan leather belt with a plain pin buckle, worn at the waist
+    // under an untucked white shirt. The darkest tile in the row, and the belt
+    // still reads first. Hermes Rivera.
+    belts: { ...TALL, id: "1611937685025-8d1df67a80b6", rect: "1800,400,2400,3200" },
+    /*
+     * The oversized camel-and-brown check mohair scarf — AND THE HEAD IS GONE.
+     *
+     * The circle crop of this photograph includes the model's face against a
+     * dark brick doorway, which at tile size is a portrait with a scarf in it.
+     * Starting the rect below the chin gives the whole frame to the scarf and
+     * the white shirt cuffs, drops the dark doorway to a corner, and turns the
+     * odd tile out of the seven into one that matches the rest.
+     * amin naderloei.
+     */
+    scarves: { ...TALL, id: "1760551938129-01da7f950fe1", rect: "816,2100,3000,4000" },
+  },
+};
+
+/**
  * Hero slides, per tab. Fashion only for now — the other ten still take their
  * hero from a product photo, and this is the template that will replace that.
  */
@@ -406,35 +560,52 @@ const CIRCLES = {
    */
   fashion: {
     /*
-     * A camel wool coat over a sage knit top and midi skirt with tan block
-     * heels, against a white shopfront. A full styled outfit, head to toe, in
-     * even daylight.
+     * WOMEN, MEN AND KIDS ARE RE-SHOT AS LOOKBOOK PHOTOGRAPHY (Sep 2026), and
+     * this refines the round above rather than reversing it.
      *
-     * The rect is doing two jobs. Centred, the square crop runs head-to-shin
-     * and the outfit is too small to read at 80px, so this takes a tighter box
-     * — head to upper thigh — which is where the coat and the knit actually
-     * are. It also starts at x=800, and a small red fire notice screwed to the
-     * wall at x≈505-629 falls outside that. Illegible at 80px either way, but
-     * a printed sign is exactly the thing this project keeps shipping by
-     * accident, so it is cropped out rather than argued about.
-     * The AW Creative Digital Marketing.
+     * The three it replaces were a woman against a shopfront, a man against an
+     * olive studio wall and two children against white brick: three real
+     * photographs of people, chosen one at a time, that read as three stock
+     * portraits rather than one campaign. Marwan asked for the thing Zara and
+     * Trendyol put on a category tile — a full styled outfit, considered
+     * light, a clean or plain-toned ground, and the frame cropped so THE
+     * CLOTHES read at 80px, not the face.
+     *
+     * So all three are now one register: a plain pale studio ground, soft
+     * daylight, warm neutrals with one colour each — aubergine, camel,
+     * sage — and a crop that puts the garment, not the head, in the middle of
+     * the disc. They were judged as a row of three 88px discs, which is where
+     * the Kids frame that "obviously" won on a contact sheet lost.
      */
-    women: { ...SQUARE, id: "1618333452884-5c8d211ed2ad", rect: "800,1090,1410,1410" },
-    // A man in a grey herringbone blazer over a navy shirt, against an
-    // olive-grey studio wall. Smart rather than corporate, warm-lit, and the
-    // centre square lands on face-to-hips without help. Three Throne
-    // Productions.
-    men: { ...SQUARE, id: "1649712041612-021cf78bca23" },
+    // A deep aubergine satin shirt over ivory wide-leg trousers, against a
+    // cream draped backdrop in even light. The rect drops the head at the chin
+    // and ends mid-calf, so the disc is shirt-and-trousers rather than a
+    // portrait. GLOBALDSIO IT SOLUTION.
+    women: { ...SQUARE, id: "1704775988086-f899d6566a4c", rect: "757,1300,2800,2800" },
     /*
-     * One boy and one girl, which is what the brief asked for: a girl in a
-     * mustard textured dress and a boy in a navy-and-grey striped knit,
-     * against a white-painted brick wall.
-     *
-     * The frame is landscape and the children sit right of centre with a lot
-     * of empty wall to their left, so the centred square would be mostly wall.
-     * The rect keeps the pair filling the disc. Jennifer Kalenberg.
+     * A camel wool overcoat over a burgundy roll-neck and navy trousers, on a
+     * plain white studio ground. Head to toe in the source; the centre square
+     * lands on collar-to-knee, which is the coat, so no rect is needed — and
+     * none is possible, because this is a Pexels frame. The only hardware on
+     * it is a small silver leaf-shaped pin on the lapel, opened at 6x to check:
+     * an ornament, not a wordmark. Dima Valkov.
      */
-    "kids-fashion": { ...SQUARE, id: "1706306611201-305dba63850e", rect: "1556,1000,2147,2147" },
+    men: { ...SQUARE, ...PEXELS, id: "6211656" },
+    /*
+     * A boy in a sage ribbed knit and tan waffle joggers on white seamless —
+     * styled kidswear, not a candid snapshot, which is what the brief asked
+     * for. Same white studio and same warm-neutral palette as the two beside
+     * it, which is why it is here.
+     *
+     * ITS SUBJECT IS SMALLER IN THE DISC THAN THE OTHER TWO, and that is a
+     * known trade rather than an oversight: Pexels ignores `rect`, so this
+     * frame cannot be tightened, and the one kidswear photograph that could be
+     * (1759313560181, on Unsplash) sits on a saturated yellow seamless that
+     * broke the row. Judged both ways at 88px; the row won. If a tighter Kids
+     * disc ever matters more than the row reading as one campaign, that id is
+     * in the log at the top of this file. Amina Filkins.
+     */
+    "kids-fashion": { ...SQUARE, ...PEXELS, id: "5560033" },
     /*
      * A tan canvas holdall — the barrel-shaped gym-bag silhouette — on a
      * wooden floor in warm window light.
@@ -494,6 +665,24 @@ async function upload(path, buf, fmt) {
   if (!res.ok) throw new Error(`upload ${path}: ${res.status} ${await res.text()}`);
 }
 
+/**
+ * Pexels' CDN. Same idea as `photo()` below and a much smaller dial set: no
+ * `rect`, so what you get is the centre box of the requested shape. `crop`
+ * still works as a named anchor ("top", "bottom") if a slot ever needs one.
+ */
+async function pexelsPhoto({ id, w = 900, h, fmt = "jpg", crop }) {
+  const q = new URLSearchParams({ auto: "compress", cs: "tinysrgb", w: String(w), fm: fmt });
+  if (h) {
+    q.set("h", String(h));
+    q.set("fit", "crop");
+    if (crop) q.set("crop", crop);
+  }
+  const url = `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?${q}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`pexels ${id}: ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 async function photo({ id, w = 900, h, fmt = "jpg", crop, rect }) {
   // 900px: these are shown at 62px in a circle and 124px on a tile, so the
   // source only has to survive a 3x screen, and a 2MB hero would be waste.
@@ -536,6 +725,11 @@ async function photo({ id, w = 900, h, fmt = "jpg", crop, rect }) {
  */
 const job = (base, v, extra = {}) => {
   const s = { ...spec(v), ...extra };
+  // A rect on a Pexels slot is not a smaller crop, it is a no-op that returns
+  // 200 — which is how a wrong picture ships looking like a right one.
+  if (s.src === "pexels" && s.rect) {
+    throw new Error(`${base}: Pexels ignores rect. Frame it in the source photograph instead.`);
+  }
   return { ...s, path: `${base}.${s.fmt ?? "jpg"}` };
 };
 
@@ -544,6 +738,12 @@ const jobs = [
   ...Object.entries(TILES).map(([k, v]) => job(`art/tile/${k}`, v)),
   ...Object.entries(CATEGORY_TILES).flatMap(([cat, tiles]) =>
     Object.entries(tiles).map(([k, v]) => job(`art/tile/${cat}--${k}`, v))
+  ),
+  // `art/type/`, not `art/tile/` — four of these are the accessory circles at
+  // a second crop, and a separate prefix is what lets one photograph have two
+  // shapes without two slots claiming one object. See TYPE_TILES above.
+  ...Object.entries(TYPE_TILES).flatMap(([cat, tiles]) =>
+    Object.entries(tiles).map(([k, v]) => job(`art/type/${cat}--${k}`, v))
   ),
   ...Object.entries(CIRCLES).flatMap(([cat, vals]) =>
     Object.entries(vals).map(([k, v]) => job(`art/circle/${cat}--${k}`, v))
@@ -562,13 +762,16 @@ const jobs = [
 const dupes = jobs.map((j) => j.path).filter((p, i, a) => a.indexOf(p) !== i);
 if (dupes.length) throw new Error(`Two slots claim the same path: ${dupes.join(", ")}`);
 
+const fetchPhoto = (j) => (j.src === "pexels" ? pexelsPhoto(j) : photo(j));
+const label = (j) => (j.src === "pexels" ? `pexels-${j.id}` : `photo-${j.id}`);
+
 for (const j of jobs) {
   const size = j.h ? ` ${j.w}x${j.h}` : "";
   if (DRY) {
-    console.log(`  + ${j.path}${size}  <- photo-${j.id} — dry run`);
+    console.log(`  + ${j.path}${size}  <- ${label(j)} — dry run`);
     continue;
   }
-  await upload(j.path, await photo(j), j.fmt ?? "jpg");
-  console.log(`  + ${j.path}${size}  <- photo-${j.id}`);
+  await upload(j.path, await fetchPhoto(j), j.fmt ?? "jpg");
+  console.log(`  + ${j.path}${size}  <- ${label(j)}`);
 }
 console.log(`\n${DRY ? "Would upload" : "Uploaded"} ${jobs.length} curated images.`);
