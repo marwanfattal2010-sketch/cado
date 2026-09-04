@@ -91,8 +91,49 @@ const TILE_ART: Record<TileId, string> = {
  * old product-photo hero rather than showing nothing.
  */
 const HERO_ART: Record<string, string[]> = {
-  fashion: ["art/hero/fashion-1.jpg", "art/hero/fashion-2.jpg", "art/hero/fashion-3.jpg"],
+  // ONE slide, and it is Cedar Street Fashion's own shop photograph — a copy of
+  // the store's cover, uploaded here so the hero cannot change if the store
+  // later edits its cover. The three stock model shots it replaced showed
+  // nobody's shop; this one shows a real CADO store's rails.
+  fashion: ["art/hero/fashion-cedar-street.jpg"],
+  // The peony photograph the Flowers hero already shows. Declared as a
+  // constant path rather than queried, so the hero cannot change when the
+  // catalogue does — but it is the same picture, because the brief says keep
+  // the current hero exactly.
+  "flowers-gifts": ["e341146a-64dc-4689-8b63-3d632dea95de/f7b57b3d-1203-4c0e-94e7-8e2eb934df2d/real.jpg"],
 };
+
+/** Occasion circle art, keyed by category and occasion value. */
+const OCCASION_ART: Record<string, Record<string, string>> = {
+  "flowers-gifts": {
+    birthday: "art/occasion/flowers-gifts--birthday.jpg",
+    "visiting-someone": "art/occasion/flowers-gifts--visiting-someone.jpg",
+    "get-well": "art/occasion/flowers-gifts--get-well.jpg",
+    newborn: "art/occasion/flowers-gifts--newborn.jpg",
+    anniversary: "art/occasion/flowers-gifts--anniversary.jpg",
+    wedding: "art/occasion/flowers-gifts--wedding.jpg",
+    engagement: "art/occasion/flowers-gifts--engagement.jpg",
+    graduation: "art/occasion/flowers-gifts--graduation.jpg",
+  },
+};
+
+export function occasionArt(cat: string, value: string): string | null {
+  const path = OCCASION_ART[cat]?.[value];
+  return path ? productImageUrl(path) : null;
+}
+
+/** Flower-type pill art. */
+const FLOWER_ART: Record<string, string> = {
+  roses: "art/flower/roses.jpg",
+  tulips: "art/flower/tulips.jpg",
+  peonies: "art/flower/peonies.jpg",
+  orchids: "art/flower/orchids.jpg",
+  lilies: "art/flower/lilies.jpg",
+  mixed: "art/flower/mixed.jpg",
+};
+
+export const flowerArt = (v: string): string | null =>
+  FLOWER_ART[v] ? productImageUrl(FLOWER_ART[v]) : null;
 
 export const heroArt = (cat: string): string[] =>
   (HERO_ART[cat] ?? []).map((p) => productImageUrl(p));
@@ -124,6 +165,12 @@ export const tileArt = (id: TileId, cat?: string) =>
 
 /** "Shop for" circle art, keyed by category and subcategory slug. */
 const CIRCLE_ART: Record<string, Record<string, string>> = {
+  "flowers-gifts": {
+    bouquets: "art/circle/flowers-gifts--bouquets.jpg",
+    "flower-boxes": "art/circle/flowers-gifts--flower-boxes.jpg",
+    plants: "art/circle/flowers-gifts--plants.jpg",
+    "vase-arrangements": "art/circle/flowers-gifts--vase-arrangements.jpg",
+  },
   fashion: {
     women: "art/circle/fashion--women.jpg",
     men: "art/circle/fashion--men.jpg",

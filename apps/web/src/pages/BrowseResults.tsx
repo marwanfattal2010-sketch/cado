@@ -187,9 +187,14 @@ export function BrowseResults() {
    */
   const namesOnly = !applied.length
     ? false
-    : applied.every((a) => /^(tile|type|store|size|colour):?/.test(a.key));
+    : applied.every((a) => /^(tile|type|store|size|colour|flower):?/.test(a.key));
+  const occasionOnly =
+    state.cat === "flowers-gifts" && applied.length > 0 && applied.every((a) => a.key.startsWith("occ:"));
   const title = !applied.length
     ? `All ${catName}`
+    : occasionOnly
+      ? // "Flowers for a birthday", the way a florist would say it.
+        `Flowers for ${/^[aeiou]/i.test(phrase) ? "an" : "a"} ${phrase.toLowerCase()}`
     : namesOnly
       ? phrase
       : first.startsWith("For ")

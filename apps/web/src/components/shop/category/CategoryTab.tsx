@@ -29,6 +29,7 @@ import { FilterGridSection, useTabFilters, type TabFilters } from "./FilterableG
 import { AiLine } from "./AiLine";
 import type { BrowseState, Lookup } from "../../../lib/browseParams";
 import { TabTemplate } from "./TabTemplate";
+import { FlowersTab } from "./FlowersTab";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
 /**
@@ -67,7 +68,7 @@ const REBUILT = new Set(["fashion"]);
  * filter bar and grid. Everything above it now applies its filter to that grid
  * and scrolls down to it instead of navigating away.
  */
-const FILTERED_GRID = new Set(["flowers-gifts"]);
+const FILTERED_GRID = new Set<string>([]);
 
 /**
  * The Flowers rose, for the one element the brief asks to carry it.
@@ -79,7 +80,9 @@ const FILTERED_GRID = new Set(["flowers-gifts"]);
 const ROSE = "201 106 130";
 
 export function CategoryTab({ tab }: { tab: BrowseTab }) {
-  if (REBUILT.has(tab.filter.category_slug ?? "")) return <TabTemplate tab={tab} />;
+  const slug = tab.filter.category_slug ?? "";
+  if (slug === "flowers-gifts") return <FlowersTab tab={tab} />;
+  if (REBUILT.has(slug)) return <TabTemplate tab={tab} />;
   return <LegacyCategoryTab tab={tab} />;
 }
 

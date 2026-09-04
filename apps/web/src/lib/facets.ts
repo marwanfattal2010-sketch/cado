@@ -69,7 +69,7 @@ export const FACETS_BY_CATEGORY: Record<string, FacetGroup[]> = {
   fashion: ["for", "type", "price", "size", "colour", "store"],
   shoes: ["for", "price", "type", "size", "colour", "store"],
   "jewelry-accessories": ["for", "occasion", "price", "type", "colour", "store"],
-  "flowers-gifts": ["occasion", "flower", "colour", "price", "type", "for", "store"],
+  "flowers-gifts": ["flower", "colour", "price", "type", "occasion", "store"],
   chocolate: ["occasion", "price", "type", "size", "store"],
   perfumes: ["for", "price", "type", "store"],
   // Toys asks for Age, which has no backing field. The facet is omitted rather

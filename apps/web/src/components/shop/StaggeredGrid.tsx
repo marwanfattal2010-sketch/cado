@@ -51,8 +51,11 @@ export type CollectionCard = {
 export function StaggeredGrid({
   products,
   collections = [],
+  tone = "white",
 }: {
   products: FeedProduct[];
+  /** Flowers sits on cream and wants no grey gutter; Fashion is the reverse. */
+  tone?: "white" | "cream";
   /**
    * Two cards of a different shape at the top of the grid, one per column.
    * They break the rhythm exactly where the grid starts, which is what stops
@@ -61,12 +64,12 @@ export function StaggeredGrid({
   collections?: CollectionCard[];
 }) {
   return (
-    <div className="stagger">
+    <div className={tone === "cream" ? "stagger stagger--cream" : "stagger"}>
       {collections.map((c) => (
         <CollectionTile key={c.key} card={c} />
       ))}
       {products.map((p) => (
-        <StaggerCard key={p.id} product={p} />
+        <StaggerCard key={p.id} product={p} radius={tone === "cream" ? 12 : 8} />
       ))}
     </div>
   );
@@ -98,7 +101,7 @@ function CollectionTile({ card }: { card: CollectionCard }) {
   );
 }
 
-function StaggerCard({ product: p }: { product: FeedProduct }) {
+function StaggerCard({ product: p, radius = 8 }: { product: FeedProduct; radius?: number }) {
   const imgs = p.product_images ?? [];
   const path = (imgs.find((i) => i.is_primary) ?? imgs[0])?.storage_path;
   const uri = path ? productImageUrl(path) : null;
@@ -109,7 +112,7 @@ function StaggerCard({ product: p }: { product: FeedProduct }) {
   const ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, ratioFor(p.id)));
 
   return (
-    <div className="overflow-hidden rounded-[8px] bg-white">
+    <div className="overflow-hidden bg-white" style={{ borderRadius: radius }}>
       <Link to={`/product/${p.id}`} className="block">
         <span
           className="relative block w-full overflow-hidden bg-white"
@@ -149,7 +152,7 @@ function StaggerCard({ product: p }: { product: FeedProduct }) {
         <Link to={`/product/${p.id}`} className="mt-0.5 block">
           <p className="line-clamp-2 text-[12.5px] leading-tight text-ink">{p.title}</p>
         </Link>
-        <p className="mt-1 text-[15px] font-extrabold leading-none text-persimmon">
+        <p className={`mt-1 text-[15px] font-extrabold leading-none ${radius === 12 ? "text-ink" : "text-persimmon"}`}>
           {formatMoney(p.price)}
           {onSale ? (
             <s className="ml-1.5 text-[11px] font-normal text-muted">

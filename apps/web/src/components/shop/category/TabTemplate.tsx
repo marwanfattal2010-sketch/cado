@@ -316,7 +316,7 @@ const rank = (name: string) => {
 };
 
 /**
- * 200px, full-bleed, three slides, swiped by hand.
+ * 200px, full-bleed, one slide per entry in HERO_ART, swiped by hand.
  *
  * It was ~300px, and the reason was that SHOP NOW and the AI line were stacked.
  * Side by side on one row they cost one line instead of two, which is the
@@ -382,19 +382,24 @@ function Hero({ cat }: { cat: string }) {
           </div>
         ))}
       </div>
-      <div className="flex justify-center gap-1.5 pb-0.5 pt-2">
-        {slides.map((s, i) => (
-          <span
-            key={s}
-            aria-hidden
-            className="h-[5px] rounded-pill"
-            style={{
-              width: i === active ? 14 : 5,
-              background: i === active ? "rgb(var(--persimmon))" : "#ddd",
-            }}
-          />
-        ))}
-      </div>
+      {/* One slide has nothing to page between, so the dots would be a single
+          dead dot under the photograph. Not rendered rather than `hidden`:
+          the row's own `flex` class beats the UA's `[hidden]{display:none}`. */}
+      {slides.length > 1 ? (
+        <div className="flex justify-center gap-1.5 pb-0.5 pt-2">
+          {slides.map((s, i) => (
+            <span
+              key={s}
+              aria-hidden
+              className="h-[5px] rounded-pill"
+              style={{
+                width: i === active ? 14 : 5,
+                background: i === active ? "rgb(var(--persimmon))" : "#ddd",
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -613,3 +613,13 @@ button:active:not(:disabled),
   width: 100%;
   margin-bottom: 8px;
 }
+
+/* Flowers: no grey gutter (the page is cream), 9px gaps, 14px side padding. */
+.stagger--cream {
+  background: transparent;
+  column-gap: 9px;
+  padding: 2px 14px 8px;
+}
+.stagger--cream > * {
+  margin-bottom: 9px;
+}

@@ -129,7 +129,43 @@ const CATEGORY_TILES = {
  * "Shop for" circle art, per category and value. A circle names a kind of
  * product, so it shows that product — never a photo borrowed from the grid.
  */
+/**
+ * Occasion circles on Flowers. Each one says its occasion IN FLOWERS — a
+ * bright gerbera mix for Birthday, calm white lilies for Get well, pale pink
+ * for New baby. No balloons, no cards, no props.
+ */
+const OCCASIONS = {
+  "flowers-gifts": {
+    birthday: "1589100534833-475e31a17b4e",
+    "visiting-someone": "1558879860-45f24b366ea1",
+    "get-well": "1631407779166-86952be9dbd7",
+    newborn: "1622296885520-bf2121072ca0",
+    anniversary: "1780948317866-d857dad38d5c",
+    wedding: "1484676681417-64a0ea3475fd",
+    engagement: "1521520368710-3ab197656d60",
+    graduation: "1779738193027-c8a3ec1633ca",
+  },
+};
+
+/** Flower-type pills. */
+const FLOWERS = {
+  roses: "1563371448-8b1acb3a3036",
+  tulips: "1586554978186-deffc54a0a5c",
+  peonies: "1499842790329-14db82033291",
+  orchids: "1618080578815-335456280012",
+  lilies: "1785037572750-e84fa501dc63",
+  mixed: "1688241964978-be062de84537",
+};
+
 const CIRCLES = {
+  "flowers-gifts": {
+    bouquets: "1660549076676-51bbe42a74d1",
+    // Flowers arranged IN a box — not a wrapped present. The tab used to show
+    // a white gift box here, which is the exact confusion the brief calls out.
+    "flower-boxes": "1660885900184-fe13ca69392c",
+    plants: "1583846712268-a77d97b7fd68",
+    "vase-arrangements": "1686125616977-34f6d5979eb1",
+  },
   fashion: {
     women: "1768460608433-d3af5148832c",
     men: "1555689502-c4b22d76c56f",
@@ -172,6 +208,10 @@ const jobs = [
   ...Object.entries(CIRCLES).flatMap(([cat, vals]) =>
     Object.entries(vals).map(([k, id]) => ({ path: `art/circle/${cat}--${k}.jpg`, id }))
   ),
+  ...Object.entries(OCCASIONS).flatMap(([cat, vals]) =>
+    Object.entries(vals).map(([k, id]) => ({ path: `art/occasion/${cat}--${k}.jpg`, id }))
+  ),
+  ...Object.entries(FLOWERS).map(([k, id]) => ({ path: `art/flower/${k}.jpg`, id })),
   ...Object.entries(HEROES).map(([k, id]) => ({ path: `art/hero/${k}.jpg`, id, w: 1200 })),
 ];
 

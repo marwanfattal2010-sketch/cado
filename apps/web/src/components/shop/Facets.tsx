@@ -167,7 +167,7 @@ export function clearGroup(s: BrowseState, g: FacetGroup): BrowseState {
  * you can read your whole selection off one row without opening anything.
  */
 export function FacetChips({
-  cat: _cat,
+  cat,
   state,
   onChange,
   facets,
@@ -196,6 +196,12 @@ export function FacetChips({
   extra?: { key: string; label: string; remove: () => void }[];
 }) {
   const [open, setOpen] = useState<FacetGroup | null>(null);
+  // Flowers is rose, everything else persimmon. Its chips are pills on white;
+  // Fashion's are 6px grey blocks. Same component, one tone switch.
+  const rose = cat === "flowers-gifts";
+  const onCls = rose ? "bg-[#A64E62] font-semibold text-white" : "bg-persimmon font-semibold text-white";
+  const offCls = rose ? "bg-white font-medium text-ink" : "bg-[#F5F5F5] font-medium text-ink";
+  const shape = rose ? "rounded-pill" : "rounded-[6px]";
 
   useEffect(() => {
     if (openOnMount && facets.visibleGroups.includes(openOnMount)) {
@@ -205,13 +211,17 @@ export function FacetChips({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openOnMount, facets.visibleGroups.length]);
 
+  // Flowers says "Type" and "Florist" where Fashion says "Category" and "Store".
+  const groupName = (g: FacetGroup) =>
+    rose && g === "type" ? "Type" : rose && g === "store" ? "Florist" : GROUP_LABEL[g];
   const chipLabel = (g: FacetGroup) => {
     const chosen = selectedIn(state, g);
-    if (!chosen.length) return GROUP_LABEL[g];
+    if (!chosen.length) return groupName(g);
     const first = labelOf(g, chosen[0], { subcategories, stores });
-    return chosen.length === 1
-      ? `${GROUP_LABEL[g]}: ${first}`
-      : `${GROUP_LABEL[g]}: ${first} +${chosen.length - 1}`;
+    // Flowers prints the value alone — "Birthday ✕", not "Occasion: Birthday ✕" —
+    // because on that tab the value is unambiguous without its group name.
+    const head = rose ? "" : `${groupName(g)}: `;
+    return chosen.length === 1 ? `${head}${first}` : `${head}${first} +${chosen.length - 1}`;
   };
 
   return (
@@ -234,7 +244,7 @@ export function FacetChips({
               type="button"
               aria-label={`Remove ${e.label}`}
               onClick={e.remove}
-              className="flex h-9 items-center rounded-r-[6px] bg-persimmon pl-1 pr-2.5 text-[12px] text-white"
+              className={`flex h-9 items-center ${rose ? "rounded-r-pill bg-[#A64E62]" : "rounded-r-[6px] bg-persimmon"} pl-1 pr-2.5 text-[12px] text-white`}
             >
               ✕
             </button>
@@ -250,9 +260,7 @@ export function FacetChips({
                   type="button"
                   onClick={() => setOpen(g)}
                   aria-expanded={open === g}
-                  className={`inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-[6px] px-3 text-[12.5px] transition-transform duration-press ease-out active:scale-[0.97] ${
-                    on ? "bg-persimmon font-semibold text-white" : "bg-[#F5F5F5] font-medium text-ink"
-                  }`}
+                  className={`inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap ${shape} px-3 text-[12.5px] transition-transform duration-press ease-out active:scale-[0.97] ${on ? onCls : offCls}`}
                 >
                   {chipLabel(g)}
                   {on ? null : (
@@ -266,7 +274,7 @@ export function FacetChips({
                     type="button"
                     aria-label={`Remove ${GROUP_LABEL[g]}`}
                     onClick={() => onChange(clearGroup(state, g))}
-                    className="-ml-1 flex h-9 shrink-0 items-center rounded-r-[6px] bg-persimmon pl-1 pr-2.5 text-[12px] text-white"
+                    className={`-ml-1 flex h-9 shrink-0 items-center ${rose ? "rounded-r-pill bg-[#A64E62]" : "rounded-r-[6px] bg-persimmon"} pl-1 pr-2.5 text-[12px] text-white`}
                   >
                     ✕
                   </button>
