@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { Link } from "react-router-dom";
 import { productImageUrl } from "../lib/images";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
@@ -6,6 +6,7 @@ import { timeUntilCutoff } from "../lib/area";
 import { formatMoney } from "../lib/money";
 import { storePath } from "../lib/routes";
 import { HeartIcon } from "./Icons";
+import { Img } from "./Img";
 import { deliveryWord } from "../lib/deliveryPromise";
 
 /** A product is "new" for a fortnight after it is listed. */
@@ -150,7 +151,7 @@ export function ProductCard(props: ProductCardProps) {
   const favoriteIds = useFavoriteIds();
   const toggleFavorite = useToggleFavorite();
   const isFavorite = favoriteIds.has(id);
-  const [loaded, setLoaded] = useState(false);
+
 
   // One shared, cached query however many cards are on screen — every card
   // asks for the same key, so this is a map lookup after the first.
@@ -182,17 +183,16 @@ export function ProductCard(props: ProductCardProps) {
           }`}
         >
           {uri ? (
-            <img
-              src={uri}
-              alt={title}
-              loading="lazy"
-              decoding="async"
-              onLoad={() => setLoaded(true)}
-              onError={() => setLoaded(true)}
-              className={`h-full w-full object-cover transition-all duration-500 ${
-                loaded ? "blur-0 opacity-100" : "blur-md opacity-0"
-              }`}
-            />
+            /*
+             * The shared Img, not a second copy of it.
+             *
+             * This card had its own `<img loading="lazy">` with an onLoad-only
+             * reveal — both of the failures Img exists to cover. Inside a tab
+             * panel that meant twenty-two product photos that were never
+             * requested and would have stayed blank behind a blur. One image
+             * component, so a fix lands everywhere at once.
+             */
+            <Img src={uri} alt={title} className="h-full w-full object-cover" />
           ) : (
             <div className="flex aspect-square h-full w-full items-center justify-center text-caption text-muted">
               No image

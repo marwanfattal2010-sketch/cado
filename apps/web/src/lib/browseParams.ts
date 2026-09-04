@@ -1,5 +1,12 @@
-import { inBudgetRange, budgetBySlug } from "./filters";
-import { NEW_IN_DAYS, parsePriceTier, type TileId } from "./facets";
+import { inBudgetRange } from "./filters";
+import {
+  NEW_IN_DAYS,
+  UNDER_TILE_MAX,
+  isPriceTier,
+  parsePriceTier,
+  priceTierFloor,
+  type TileId,
+} from "./facets";
 import { colourOf, sizesOf, type FeedProduct } from "./browse";
 
 /**
@@ -63,8 +70,32 @@ export type BrowseState = {
 const LIST_KEYS = ["for", "occasion", "price", "type", "size", "colour", "store"] as const;
 export type ListKey = (typeof LIST_KEYS)[number];
 
+/**
+ * ONE URL VOCABULARY, on the tab route and on /browse alike.
+ *
+ * The field names inside BrowseState and the parameter names in the URL are
+ * deliberately decoupled, because the two want different words:
+ *
+ *   state.cat   <-> `tab`   which category you are in
+ *   state.type  <-> `cat`   which sub-category within it, the Category facet
+ *   state.tile  <-> `view`  which saved view
+ *
+ * Renaming the fields to match would have touched every call site; renaming
+ * the params to match the fields would have left the Fashion tab reading
+ * `type=women` under a facet labelled Category. This mapping lives here, in
+ * one place, and both routes go through it — so a link built on the tab and a
+ * link built on /browse are the same string.
+ */
+const PARAM = {
+  cat: "tab",
+  type: "cat",
+  tile: "view",
+} as const;
+
 const TILES: TileId[] = [
   "new-in",
+  "most-gifted",
+  "under-75",
   "arrives-today",
   "gift-wrapped",
   "best-sellers",
@@ -86,15 +117,15 @@ const num = (v: string | null) => {
 
 export function parseBrowse(params: URLSearchParams): BrowseState {
   const sort = SORTS.find((s) => s.value === params.get("sort"))?.value ?? "recommended";
-  const tile = TILES.find((t) => t === params.get("tile")) ?? null;
+  const tile = TILES.find((t) => t === params.get(PARAM.tile)) ?? null;
   return {
-    cat: params.get("cat") ?? "",
+    cat: params.get(PARAM.cat) ?? "",
     for: list(params.get("for")),
     occasion: list(params.get("occasion")),
-    price: list(params.get("price")).filter((p) => parsePriceTier(p) != null),
+    price: list(params.get("price")).filter(isPriceTier),
     min: num(params.get("min")),
     max: num(params.get("max")),
-    type: list(params.get("type")),
+    type: list(params.get(PARAM.type)),
     size: list(params.get("size")),
     colour: list(params.get("colour")),
     store: list(params.get("store")),
@@ -112,14 +143,31 @@ export function parseBrowse(params: URLSearchParams): BrowseState {
  */
 export function serializeBrowse(s: BrowseState): string {
   const p = new URLSearchParams();
-  if (s.cat) p.set("cat", s.cat);
-  for (const k of LIST_KEYS) if (s[k].length) p.set(k, s[k].join(","));
+  if (s.cat) p.set(PARAM.cat, s.cat);
+  for (const k of LIST_KEYS) if (s[k].length) p.set(k === "type" ? PARAM.type : k, s[k].join(","));
   if (s.min != null) p.set("min", String(s.min));
   if (s.max != null) p.set("max", String(s.max));
-  if (s.tile) p.set("tile", s.tile);
+  if (s.tile) p.set(PARAM.tile, s.tile);
   if (s.sort !== "recommended") p.set("sort", s.sort);
   return p.toString();
 }
+
+/**
+ * The filter params, and only those.
+ *
+ * The Fashion tab lives at the same URL as the pager, so its query string is
+ * shared with `tab` and anything else the shell keeps there. Switching tabs
+ * has to drop the filters — they describe a category you have just left — and
+ * this is the list that gets dropped.
+ */
+export const FILTER_PARAM_NAMES = [
+  ...LIST_KEYS.map((k) => (k === "type" ? PARAM.type : k)),
+  "min",
+  "max",
+  PARAM.tile,
+  "sort",
+  "facet",
+];
 
 export const emptyBrowse = (cat: string): BrowseState => ({
   cat,
@@ -164,6 +212,8 @@ export type Lookup = {
   storeId: (slug: string) => string | undefined;
   /** Real delivered-order counts, for best-sellers and Recommended. */
   orders: (productId: string) => number;
+  /** Whether ANY product has an order yet — see the most-gifted view. */
+  anyOrders: () => boolean;
 };
 
 function matchesTile(p: FeedProduct, tile: TileId, look: Lookup): boolean {
@@ -172,6 +222,19 @@ function matchesTile(p: FeedProduct, tile: TileId, look: Lookup): boolean {
       const cutoff = Date.now() - NEW_IN_DAYS * 86400000;
       return new Date(p.created_at).getTime() >= cutoff;
     }
+    case "under-75":
+      return p.price < UNDER_TILE_MAX;
+    case "most-gifted":
+      /*
+       * A SORT WEARING A FILTER'S CLOTHES, and honest about it.
+       *
+       * With real order history this narrows to things people have actually
+       * ordered. With none — which is where the catalogue is today — it
+       * narrows to nothing and the view is purely the popularity sort, which
+       * is why the tile's own sub-line reads "Popular picks" rather than
+       * claiming a count nobody has earned. It never invents an order.
+       */
+      return look.anyOrders() ? look.orders(p.id) > 0 : true;
     case "arrives-today":
       return p.same_day === true;
     case "gift-wrapped":
@@ -199,11 +262,23 @@ export function matches(p: FeedProduct, s: BrowseState, look: Lookup): boolean {
   if (s.occasion.length && !(p.occasion_tags ?? []).some((t) => s.occasion.includes(t))) return false;
 
   if (s.price.length) {
-    // Tiers are exclusive upper bounds and OR together, so "Under $30" plus
-    // "Under $100" means under $100 — the looser of the two, not neither.
+    // Tiers OR together, so "Under $30" plus "Under $100" means under $100 —
+    // the looser of the two, not neither. `over-200` carries a real floor and
+    // no ceiling, which is why the bound comes from the tier and not from a
+    // regex on its id.
     const ok = s.price.some((id) => {
       const max = parsePriceTier(id);
-      return max != null && inBudgetRange(p.price, budgetBySlug(`under-${max}`) ?? { slug: "", label: "", min: 0, max });
+      if (max == null) return false;
+      // Built from the tier rather than looked up in BUDGETS: those bands are
+      // the home page's own ($20–$50 and friends) and resolving "under-100"
+      // against them would silently filter on a different range than the
+      // label promises.
+      return inBudgetRange(p.price, {
+        slug: id,
+        label: "",
+        min: priceTierFloor(id),
+        max: Number.isFinite(max) ? max : null,
+      });
     });
     if (!ok) return false;
   }
@@ -228,6 +303,19 @@ export function matches(p: FeedProduct, s: BrowseState, look: Lookup): boolean {
   }
   if (s.tile && !matchesTile(p, s.tile, look)) return false;
   return true;
+}
+
+/**
+ * A view can pin the sort. "Most gifted" and "New in" are not just filters —
+ * the order is half of what they mean — so the tile does not have to remember
+ * to set `sort=` as well, and removing the view chip gives the default back.
+ */
+export function effectiveSort(s: BrowseState): Sort {
+  if (s.sort !== "recommended") return s.sort;
+  if (s.tile === "most-gifted") return "popular";
+  if (s.tile === "new-in") return "newest";
+  if (s.tile === "deals") return "discount";
+  return "recommended";
 }
 
 export function sortResults(rows: FeedProduct[], s: Sort, look: Lookup): FeedProduct[] {

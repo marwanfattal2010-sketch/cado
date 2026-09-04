@@ -101,6 +101,8 @@ export function recipientLabel(value: string, form: "full" | "short" = "full") {
  */
 export type TileId =
   | "new-in"
+  | "most-gifted"
+  | "under-75"
   | "arrives-today"
   | "gift-wrapped"
   | "best-sellers"
@@ -110,6 +112,8 @@ export type TileId =
 
 export const TILE_LABEL: Record<TileId, string> = {
   "new-in": "New in",
+  "most-gifted": "Most gifted",
+  "under-75": "Under $75",
   "arrives-today": "Arrives today",
   "gift-wrapped": "Gift wrapped",
   "best-sellers": "Best sellers",
@@ -118,17 +122,53 @@ export const TILE_LABEL: Record<TileId, string> = {
   deals: "Deals",
 };
 
+/** The ceiling the "Under $75" tile filters on. */
+export const UNDER_TILE_MAX = 75;
+
 /** Added within this many days counts as new. */
 export const NEW_IN_DAYS = 30;
 
-/** The price tiers a category can offer; the real spread decides which. */
-export const PRICE_TIERS = [30, 50, 100, 200] as const;
+/**
+ * The price tiers, including an open-ended top one.
+ *
+ * "Under $200" as the highest tier makes the most expensive things in the shop
+ * unreachable by any tier — you can filter to everything below them and never
+ * to them. `over-200` closes that.
+ *
+ * Tiers OR together and the under- ones are nested, so ticking "Under $50" and
+ * "Under $100" means under $100 — the looser of the two, which is what a
+ * shopper means when they tick both.
+ */
+export type PriceTier = { id: string; label: string; min: number; max: number };
 
+export const PRICE_TIERS: PriceTier[] = [
+  { id: "under-30", label: "Under $30", min: 0, max: 30 },
+  { id: "under-50", label: "Under $50", min: 0, max: 50 },
+  { id: "under-100", label: "Under $100", min: 0, max: 100 },
+  { id: "under-200", label: "Under $200", min: 0, max: 200 },
+  { id: "over-200", label: "$200 and up", min: 200, max: Infinity },
+];
+
+export const priceTier = (id: string) => PRICE_TIERS.find((t) => t.id === id) ?? null;
+export const isPriceTier = (id: string) => PRICE_TIERS.some((t) => t.id === id);
+
+/** A tier for an arbitrary ceiling — what the "Under $X" tile computes. */
 export const priceTierId = (max: number) => `under-${max}`;
 export const priceTierLabel = (max: number) => `Under $${max}`;
 
-/** "under-100" -> 100, anything else -> null. */
+/**
+ * "under-100" -> 100, "over-200" -> Infinity, anything else -> null.
+ *
+ * Kept because a tile can name a ceiling that is not one of the standard
+ * tiers — Fashion's is $75 — and that still has to parse.
+ */
 export function parsePriceTier(id: string): number | null {
+  if (id === "over-200") return Infinity;
   const m = /^under-(\d+)$/.exec(id);
   return m ? Number(m[1]) : null;
+}
+
+/** The lower bound a tier implies; only the open-ended one has a real floor. */
+export function priceTierFloor(id: string): number {
+  return id === "over-200" ? 200 : 0;
 }

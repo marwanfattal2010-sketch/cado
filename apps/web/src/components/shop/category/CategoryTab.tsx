@@ -24,6 +24,7 @@ import { themeFor, type CategoryTile } from "../../../lib/categoryTheme";
 import { browseHref } from "../../../lib/browseParams";
 import { RECIPIENTS, priceTierId, type TileId } from "../../../lib/facets";
 import { recipientArt, tileArt } from "../../../lib/tabArt";
+import { TabTemplate } from "./TabTemplate";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
 
 /**
@@ -45,7 +46,21 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
  * "See all" — sets the SAME filter object the sheet edits. That is what makes
  * them combine instead of replacing each other.
  */
+/**
+ * Tabs already moved to the new template.
+ *
+ * Fashion is the rollout tab: it is the one being reviewed, and the other ten
+ * are deliberately left on the old layout until it is signed off. Adding a
+ * slug here is the whole migration — there is no per-tab code below it.
+ */
+const REBUILT = new Set(["fashion"]);
+
 export function CategoryTab({ tab }: { tab: BrowseTab }) {
+  if (REBUILT.has(tab.filter.category_slug ?? "")) return <TabTemplate tab={tab} />;
+  return <LegacyCategoryTab tab={tab} />;
+}
+
+function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
   const categories = useCategories();
   const slug = tab.filter.category_slug;
   const category = categories.data?.find((c) => c.slug === slug);

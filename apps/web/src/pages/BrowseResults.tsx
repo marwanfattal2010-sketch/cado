@@ -20,13 +20,7 @@ import {
   type Lookup,
   type Sort,
 } from "../lib/browseParams";
-import {
-  TILE_LABEL,
-  priceTierLabel,
-  parsePriceTier,
-  recipientLabel,
-  type FacetGroup,
-} from "../lib/facets";
+import { TILE_LABEL, priceTier, recipientLabel, type FacetGroup } from "../lib/facets";
 import { OCCASIONS } from "../lib/filters";
 
 /**
@@ -96,6 +90,7 @@ export function BrowseResults() {
       typeId: (slug) => (subcategoriesAll.data ?? []).find((s) => s.slug === slug)?.id,
       storeId: (slug) => (directory.data ?? []).find((s) => s.slug === slug)?.id,
       orders: (id) => signals.data?.get(id)?.recentOrders ?? 0,
+      anyOrders: () => [...(signals.data?.values() ?? [])].some((s) => s.recentOrders > 0),
     }),
     [subcategoriesAll.data, directory.data, signals.data]
   );
@@ -134,7 +129,7 @@ export function BrowseResults() {
   for (const v of state.price)
     applied.push({
       key: `price:${v}`,
-      label: priceTierLabel(parsePriceTier(v) ?? 0),
+      label: priceTier(v)?.label ?? v,
       remove: () => push(toggleValue(state, "price", v)),
     });
   for (const v of state.type)

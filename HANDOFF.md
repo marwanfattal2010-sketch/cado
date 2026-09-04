@@ -925,3 +925,42 @@ looks empty.
 mechanism; it just held twelve rows, all on [TEST] products.
 `scripts/seed-sizes.mjs` sized Fashion (22), Shoes (8) and Sport (4). Sport is
 four on purpose — a dumbbell has a weight and a bottle has a volume.
+
+---
+
+## The Fashion tab template (commit pending)
+
+`components/shop/category/TabTemplate.tsx` is the new tab layout. `CategoryTab`
+dispatches to it from a `REBUILT` set that currently holds only `fashion`;
+adding a slug there is the whole migration for the next tab.
+
+**The page is short on purpose.** The recipient circles, the shop-by-category
+circles, the occasion block and the Super deals / New arrivals carousels are
+gone — every one of them was a filter in a different costume, and they are now
+the facet bar. What is left is hero → AI line → stores → four tiles → one grid.
+
+**Filtering never navigates.** State lives in the tab route's own query string
+and the grid re-renders in place. `?tab=fashion&for=her&cat=women&size=m`.
+`browseParams.ts` maps state fields to param names in one place (`PARAM`):
+`state.cat`→`tab`, `state.type`→`cat`, `state.tile`→`view`. Home deletes
+`FILTER_PARAM_NAMES` when the tab changes, because `cat=women` means nothing on
+Chocolate.
+
+**Two image bugs, both found here, both fixed in shared components.**
+
+- `loading="lazy"` DOES NOT WORK inside the tab panels. Measured: tile and
+  product images were never requested at all — no resource entry — even after
+  scrolling them into view, and an IntersectionObserver of our own did not fire
+  either. The panels are nested scrollers with `-webkit-overflow-scrolling:
+  touch`. `Img` is now `loading="eager"` always. If a tab ever carries hundreds
+  of cards the answer is a virtualised grid, not a lazy attribute that does not
+  fire.
+- `onLoad` and `complete` both miss. On /stores/fashion five photos had
+  `naturalWidth === 900` while `complete` stayed false and no load event
+  arrived, so `.blur-up` held them at `opacity: 0` over perfectly good
+  pictures. `Img` polls `naturalWidth` instead.
+- `ProductCard` had its own `<img loading="lazy">` with an onLoad-only reveal —
+  both bugs, second copy. It uses `Img` now.
+
+**`npx tsc -p tsconfig.json` CHECKS NOTHING.** That file is a solution stub with
+`"files": []`. Use `npx tsc -b`, which is what `npm run build` runs.

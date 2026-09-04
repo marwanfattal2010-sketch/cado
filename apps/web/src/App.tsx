@@ -29,6 +29,9 @@ const BrowseResults = lazy(() =>
   import("./pages/BrowseResults").then((m) => ({ default: m.BrowseResults }))
 );
 const Stores = lazy(() => import("./pages/Stores").then((m) => ({ default: m.Stores })));
+const CategoryStores = lazy(() =>
+  import("./pages/CategoryStores").then((m) => ({ default: m.CategoryStores }))
+);
 const CategoryOccasion = lazy(() =>
   import("./pages/CategoryOccasion").then((m) => ({ default: m.CategoryOccasion }))
 );
@@ -157,6 +160,8 @@ export default function App() {
           <Route path="browse-all" element={<Browse />} />
           {/* Every live store, one card each — the See-all behind "Stores on CADO". */}
           <Route path="stores" element={<Stores />} />
+          {/* One category's shops — the "See all" beside Stores in Fashion. */}
+          <Route path="stores/:cat" element={<CategoryStores />} />
           {/* One category page, and it is a tab on "/". This only keeps old
               links alive. */}
           <Route path="category/:slug" element={<CategoryOccasion />} />

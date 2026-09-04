@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { FILTER_PARAM_NAMES } from "../lib/browseParams";
 import { Header } from "../components/Header";
 import { BottomNav } from "../components/BottomNav";
 import { TabBar } from "../components/shop/TabBar";
@@ -69,6 +70,15 @@ export function Home() {
       const current = paramsRef.current;
       if (current.get("tab") === tab.slug) return;
       const search = new URLSearchParams(current);
+      /*
+       * A tab's filters do not follow you to the next tab.
+       *
+       * They name a size, a store or a sub-category that belongs to the
+       * category you have just swiped away from — `cat=women` means nothing on
+       * Chocolate — and carrying them across would filter the new tab to
+       * nothing and blame the shopper for it.
+       */
+      for (const name of FILTER_PARAM_NAMES) search.delete(name);
       search.set("tab", tab.slug);
       // `replace`, so a flick through nine tabs does not bury the page you
       // arrived from under nine history entries.

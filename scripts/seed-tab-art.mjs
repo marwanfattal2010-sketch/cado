@@ -86,11 +86,28 @@ const TILES = {
   "gift-wrapped": "1664826078798-92049ba4c6fb", // small white box, peach ribbon, in hand
   "ready-to-gift": "1769286145156-70a40fff80ec", // wicker basket, ribboned book and candle
   deals: "1737093389586-5c56ecf9683a", // stacked boxes with a red ribbon
+  "most-gifted": "1625552187571-7ee60ac43d2b", // a wrapped box handed between two people
+  "under-75": "1638981091476-271167fbc510", // small wrapped parcels, gold paper
   // Neither of these renders today — there is no order history and `is_pick`
   // is false on every product — but the constant must be complete or the
   // dev-time assertion in tabArt.ts fires the moment one of them comes back.
   "best-sellers": "1737093384332-1f240882b6d6", // brown paper stack
   "store-picks": "1577217534079-41d6bb68ac50", // patterned paper and a red ribbon
+};
+
+/**
+ * Hero slides, per tab. Fashion only for now — the other ten still take their
+ * hero from a product photo, and this is the template that will replace that.
+ *
+ * Clothing on a model, three different photographs, no bags or leather goods
+ * and no lettering in frame. A hero is the first thing on the page, so a
+ * borrowed product shot of whatever sorted first was always the weakest image
+ * on the tab doing the most important job.
+ */
+const HEROES = {
+  "fashion-1": "1668952135120-7d997b1b3778", // tan coat and trousers, warm studio
+  "fashion-2": "1709004915865-38bc70f4cb78", // man in a cream shirt, deep teal ground
+  "fashion-3": "1780566758158-86894dcae8e8", // white oversized tee, orange trousers
 };
 
 async function upload(path, buf) {
@@ -102,10 +119,10 @@ async function upload(path, buf) {
   if (!res.ok) throw new Error(`upload ${path}: ${res.status} ${await res.text()}`);
 }
 
-async function photo(id) {
+async function photo(id, w = 900) {
   // 900px: these are shown at 62px in a circle and 124px on a tile, so the
   // source only has to survive a 3x screen, and a 2MB hero would be waste.
-  const res = await fetch(`https://images.unsplash.com/photo-${id}?w=900&q=80&fm=jpg`);
+  const res = await fetch(`https://images.unsplash.com/photo-${id}?w=${w}&q=80&fm=jpg`);
   if (!res.ok) throw new Error(`unsplash ${id}: ${res.status}`);
   return Buffer.from(await res.arrayBuffer());
 }
@@ -113,6 +130,8 @@ async function photo(id) {
 const jobs = [
   ...Object.entries(RECIPIENTS).map(([k, id]) => ({ path: `art/recipient/${k}.jpg`, id })),
   ...Object.entries(TILES).map(([k, id]) => ({ path: `art/tile/${k}.jpg`, id })),
+  // Heroes are full-bleed, so they get a wider source than a 62px circle needs.
+  ...Object.entries(HEROES).map(([k, id]) => ({ path: `art/hero/${k}.jpg`, id, w: 1200 })),
 ];
 
 for (const j of jobs) {
@@ -120,7 +139,7 @@ for (const j of jobs) {
     console.log(`  + ${j.path}  <- photo-${j.id} — dry run`);
     continue;
   }
-  await upload(j.path, await photo(j.id));
+  await upload(j.path, await photo(j.id, j.w));
   console.log(`  + ${j.path}  <- photo-${j.id}`);
 }
 console.log(`\n${DRY ? "Would upload" : "Uploaded"} ${jobs.length} curated images.`);

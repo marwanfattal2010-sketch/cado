@@ -39,6 +39,8 @@ const RECIPIENT_ART: Record<string, string> = {
 
 const TILE_ART: Record<TileId, string> = {
   "new-in": "art/tile/new-in.jpg",
+  "most-gifted": "art/tile/most-gifted.jpg",
+  "under-75": "art/tile/under-75.jpg",
   "arrives-today": "art/tile/arrives-today.jpg",
   "gift-wrapped": "art/tile/gift-wrapped.jpg",
   "ready-to-gift": "art/tile/ready-to-gift.jpg",
@@ -46,6 +48,23 @@ const TILE_ART: Record<TileId, string> = {
   "best-sellers": "art/tile/best-sellers.jpg",
   "store-picks": "art/tile/store-picks.jpg",
 };
+
+/**
+ * Hero slides per category, in order.
+ *
+ * Fashion only for now — the rollout tab. Everything else still takes its hero
+ * from a product photo, which is why the other ten are untouched this round.
+ * A category with no entry here gets `null` and the caller falls back to the
+ * old product-photo hero rather than showing nothing.
+ */
+const HERO_ART: Record<string, string[]> = {
+  fashion: ["art/hero/fashion-1.jpg", "art/hero/fashion-2.jpg", "art/hero/fashion-3.jpg"],
+};
+
+export const heroArt = (cat: string): string[] =>
+  (HERO_ART[cat] ?? []).map((p) => productImageUrl(p));
+
+export const hasHeroArt = (cat: string) => (HERO_ART[cat]?.length ?? 0) > 0;
 
 function art(path: string | undefined, slot: string): string | null {
   if (path) return productImageUrl(path);

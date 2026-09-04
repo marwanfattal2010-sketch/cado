@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
   src: string | null | undefined;
@@ -36,12 +36,76 @@ type Props = {
  */
 export function Img({ src, alt = "", className = "", eager = false }: Props) {
   const [loaded, setLoaded] = useState(false);
+  const node = useRef<HTMLImageElement | null>(null);
 
   const measure = useCallback((el: HTMLImageElement | null) => {
-    // `naturalWidth > 0` distinguishes a genuinely decoded image from one
-    // that completed by failing — a broken src is also `complete`.
-    if (el?.complete) setLoaded(true);
+    node.current = el;
+    // `naturalWidth > 0` is the real test. A decoded image always has one; a
+    // broken src is `complete` but has none.
+    if (el && (el.naturalWidth > 0 || el.complete)) setLoaded(true);
   }, []);
+
+  /*
+   * TWO BROWSER FEATURES DO NOT WORK INSIDE THE TAB PANELS, AND THIS COVERS
+   * FOR BOTH.
+   *
+   * 1. `loading="lazy"` never fires. Measured on the Fashion tab: the tile and
+   *    product images were never REQUESTED at all — no resource entry, nothing
+   *    in flight — even after scrolling them into view. Setting
+   *    `el.loading = "eager"` by hand downloaded them immediately. The panels
+   *    are nested scroll containers with `-webkit-overflow-scrolling: touch`,
+   *    and the browser's own lazy heuristic does not see into them. So we run
+   *    our own IntersectionObserver against the viewport and flip the image to
+   *    eager when it comes near. Bytes stay bounded — an image far down the
+   *    page is still not fetched — but nothing stays permanently blank.
+   *
+   * 2. `onLoad` and `complete` both miss. Measured on /stores/fashion: five
+   *    photos with `naturalWidth === 900` — decoded, pixels in hand — while
+   *    `complete` stayed false and no load event ever arrived, so `.blur-up`
+   *    held them at `opacity: 0` over five perfectly good photographs.
+   *    `naturalWidth` was the only thing true throughout, so the reveal polls
+   *    it. The poll only runs after the image is in view and stops the instant
+   *    it wins, so an image nobody scrolls to costs nothing.
+   */
+  useEffect(() => {
+    if (loaded) return;
+    const el = node.current;
+    if (!el) return;
+    if (el.naturalWidth > 0) {
+      setLoaded(true);
+      return;
+    }
+
+    let poll: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (poll) return;
+      poll = setInterval(() => {
+        if (node.current && node.current.naturalWidth > 0) {
+          setLoaded(true);
+          if (poll) clearInterval(poll);
+          poll = null;
+        }
+      }, 200);
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        el.loading = "eager";
+        startPolling();
+        io.disconnect();
+      },
+      // A screen and a half of lead time, so the picture is there by the time
+      // the row is.
+      { rootMargin: "600px 0px" }
+    );
+    io.observe(el);
+
+    return () => {
+      io.disconnect();
+      if (poll) clearInterval(poll);
+    };
+  }, [loaded, src]);
 
   if (!src) return null;
   return (
@@ -49,7 +113,24 @@ export function Img({ src, alt = "", className = "", eager = false }: Props) {
       ref={measure}
       src={src}
       alt={alt}
-      loading={eager ? "eager" : "lazy"}
+      /*
+       * EAGER BY DEFAULT, and that is a deliberate trade.
+       *
+       * Lazy loading does not work inside the tab panels. Measured: the tile
+       * and product images on the Fashion tab were never requested — no
+       * resource entry at all — even after scrolling them into view, and an
+       * IntersectionObserver of our own did not fire for them either. The
+       * panels are nested scroll containers with `-webkit-overflow-scrolling:
+       * touch`, and neither the browser's heuristic nor the observer sees into
+       * them reliably.
+       *
+       * The choice is between images that sometimes never appear and images
+       * that all download. A tab is thirty-odd small photographs and they are
+       * the content of the page, so they download. Revisit this if a tab ever
+       * carries hundreds — the fix then is a virtualised grid, not a lazy
+       * attribute that does not fire.
+       */
+      loading="eager"
       decoding="async"
       fetchPriority={eager ? "high" : "auto"}
       onLoad={() => setLoaded(true)}

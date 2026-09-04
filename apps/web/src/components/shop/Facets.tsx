@@ -5,8 +5,7 @@ import {
   GROUP_LABEL,
   PRICE_TIERS,
   RECIPIENTS,
-  priceTierId,
-  priceTierLabel,
+  priceTier,
   type FacetGroup,
 } from "../../lib/facets";
 import { OCCASIONS } from "../../lib/filters";
@@ -82,7 +81,7 @@ export function useFacets({
     return {
       for: build("for", RECIPIENTS.map((r) => ({ value: r.value, label: r.full }))),
       occasion: build("occasion", OCCASIONS.map((o) => ({ value: o.value, label: o.label }))),
-      price: build("price", PRICE_TIERS.map((t) => ({ value: priceTierId(t), label: priceTierLabel(t) }))),
+      price: build("price", PRICE_TIERS.map((t) => ({ value: t.id, label: t.label }))),
       type: build("type", subcategories.map((s) => ({ value: s.slug, label: s.name }))),
       size: build("size", sizeValues.map((s) => ({ value: s, label: s }))),
       colour: build("colour", colourValues.map((c) => ({ value: c, label: titleCase(c) }))),
@@ -104,7 +103,8 @@ export function useFacets({
 /** How many values are chosen in one facet — the number the chip shows. */
 export function selectedIn(s: BrowseState, g: FacetGroup): string[] {
   if (g === "price") {
-    const tiers = s.price.map((v) => priceTierLabel(Number(v.replace("under-", ""))));
+    // The tier's own label, so "$200 and up" does not come back as "Under $200".
+    const tiers = s.price.map((v) => priceTier(v)?.label ?? v);
     if (s.min != null || s.max != null) tiers.push(`$${s.min ?? 0}–$${s.max ?? "∞"}`);
     return tiers;
   }
