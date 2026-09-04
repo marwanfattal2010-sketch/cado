@@ -33,9 +33,22 @@ export function LogoUpload({
 
   const shown = preview ?? logoUrl;
 
-  const submit = (form: FormData) =>
+  /**
+   * CHOOSING THE FILE IS THE SAVE. There is no second button.
+   *
+   * This card used to sit above the big "Storefront placement" form with a
+   * "Save logo" button of its own, and the first thing that happened in real
+   * use was someone picking a file, pressing the settings form's Save, and
+   * getting nothing — the file had never been submitted, and both actions
+   * reported success because both had genuinely done what they were asked.
+   * Two save buttons a few pixels apart is the bug; removing one is the fix.
+   */
+  const send = (file: File) =>
     startTransition(async () => {
       setResult(null);
+      setPreview(URL.createObjectURL(file));
+      const form = new FormData();
+      form.set("logo", file);
       const r = await upload(form);
       setResult(r);
       if (!r.ok) setPreview(null);
@@ -74,31 +87,27 @@ export function LogoUpload({
         </div>
       </div>
 
-      <form
-        action={submit}
-        className="flex flex-wrap items-center gap-2"
-        onChange={(e) => {
-          const target = e.target as HTMLElement & { files?: FileList | null };
-          const file = target.files?.[0];
-          if (file) setPreview(URL.createObjectURL(file));
-        }}
-      >
-        <input
-          ref={input}
-          type="file"
-          name="logo"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          required
-          disabled={pending}
-          className="min-h-[44px] max-w-full text-sm file:mr-3 file:min-h-[36px] file:rounded-pill file:border-0 file:bg-ink file:px-4 file:text-sm file:font-semibold file:text-white"
-        />
-        <button
-          type="submit"
-          disabled={pending}
-          className="min-h-[44px] rounded-pill bg-persimmon px-5 text-sm font-semibold text-white disabled:opacity-50"
+      <div className="flex flex-wrap items-center gap-2">
+        <label
+          className={`inline-flex min-h-[44px] cursor-pointer items-center rounded-pill bg-persimmon px-5 text-sm font-semibold text-white ${
+            pending ? "pointer-events-none opacity-50" : ""
+          }`}
         >
-          {pending ? "Uploading…" : "Save logo"}
-        </button>
+          {pending ? "Uploading…" : logoUrl ? "Replace logo" : "Choose logo"}
+          <input
+            ref={input}
+            type="file"
+            name="logo"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            disabled={pending}
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) send(file);
+            }}
+          />
+        </label>
+
         {logoUrl ? (
           <button
             type="button"
@@ -115,7 +124,9 @@ export function LogoUpload({
             Remove
           </button>
         ) : null}
-      </form>
+
+        <span className="text-xs text-muted">Saves as soon as you pick a file.</span>
+      </div>
 
       {result ? (
         <p className={`text-sm ${result.ok ? "text-status-green" : "text-status-red"}`}>
