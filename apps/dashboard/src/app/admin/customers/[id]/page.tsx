@@ -68,11 +68,24 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-4">
-      <nav className="text-[12.5px] text-muted">
-        <Link href="/admin/customers" className="hover:text-ink">Customers</Link>
-        <span className="mx-1">/</span>
-        <span className="text-secondary">{profile.full_name ?? "Customer"}</span>
-      </nav>
+      {/* The same back control the other detail pages get from PageHeader.
+          This page draws its own title inside a tint card, so it cannot use
+          PageHeader itself — but it must not be the one page you can't get
+          out of. */}
+      <Link
+        href="/admin/customers"
+        className="inline-flex items-center gap-2 text-[13px] font-medium text-secondary transition hover:text-ink"
+      >
+        <span
+          aria-hidden
+          className="flex h-10 w-10 items-center justify-center rounded-pill border border-line bg-surface"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </span>
+        Customers
+      </Link>
 
       {/* Who */}
       <TintCard tint="sky" className="flex flex-wrap items-center gap-4 p-5">

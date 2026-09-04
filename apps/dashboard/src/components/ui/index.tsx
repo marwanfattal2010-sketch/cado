@@ -110,29 +110,65 @@ export function StatusPill({
 
 /* ---------------------------------------------------------- PageHeader --- */
 
+/**
+ * A BACK BUTTON, NOT A BREADCRUMB TRAIL.
+ *
+ * Every drill-down page here already declared its parent — "Stores / Zahar" —
+ * but rendered it as 12.5px grey text, which is a place-marker rather than a
+ * control. Getting out of a store meant finding the sidebar. So the parent is
+ * now drawn as an actual button: a chevron in a bordered disc with the parent's
+ * name beside it, at a real 40px tap target.
+ *
+ * It is derived from `breadcrumb` rather than added page by page, so any page
+ * that already said where it came from gets one for free. `back` overrides it
+ * where a page's parent is not the previous crumb.
+ *
+ * Deliberately a LINK to the parent, not `history.back()`: after saving a form
+ * this page has usually redirected to itself, so "back" in browser terms is
+ * the same page again. The parent is always the parent.
+ */
 export function PageHeader({
   title,
   breadcrumb,
+  back,
   action,
 }: {
   title: string;
   breadcrumb?: { label: string; href: string }[];
+  /** Explicit parent. Defaults to the second-to-last breadcrumb. */
+  back?: { label: string; href: string };
   action?: React.ReactNode;
 }) {
+  const parent =
+    back ?? (breadcrumb && breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 2] : undefined);
+
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        {breadcrumb?.length ? (
-          <nav className="mb-1 flex items-center gap-1 text-[12.5px] text-muted">
-            {breadcrumb.map((b, i) => (
-              <span key={b.href} className="flex items-center gap-1">
-                {i > 0 ? <span aria-hidden>/</span> : null}
-                <Link href={b.href} className="hover:text-ink">
-                  {b.label}
-                </Link>
-              </span>
-            ))}
-          </nav>
+      <div className="min-w-0">
+        {parent ? (
+          <Link
+            href={parent.href}
+            className="mb-1.5 inline-flex items-center gap-2 text-[13px] font-medium text-secondary transition hover:text-ink"
+          >
+            <span
+              aria-hidden
+              className="flex h-10 w-10 items-center justify-center rounded-pill border border-line bg-surface"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </span>
+            {parent.label}
+          </Link>
         ) : null}
         <h1 className="text-[26px] font-semibold leading-8 text-ink">{title}</h1>
       </div>
