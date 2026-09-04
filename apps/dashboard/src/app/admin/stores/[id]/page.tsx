@@ -824,8 +824,17 @@ function SettingsTab({
     },
     {
       key: "closed",
-      label: "Closed",
-      note: "Same as paused, but says the store is gone for good. Still reversible; still nothing deleted.",
+      /*
+       * This IS the remove button, and it now says so. It was labelled
+       * "Closed", which read as a temporary state next to "Paused", so the
+       * screen appeared to offer no way to take a shop off CADO at all.
+       *
+       * There is deliberately no hard delete anywhere in this dashboard. A
+       * store's orders, payouts and invoices have to survive it leaving —
+       * deleting the row would take real money history with it.
+       */
+      label: "Remove from CADO",
+      note: "Takes the store and its products off the storefront for good. Nothing is deleted: its orders, payouts and product history stay intact, and you can bring it back by setting it active again. Find removed stores under the Closed filter on the Stores list.",
     },
   ];
 
@@ -854,7 +863,9 @@ function SettingsTab({
                   type="submit"
                   className="min-h-[40px] shrink-0 rounded-pill border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink"
                 >
-                  Set {s.label.toLowerCase()}
+                  {/* "Set remove from cado" is not a sentence. The removal
+                      row says Remove; the two reversible states say Set. */}
+                  {s.key === "closed" ? "Remove" : `Set ${s.label.toLowerCase()}`}
                 </button>
               )}
             </form>

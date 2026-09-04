@@ -37,7 +37,14 @@ const SORTS = [
   { key: "az", label: "A–Z" },
 ] as const;
 
-const STATUSES = ["all", "active", "pending", "paused"] as const;
+/**
+ * `closed` is here because closing a store is how a store is REMOVED from
+ * CADO — nothing is ever deleted, so a removed shop has to remain findable.
+ * Without this chip it fell into "all" with no way to filter to it or away
+ * from it, which is what made it look as though there were no way to remove a
+ * store at all.
+ */
+const STATUSES = ["all", "active", "pending", "paused", "closed"] as const;
 
 export default async function AdminStoresPage({
   searchParams,
