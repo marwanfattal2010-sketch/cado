@@ -821,3 +821,45 @@ unchanged.
   `admin_finance_breakdown` and `admin_orders` now.
 
 **If a dashboard page shows a zero, suspect RLS before believing it.**
+
+---
+
+## Browse, filters and photo accuracy (commit `a54af11`)
+
+**Filter state lives in the URL, on `/browse`.** There is no filter state in
+component state anywhere. `lib/browseParams.ts` is the whole layer: parse,
+serialize, `matches` (OR within a group, AND across groups), `sortResults`,
+`optionCount`, and `browseHref(cat, patch)` which every entry point links to.
+Category tabs no longer filter at all — their bottom grid is pure browse with a
+single "See all" door. If you find yourself adding a filter to a tab, add it to
+the URL instead.
+
+**Two traps in this area, both cost real time:**
+
+- **This project replaces Tailwind's spacing scale.** `tailwind.config.js` maps
+  `5→24px, 6→32, 7→48, 8→64`. So `h-8` is 64px, not 32, and a control row that
+  should have been 32px tall was 70. Write pixel heights (`h-[32px]`) on
+  anything you are measuring. `h-9` and above are untouched and behave normally.
+- **Deploy from the repo root, never from `apps/web`.** The root `vercel.json`
+  carries the SPA rewrite and the CSP; `apps/web` has none, and `npm install`
+  there cannot resolve `@cado/shared: workspace:*`. A deploy from `apps/web`
+  builds green and serves a 404 on every route but `/`.
+
+**Tab imagery is real product photography, not art.** Every recipient circle,
+entry tile, shop-by-category circle and hero slide takes a photo from the pool
+of products matching its label (`CategoryTab.tsx`, the `take()` allocator). So a
+wrong-looking picture is nearly always a wrongly-filed product, and the fix is
+the data. Migrations 0089 and 0090 did exactly that: kids clothing out of
+Fashion's Men and Women buckets, bags/belts/scarves into Jewels & Accs, earrings
+out of Necklaces and Rings, the two chocolate-free baskets into Gift Sets, and
+both "Men" products into Women because both are photographed on women. Fashion
+has no menswear, so the Men circle is gone until some exists.
+
+`scripts/strip-image-overlays.mjs` finds another retailer's notice burnt into a
+photo and paints it out. It flagged eight photos; seven were the product's own
+dark area touching an edge. `--apply` therefore only touches paths listed in its
+`CONFIRMED` set — adding one means a person opened the image and looked.
+
+**Still needs real catalogue work:** Fashion has no menswear; "Merino Crewneck"
+is a satin dress in its photograph and "Everyday Hoodie" is a woman's hoodie,
+both title/photo mismatches from seeding; Chocolate is down to six products.
