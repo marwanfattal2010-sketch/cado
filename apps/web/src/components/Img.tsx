@@ -7,6 +7,8 @@ type Props = {
   /** Set on the one image that is above the fold — a lazy hero is a blank
    *  hero for the first paint. */
   eager?: boolean;
+  /** Called when the URL fails, so a caller can offer the next photo. */
+  onFail?: () => void;
 };
 
 /**
@@ -34,7 +36,7 @@ type Props = {
  * instant the element exists and asks the element itself whether it is
  * already complete, which is the only reliable way to catch a cache hit.
  */
-export function Img({ src, alt = "", className = "", eager = false }: Props) {
+export function Img({ src, alt = "", className = "", eager = false, onFail }: Props) {
   const [loaded, setLoaded] = useState(false);
   const node = useRef<HTMLImageElement | null>(null);
 
@@ -135,8 +137,29 @@ export function Img({ src, alt = "", className = "", eager = false }: Props) {
       decoding="async"
       fetchPriority={eager ? "high" : "auto"}
       onLoad={() => setLoaded(true)}
-      onError={() => setLoaded(true)}
+      onError={() => {
+        // Reveal the box either way, and tell the caller so it can try the
+        // next photo this product has before we settle for nothing.
+        setLoaded(true);
+        onFail?.();
+      }}
       data-loaded={loaded ? "true" : "false"}
+      /*
+       * OPACITY IS SET INLINE, not left to the attribute selector.
+       *
+       * Measured on the Flowers tab: thirty images with `data-loaded="true"`,
+       * `naturalWidth === 900`, matching `.blur-up[data-loaded="true"]` — and
+       * a computed opacity of 0 anyway. A fresh probe element with the same
+       * class and the same attribute computed to 1 in the same document, so
+       * the cascade was right and these elements' style was simply stale; the
+       * attribute flip never triggered a recalc inside the pager's panels.
+       *
+       * An inline style cannot go stale that way: it is the element's own
+       * style object, written by React on the same render that set `loaded`.
+       * The blur and the scale stay in the stylesheet, where being a frame
+       * late costs nothing.
+       */
+      style={{ opacity: loaded ? 1 : 0 }}
       className={`blur-up ${className}`}
     />
   );

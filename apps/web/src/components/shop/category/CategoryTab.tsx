@@ -69,6 +69,15 @@ const REBUILT = new Set(["fashion"]);
  */
 const FILTERED_GRID = new Set(["flowers-gifts"]);
 
+/**
+ * The Flowers rose, for the one element the brief asks to carry it.
+ *
+ * Tab accents were removed app-wide when persimmon became the single accent —
+ * a page of eleven differently-coloured tabs read as eleven products. This is
+ * the one exception, on instruction, and it is scoped to the AI line.
+ */
+const ROSE = "201 106 130";
+
 export function CategoryTab({ tab }: { tab: BrowseTab }) {
   if (REBUILT.has(tab.filter.category_slug ?? "")) return <TabTemplate tab={tab} />;
   return <LegacyCategoryTab tab={tab} />;
@@ -342,6 +351,18 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
     lookup: filterLookup,
   });
   const filtered = FILTERED_GRID.has(cat);
+  /*
+   * ONE apply() FOR EVERY CONTROL ON THE PAGE.
+   *
+   * Hero SHOP NOW, the recipient circles, the category circles, the occasion
+   * chips and the tiles all call this. It merges into the CURRENT selection
+   * rather than replacing it, so tapping Birthday and then Roses leaves you
+   * with both — which is the whole point of the chip row below.
+   */
+  const apply = filtered
+    ? (patch: Record<string, unknown>) =>
+        filters.push({ ...filters.state, ...(patch as Partial<BrowseState>) })
+    : undefined;
 
   if (sections.isLoading) {
     return (
@@ -366,7 +387,11 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
   return (
     <>
       {/* 1 — hero: three slides, full-bleed photography. */}
-      <CategoryHero slides={art.heroSlides} shopAllHref={browseHref(cat)} />
+      <CategoryHero
+        slides={art.heroSlides}
+        shopAllHref={browseHref(cat)}
+        onShopAll={filtered ? () => filters.push(filters.state) : undefined}
+      />
 
       {/*
         ONE spacing token between every section, top to bottom. Nothing below
@@ -375,7 +400,7 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
       */}
       <div className="space-y-6 px-[var(--page-x)] pt-5">
         {/* 1b — the gift finder, offered once, directly under the hero. */}
-        {filtered ? <AiLine /> : null}
+        {filtered ? <AiLine accent={ROSE} /> : null}
 
         {/* 2 — Gift for… */}
         <GiftForRow
@@ -383,6 +408,7 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
           theme={theme}
           cat={cat}
           photoFor={(v) => art.recipientPhoto.get(v) ?? null}
+          apply={apply}
         />
 
         {/*
@@ -392,7 +418,7 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
         <TallTiles tiles={filtered ? flowerTiles(cat, filters) : art.tiles} />
 
         {/* 4 — shop by category */}
-        <SubcategoryCircles circles={art.circles} theme={theme} cat={cat} />
+        <SubcategoryCircles circles={art.circles} theme={theme} cat={cat} apply={apply} />
 
         {/* 5 — super deals */}
         <SuperDeals sections={sections} theme={theme} cat={cat} />
@@ -402,6 +428,7 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
           title="New arrivals"
           products={sections.newArrivals}
           theme={theme}
+          fullCards={filtered}
           seeAllHref={browseHref(cat, { tile: "new-in" })}
         />
 
@@ -425,7 +452,7 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
         />
 
         {/* 10 — occasion chips */}
-        <OccasionChips sections={sections} theme={theme} cat={cat} />
+        <OccasionChips sections={sections} theme={theme} cat={cat} apply={apply} />
 
         {/*
           11 — STORES, and they are the last section before the grid now.

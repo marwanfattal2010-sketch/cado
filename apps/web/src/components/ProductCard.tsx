@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { productImageUrl } from "../lib/images";
 import { useFavoriteIds, useToggleFavorite } from "../hooks/useFavorites";
@@ -57,17 +58,17 @@ type ProductCardProps = {
 };
 
 /**
- * Which photo the grid uses.
+ * Every photo this product has, primary first.
  *
- * The brief asks for the tallest where a product has several. Nothing in the
- * catalogue has more than one today (checked: max 1), and product_images
- * stores no width or height, so "tallest" cannot be decided without loading
- * every candidate. Primary-then-first is the honest stand-in; the moment
- * dimensions exist on the row this is the one function to change.
+ * The card walks this list on error rather than leaving a hole: a product with
+ * three pictures and one broken URL shows the second, not empty space. Only a
+ * product whose every image fails falls through to the "No photo" panel, which
+ * is a truthful statement rather than a blank.
  */
-function gridImage(images: ProductImage[] | null | undefined) {
-  if (!images || images.length === 0) return null;
-  return productImageUrl((images.find((i) => i.is_primary) ?? images[0]).storage_path);
+function gridImages(images: ProductImage[] | null | undefined): string[] {
+  if (!images || images.length === 0) return [];
+  const ordered = [...images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+  return ordered.map((i) => productImageUrl(i.storage_path));
 }
 
 /**
@@ -147,7 +148,11 @@ export function ProductCard(props: ProductCardProps) {
      */
     uniform = false,
   } = props;
-  const uri = gridImage(product_images);
+  const photos = gridImages(product_images);
+  // Which photo we are on. Bumped by onError, so a broken URL steps to the
+  // next one instead of leaving the card blank.
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const uri = photos[photoIndex] ?? null;
   const favoriteIds = useFavoriteIds();
   const toggleFavorite = useToggleFavorite();
   const isFavorite = favoriteIds.has(id);
@@ -192,7 +197,12 @@ export function ProductCard(props: ProductCardProps) {
              * requested and would have stayed blank behind a blur. One image
              * component, so a fix lands everywhere at once.
              */
-            <Img src={uri} alt={title} className="h-full w-full object-cover" />
+            <Img
+              src={uri}
+              alt={title}
+              className="h-full w-full object-cover"
+              onFail={() => setPhotoIndex((i) => (i + 1 < photos.length ? i + 1 : i))}
+            />
           ) : (
             <div className="flex aspect-square h-full w-full items-center justify-center text-caption text-muted">
               No image

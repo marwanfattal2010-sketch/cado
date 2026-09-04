@@ -73,16 +73,56 @@ export function primaryPhoto(p: FeedProduct | null | undefined) {
 /* 3 — Shop by category (white card)                                          */
 /* -------------------------------------------------------------------------- */
 
+
+/**
+ * A filter entry point renders as a LINK or as a BUTTON, depending on the tab.
+ *
+ * On a tab whose own grid is filterable, tapping a circle or a chip must
+ * narrow that grid and scroll to it — never navigate. On every other tab the
+ * same control still links to /browse. One component, one set of styles, and
+ * the only difference is what the tap does.
+ */
+export type ApplyFilter = ((patch: Record<string, unknown>) => void) | undefined;
+
+function FilterEntry({
+  apply,
+  patch,
+  to,
+  className,
+  children,
+}: {
+  apply: ApplyFilter;
+  patch: Record<string, unknown>;
+  to: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (apply) {
+    return (
+      <button type="button" onClick={() => apply(patch)} className={className}>
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Link to={to} className={className}>
+      {children}
+    </Link>
+  );
+}
+
 export type CircleItem = { id: string; slug: string; name: string; photo: string | null };
 
 export function SubcategoryCircles({
   circles,
   theme,
   cat,
+  apply,
 }: {
   circles: CircleItem[];
   theme: CategoryTheme;
   cat: string;
+  apply?: ApplyFilter;
 }) {
   // Two is the floor: a "Shop by category" row with one circle in it is not a
   // choice, it is a heading with a picture under it.
@@ -93,8 +133,10 @@ export function SubcategoryCircles({
       <TabSectionHead title="Shop by category" theme={theme} />
       <div className="scroll-row -mx-3 px-3" style={{ ["--row-gap" as string]: "14px" }}>
         {circles.map((c) => (
-          <Link
+          <FilterEntry
             key={c.id}
+            apply={apply}
+            patch={{ type: [c.slug] }}
             to={browseHref(cat, { type: [c.slug] })}
             className="flex w-[62px] shrink-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
           >
@@ -116,7 +158,7 @@ export function SubcategoryCircles({
             <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-ink">
               {c.name}
             </span>
-          </Link>
+          </FilterEntry>
         ))}
       </div>
     </TabCard>
@@ -315,10 +357,12 @@ export function OccasionChips({
   sections,
   theme,
   cat,
+  apply,
 }: {
   sections: TabSections;
   theme: CategoryTheme;
   cat: string;
+  apply?: ApplyFilter;
 }) {
   /*
    * A CHIP THAT MATCHES EVERYTHING IS NOT A FILTER.
@@ -371,13 +415,15 @@ export function OccasionChips({
             takes you somewhere that can say what you are looking at and can
             hold a second selection alongside it. */}
         {chips.map((o) => (
-          <Link
+          <FilterEntry
             key={o.value}
+            apply={apply}
+            patch={{ occasion: [o.value] }}
             to={browseHref(cat, { occasion: [o.value] })}
             className="flex h-9 items-center justify-center rounded-pill border border-ink/[0.12] bg-canvas px-2 text-[12px] font-medium leading-tight text-ink transition-transform duration-press ease-out active:scale-[0.97]"
           >
             <span className="truncate">{o.label}</span>
-          </Link>
+          </FilterEntry>
         ))}
       </div>
       {withStock.length > chips.length ? (
@@ -423,12 +469,14 @@ export function GiftForRow({
   theme,
   cat,
   photoFor,
+  apply,
 }: {
   sections: TabSections;
   theme: CategoryTheme;
   cat: string;
   /** A real product photo for that recipient, or null. */
   photoFor: (value: string) => string | null;
+  apply?: ApplyFilter;
 }) {
   // Only recipients this category can actually serve. A tile that opens an
   // empty grid is worse than one fewer tile.
@@ -440,8 +488,10 @@ export function GiftForRow({
       <TabSectionHead title="Gift for…" theme={theme} />
       <div className="scroll-row -mx-[var(--page-x)]" style={{ ["--row-gap" as string]: "12px" }}>
         {shown.map((r) => (
-          <Link
+          <FilterEntry
             key={r.value}
+            apply={apply}
+            patch={{ for: [r.value] }}
             to={browseHref(cat, { for: [r.value] })}
             className="flex w-[66px] shrink-0 flex-col items-center gap-1.5 transition-transform duration-press ease-out active:scale-[0.96]"
           >
@@ -456,7 +506,7 @@ export function GiftForRow({
             <span className="text-center text-[11px] font-medium leading-tight text-ink">
               {recipientLabel(r.value, "short")}
             </span>
-          </Link>
+          </FilterEntry>
         ))}
       </div>
     </section>
@@ -481,11 +531,22 @@ export function ProductStrip({
   products,
   theme,
   seeAllHref,
+  fullCards = false,
 }: {
   title: string;
   products: FeedProduct[];
   theme: CategoryTheme;
   seeAllHref?: string;
+  /**
+   * The REAL card, at rail size, instead of the strip's own cut-down markup.
+   *
+   * The bespoke version showed a photo, a title and a price and dropped the
+   * store name and the delivery line — the two things that actually separate
+   * two similar bouquets. Passing the shared card keeps every row on the page
+   * saying the same things in the same order, and gets the card's own fixed
+   * text box, so nothing in it clips.
+   */
+  fullCards?: boolean;
 }) {
   if (products.length < MIN_STRIP) return null;
   return (
@@ -494,7 +555,12 @@ export function ProductStrip({
       {/* Every card the same width and the same fixed ratio, so no row is
           ever ragged. The rail carries the page gutter at both ends. */}
       <div className="scroll-row -mx-[var(--page-x)]" style={{ ["--row-gap" as string]: "10px" }}>
-        {products.slice(0, 10).map((p) => (
+        {products.slice(0, 10).map((p) =>
+          fullCards ? (
+            <div key={p.id} className="w-[124px] shrink-0">
+              <ProductCard {...p} uniform compact />
+            </div>
+          ) : (
           <Link
             key={p.id}
             to={`/product/${p.id}`}
@@ -510,7 +576,8 @@ export function ProductStrip({
               {formatMoney(p.price)}
             </span>
           </Link>
-        ))}
+          )
+        )}
       </div>
     </section>
   );

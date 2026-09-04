@@ -995,3 +995,22 @@ inside a sheet still respond to the selection and still grey at zero.
 no new column. Colour uses the existing `products.color`. Only what a product's
 own title or description states: 6 of 6 flower types, 4 of 6 colours, and the
 two that say nothing about colour are now null rather than a guess.
+
+### Flowers, round two: entry points filter in place
+
+Every control on the Flowers tab — hero SHOP NOW, the recipient circles, the
+Shop-by-category circles, the occasion chips and the tiles — now narrows the
+grid at the bottom and scrolls to it instead of navigating to /browse. They all
+call one `apply()` in `CategoryTab`, which MERGES into the current selection, so
+Birthday then Roses leaves you holding both. `FilterEntry` in CategorySections
+renders a Link or a button depending on whether the tab passes `apply`.
+
+**The blur-up opacity is inline now, and that was a real bug.** Measured on
+Flowers: thirty images with `data-loaded="true"`, `naturalWidth === 900`,
+matching `.blur-up[data-loaded="true"]` — and a computed opacity of 0. A probe
+element with the identical class and attribute computed to 1 in the same
+document, so the cascade was correct and those elements' style was stale: the
+attribute flip never triggered a recalc inside the pager's panels. `Img` writes
+`style={{opacity}}` from React state; blur and scale stay in CSS where a frame
+of lag is free. If you ever see "the image is downloaded but invisible" again,
+this is the third distinct cause and inline style is the answer.

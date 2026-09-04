@@ -12,12 +12,15 @@ import { Link } from "react-router-dom";
  * It opens the existing three-question finder at /assistant — budget, then
  * occasion, then category. Nothing new was built behind it.
  */
-export function AiLine() {
+export function AiLine({ accent }: { accent?: string }) {
+  // The tab's own accent where it has one — rose on Flowers — and persimmon
+  // everywhere else. 35% on the border, full strength on the text.
+  const colour = accent ?? "var(--persimmon)";
   return (
     <Link
       to="/assistant"
       className="flex h-[46px] w-full items-center justify-center gap-1 rounded-[12px] border text-[14px] font-semibold transition-transform duration-press ease-out active:scale-[0.99]"
-      style={{ borderColor: "rgb(var(--persimmon) / 0.35)", color: "rgb(var(--persimmon))" }}
+      style={{ borderColor: `rgb(${colour} / 0.35)`, color: `rgb(${colour})` }}
     >
       ✨ Let AI help me choose
       <span aria-hidden className="text-[16px] leading-none opacity-70">
