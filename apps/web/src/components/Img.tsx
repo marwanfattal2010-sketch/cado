@@ -76,35 +76,36 @@ export function Img({ src, alt = "", className = "", eager = false }: Props) {
       return;
     }
 
-    let poll: ReturnType<typeof setInterval> | null = null;
-    const startPolling = () => {
-      if (poll) return;
-      poll = setInterval(() => {
-        if (node.current && node.current.naturalWidth > 0) {
-          setLoaded(true);
-          if (poll) clearInterval(poll);
-          poll = null;
-        }
-      }, 200);
-    };
+    /*
+     * THE POLL IS NOT GATED ON ANYTHING. That was the bug in the first
+     * version of this fix.
+     *
+     * It used to start only once an IntersectionObserver said the image was
+     * near the viewport — and inside these panels that observer does not fire
+     * either, so on a COLD load every one of the 34 images on the Fashion tab
+     * downloaded (`naturalWidth === 1200`, eager) and then sat at `opacity: 0`
+     * forever, because nothing ever asked whether it had arrived. It only
+     * looked fixed on a warm cache, where `naturalWidth` is already non-zero
+     * at mount and the early return above catches it.
+     *
+     * Loading is eager now, so there is nothing to defer and no reason to
+     * gate. Poll until it is there, give up after ~6s, and stop dead the
+     * moment it wins.
+     */
+    let n = 0;
+    const poll = setInterval(() => {
+      if (node.current && node.current.naturalWidth > 0) {
+        setLoaded(true);
+        clearInterval(poll);
+      } else if (++n >= 30) {
+        // Genuinely broken src. Reveal it anyway rather than leaving a
+        // permanent blur over whatever the browser did manage to render.
+        setLoaded(true);
+        clearInterval(poll);
+      }
+    }, 200);
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        el.loading = "eager";
-        startPolling();
-        io.disconnect();
-      },
-      // A screen and a half of lead time, so the picture is there by the time
-      // the row is.
-      { rootMargin: "600px 0px" }
-    );
-    io.observe(el);
-
-    return () => {
-      io.disconnect();
-      if (poll) clearInterval(poll);
-    };
+    return () => clearInterval(poll);
   }, [loaded, src]);
 
   if (!src) return null;
