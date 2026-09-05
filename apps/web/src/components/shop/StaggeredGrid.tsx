@@ -73,7 +73,7 @@ export function StaggeredGrid({
         <CollectionTile key={c.key} card={c} />
       ))}
       {products.map((p) => (
-        <StaggerCard key={p.id} product={p} radius={tone === "cream" ? 12 : 8} />
+        <StaggerCard key={p.id} product={p} />
       ))}
     </div>
   );
@@ -81,8 +81,11 @@ export function StaggeredGrid({
 
 export function CollectionTile({ card }: { card: CollectionCard }) {
   return (
-    <Link to={card.href} className="block rounded-[8px] bg-white px-2.5 pb-3 pt-2.5">
-      <span className="mb-2 flex items-center justify-between text-[14px] font-extrabold italic text-ink">
+    <Link to={card.href} className="card-press block rounded-[16px] border border-card-line bg-white px-2.5 pb-3 pt-2.5 shadow-card">
+      {/* Not italic any more: it was the only italic on the page, which made
+          these two cards read as a different product rather than as a heading
+          in the same family as every other section title. */}
+      <span className="mb-2 flex items-center justify-between text-[14px] font-extrabold text-ink">
         {card.title}
         <span aria-hidden className="not-italic">
           ›
@@ -91,7 +94,7 @@ export function CollectionTile({ card }: { card: CollectionCard }) {
       <span className="grid grid-cols-2 gap-1.5">
         {card.items.map((it, i) => (
           <span key={i} className="block">
-            <span className="block aspect-[1/1.15] overflow-hidden rounded-[6px] bg-[#F0ECE6]">
+            <span className="photo-4x5 block rounded-[10px]">
               {it.photo ? <Img src={it.photo} className="h-full w-full object-cover" /> : null}
             </span>
             <b className="mt-1 block text-[13px] font-extrabold text-persimmon">
@@ -105,7 +108,7 @@ export function CollectionTile({ card }: { card: CollectionCard }) {
   );
 }
 
-function StaggerCard({ product: p, radius = 8 }: { product: FeedProduct; radius?: number }) {
+function StaggerCard({ product: p }: { product: FeedProduct }) {
   const imgs = p.product_images ?? [];
   const path = (imgs.find((i) => i.is_primary) ?? imgs[0])?.storage_path;
   const uri = path ? productImageUrl(path) : null;
@@ -116,7 +119,7 @@ function StaggerCard({ product: p, radius = 8 }: { product: FeedProduct; radius?
   const ratio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, ratioFor(p.id)));
 
   return (
-    <div className="overflow-hidden bg-white" style={{ borderRadius: radius }}>
+    <div className="card-press overflow-hidden rounded-[16px] border border-card-line bg-white shadow-card">
       <Link to={`/product/${p.id}`} className="block">
         <span
           className="relative block w-full overflow-hidden bg-white"
@@ -156,7 +159,9 @@ function StaggerCard({ product: p, radius = 8 }: { product: FeedProduct; radius?
         <Link to={`/product/${p.id}`} className="mt-0.5 block">
           <p className="line-clamp-2 text-[12.5px] leading-tight text-ink">{p.title}</p>
         </Link>
-        <p className={`mt-1 text-[15px] font-extrabold leading-none ${radius === 12 ? "text-ink" : "text-persimmon"}`}>
+        {/* Ink at full price, coral on sale. The colour IS the discount
+            signal, so wearing it at full price spends it for nothing. */}
+        <p className={`mt-1 text-[15px] font-extrabold leading-none ${onSale ? "text-coral" : "text-ink"}`}>
           {formatMoney(p.price)}
           {onSale ? (
             <s className="ml-1.5 text-[11px] font-normal text-muted">
@@ -164,7 +169,7 @@ function StaggerCard({ product: p, radius = 8 }: { product: FeedProduct; radius?
             </s>
           ) : null}
         </p>
-        <p className="mt-1 text-[11px] leading-none text-[#1C7A46]">{deliveryWord()}</p>
+        <p className="mt-1 text-[11px] leading-none text-today">{deliveryWord()}</p>
       </div>
     </div>
   );

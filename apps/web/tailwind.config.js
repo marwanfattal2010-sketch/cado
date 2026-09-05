@@ -26,6 +26,13 @@ export default {
       // Adding a colour here without `token()` silently reintroduces the bug.
       colors: {
         canvas: token("--canvas"),
+        // Cream, and ONLY as an alternating section band — see index.css.
+        band: token("--band"),
+        // The hairline on a card, and the neutral bed behind a product photo.
+        "card-line": token("--card-line"),
+        "photo-bed": token("--photo-bed"),
+        // The rationed accent. `persimmon` is its old name, same value.
+        coral: token("--coral"),
         surface: token("--surface"),
         "surface-sunk": token("--surface-sunk"),
         ink: token("--ink"),
