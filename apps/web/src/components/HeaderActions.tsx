@@ -74,10 +74,17 @@ export function NotificationBell() {
 }
 
 /**
- * The cart, and the COUNT SITS INSIDE the box beside the icon rather than as a
- * bubble hanging off its corner. A badge on a filled square is a dot on a dot,
- * and at 40px there is room for the number itself. Empty, the box is square
- * and shows only the bag.
+ * The cart — JUST THE BAG. No box, no fill, no border.
+ *
+ * It was a filled persimmon square, on the reasoning that the cart is the one
+ * destination in a row of statuses. Marwan disagreed and he is right: a solid
+ * orange tile in the corner of every screen is a permanent advert for a cart
+ * that is usually empty, and it shouted louder than the address — the one
+ * thing up there that actually changes what the app shows.
+ *
+ * So the bag stands alone and the COUNT carries the colour instead: a small
+ * persimmon bubble, present only when there is something in it. Nothing is
+ * drawn at zero, because a badge means "something is waiting".
  */
 export function CartButton({ storeId }: { storeId?: string }) {
   const cart = useCart();
@@ -104,13 +111,14 @@ export function CartButton({ storeId }: { storeId?: string }) {
           ? `Cart, ${count} item${count === 1 ? "" : "s"}`
           : `Your carts, ${count} cart${count === 1 ? "" : "s"}`
       }
-      className={`flex h-10 shrink-0 items-center justify-center gap-1 rounded-[10px] bg-persimmon text-white transition-transform duration-press ease-out active:scale-[0.96] ${
-        count > 0 ? "px-2.5" : "w-10"
-      }`}
+      className="relative flex h-10 w-10 shrink-0 items-center justify-center text-header-fg transition-transform duration-press ease-out active:scale-[0.92]"
     >
-      <GiftBagIcon className="h-[21px] w-[21px]" />
+      <GiftBagIcon className="h-[22px] w-[22px]" />
       {count > 0 ? (
-        <span key={count} className="animate-bump text-[13px] font-bold leading-none">
+        <span
+          key={count}
+          className="absolute right-0 top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-bold text-white"
+        >
           {count}
         </span>
       ) : null}

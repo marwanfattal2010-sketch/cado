@@ -312,9 +312,16 @@ export function Header() {
               </h1>
             ) : (
               /*
-               * ONE LINE, NOT TWO. It was a "Deliver to" label stacked over
-               * the address, which cost the header a whole second row for a
-               * word nobody needs twice — the pin already says what this is.
+               * "DELIVER TO" ON TOP, the place underneath.
+               *
+               * It was collapsed to one line to save a row, and the row it
+               * saved was not worth it: on its own, "Home" in a header is a
+               * word with no job, and "Main St" is an address with nothing
+               * saying what it is FOR. The small grey line is what turns
+               * either into an answer.
+               *
+               * Both lines still fit 56px — 12px over 16px is 33px of type in
+               * a row that reserves 40 for its buttons.
                *
                * "Set your location" only appears when nothing is selected AND
                * the shopper has no default address. A default city printed as
@@ -324,7 +331,7 @@ export function Header() {
                */
               <button
                 onClick={openAreaSheet}
-                className="flex min-w-0 items-center gap-1.5 py-1 text-left transition-transform duration-press ease-out active:scale-[0.98]"
+                className="flex min-w-0 items-center gap-1.5 text-left transition-transform duration-press ease-out active:scale-[0.98]"
               >
                 {/* THE EMOJI, and this is the third time it has been asked
                     for. It keeps getting replaced by an outline SVG whenever
@@ -334,15 +341,22 @@ export function Header() {
                 <span aria-hidden className="shrink-0 text-[17px] leading-none">
                   📍
                 </span>
-                <span
-                  className={`truncate text-[16px] font-semibold ${
-                    chip.unset ? "text-persimmon" : "text-header-fg"
-                  }`}
-                >
-                  {chip.text}
-                </span>
-                <span aria-hidden className="shrink-0 text-[11px] text-header-muted">
-                  ▾
+                <span className="min-w-0">
+                  <span className="block text-[12px] leading-none text-header-muted">
+                    Deliver to
+                  </span>
+                  <span className="mt-0.5 flex items-center gap-1 leading-tight">
+                    <span
+                      className={`truncate text-[16px] font-bold ${
+                        chip.unset ? "text-persimmon" : "text-header-fg"
+                      }`}
+                    >
+                      {chip.text}
+                    </span>
+                    <span aria-hidden className="shrink-0 text-[11px] text-header-muted">
+                      ▾
+                    </span>
+                  </span>
                 </span>
               </button>
             )}

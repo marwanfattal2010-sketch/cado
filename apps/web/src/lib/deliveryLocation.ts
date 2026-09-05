@@ -115,16 +115,16 @@ export function useDeliveryLocation(): [DeliveryLocation | null, (l: DeliveryLoc
 }
 
 /**
- * THE HEADER’S ONE LINE.
+ * THE SECOND LINE OF THE HEADER CHIP.
  *
- * LABEL PLUS STREET, not label plus city. "Home · Beirut" is true of every
- * address this shopper has; "Home · Main St" is the one they picked. The city
- * still drives availability everywhere else — it is just not what belongs in
- * eight characters of header.
+ * The LABEL ALONE — "Home", "Work", "Mum’s place" — under a small
+ * "Deliver to". It briefly read "Home · Main St", which is more true and
+ * worse: the street is the part you already know, the label is the part you
+ * chose, and at 16px bold in a row that also holds three buttons the street
+ * only ever arrived as an ellipsis.
  *
  * A GPS fix has no label, so it shows its reverse-geocoded street when one
- * came back and the words "Current location" when none did. It never shows a
- * bare city, which would read as a saved address that is not one.
+ * came back and the words "Current location" when none did.
  *
  * "Set your location" appears ONLY when nothing is selected. A default city
  * printed as though it were a choice is how an order ends up at the wrong end
@@ -135,15 +135,10 @@ export function chipLabel(loc: DeliveryLocation | null): {
   unset: boolean;
 } {
   if (!loc) return { text: "Set your location", unset: true };
-
-  const detail = loc.line?.trim();
   if (loc.kind === "current" || loc.kind === "pin") {
-    return { text: detail || loc.label, unset: false };
+    return { text: loc.line?.trim() || loc.label, unset: false };
   }
-  return {
-    text: detail ? `${loc.label} · ${detail}` : `${loc.label} · ${loc.city}`,
-    unset: false,
-  };
+  return { text: loc.label, unset: false };
 }
 
 /**
