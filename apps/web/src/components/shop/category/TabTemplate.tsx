@@ -12,7 +12,7 @@ import { StoreLogoCircle } from "../StoreLogoCircle";
 import { storePath } from "../../../lib/routes";
 import { productImageUrl } from "../../../lib/images";
 import { formatMoney } from "../../../lib/money";
-import { circleArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
+import { circleArt, heroArt, typeTileArt } from "../../../lib/tabArt";
 import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
 import { inBudgetRange, type Budget } from "../../../lib/filters";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
@@ -375,7 +375,6 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     );
   }
 
-  const maxOff = deals.length ? off(deals[0]) : 0;
   /*
    * `inBudgetRange` rather than a bare `< 75`, so the number under the banner
    * is produced by the SAME predicate the results page filters with. Written
@@ -385,17 +384,15 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
    * The upper bound is exclusive: a product priced at exactly $75 is not
    * under $75.
    */
-  const underCount = all.filter((p) =>
-    inBudgetRange(Number(p.price), UNDER_BAND)
-  ).length;
+  const underPool = all.filter((p) => inBudgetRange(Number(p.price), UNDER_BAND));
   /*
    * FOURTEEN DAYS, not thirty. "Just landed" has to mean recently, and on a
    * catalogue seeded in one sitting a thirty-day window counts the entire
    * shop — a number that is technically true and tells the shopper nothing.
    */
-  const newCount = all.filter(
+  const newest14 = all.filter(
     (p) => Date.now() - new Date(p.created_at).getTime() < 14 * 86400000
-  ).length;
+  );
 
   /*
    * NO CAP ON THE RAIL any more.
@@ -412,65 +409,124 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
   const storeCircleW = "64px";
 
   /*
-   * THE FOUR BANNERS. `note` is the second line and every one of them is a
-   * real number off this tab: how many arrived in the window, how many are
-   * under the threshold, the largest live discount. Nothing here is typed in,
-   * and a banner whose number is zero does not render.
+   * THE FOUR COLOUR TILES.
    *
-   * `focusY` is a VERTICAL focal point, and it is vertical because horizontal
-   * is not available. All four of these are portrait studio shots (600x800)
-   * dropped into a 96px-tall strip. `object-fit: cover` scales to the wider
-   * axis, so the full 600px width always shows and the crop is entirely
-   * vertical — `object-position`'s X component has no slack to move in and
-   * changes nothing at all. Only Y picks what you see.
+   * These replaced four full-width photo banners, and the reason is worth
+   * keeping: the banners were stock models on studio grounds, and four of
+   * them stacked made the top of the tab look like a lookbook rather than a
+   * shop. A flat colour with the shop's OWN product in the corner says the
+   * same thing in a quarter of the height, and the product is real stock.
    *
-   * These numbers were read off the actual files, each opened and looked at:
-   * the visible band works out as [0.52·Y, 0.52·Y + 0.48] of the frame, so
-   * the value is chosen to land that band on the GARMENT rather than on the
-   * model's legs or the empty sweep of studio wall above their head.
+   * NO COUNTS IN THE COPY. "4 just landed" is a number that changes hourly,
+   * ages badly in a screenshot, and tells a shopper nothing they can act on.
+   * The subtitles are fixed strings.
    *
-   * "Most gifted" keeps a written subtitle rather than a count. There is no
-   * order history to rank by yet, and a number invented to fill the line is
-   * the one thing this page never does.
+   * A TILE NEVER OPENS AN EMPTY GRID. Fewer than two products in a collection
+   * and the tile is not rendered at all — see `show` below — which is the same
+   * rule every other rail on this page follows.
    */
-  const banners: {
+  const tileDefs: {
     id: TileId;
     label: string;
-    note: string;
-    show: boolean;
-    focusY: string;
+    subtitle: string;
+    fill: string;
+    well: string;
+    labelColor: string;
+    subColor: string;
+    pool: FeedProduct[];
   }[] = [
     {
       id: "new-in",
       label: "New in",
-      note: newCount > 0 ? `${newCount} just landed` : "Latest arrivals",
-      // Never hidden: a shop always has a newest thing, even if none of it
-      // landed this fortnight — that is what the fallback line is for.
-      show: all.length > 0,
-      focusY: "35%",
+      subtitle: "Just landed this week",
+      fill: "#FAECE7",
+      well: "#F0997B",
+      labelColor: "#712B13",
+      subColor: "#993C1D",
+      pool: newest14,
     },
     {
-      id: "most-gifted",
+      /*
+       * THE HONEST FALLBACK, and `best-picks` rather than `store-picks`.
+       *
+       * `most-gifted` ranks by delivered orders. With no order history there
+       * is no ranking to show, so the tile has to point somewhere that does
+       * not claim one. `store-picks` was the obvious candidate and it is the
+       * wrong one — measured, it returns ZERO Fashion products, because
+       * nothing in the category carries the is_pick flag, and a tile that
+       * opens an empty grid is the one outcome this page forbids outright.
+       *
+       * `best-picks` returns all 22 and titles the page "Best picks", which
+       * claims curation rather than popularity. The tile's own label stays
+       * "Most gifted" either way.
+       */
+      id: sections.bestSellersAreReal ? "most-gifted" : "best-picks",
       label: "Most gifted",
-      note: "Popular picks",
-      show: all.length > 0,
-      focusY: "40%",
+      subtitle: "What people send",
+      fill: "#FAEEDA",
+      well: "#FAC775",
+      labelColor: "#633806",
+      subColor: "#854F0B",
+      pool: sections.bestSellers.length ? sections.bestSellers : all,
     },
     {
       id: "under-75",
       label: `Under $${UNDER_TILE_MAX}`,
-      note: `${underCount} under ${UNDER_TILE_MAX}`,
-      show: underCount > 0,
-      focusY: "42%",
+      subtitle: "Good gifts, small price",
+      fill: "#E1F5EE",
+      well: "#9FE1CB",
+      labelColor: "#085041",
+      subColor: "#0F6E56",
+      pool: underPool,
     },
     {
       id: "deals",
       label: "Deals",
-      note: `Up to -${maxOff}%`,
-      show: deals.length > 0 && maxOff > 0,
-      focusY: "15%",
+      subtitle: "This week's discounts",
+      fill: "#F94E33",
+      // The one tile whose fill IS the accent, so its well is white and its
+      // type is white — there is no darker persimmon that stays legible on
+      // persimmon.
+      well: "#FFFFFF",
+      labelColor: "#FFFFFF",
+      subColor: "#FFE1DA",
+      pool: deals,
     },
   ];
+
+  /*
+   * Each tile carries a REAL PRODUCT from its own collection — the newest one
+   * that has a photograph. Not a stock image and not a letter: a Deals tile
+   * showing something that is not discounted is a small lie, and this is the
+   * cheapest possible way to avoid telling it.
+   */
+  const tilePhotosUsed = new Set<string>();
+  const tiles = tileDefs
+    .map((t) => {
+      const byNewest = [...t.pool].sort(
+        (a, b) => +new Date(b.created_at) - +new Date(a.created_at)
+      );
+      /*
+       * NO TWO TILES SHOW THE SAME PRODUCT. The collections overlap by
+       * design — a new arrival is often also a best pick — so taking "newest
+       * with a photo" independently put the identical scarf in New in and in
+       * Most gifted, side by side, which reads as a rendering bug rather than
+       * as two collections. Each tile takes the newest photo no tile above it
+       * has claimed, and only falls back to a repeat if that would otherwise
+       * leave it blank.
+       */
+      const fresh = byNewest.find((p) => {
+        const photo = photoOf(p);
+        return photo && !tilePhotosUsed.has(photo);
+      });
+      const chosen = fresh ?? byNewest.find((p) => photoOf(p));
+      const photo = chosen ? photoOf(chosen) : null;
+      if (photo) tilePhotosUsed.add(photo);
+      return { ...t, photo };
+    })
+    // Two is the floor: one product behind a tile is a collection in name
+    // only, and the grid reflows to 3 / 2 / 0 tiles on its own below.
+    .filter((t) => t.pool.length >= 2 && t.photo);
 
   return (
     <div className="bg-white">
@@ -573,6 +629,101 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           the same seven recipients the All tab already carries added a colour
           block here for no new destination. */}
 
+      {/* 4b — THE FOUR COLOUR TILES, two across.
+          They were four full-width photo banners of stock models on studio
+          grounds, which made the top of the tab read as a lookbook rather
+          than a shop. A flat colour with the shop's own product tucked into
+          the corner says the same thing in a quarter of the height, and the
+          product in it is real stock.
+
+          THE LAST TILE SPANS when there are three: an odd tile left hanging
+          in a two-column grid reads as one that failed to load, and a
+          collection is hidden here only when it genuinely has nothing. */}
+      {tiles.length >= 2 ? (
+        <section className="mt-4 grid grid-cols-2 gap-2.5 px-[var(--page-x)]">
+          {tiles.map((t, i) => (
+            <Link
+              key={t.id}
+              to={browseHref(slug, { tile: t.id })}
+              className={`card-press relative block h-[104px] overflow-hidden rounded-[12px] p-3 ${
+                tiles.length === 3 && i === 2 ? "col-span-2" : ""
+              }`}
+              style={{ background: t.fill }}
+            >
+              <span
+                className="block pr-[58px] text-[15px] font-semibold leading-tight"
+                style={{ color: t.labelColor }}
+              >
+                {t.label}
+              </span>
+              <span
+                className="mt-0.5 block pr-[58px] text-[12px] leading-tight"
+                style={{ color: t.subColor }}
+              >
+                {t.subtitle}
+              </span>
+
+              {/* The arrow sits at the foot of the tile rather than beside the
+                  label: level with the well, it reads as the pair of them
+                  pointing at the same destination. */}
+              <span
+                aria-hidden
+                className="absolute bottom-3 left-3 text-[16px] leading-none"
+                style={{ color: t.labelColor }}
+              >
+                →
+              </span>
+
+              {/* THE WELL. A coloured box behind the cutout, so a product
+                  photographed on white does not dissolve into a pale tile —
+                  and so all four wells are the same shape whatever shape the
+                  product is. */}
+              <span
+                className="absolute bottom-3 right-3 block h-[56px] w-[46px] overflow-hidden rounded-[8px]"
+                style={{ background: t.well }}
+              >
+                <Img src={t.photo ?? ""} className="h-full w-full object-cover" />
+              </span>
+            </Link>
+          ))}
+        </section>
+      ) : null}
+
+      {/* 5 — Super deals: THE ONE COOL BLOCK on a warm page.
+          Every other section here is white, persimmon or one of the four tile
+          colours above. A pale blue band is the only thing on the tab that is
+          not warm, which is what makes the deepest discounts in the shop stop
+          the scroll without a second accent colour being invented for them.
+          Exactly one block gets this; a second would cancel the first. */}
+      {claimed.dealRow.length >= MIN_RAIL ? (
+        <section className="mt-4 px-[var(--page-x)]">
+          <div className="rounded-[12px] bg-deals-bg p-3">
+            <div className="flex items-baseline justify-between gap-3 pb-3">
+              <h2 className="text-[22px] font-bold tracking-[-0.01em] text-deals-title">
+                Super deals
+              </h2>
+              <Link
+                to={browseHref(slug, { tile: "deals" })}
+                className="text-[15px] font-medium text-deals-link"
+              >
+                See all
+              </Link>
+            </div>
+            {/* The big card sets the row height (1 : 1.25) and the right-hand
+                column stretches to it, so the two small cards stack to exactly
+                the same total. Before this the big card had no cap and a tall
+                scarf photograph made it a full screen high. */}
+            <div className="grid grid-cols-[1.35fr_1fr] items-stretch gap-2.5">
+              <DealBig p={claimed.dealRow[0]} />
+              <div className="flex min-h-0 flex-col gap-2.5">
+                <DealSmall p={claimed.dealRow[1]} />
+                <DealSmall p={claimed.dealRow[2]} />
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       {/* 4 — "What are you looking for?", the same tall tile the four
           shortcuts used to be. Directly under the department circles, because
           it is the natural follow-on question. Seven of them, so this one IS a
@@ -611,108 +762,6 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         </div>
       </section>
 
-      {/* 4b — FOUR FULL-WIDTH BANNERS, one per row.
-          They were a 2x2 grid of 56px thumbnails, which gave each shortcut a
-          picture too small to read as anything and a title competing with
-          three others for the same glance. At full width the photograph is
-          finally doing work, and the four read as a list to go down rather
-          than a block to decode.
-
-          THE PANEL ALTERNATES SIDES. Four identical rows is a form; four rows
-          that flip is a rhythm, and it keeps the eye moving down the stack
-          instead of straight past it. */}
-      <section className="mt-5 space-y-2.5 px-[var(--page-x)] pb-5 pt-5">
-        {banners
-          .filter((b) => b.show)
-          .map((b, i) => {
-            // Position in the RENDERED list, not the source list, so a hidden
-            // banner cannot leave two panels stacked on the same side.
-            const panelLeft = i % 2 === 0;
-            const deal = b.id === "deals";
-            return (
-              <Link
-                key={b.id}
-                to={browseHref(slug, { tile: b.id })}
-                className="card-press relative block h-[96px] w-full overflow-hidden rounded-[12px] bg-page"
-              >
-                {/* THE PHOTO OCCUPIES THE EXPOSED 40%, not the whole banner.
-                    Stretched edge to edge, 60% of every one of these studio
-                    shots sat behind an opaque panel — and because the subject
-                    is centred in all four, the 60% hidden was the subject and
-                    the 40% showing was empty wall. Confined to the visible
-                    strip, `cover` frames the model inside it instead. */}
-                <Img
-                  src={tileArt(b.id, slug) ?? ""}
-                  className={`absolute inset-y-0 h-full w-[40%] object-cover ${
-                    panelLeft ? "right-0" : "left-0"
-                  }`}
-                  style={{ objectPosition: `center ${b.focusY}` }}
-                />
-                {/* SOLID, not a translucent wash: the photo showing through
-                    behind the title is exactly how the old pastel tiles became
-                    unreadable. 60% panel, 40% photograph. */}
-                <span
-                  className={`absolute inset-y-0 flex w-[60%] flex-col justify-center px-4 ${
-                    panelLeft ? "left-0" : "right-0"
-                  }`}
-                  style={{ background: deal ? "rgb(var(--tint))" : "rgb(var(--page))" }}
-                >
-                  {/*
-                    Deals wears persimmon, and it is DARKENED on purpose.
-                    #F94E33 on the #FFF1EC panel measures 3.1:1 — under the
-                    4.5:1 floor for 13px type. #A32F17 gives 6.4:1 for the
-                    title and #C63D22 gives 4.7:1 for the subtitle, so the one
-                    coloured banner is still readable in daylight.
-                  */}
-                  <span
-                    className="truncate text-[16px] font-semibold leading-tight"
-                    style={{ color: deal ? "#A32F17" : "rgb(var(--ink))" }}
-                  >
-                    {b.label}
-                  </span>
-                  <span
-                    className="mt-0.5 truncate text-[13px] leading-tight"
-                    style={{ color: deal ? "#C63D22" : "rgb(var(--text-muted))" }}
-                  >
-                    {b.note}
-                  </span>
-                </span>
-              </Link>
-            );
-          })}
-      </section>
-      {/* 5 — Super deals: THE PUNCH. The one high-contrast block on the page.
-          It was a pale peach band, which made it one more soft section among
-          soft sections — and the deepest discounts in the shop deserve to stop
-          the scroll. Dark ink ground, white title, coral "See all". Exactly
-          one block on the page gets this treatment; a second would cancel the
-          first. */}
-      {claimed.dealRow.length >= MIN_RAIL ? (
-        <section
-          className="mt-5 bg-deals-bg px-[var(--page-x)] pb-[18px] pt-4"
-        >
-          <div className="flex items-baseline justify-between gap-3 pb-3">
-            <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">Super deals</h2>
-            {/* White here, not coral: coral on the accent gradient is two
-                warm colours fighting, and this is the one block where the
-                accent already carries the emphasis. */}
-            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-medium text-deals-link">
-              See all
-            </Link>
-          </div>
-          {/* The big card sets the row height (1 : 1.25) and the right-hand
-              column stretches to it, so the two small cards stack to exactly
-              the same total. Before this the big card had no cap and a tall
-              scarf photograph made it a full screen high. */}
-          <div className="grid grid-cols-[1.35fr_1fr] items-stretch gap-2.5">
-            <DealBig p={claimed.dealRow[0]} />
-            <div className="flex min-h-0 flex-col gap-2.5">
-              <DealSmall p={claimed.dealRow[1]} />
-              <DealSmall p={claimed.dealRow[2]} />
-            </div>
-          </div>
-        </section>
-      ) : null}
 
       {/* 6 — one swipe row. "New arrivals" was deleted from this tab: it and
           Best picks were two rows of the same shape doing the same job, and

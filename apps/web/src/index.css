@@ -130,8 +130,9 @@
      on CADO back in this same blue, so it is now a shared pair rather than
      one section’s private colour. Anything reading it is choosing to be COOL
      against a warm page on purpose. */
-  --deals-bg: 238 240 250; /* #EEF0FA */
-  --deals-link: 27 42 107; /* #1B2A6B the "See all" on that band */
+  --deals-bg: 230 241 251; /* #E6F1FB */
+  --deals-title: 12 68 124; /* #0C447C the "Super deals" heading */
+  --deals-link: 24 95 165; /* #185FA5 the "See all" on that band */
 
   /* --- 10%: action -------------------------------------------------- */
   /* #F94E33. Buttons, the + quick-add, sale prices, discount badges, the

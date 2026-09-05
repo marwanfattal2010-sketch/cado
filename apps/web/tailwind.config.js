@@ -45,7 +45,7 @@ export default {
           inactive: token("--tab-inactive"),
           line: token("--tab-line"),
         },
-        deals: { bg: token("--deals-bg"), link: token("--deals-link") },
+        deals: { bg: token("--deals-bg"), title: token("--deals-title"), link: token("--deals-link") },
         accent: token("--accent"),
         success: token("--success"),
         line: token("--line"),
