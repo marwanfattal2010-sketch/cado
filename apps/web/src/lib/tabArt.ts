@@ -119,8 +119,14 @@ const TYPE_TILE_ART: Record<string, Record<string, string>> = {
     // listing: the bag in it is not something CADO sells, and a picture on a
     // listing is a claim about what you are buying.
     bags: "art/type/fashion--bags.jpg",
-    caps: "art/type/fashion--caps.webp",
-    belts: "art/type/fashion--belts.webp",
+    // Marwans own file. It is an adidas cap carrying the Trefoil, and adidas
+    // is a signed CADO partner whose stock is in the catalogue — his decision,
+    // made twice, recorded here so it is not "corrected" later.
+    caps: "art/type/fashion--caps-supplied.webp",
+    // Marwans own file: a black belt with a gold CD buckle, and a Dior bag in
+    // frame. Dior is not among the partners he has named. Flagged twice and
+    // instructed twice; his call.
+    belts: "art/type/fashion--belts-supplied.jpg",
     // Marwans own file, supplied Sep 5: a blue cashmere scarf worn, street
     // light, no branding in frame.
     scarves: "art/type/fashion--scarves.jpg",
@@ -333,7 +339,10 @@ const CIRCLE_ART: Record<string, Record<string, string>> = {
     // studio ground, face cropped out so the outfit is what reads at 80px.
     // Its own path, so re-running seed-tab-art.mjs cannot overwrite it.
     women: "art/circle/fashion--women-supplied.webp",
-    men: "art/circle/fashion--men.webp",
+    // Marwans own file, supplied Sep 5: olive polo and white trousers on a
+    // coastal terrace. Replaces an earlier file of his that carried a
+    // dreamstime watermark across the middle and could not ship.
+    men: "art/circle/fashion--men-supplied.jpg",
     /*
      * Supplied by Marwan on Sep 5, who confirmed the model is cleared for use.
      * A deliberate exception to the rule governing the other two circles: this
