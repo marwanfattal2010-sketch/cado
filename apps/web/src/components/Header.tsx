@@ -212,12 +212,12 @@ export function Header() {
         once means collapsing it moves nothing but the header.
       */}
       <div aria-hidden style={{ height: expandedH }} />
-      {/* THE FRAME. Navy, not white: the header, the tab strip and the search
+      {/* THE FRAME. Persimmon, not white: the header, the tab strip and the search
           field are one block of colour that the white content sheet sits
           inside. That is what makes the app feel like a place rather than a
           document — and it is why persimmon can stay rare enough to mean
           "press this". */}
-      <header className="fixed inset-x-0 top-0 z-20 bg-gradient-to-b from-navy to-navy-deep">
+      <header className="fixed inset-x-0 top-0 z-20 bg-gradient-to-b from-frame to-frame-deep">
         {/*
           grid-template-rows 1fr -> 0fr, which is the one way to transition to
           and from an auto height. The inner div must own the overflow-hidden
@@ -265,7 +265,7 @@ export function Header() {
               onClick={openAreaSheet}
               className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-white/10"
             >
-              <span aria-hidden className="text-[15px] text-persimmon">📍</span>
+              <span aria-hidden className="text-[15px] text-white/80">📍</span>
               <span className="min-w-0">
                 <span className="block text-[10px] leading-none text-white/70">Deliver to</span>
                 <span className="flex items-center gap-1 text-body font-bold leading-tight text-white">
@@ -293,7 +293,7 @@ export function Header() {
               {count > 0 ? (
                 <span
                   key={count}
-                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-semibold text-white"
+                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-white px-1 text-[10px] font-semibold text-frame"
                 >
                   {count}
                 </span>

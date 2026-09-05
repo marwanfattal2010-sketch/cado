@@ -162,7 +162,7 @@ export function HomeLower() {
                   its numerals are the wonky part of it, and "$25" set in it
                   read as a novelty sticker rather than a price. Section
                   TITLES keep the serif; the money does not. */}
-              <span className="font-body text-[22px] font-semibold leading-none tracking-[-0.01em] text-navy">
+              <span className="font-body text-[22px] font-semibold leading-none tracking-[-0.01em] text-ink">
                 {b.label}
               </span>
               <span className="mt-0.5 text-[11px] text-muted">Gifts that fit</span>
@@ -184,7 +184,7 @@ export function HomeLower() {
             >
               {/* Matched to the budget tiles above: these two rows sit next
                   to each other and one serif + one sans read as a mistake. */}
-              <span className="font-body text-[17px] font-semibold leading-none text-navy">
+              <span className="font-body text-[17px] font-semibold leading-none text-ink">
                 {r.label}
               </span>
             </Link>

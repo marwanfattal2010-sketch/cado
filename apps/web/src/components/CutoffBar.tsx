@@ -49,7 +49,11 @@ export function CutoffBar() {
    */
   return (
     <div className="shrink-0 border-t border-line bg-canvas px-3 py-1.5">
-      <div className="mx-auto flex max-w-2xl items-center gap-2 rounded-pill bg-persimmon/10 px-3.5 py-2">
+      {/* GREY, NOT PERSIMMON. This is a reminder, not a control — nothing on
+          it is pressable but the dismiss ✕ — and now that the frame itself is
+          persimmon, a persimmon wash docked at the foot of the screen made the
+          one thing you cannot act on look like the one thing you should. */}
+      <div className="mx-auto flex max-w-2xl items-center gap-2 rounded-pill bg-page px-3.5 py-2">
         <span aria-hidden className="text-[13px]">🚚</span>
         <p className="min-w-0 flex-1 truncate text-caption font-medium text-ink">{msg.text}</p>
         <button

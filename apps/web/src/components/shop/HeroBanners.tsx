@@ -38,7 +38,7 @@ const SLIDES: Slide[] = [
     headline: "Choose the gift. We do the rest.",
     subline: "Wrapped and at their door tonight.",
     cta: "Shop now",
-    ctaClass: "bg-white text-[rgb(var(--navy))]",
+    ctaClass: "bg-white text-[rgb(var(--ink))]",
     to: "/assistant",
     art: "peachBox",
   },
@@ -104,10 +104,10 @@ function GiftBox({
 
 function Art({ kind }: { kind: Slide["art"] }) {
   if (kind === "peachBox") {
-    return <GiftBox size={120} lid="#FFE9DF" body="#FFD2C2" ribbon="rgb(var(--navy))" rotate={-8} className="-bottom-3.5 -right-4" />;
+    return <GiftBox size={120} lid="#FFE9DF" body="#FFD2C2" ribbon="rgb(var(--persimmon))" rotate={-8} className="-bottom-3.5 -right-4" />;
   }
   if (kind === "persimmonBox") {
-    return <GiftBox size={110} lid="rgb(var(--persimmon))" body="rgb(var(--navy))" ribbon="#fff" rotate={9} className="-bottom-4 -right-2.5" />;
+    return <GiftBox size={110} lid="rgb(var(--persimmon))" body="rgb(var(--ink))" ribbon="#fff" rotate={9} className="-bottom-4 -right-2.5" />;
   }
   // The gift card: a tilted card with a masked number, per the mockup.
   return (

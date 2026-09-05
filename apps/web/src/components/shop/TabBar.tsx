@@ -59,7 +59,7 @@ export function TabBar({
   return (
     /* z-20 so the strip stays above anything in the panel that scrolls under
        it, and an opaque canvas behind it so nothing shows through. */
-    <div className="relative z-20 shrink-0 bg-navy-deep">
+    <div className="relative z-20 shrink-0 bg-frame-deep">
       <div
         ref={stripRef}
         /* scroll-padding-inline keeps a tab from resting half-cut against the
@@ -79,12 +79,12 @@ export function TabBar({
               type="button"
               onClick={() => onSelect(i)}
               aria-current={active ? "true" : undefined}
-              /* A PILL, not an underline. On the navy an underline reads as a
+              /* A PILL, not an underline. On the frame an underline reads as a
                  scratch; a filled pill reads as a switch, which is what this
-                 is. Active inverts to white-on-navy so the selected tab is the
+                 is. Active inverts to persimmon-on-white so the selected tab is the
                  brightest thing in the frame. */
               className={`relative flex shrink-0 items-center whitespace-nowrap rounded-pill px-3.5 py-1.5 text-[14px] transition-colors ${
-                active ? "bg-white font-bold text-navy" : "bg-white/[0.22] font-medium text-white"
+                active ? "bg-white font-bold text-frame" : "bg-white/[0.22] font-medium text-white"
               }`}
             >
               {tab.label}
@@ -99,19 +99,19 @@ export function TabBar({
           taps. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-10 w-[18px] bg-gradient-to-r from-transparent to-navy-deep"
+        className="pointer-events-none absolute inset-y-0 right-10 w-[18px] bg-gradient-to-r from-transparent to-frame-deep"
       />
       {/* The same on the left, so a scrolled-past tab fades out instead of
           ending mid-word against the screen edge. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-[14px] bg-gradient-to-l from-transparent to-navy-deep"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[14px] bg-gradient-to-l from-transparent to-frame-deep"
       />
       <button
         type="button"
         onClick={onOpenAll}
         aria-label="All categories"
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center bg-navy-deep text-white"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center bg-frame-deep text-white"
       >
         <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden>
           <path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />

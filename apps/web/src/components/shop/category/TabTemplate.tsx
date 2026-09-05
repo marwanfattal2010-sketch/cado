@@ -9,12 +9,11 @@ import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
 import { Img } from "../../Img";
 import { StaggeredGrid, CollectionTile, type CollectionCard } from "../StaggeredGrid";
 import { StoreLogoCircle } from "../StoreLogoCircle";
-import { ColourTiles } from "../ColourTiles";
-import { CollectionSection } from "../CollectionSection";
 import { storePath } from "../../../lib/routes";
 import { productImageUrl } from "../../../lib/images";
-import { circleArt, collectionArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
-import { RECIPIENTS, UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
+import { formatMoney } from "../../../lib/money";
+import { circleArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
+import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
 import { categoryStores, storeDisplayName } from "../../../lib/browse";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
@@ -228,13 +227,38 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     };
 
     const dealRow = take(deals, 3);
-    const picks = take(bestPicks, 10);
+
+    /*
+     * THE THREE COLLECTION CARDS CLAIM BEFORE BEST PICKS, and that ordering is
+     * the whole reason the row has three cards in it.
+     *
+     * Best picks used to take ten products off a nineteen-product catalogue
+     * before these were built, which left under $50 and New arrivals with
+     * fewer than the two photographs a card needs — so both hid, and the row
+     * that is meant to be a set of three showed one card.
+     *
+     * A card is not a rail. It needs exactly two products and it stands for a
+     * whole destination — every product under fifty dollars, everything that
+     * landed this month — while Best picks is one swipe row that reads
+     * perfectly well at six. Six is what it gets, and the grid still keeps
+     * what nothing else claimed.
+     */
     const under50 = take(
       all.filter((p) => Number(p.price) < 50),
       2
     );
     const top = take(bestPicks, 2);
-    return { dealRow, picks, under50, top, taken };
+    /* The newest two, and "newest" is the product's own created_at inside the
+       same 30-day window the New in tile counts — not a hand-picked pair. */
+    const newest = take(
+      [...all]
+        .filter((p) => Date.now() - new Date(p.created_at).getTime() < 30 * 86400000)
+        .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)),
+      2
+    );
+
+    const picks = take(bestPicks, 6);
+    return { dealRow, picks, under50, top, newest, taken };
   }, [deals, bestPicks, all]);
 
   const collections = useMemo<CollectionCard[]>(() => {
@@ -262,6 +286,18 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           photo: photoOf(p),
           price: Number(p.price),
           note: `#${i + 1}`,
+        })),
+      });
+    }
+    if (claimed.newest.length === 2) {
+      out.push({
+        key: "new-arrivals",
+        title: "New arrivals",
+        href: browseHref(slug, { tile: "new-in" }),
+        items: claimed.newest.map((p) => ({
+          photo: photoOf(p),
+          price: Number(p.price),
+          note: "New",
         })),
       });
     }
@@ -343,7 +379,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">
             Stores in {categoryName}
           </h2>
-          <Link to={`/stores/${slug}`} className="shrink-0 text-[15px] font-semibold text-navy">
+          <Link to={`/stores/${slug}`} className="shrink-0 text-[15px] font-semibold text-ink">
             See all {stores.length}
           </Link>
         </div>
@@ -372,12 +408,13 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       </section>
       ) : null}
 
-      {/* 3 — Shop for. FIRST OF THE TINTED BANDS: persimmon at about 4%, which
-          is enough to separate a section from the one above it without
-          becoming a second colour. White is still the base; these bands and
-          the deals band are the only three places it is broken. */}
+      {/* 3 — Shop for. ON WHITE. It was on the grey band, which put a tint
+          behind three circular photographs whose own edges already separate
+          them from the section above — the band was doing a job the shapes
+          were already doing, and it made the tab's first content block look
+          like an aside. */}
       {circles.length ? (
-        <section className="mt-5 pb-5 pt-5" style={{ background: "rgb(var(--page))" }}>
+        <section className="mt-5 bg-white pb-5 pt-5">
           <h2 className="px-[var(--page-x)] pb-3 text-[22px] font-bold tracking-[-0.01em] text-ink">
             Shop for
           </h2>
@@ -418,18 +455,11 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         </section>
       ) : null}
 
-      {/* THE ONE COLOURFUL ROW ON THIS PAGE. Seven recipients, seven fixed
-          hues, no photographs. Nothing else on a category tab is allowed a
-          coloured fill — see ColourTiles. */}
-      <ColourTiles
-        title="Gift for…"
-        columns={3}
-        tiles={RECIPIENTS.map((r) => ({
-          key: r.value,
-          label: r.short,
-          href: browseHref(slug, { for: [r.value] }),
-        }))}
-      />
+      {/* NO COLOURFUL TILE SET ON THIS TAB. The "one per page" rule caps how
+          many a page may have; it does not oblige a page to have one. A
+          category tab sells departments and product types, and a second row of
+          the same seven recipients the All tab already carries added a colour
+          block here for no new destination. */}
 
       {/* 4 — "What are you looking for?", the same tall tile the four
           shortcuts used to be. Directly under the department circles, because
@@ -498,29 +528,53 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
             ))}
         </div>
       </section>
-
-      {/* 5 - Super deals, in the shared section shape. Pale blue rather than
-          the page grey: it is the one row allowed to look different, because
-          a discount is the one thing worth interrupting a scroll for. */}
-      <CollectionSection
-        title="Super deals"
-        products={claimed.dealRow}
-        href={browseHref(slug, { tile: "deals" })}
-        tilePhoto={collectionArt(slug, "deals")}
-        tone="tint"
-        minItems={MIN_RAIL}
-      />
+      {/* 5 — Super deals: THE PUNCH. The one high-contrast block on the page.
+          It was a pale peach band, which made it one more soft section among
+          soft sections — and the deepest discounts in the shop deserve to stop
+          the scroll. Dark ink ground, white title, coral "See all". Exactly
+          one block on the page gets this treatment; a second would cancel the
+          first. */}
+      {claimed.dealRow.length >= MIN_RAIL ? (
+        <section
+          className="mt-5 px-[var(--page-x)] pb-[18px] pt-4"
+          style={{ background: "rgb(var(--tint))" }}
+        >
+          <div className="flex items-baseline justify-between gap-3 pb-3">
+            <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">Super deals</h2>
+            {/* White here, not coral: coral on the accent gradient is two
+                warm colours fighting, and this is the one block where the
+                accent already carries the emphasis. */}
+            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-semibold text-ink">
+              See all
+            </Link>
+          </div>
+          {/* The big card sets the row height (1 : 1.25) and the right-hand
+              column stretches to it, so the two small cards stack to exactly
+              the same total. Before this the big card had no cap and a tall
+              scarf photograph made it a full screen high. */}
+          <div className="grid grid-cols-[1.35fr_1fr] items-stretch gap-2.5">
+            <DealBig p={claimed.dealRow[0]} />
+            <div className="flex min-h-0 flex-col gap-2.5">
+              <DealSmall p={claimed.dealRow[1]} />
+              <DealSmall p={claimed.dealRow[2]} />
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* 6 — one swipe row. "New arrivals" was deleted from this tab: it and
           Best picks were two rows of the same shape doing the same job, and
           the new-in tile above already leads to everything recent. */}
-      <CollectionSection
-        title="Best picks"
-        products={claimed.picks}
-        href={browseHref(slug, { tile: "most-gifted" })}
-        tilePhoto={collectionArt(slug, "most-gifted")}
-        minItems={MIN_RAIL}
-      />
+      {/* Best picks sits on WHITE — the section above it is now the deals
+          band, and a second band straight after it would fight for the eye
+          the first one just won. */}
+      <div className="mt-5 pb-5" style={{ background: "rgb(var(--page))" }}>
+        <Strip
+          title="Best picks"
+          products={claimed.picks}
+          seeAll={browseHref(slug, { tile: "most-gifted" })}
+        />
+      </div>
 
       {/* 7 — the two collection cards, side by side, immediately above the
           grid they introduce. They used to be the first two items INSIDE the
@@ -528,10 +582,18 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           one above the other and made them read as two unusually smart product
           cards rather than as a pair. */}
       {collections.length ? (
-        <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "rgb(var(--page))" }}>
-          <div className="grid grid-cols-2 gap-2">
+        <section className="mt-5 pb-5 pt-5" style={{ background: "rgb(var(--page))" }}>
+          {/* A ROW, not a 2-up grid. There are three of these now — Under $50,
+              Top ranking and New arrivals — and in a two-column grid the third
+              lands underneath the first at half width, which reads as a card
+              that fell off rather than a set. Side by side at one fixed width
+              they stay a set, and the third peeks at the right edge to say the
+              row drags. */}
+          <div className="scroll-row" style={{ ["--row-gap" as string]: "10px" }}>
             {collections.map((c) => (
-              <CollectionTile key={c.key} card={c} />
+              <div key={c.key} className="w-[158px] shrink-0">
+                <CollectionTile card={c} />
+              </div>
             ))}
           </div>
         </section>
@@ -541,7 +603,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       <section className="pt-4">
         <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-2">
           <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">All {categoryName.toLowerCase()}</h2>
-          <Link to={browseHref(slug)} className="shrink-0 text-[15px] font-semibold text-navy">
+          <Link to={browseHref(slug)} className="shrink-0 text-[15px] font-semibold text-ink">
             See all {all.length} →
           </Link>
         </div>
@@ -683,6 +745,134 @@ function Hero({ cat }: { cat: string }) {
           ))}
         </div>
       ) : null}
+    </section>
+  );
+}
+
+
+/**
+ * The lead deal, capped at 1 : 1.25 (w : h).
+ *
+ * The cap is a padding-bottom sizer rather than `aspect-ratio`, and the reason
+ * matters: this card is an `fr` grid item whose default `align-self: stretch`
+ * competes with an aspect ratio for the block size. A percentage padding
+ * resolves against the ALREADY-SIZED column, so it contributes a definite
+ * height to row sizing — which is what makes the right-hand column stretch to
+ * exactly this card's height instead of the other way round.
+ */
+function DealBig({ p }: { p: FeedProduct }) {
+  return (
+    <Link
+      to={`/product/${p.id}`}
+      className="relative block overflow-hidden rounded-[12px] bg-white"
+    >
+      <span aria-hidden className="block w-full pb-[125%]" />
+      <span className="absolute inset-0 flex flex-col">
+        <Flag pct={off(p)} />
+        {/* The photo is taken OUT OF FLOW. `h-full` on an in-flow image is
+            indefinite, so the image falls back to its intrinsic height and
+            becomes the card's max-content contribution — which is how a tall
+            scarf photograph used to set the height of this whole row. */}
+        <span className="relative min-h-0 flex-1 overflow-hidden bg-page">
+          <Img src={photoOf(p)} className="absolute inset-0 h-full w-full object-cover" />
+        </span>
+        <span className="block px-2.5 pb-3 pt-2">
+          <span className="line-clamp-2 block h-[30px] text-[12.5px] leading-tight text-ink">
+            {p.title}
+          </span>
+          <span className="block text-[17px] font-extrabold text-persimmon">
+            {formatMoney(p.price)}
+            <s className="ml-1.5 text-[12px] font-normal text-muted">
+              {formatMoney(p.compare_at_price!)}
+            </s>
+          </span>
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function DealSmall({ p }: { p: FeedProduct }) {
+  return (
+    <Link to={`/product/${p.id}`} className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] bg-white">
+      <Flag pct={off(p)} />
+      {/* Out of flow, for the reason spelled out in DealBig: an in-flow
+          `h-full` image contributes its intrinsic height, and two of them
+          stacked here were setting the height of the big card beside them. */}
+      <span className="relative min-h-0 flex-1 overflow-hidden bg-page">
+        <Img src={photoOf(p)} className="absolute inset-0 h-full w-full object-cover" />
+      </span>
+      <span className="block px-2.5 pb-2 pt-1.5">
+        <span className="block text-[14px] font-extrabold text-persimmon">
+          {formatMoney(p.price)}
+          <s className="ml-1 text-[10.5px] font-normal text-muted">
+            {formatMoney(p.compare_at_price!)}
+          </s>
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+/** Square on two corners, rounded bottom-right — a corner flag, not a pill. */
+function Flag({ pct }: { pct: number }) {
+  if (!pct) return null;
+  return (
+    <span className="absolute left-0 top-0 z-[3] rounded-br-[10px] bg-persimmon px-2.5 py-1.5 text-[11.5px] font-extrabold leading-none text-white">
+      -{pct}%
+    </span>
+  );
+}
+
+/** MIN 4: a rail shorter than the screen is a row with a gap on the right. */
+const MIN_STRIP = 3; // the brief’s floor: fewer than three unique products and the rail is hidden
+
+function Strip({
+  title,
+  products,
+  seeAll,
+}: {
+  title: string;
+  products: FeedProduct[];
+  seeAll: string;
+}) {
+  if (products.length < MIN_STRIP) return null;
+  return (
+    <section className="pt-5">
+      <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
+        <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">{title}</h2>
+        <Link to={seeAll} className="shrink-0 text-[15px] font-semibold text-ink">
+          See all
+        </Link>
+      </div>
+      <div className="scroll-row" style={{ ["--row-gap" as string]: "10px" }}>
+        {products.slice(0, 10).map((p) => (
+          <Link key={p.id} to={`/product/${p.id}`} className="card-press w-[134px] shrink-0">
+            <span className="photo-4x5 relative block rounded-[16px]">
+              <Img src={photoOf(p)} className="h-full w-full object-cover" />
+              {off(p) ? (
+                <span className="absolute left-1.5 top-1.5 rounded-[4px] bg-persimmon px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  -{off(p)}%
+                </span>
+              ) : null}
+            </span>
+            <span className="mt-1.5 line-clamp-2 block h-[30px] text-[12.5px] leading-tight text-ink">
+              {p.title}
+            </span>
+            {/* Regular prices are ink; a SALE price is coral with the old one
+                struck through beside it. The colour is the discount signal, so
+                a full-price product must never wear it. */}
+            <span className={`block text-[14px] font-extrabold ${off(p) ? "text-accent" : "text-ink"}`}>
+              {formatMoney(p.price)}
+              {off(p) ? (
+                <s className="ml-1.5 text-[11px] font-normal text-muted">
+                  {formatMoney(p.compare_at_price!)}
+                </s>
+              ) : null}
+            </span>
+          </Link>
+        ))}
+      </div>
     </section>
   );
 }

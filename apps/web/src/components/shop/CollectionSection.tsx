@@ -58,7 +58,7 @@ export function CollectionSection({
               reads as body copy, a pill reads as a control. */}
           <Link
             to={href}
-            className="shrink-0 rounded-pill bg-tint px-3 py-1.5 text-[13px] font-semibold text-navy"
+            className="shrink-0 rounded-pill border border-line bg-white px-3 py-1.5 text-[13px] font-semibold text-ink"
           >
             All items ›
           </Link>

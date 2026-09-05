@@ -50,7 +50,7 @@
      COLOUR SYSTEM v2 — 60 / 30 / 10.
 
        60%  white and near-white. Pages, cards, and every product photo.
-       30%  NAVY. The frame: header, tab strip, the app's interior.
+       30%  PERSIMMON. The frame: header, tab strip.
        10%  PERSIMMON. Actions only, and nothing that is not an action.
 
      Colour comes from PHOTOGRAPHY and from one controlled tile set per page.
@@ -58,23 +58,33 @@
      passes drift into cream, plum, gold and a spread of pastels, and why the
      shop stopped reading as one shop.
 
-     Blue frame with an orange action is the highest-contrast pairing there
-     is, and it separates "where you are" from "what you can press". Two warm
-     colours would compete for the same job; that is why the frame is not
-     persimmon even though persimmon is the brand.
+     ONE COLOUR, TWO JOBS. The frame was navy, which made the app read as two
+     brands stacked: a blue chrome wrapped around an orange shop. Persimmon
+     carries both now — at full strength on the frame, rationed inside the
+     white content — and the separation between "where you are" and "what you
+     can press" comes from GROUND rather than from hue: on the frame the
+     colour is behind you, inside the sheet it is only ever on a control.
+
+     Which is why two things are forbidden from wearing it: the delivery
+     countdown strip and the "All items ›" pills. Both sit in the white
+     content, neither is an action, and in persimmon both would read as the
+     one button on the screen.
+
+     NAVY IS GONE from the palette. Its three jobs are black now: the New
+     badge, See-all links, section arrows. Nothing in this app is blue.
      ==================================================================== */
 
   /* --- 60%: pages and cards ---------------------------------------- */
   --canvas: 255 255 255; /* #FFFFFF the sheet content sits on */
   --page: 245 246 250; /* #F5F6FA cool grey behind white cards */
-  --tint: 234 240 255; /* #EAF0FF pale blue: Super Deals band, chips, pills */
+  --tint: 255 241 236; /* #FFF1EC warm neutral: Super Deals band, chips, promo tags */
   --surface: 255 255 255;
   --surface-sunk: 245 246 250;
   --photo-bed: 245 246 250;
 
   /* --- 30%: the frame ---------------------------------------------- */
-  --navy: 11 30 122; /* #0B1E7A header, tab strip, links, New badge */
-  --navy-deep: 7 19 86; /* #071356 the gradient's bottom */
+  --frame: 249 78 51; /* #F94E33 header + category tab strip */
+  --frame-deep: 226 63 38; /* #E23F26 the gradient's bottom */
 
   /* --- 10%: action -------------------------------------------------- */
   /* #F94E33. Buttons, the + quick-add, sale prices, discount badges, the
@@ -102,11 +112,11 @@
   /* Retired hues, repointed rather than deleted so any class still naming
      them renders inside the system instead of reintroducing cream or gold.
      Grep for these names before using one: they are not new colours. */
-  --primary: 11 30 122;
-  --primary-deep: 7 19 86;
-  --primary-tint: 234 240 255;
-  --gold: 11 30 122;
-  --gold-deep: 7 19 86;
+  --primary: 249 78 51;
+  --primary-deep: 226 63 38;
+  --primary-tint: 255 241 236;
+  --gold: 17 17 17;
+  --gold-deep: 17 17 17;
   --accent-brand: 249 78 51;
 
   /* ------------------------------------------------------------------
@@ -710,14 +720,14 @@ button:active:not(:disabled),
 /* ---------------------------------------------------------------------
    THE CONTENT SHEET (colour system v2)
 
-   White content sits INSIDE the navy frame with its top corners rounded
+   White content sits INSIDE the persimmon frame with its top corners rounded
    over it. That one detail is what makes the frame read as deliberate
    rather than as a coloured bar someone left at the top: the sheet looks
-   tucked under the header, so the navy is the app and the white is the
+   tucked under the header, so the frame is the app and the white is the
    page you are reading.
 
    The negative top margin pulls the sheet up under the tab strip by its own
-   corner radius, so the curve overlaps the navy instead of leaving a seam.
+   corner radius, so the curve overlaps the frame instead of leaving a seam.
    --------------------------------------------------------------------- */
 .panel {
   background: rgb(var(--canvas));

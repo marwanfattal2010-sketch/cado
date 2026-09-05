@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 /**
  * THE ONE COLOURFUL TILE SET, AND THERE IS ONLY EVER ONE PER PAGE.
  *
- * Everything else in the app is white, navy or persimmon, and colour comes
+ * Everything else in the app is white or persimmon, and colour comes
  * from photography. This row is the single deliberate exception: a block of
  * flat, soft hues that gives a page one spot of playfulness without letting
  * colour leak into the furniture.

@@ -29,7 +29,7 @@ export default {
         // 60/30/10 v2. See the block at the top of index.css.
         page: token("--page"),
         tint: token("--tint"),
-        navy: { DEFAULT: token("--navy"), deep: token("--navy-deep") },
+        frame: { DEFAULT: token("--frame"), deep: token("--frame-deep") },
         accent: token("--accent"),
         success: token("--success"),
         line: token("--line"),

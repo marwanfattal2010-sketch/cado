@@ -35,7 +35,7 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
    rose — a second design system inside one app, which is exactly what the
    colour reset exists to end. The sections, the occasion row and the florists
    are untouched; only the colours and the typeface change. */
-const ROSE = "rgb(var(--navy))";
+const ROSE = "rgb(var(--ink))";
 
 /**
  * A SHORT ROW SITS ACROSS THE CARD, NOT BUNCHED AT ITS LEFT.
