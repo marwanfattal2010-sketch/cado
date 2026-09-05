@@ -4,20 +4,9 @@
    Both faces are variable, so one file covers every weight we use.
    --------------------------------------------------------------------- */
 @font-face {
-  font-family: "Fraunces";
-  src: url("/fonts/Fraunces-Variable.woff2") format("woff2-variations");
-  font-weight: 400 700;
-  font-display: swap;
-}
-@font-face {
   font-family: "Inter";
   src: url("/fonts/Inter-Variable.woff2") format("woff2-variations");
   font-weight: 400 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Italiana";
-  src: url("/fonts/Italiana-Regular.ttf") format("truetype");
   font-display: swap;
 }
 
@@ -306,14 +295,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Fraunces is a variable serif with an optical-size axis. Large headlines
-   get a high opsz so they read confident rather than stretched. */
+/* The optical-size axis was Fraunces. The app is one sans family now, so
+   these two rules would set a variation axis Inter does not have. Weight is
+   what carries a headline here: 400 / 600 / 700 and nothing else. */
 .font-display {
-  font-variation-settings: "opsz" 120;
-}
-.text-display,
-h1.font-display {
-  font-variation-settings: "opsz" 144;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 /* Focus — visible and on-brand. Never remove it; it breaks keyboard use.

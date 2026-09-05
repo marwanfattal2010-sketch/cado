@@ -81,14 +81,20 @@ export default {
         "store-name": token("--store-name"),
       },
       fontFamily: {
-        display: ['"Fraunces"', "Georgia", "serif"],
+        // ONE SANS FAMILY, APP-WIDE. `font-display` and `font-accent` are
+        // kept as names so the ~124 class usages need no edit, but both now
+        // resolve to Inter: the colour system asks for no serif anywhere, and
+        // repointing the stack is the change that cannot be half-applied.
+        display: ['"Inter"', "system-ui", "sans-serif"],
         body: ['"Inter"', "system-ui", "sans-serif"],
-        accent: ["Italiana", "serif"],
+        accent: ['"Inter"', "system-ui", "sans-serif"],
         arabic: ['"IBM Plex Sans Arabic"', "sans-serif"],
         /* The hero and category-tab titles (spec 1.9, 2.1). Loaded from Google
            Fonts in index.html; falls back to the body sans if it never
            arrives, so the layout holds either way. */
-        hero: ['"Nunito"', '"Inter"', "system-ui", "sans-serif"],
+        // Also Inter. One family app-wide means one family — Nunito was a
+        // second sans, which is the same problem as a serif in miniature.
+        hero: ['"Inter"', "system-ui", "sans-serif"],
       },
       // Type scale from spec 1.2. Nothing below 12px, no weight 300 body.
       fontSize: {
