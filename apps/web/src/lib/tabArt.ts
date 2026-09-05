@@ -308,8 +308,16 @@ export const tileArt = (id: TileId, cat?: string) =>
 /** "Shop for" circle art, keyed by category and subcategory slug. */
 const CIRCLE_ART: Record<string, Record<string, string>> = {
   "flowers-gifts": {
-    bouquets: "art/circle/flowers-gifts--bouquets.jpg",
-    "flower-boxes": "art/circle/flowers-gifts--flower-boxes.jpg",
+    // Marwans own file, supplied Sep 5: a pink and white mixed bouquet.
+    // Cropped between two marks in the source — a "Happy Birthday" card top
+    // right, and another florists "Bloom & Beyond" sticker bottom right.
+    // Neither belongs on a CADO circle; the flowers do.
+    bouquets: "art/circle/flowers-gifts--bouquets-supplied.jpg",
+    // Marwans own file, supplied Sep 5: a heart box of red roses. Cropped
+    // tight on the box — the source had a HAPPINESS FLOWERS letterboard behind
+    // it and a magazine cover beside it, both of which the circle would have
+    // clipped into unreadable fragments of text.
+    "flower-boxes": "art/circle/flowers-gifts--flower-boxes-supplied.jpg",
     plants: "art/circle/flowers-gifts--plants.jpg",
     "vase-arrangements": "art/circle/flowers-gifts--vase-arrangements.jpg",
   },
