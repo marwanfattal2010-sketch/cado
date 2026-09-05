@@ -106,7 +106,12 @@ const TYPE_TILE_ART: Record<string, Record<string, string>> = {
     tops: "art/type/fashion--tops.webp",
     sets: "art/type/fashion--sets.webp",
     shirts: "art/type/fashion--shirts.webp",
-    bags: "art/type/fashion--bags.webp",
+    // Marwan's own photograph, supplied Sep 5. It is a styled shot — the bag
+    // worn, calm neutral interior — rather than a packshot, which is the
+    // register he wants this row in. It sits here as ARTWORK, not on a product
+    // listing: the bag in it is not something CADO sells, and a picture on a
+    // listing is a claim about what you are buying.
+    bags: "art/type/fashion--bags.jpg",
     caps: "art/type/fashion--caps.webp",
     belts: "art/type/fashion--belts.webp",
     scarves: "art/type/fashion--scarves.webp",
