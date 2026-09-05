@@ -71,7 +71,7 @@ const STORE_ROW_MAX = 8;
  * different questions: who is it for, and what is it. They moved to the type
  * row below, where the second question is asked properly.
  */
-const CIRCLE_ORDER = ["women", "men", "kids-fashion"];
+const CIRCLE_ORDER = ["men", "women", "kids-fashion"];
 
 /**
  * "WHAT ARE YOU LOOKING FOR?" — the second question, asked properly.
@@ -86,10 +86,10 @@ const CIRCLE_ORDER = ["women", "men", "kids-fashion"];
  */
 const TYPE_TILES: { key: string; label: string; kind: "type" | "tile" }[] = [
   { key: "tops", label: "Tops", kind: "tile" },
-  { key: "sets", label: "Sets", kind: "tile" },
   { key: "bottoms", label: "Bottoms", kind: "tile" },
-  { key: "bags", label: "Bags", kind: "type" },
+  { key: "sets", label: "Sets", kind: "tile" },
   { key: "caps", label: "Caps", kind: "type" },
+  { key: "bags", label: "Bags", kind: "type" },
   { key: "belts", label: "Belts", kind: "type" },
   { key: "scarves", label: "Scarves", kind: "type" },
 ];
@@ -329,16 +329,18 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               tab sells behind a gesture nobody is told about. The last row is
               left-aligned rather than centred so the columns line up with the
               row above it. */}
-          {/* THREE, so they sit across the row rather than bunching left.
-              Fixed 80px discs with the space distributed between them: a
-              1fr-column grid would blow each circle up to 110px and make the
-              row shout louder than the tab. */}
+          {/* THREE, sat across the row rather than bunching left.
+              104px discs, up from 80. At three across on a 375px screen the
+              row was mostly gutter and the department photographs — the one
+              place a face or a whole outfit has to read — were the smallest
+              pictures on the tab. 104 fills the row without touching the type
+              tiles below, which stay the larger element. */}
           <div className="flex justify-evenly gap-x-2 px-[var(--page-x)]">
             {circles.map((c) => (
               <Link
                 key={c.slug}
                 to={browseHref(slug, { type: [c.slug] })}
-                style={{ width: 80 }}
+                style={{ width: 104 }}
                 className="min-w-0 text-center transition-transform duration-press ease-out active:scale-[0.96]"
               >
                 <span className="block aspect-square w-full overflow-hidden rounded-pill bg-[#EEEAE4]">
