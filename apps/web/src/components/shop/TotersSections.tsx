@@ -217,7 +217,7 @@ export function NewOnCado() {
         <span className="mt-0.5 truncate text-caption text-muted">
           {categories.data?.get(s.id) ?? "New shop"}
         </span>
-        <span className="mt-0.5 text-[11px] font-medium text-persimmon">Added this week</span>
+        <span className="mt-0.5 text-[11px] font-medium text-deals-link">Added this week</span>
       </span>
     </Link>
   );

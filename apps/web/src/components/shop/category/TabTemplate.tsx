@@ -14,6 +14,7 @@ import { productImageUrl } from "../../../lib/images";
 import { formatMoney } from "../../../lib/money";
 import { circleArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
 import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
+import { inBudgetRange, type Budget } from "../../../lib/filters";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
 import { categoryStores, storeDisplayName } from "../../../lib/browse";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
@@ -92,6 +93,26 @@ const CIRCLE_ORDER = ["men", "women", "kids-fashion"];
  * So these carry a photo thumbnail and a hairline instead. The photograph is
  * where their colour comes from now, which is the rule for the whole app.
  */
+
+/**
+ * The band the "Under $75" banner counts and the results page filters by.
+ *
+ * Built from UNDER_TILE_MAX so the label, the count and the destination can
+ * never name different numbers, and passed through `inBudgetRange` so the
+ * count uses the SAME predicate the results page applies — written twice they
+ * drift, and a banner reading "12 under 75" that opens a page showing 11 is
+ * the kind of small lie that costs trust.
+ *
+ * `max` is EXCLUSIVE in `inBudgetRange`, so a product at exactly $75 is not
+ * under $75. That is the reading a shopper expects and the one the results
+ * page already used.
+ */
+const UNDER_BAND: Budget = {
+  slug: `under-${UNDER_TILE_MAX}`,
+  label: `Under $${UNDER_TILE_MAX}`,
+  min: 0,
+  max: UNDER_TILE_MAX,
+};
 
 const TYPE_TILES: { key: string; label: string; kind: "type" | "tile" }[] = [
   { key: "tops", label: "Tops", kind: "tile" },
@@ -355,9 +376,25 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
   }
 
   const maxOff = deals.length ? off(deals[0]) : 0;
-  const underCount = all.filter((p) => Number(p.price) < UNDER_TILE_MAX).length;
+  /*
+   * `inBudgetRange` rather than a bare `< 75`, so the number under the banner
+   * is produced by the SAME predicate the results page filters with. Written
+   * twice they drift, and a banner reading "12 under 75" that opens a page
+   * showing 11 is the kind of small lie that costs trust.
+   *
+   * The upper bound is exclusive: a product priced at exactly $75 is not
+   * under $75.
+   */
+  const underCount = all.filter((p) =>
+    inBudgetRange(Number(p.price), UNDER_BAND)
+  ).length;
+  /*
+   * FOURTEEN DAYS, not thirty. "Just landed" has to mean recently, and on a
+   * catalogue seeded in one sitting a thirty-day window counts the entire
+   * shop — a number that is technically true and tells the shopper nothing.
+   */
   const newCount = all.filter(
-    (p) => Date.now() - new Date(p.created_at).getTime() < 30 * 86400000
+    (p) => Date.now() - new Date(p.created_at).getTime() < 14 * 86400000
   ).length;
 
   /*
@@ -375,21 +412,64 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
   const storeCircleW = "64px";
 
   /*
-   * The four shortcuts. `note` is the second line on each card and every one
-   * of them is a real number off this tab: how many arrived in the window, how
-   * many are under the threshold, the largest live discount. Nothing here is
-   * typed in, and a card whose number is zero does not render.
+   * THE FOUR BANNERS. `note` is the second line and every one of them is a
+   * real number off this tab: how many arrived in the window, how many are
+   * under the threshold, the largest live discount. Nothing here is typed in,
+   * and a banner whose number is zero does not render.
+   *
+   * `focusY` is a VERTICAL focal point, and it is vertical because horizontal
+   * is not available. All four of these are portrait studio shots (600x800)
+   * dropped into a 96px-tall strip. `object-fit: cover` scales to the wider
+   * axis, so the full 600px width always shows and the crop is entirely
+   * vertical — `object-position`'s X component has no slack to move in and
+   * changes nothing at all. Only Y picks what you see.
+   *
+   * These numbers were read off the actual files, each opened and looked at:
+   * the visible band works out as [0.52·Y, 0.52·Y + 0.48] of the frame, so
+   * the value is chosen to land that band on the GARMENT rather than on the
+   * model's legs or the empty sweep of studio wall above their head.
+   *
+   * "Most gifted" keeps a written subtitle rather than a count. There is no
+   * order history to rank by yet, and a number invented to fill the line is
+   * the one thing this page never does.
    */
-  const tiles: { id: TileId; label: string; note: string; show: boolean }[] = [
-    { id: "new-in", label: "New in", note: `${newCount} just landed`, show: newCount > 0 },
-    { id: "most-gifted", label: "Most gifted", note: "Popular picks", show: all.length > 0 },
+  const banners: {
+    id: TileId;
+    label: string;
+    note: string;
+    show: boolean;
+    focusY: string;
+  }[] = [
+    {
+      id: "new-in",
+      label: "New in",
+      note: newCount > 0 ? `${newCount} just landed` : "Latest arrivals",
+      // Never hidden: a shop always has a newest thing, even if none of it
+      // landed this fortnight — that is what the fallback line is for.
+      show: all.length > 0,
+      focusY: "35%",
+    },
+    {
+      id: "most-gifted",
+      label: "Most gifted",
+      note: "Popular picks",
+      show: all.length > 0,
+      focusY: "40%",
+    },
     {
       id: "under-75",
-      label: `Under ${UNDER_TILE_MAX}`,
+      label: `Under $${UNDER_TILE_MAX}`,
       note: `${underCount} under ${UNDER_TILE_MAX}`,
       show: underCount > 0,
+      focusY: "42%",
     },
-    { id: "deals", label: "Deals", note: `Up to -${maxOff}%`, show: deals.length > 0 && maxOff > 0 },
+    {
+      id: "deals",
+      label: "Deals",
+      note: `Up to -${maxOff}%`,
+      show: deals.length > 0 && maxOff > 0,
+      focusY: "15%",
+    },
   ];
 
   return (
@@ -531,34 +611,75 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         </div>
       </section>
 
-      {/* 4b — the four shortcuts, now horizontal cards in a 2x2 grid.
-          They were tall tiles in a swipe row, which hid two of the four behind
-          a drag. All four are on screen at once now, at one size, and the row
-          cannot scroll sideways. */}
-      <section className="mt-5 px-[var(--page-x)] pb-5 pt-5">
-        <div className="grid grid-cols-2 gap-2">
-          {tiles
-            .filter((t) => t.show)
-            .map((t) => (
+      {/* 4b — FOUR FULL-WIDTH BANNERS, one per row.
+          They were a 2x2 grid of 56px thumbnails, which gave each shortcut a
+          picture too small to read as anything and a title competing with
+          three others for the same glance. At full width the photograph is
+          finally doing work, and the four read as a list to go down rather
+          than a block to decode.
+
+          THE PANEL ALTERNATES SIDES. Four identical rows is a form; four rows
+          that flip is a rhythm, and it keeps the eye moving down the stack
+          instead of straight past it. */}
+      <section className="mt-5 space-y-2.5 px-[var(--page-x)] pb-5 pt-5">
+        {banners
+          .filter((b) => b.show)
+          .map((b, i) => {
+            // Position in the RENDERED list, not the source list, so a hidden
+            // banner cannot leave two panels stacked on the same side.
+            const panelLeft = i % 2 === 0;
+            const deal = b.id === "deals";
+            return (
               <Link
-                key={t.id}
-                to={browseHref(slug, { tile: t.id })}
-                className="card-press flex items-center gap-2.5 overflow-hidden rounded-[16px] border border-line bg-white p-2"
+                key={b.id}
+                to={browseHref(slug, { tile: b.id })}
+                className="card-press relative block h-[96px] w-full overflow-hidden rounded-[12px] bg-page"
               >
-                <span className="block h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[12px] bg-page">
-                  <Img src={tileArt(t.id, slug) ?? ""} className="h-full w-full object-cover" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px] font-bold leading-tight text-ink">
-                    {t.label}
+                {/* THE PHOTO OCCUPIES THE EXPOSED 40%, not the whole banner.
+                    Stretched edge to edge, 60% of every one of these studio
+                    shots sat behind an opaque panel — and because the subject
+                    is centred in all four, the 60% hidden was the subject and
+                    the 40% showing was empty wall. Confined to the visible
+                    strip, `cover` frames the model inside it instead. */}
+                <Img
+                  src={tileArt(b.id, slug) ?? ""}
+                  className={`absolute inset-y-0 h-full w-[40%] object-cover ${
+                    panelLeft ? "right-0" : "left-0"
+                  }`}
+                  style={{ objectPosition: `center ${b.focusY}` }}
+                />
+                {/* SOLID, not a translucent wash: the photo showing through
+                    behind the title is exactly how the old pastel tiles became
+                    unreadable. 60% panel, 40% photograph. */}
+                <span
+                  className={`absolute inset-y-0 flex w-[60%] flex-col justify-center px-4 ${
+                    panelLeft ? "left-0" : "right-0"
+                  }`}
+                  style={{ background: deal ? "rgb(var(--tint))" : "rgb(var(--page))" }}
+                >
+                  {/*
+                    Deals wears persimmon, and it is DARKENED on purpose.
+                    #F94E33 on the #FFF1EC panel measures 3.1:1 — under the
+                    4.5:1 floor for 13px type. #A32F17 gives 6.4:1 for the
+                    title and #C63D22 gives 4.7:1 for the subtitle, so the one
+                    coloured banner is still readable in daylight.
+                  */}
+                  <span
+                    className="truncate text-[16px] font-semibold leading-tight"
+                    style={{ color: deal ? "#A32F17" : "rgb(var(--ink))" }}
+                  >
+                    {b.label}
                   </span>
-                  <span className="mt-0.5 block truncate text-[11.5px] leading-tight text-muted">
-                    {t.note}
+                  <span
+                    className="mt-0.5 truncate text-[13px] leading-tight"
+                    style={{ color: deal ? "#C63D22" : "rgb(var(--text-muted))" }}
+                  >
+                    {b.note}
                   </span>
                 </span>
               </Link>
-            ))}
-        </div>
+            );
+          })}
       </section>
       {/* 5 — Super deals: THE PUNCH. The one high-contrast block on the page.
           It was a pale peach band, which made it one more soft section among

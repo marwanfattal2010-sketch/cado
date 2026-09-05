@@ -122,10 +122,14 @@
   --tab-inactive: 74 79 107; /* #4A4F6B every other label */
   --tab-line: 230 231 238; /* #E6E7EE the hairline under the whole row */
 
-  /* SUPER DEALS IS DECOUPLED FROM THE HEADER. It used to take --tint, so
-     warming the header warmed the deals band with it and the two ran
-     together as one peach column. Cool blue against a cream top is what
-     makes the band read as a separate block again. */
+  /* THE COOL PAIR — the app’s one blue, and the only place blue survives.
+
+     It was written for the Super Deals band, which used to take --tint and
+     so warmed whenever the header did, running the two together as one peach
+     column. Marwan then asked for Shop by budget, Shop by recipient and New
+     on CADO back in this same blue, so it is now a shared pair rather than
+     one section’s private colour. Anything reading it is choosing to be COOL
+     against a warm page on purpose. */
   --deals-bg: 238 240 250; /* #EEF0FA */
   --deals-link: 27 42 107; /* #1B2A6B the "See all" on that band */
 

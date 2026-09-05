@@ -7,6 +7,8 @@ type Props = {
   /** Set on the one image that is above the fold — a lazy hero is a blank
    *  hero for the first paint. */
   eager?: boolean;
+  /** For object-position and nothing else — see the Fashion banners. */
+  style?: React.CSSProperties;
   /** Called when the URL fails, so a caller can offer the next photo. */
   onFail?: () => void;
 };
@@ -36,7 +38,7 @@ type Props = {
  * instant the element exists and asks the element itself whether it is
  * already complete, which is the only reliable way to catch a cache hit.
  */
-export function Img({ src, alt = "", className = "", eager = false, onFail }: Props) {
+export function Img({ src, alt = "", className = "", eager = false, style, onFail }: Props) {
   const [loaded, setLoaded] = useState(false);
   const node = useRef<HTMLImageElement | null>(null);
 
@@ -159,7 +161,9 @@ export function Img({ src, alt = "", className = "", eager = false, onFail }: Pr
        * The blur and the scale stay in the stylesheet, where being a frame
        * late costs nothing.
        */
-      style={{ opacity: loaded ? 1 : 0 }}
+      /* Merged, not replaced: the caller’s object-position has to coexist
+         with the fade-in this component owns. */
+      style={{ ...style, opacity: loaded ? 1 : 0 }}
       className={`blur-up ${className}`}
     />
   );
