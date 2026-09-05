@@ -220,20 +220,43 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
      * where there is no order history to justify the claim.
      */
     const tier = sections.tier;
-    const entryTiles: CategoryTile[] = [
-      { label: "New in", kind: { type: "new" } },
-      { label: "Arrives today", kind: { type: "sameDay" } },
-      ...(tier ? [{ label: tier.label, kind: { type: "price" as const, max: tier.max } }] : []),
-      { label: "Gift wrapped", kind: { type: "giftWrap" } },
-      { label: "Deals", kind: { type: "sale" } },
-      // Last two on purpose: they are the ones with no data behind them on
-      // most tabs, so when they drop the row still ends on a full tile rather
-      // than a gap in the middle.
-      ...(sections.bestSellersAreReal
-        ? [{ label: "Best sellers", kind: { type: "picks" as const } }]
-        : []),
-      { label: "Ready to gift", kind: { type: "giftReady" } },
-    ];
+    /*
+     * THE TAB'S OWN FIVE, out of its own theme.
+     *
+     * This was a hardcoded list — New in, Arrives today, Under $X, Gift
+     * wrapped, Deals — built the same way on every tab, which is why eleven
+     * categories all showed the same five tiles and `theme.tiles` was written,
+     * maintained and never read. Jewelry's theme has said
+     * "For her · For him · Best sellers · Under $100 · New in" the whole time.
+     *
+     * It also fixes the photographs, and for a reason worth stating: a saved
+     * view like "Arrives today" has no product that IS it, so it wears curated
+     * art — which on the jewellery tab was a stock photo of a courier holding
+     * a cardboard box. A recipient or a subcategory tile is different: it can
+     * take a real photo from the very pool it opens, so "For her" is a
+     * photograph of something actually tagged for her. The label and the
+     * picture cannot disagree because they come from the same query.
+     *
+     * The generic list survives only as the fallback for a category nobody has
+     * written a theme for yet.
+     */
+    const entryTiles: CategoryTile[] = theme.tiles.length
+      ? theme.tiles
+      : [
+          { label: "New in", kind: { type: "new" } },
+          { label: "Arrives today", kind: { type: "sameDay" } },
+          ...(tier ? [{ label: tier.label, kind: { type: "price" as const, max: tier.max } }] : []),
+          { label: "Gift wrapped", kind: { type: "giftWrap" } },
+          { label: "Deals", kind: { type: "sale" } },
+          ...(sections.bestSellersAreReal
+            ? [{ label: "Best sellers", kind: { type: "picks" as const } }]
+            : []),
+          { label: "Ready to gift", kind: { type: "giftReady" } },
+        ];
+    // slug -> id, so a subcategory tile can match products without a second
+    // pass over the subcategory list for every tile.
+    const subBySlug = new Map(subcategories.map((x) => [x.slug, x.id]));
+
     const tiles: ResolvedTile[] = [];
     for (const t of entryTiles) {
       let pool: FeedProduct[] = [];
@@ -247,6 +270,20 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
       // the full union and `kind.max` stops existing.
       const kind = t.kind;
       switch (kind.type) {
+        /*
+         * THE TWO CASES THAT WERE MISSING, and their absence is why every
+         * theme's first two tiles silently vanished: with no branch, `pool`
+         * stayed empty and `href` stayed "", so the drop-if-empty guard below
+         * threw them away before anything could render them.
+         */
+        case "recipient":
+          pool = all.filter((p) => (p.recipient_tags ?? []).includes(kind.value));
+          href = browseHref(cat, { for: [kind.value] });
+          break;
+        case "subcategory":
+          pool = all.filter((p) => p.subcategory_id === subBySlug.get(kind.slug));
+          href = browseHref(cat, { type: [kind.slug] });
+          break;
         case "price":
           pool = all.filter((p) => p.price < kind.max);
           href = browseHref(cat, { price: [priceTierId(kind.max)] });
