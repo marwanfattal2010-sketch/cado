@@ -152,10 +152,11 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
         id: s.id,
         slug: s.slug as string,
         name: s.name.replace(/\[.*?\]\s*/g, ""),
-        // The shared circle takes a MARK, never a storefront photograph: a
-        // picture of a shop front does not say which shop it is, and at this
-        // size it is a brown smudge.
         logoUrl: s.logo_url,
+        // A photograph of the shop, used only when there is no mark. This is
+        // the one row where that is the right call: nobody recognises a
+        // florist by its logo, and a picture of the shop beats two initials.
+        photoUrl: s.cover_image_url,
       }));
   }, [directory.data, all]);
 
@@ -432,7 +433,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                 style={{ width: "calc((100% - 3 * 8px) / 4)", maxWidth: 72 }}
                 className="min-w-0 text-center"
               >
-                <StoreLogoCircle name={f.name} logoUrl={f.logoUrl} />
+                <StoreLogoCircle name={f.name} logoUrl={f.logoUrl} photoUrl={f.photoUrl} />
                 <span className="mt-1.5 line-clamp-2 block min-h-[26px] break-words text-[10.5px] leading-tight text-[#5a544e]">
                   {f.name}
                 </span>

@@ -25,11 +25,34 @@ import { Img } from "../Img";
 export function StoreLogoCircle({
   name,
   logoUrl,
+  photoUrl,
 }: {
   name: string;
   /** Already resolved by the caller: the DB's logo_url, or a bundled file. */
   logoUrl?: string | null;
+  /**
+   * A PHOTOGRAPH of the shop, used only where there is no mark.
+   *
+   * It is rendered completely differently from a logo — full-bleed, no white
+   * ground, no inset — because the two are not the same kind of picture. A
+   * wordmark needs air around it and a white field behind it; a photograph
+   * shrunk into that same box just looks like a small photograph.
+   *
+   * Fashion deliberately passes nothing here: that row is brands, and a
+   * storefront photo does not tell you which brand you are looking at. The
+   * florists are the opposite case — nobody knows their marks, and a picture
+   * of the shop is more use than two initials.
+   */
+  photoUrl?: string | null;
 }) {
+  if (!logoUrl && photoUrl) {
+    return (
+      <span className="block aspect-square w-full overflow-hidden rounded-pill bg-[#EEEAE4]">
+        <Img src={photoUrl} alt={name} className="h-full w-full object-cover" />
+      </span>
+    );
+  }
+
   if (!logoUrl) {
     return (
       <span
