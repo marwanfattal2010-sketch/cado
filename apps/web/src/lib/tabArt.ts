@@ -371,20 +371,14 @@ const CIRCLE_ART: Record<string, Record<string, string>> = {
     // studio ground, face cropped out so the outfit is what reads at 80px.
     // Its own path, so re-running seed-tab-art.mjs cannot overwrite it.
     women: "art/circle/fashion--women-supplied.webp",
-    /*
-     * Pexels 17984122, chosen Sep 5 against a Shutterstock comp Marwan liked:
-     * a young man in a plain polo on a near-white studio wall, square-cropped
-     * from the top so the face and the shirt are the whole frame.
-     *
-     * The comp itself could not ship — "shutterstock.com 2653327701" was
-     * printed across the bottom of the file, and it was a 260px preview. This
-     * is the same picture in every way that matters and it is licensed.
-     *
-     * The polo is grey rather than the comp's white on purpose. At 104px the
-     * outfit has to separate from the ground, and white-on-near-white leaves a
-     * circle with a face floating in it.
-     */
-    men: "art/circle/fashion--men-polo.jpg",
+    // Marwans own file, supplied Sep 5: olive polo and white trousers on a
+    // coastal terrace. Replaces an earlier file of his that carried a
+    // dreamstime watermark across the middle and could not ship.
+    //
+    // A Pexels studio shot briefly replaced this on Sep 5 and was reverted the
+    // same day — Marwan wanted this one back. The Pexels file is still in
+    // storage at art/circle/fashion--men-polo.jpg, unreferenced.
+    men: "art/circle/fashion--men-supplied.jpg",
     /*
      * Supplied by Marwan on Sep 5, who confirmed the model is cleared for use.
      * A deliberate exception to the rule governing the other two circles: this
