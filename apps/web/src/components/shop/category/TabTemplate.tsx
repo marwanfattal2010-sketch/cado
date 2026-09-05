@@ -60,9 +60,6 @@ const STORE_LOGOS = new Map(
   ])
 );
 
-/** How many circles the row shows: four across, two rows, nothing hidden. */
-const STORE_ROW_MAX = 8;
-
 /** The "Shop for" order, by subcategory slug. See `circles` below. */
 /**
  * "Shop for" is DEPARTMENTS only now — who you are shopping for.
@@ -145,9 +142,44 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         slug: s.slug as string,
         name: storeDisplayName(s.name),
         logo_url: s.logo_url,
+        // The boutique/brand axis. It is a column on `partners`, not a guess
+        // made from the name — see `brandRail` below for what reads it.
+        local: s.is_lebanese_brand === true,
       })),
     [directory.data, all, category?.id]
   );
+
+  /**
+   * THE RAIL'S ORDER, laid out so each COLUMN is a pair of like shops.
+   *
+   * The rail is a two-row grid with `grid-auto-flow: column`, so it fills
+   * top-then-bottom of one column before starting the next. That means the
+   * flat array here IS the column layout: two local boutiques, then two
+   * brands, then two boutiques, and so on.
+   *
+   * Both lists arrive already sorted — `categoryStores` orders by
+   * `display_rank` (migration 0096), the same field the /stores directory
+   * behind "See all" uses — so "most popular first" needs no second sort and
+   * no name list. Whichever kind runs out first, the other simply continues
+   * to the end rather than leaving gaps mid-rail.
+   */
+  const brandRail = useMemo(() => {
+    const local = stores.filter((s) => s.local);
+    const brands = stores.filter((s) => !s.local);
+    const out: typeof stores = [];
+    let i = 0;
+    let j = 0;
+    // Alternate PAIRS, not singles: a column is two tiles, and taking one
+    // from each list in turn would pair a boutique with a brand in every
+    // column instead of pairing like with like.
+    while (i < local.length || j < brands.length) {
+      out.push(...local.slice(i, i + 2));
+      i += 2;
+      out.push(...brands.slice(j, j + 2));
+      j += 2;
+    }
+    return out;
+  }, [stores]);
 
   const lookup = useMemo<Lookup>(
     () => ({
@@ -329,18 +361,14 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
   ).length;
 
   /*
-   * STORES: FOUR ACROSS, TWO ROWS, NO SWIPE.
+   * NO CAP ON THE RAIL any more.
    *
-   * Eight ranked shops fill the grid exactly. It is a wrapping flex row rather
-   * than `grid-cols-4` so that a count which is not a multiple of four centres
-   * its last row instead of stranding circles hard left — which is the state
-   * the tab is in until the six new partners exist.
-   *
-   * The 31 rather than 30 in the width is slack, not arithmetic: four columns
-   * plus three 10px gaps come to exactly 100%, and a sub-pixel rounding error
-   * at that width wraps the fourth circle onto a line of its own.
+   * The row showed the top eight because eight was what fitted in a static
+   * four-by-two grid. A rail that scrolls has no such ceiling, and truncating
+   * it now would hide shops for a reason that stopped being true the moment
+   * the grid became a carousel. The count in "See all" already speaks for the
+   * whole directory, and it now matches what the rail itself holds.
    */
-  const shownStores = stores.slice(0, STORE_ROW_MAX);
   /* 64px discs on a rail that PEEKS: the next circle is deliberately part
      visible at the right edge, which is the only honest way to say "this
      scrolls". A row that ends flush looks complete and never gets dragged. */
@@ -368,26 +396,30 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
     <div className="bg-white">
       <Hero cat={slug} />
 
-      {/* 2 — stores: eight logo circles, four across, nothing behind a swipe.
-          Not rendered at all with nothing to show: a heading, a line of copy
-          and a "See all 0" over an empty strip is worse than the section being
-          absent, and it is a state the tab really can reach — the directory
-          query is a single request that can fail. */}
-      {shownStores.length > 0 ? (
-      <section className="px-[var(--page-x)] pt-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">
-            Stores in {categoryName}
-          </h2>
+      {/* 2 — POPULAR BRANDS: one rail, two rows, everything in the category.
+          Not rendered at all with nothing to show: a heading and a "See all 0"
+          over an empty rail is worse than the section being absent, and it is
+          a state the tab really can reach — the directory query is a single
+          request that can fail. */}
+      {brandRail.length > 0 ? (
+      <section className="pt-4">
+        {/* The padding is on the header row and on the rail SEPARATELY, not on
+            the section: the rail has to be able to run its last column off the
+            right edge, and a padded section would stop it short of the screen
+            and kill the peek that says it scrolls. */}
+        <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
+          <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">Popular brands</h2>
           <Link to={`/stores/${slug}`} className="shrink-0 text-[15px] font-semibold text-ink">
             See all {stores.length}
           </Link>
         </div>
-        <p className="mb-3 mt-1 text-[12px] text-muted">
-          Shop Lebanon&rsquo;s boutiques and brands in one order
-        </p>
-        <div className="scroll-row" style={{ ["--row-gap" as string]: "14px" }}>
-          {shownStores.map((s) => (
+        {/* No line of copy between the heading and the tiles. "Shop Lebanon's
+            boutiques and brands in one order" was explaining a distinction the
+            row no longer draws — the two kinds are interleaved into one rail
+            now, and a caption naming them put a label on something the shopper
+            is not being asked to choose between. */}
+        <div className="rail-2row" style={{ ["--row-gap" as string]: "14px" }}>
+          {brandRail.map((s) => (
             <Link
               key={s.id}
               to={storePath({ slug: s.slug })}

@@ -20,7 +20,7 @@ export function PointsPill() {
     return (
       <Link
         to="/login"
-        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-header-action px-2.5 py-1.5 text-caption font-semibold text-white"
+        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill border-[0.5px] border-header-line bg-white px-2.5 py-1.5 text-caption font-semibold text-header-fg"
       >
         <span aria-hidden>★</span>
         Earn points
@@ -32,7 +32,7 @@ export function PointsPill() {
     <Link
       to="/points"
       aria-label={`${points.data ?? 0} points`}
-      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-header-action px-2.5 py-1.5 text-caption font-semibold text-white"
+      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill border-[0.5px] border-header-line bg-white px-2.5 py-1.5 text-caption font-semibold text-header-fg"
     >
       <span aria-hidden>★</span>
       {points.data ?? 0} pts
@@ -55,7 +55,7 @@ export function NotificationBell() {
         <path d="M10 20a2.2 2.2 0 0 0 4 0" strokeLinecap="round" />
       </svg>
       {unread > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-pill bg-persimmon px-1 text-[10px] font-bold text-white">
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-pill bg-header-badge px-1 text-[10px] font-bold text-white">
           {unread > 9 ? "9+" : unread}
         </span>
       ) : null}

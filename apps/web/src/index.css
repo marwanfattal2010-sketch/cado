@@ -100,11 +100,16 @@
      these exist at all, so nothing outside the header, the tab strip and
      the Super Deals band may read them.
      ------------------------------------------------------------------ */
-  --header-bg: 255 244 239; /* #FFF4EF cream behind the address + search */
+  --header-bg: 255 255 255; /* #FFFFFF white behind the address + search */
   --header-fg: 27 31 59; /* #1B1F3B address, chevron, bell, bag, search icon */
   --header-muted: 138 143 168; /* #8A8FA8 the "Deliver to" label + placeholder */
-  --header-line: 245 196 179; /* #F5C4B3 the search field's hairline */
-  --header-action: 232 83 47; /* #E8532F the Earn-points pill, the only fill */
+  --header-line: 230 231 238; /* #E6E7EE the search field + points-pill hairline */
+  /* Badges in the header — the cart count, the unread bell. NOT persimmon:
+     above the hairline the app is white and ink, and orange is reserved for
+     the content below it (the active tab rule, prices, discount badges, the
+     Home tab). One orange dot up here would be the only warm pixel on the
+     screen and would read as an error. */
+  --header-badge: 27 31 59; /* #1B1F3B */
 
   /* The tab strip below the header: plain text on white, underlined. */
   --tab-active: 232 83 47; /* #E8532F active label + its 2px rule */
@@ -450,6 +455,50 @@ button:active:not(:disabled),
   /* A flex item with nothing to shrink to is still allowed to shrink; every
      card in these rows sets its own width, so let none of them squeeze. */
   flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------
+   TWO ROWS, ONE SWIPE — the Popular brands rail.
+
+   A grid rather than two stacked `.scroll-row`s, and that is the whole
+   point: two scrollers side by side drift apart the moment a finger lands
+   on one of them, and the pairing that makes each column mean something
+   ("a boutique above a brand") is gone by the second swipe. One container
+   with `grid-auto-flow: column` moves both rows as one object because it
+   IS one object.
+
+   Auto-flow column fills top-then-bottom of each column before starting
+   the next, which is also what gives an odd count its empty bottom-right
+   cell for free — no placeholder element, no filler store.
+   --------------------------------------------------------------------- */
+.rail-2row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  grid-template-rows: repeat(2, auto);
+  gap: var(--row-gap);
+  padding-inline: var(--page-x);
+  scroll-padding-inline: var(--page-x);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Same reasoning as .scroll-row: keep the overscroll in the rail, and
+     leave the y axis chaining so a vertical drag still scrolls the page. */
+  overscroll-behavior-x: contain;
+}
+
+.rail-2row::-webkit-scrollbar {
+  display: none;
+}
+
+/* Snapping on the ITEMS, not on a column wrapper: both cells of a column
+   share an x position, so either one snapping lands the column. `proximity`
+   rather than `mandatory` — a rail this short would otherwise refuse to
+   rest between columns on a slow drag. */
+.rail-2row > * {
+  scroll-snap-align: start;
 }
 
 /* ---------------------------------------------------------------------

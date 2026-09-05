@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
 import { useStore } from "../hooks/useStores";
 import { useAuth } from "../lib/auth";
-import { GiftBagIcon, ChevronLeftIcon } from "./Icons";
+import { GiftBagIcon, ChevronLeftIcon, PinIcon } from "./Icons";
 import { PointsPill, NotificationBell } from "./HeaderActions";
 import {
   useArea,
@@ -212,7 +212,7 @@ export function Header() {
         once means collapsing it moves nothing but the header.
       */}
       <div aria-hidden style={{ height: expandedH }} />
-      {/* THE HEADER. Cream, not persimmon: the header, the tab strip and the search
+      {/* THE HEADER. White, not persimmon: the header, the tab strip and the search
           field are one block of colour that the white content sheet sits
           inside. That is what makes the app feel like a place rather than a
           document — and it is why persimmon can stay rare enough to mean
@@ -265,7 +265,7 @@ export function Header() {
               onClick={openAreaSheet}
               className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-header-fg/[0.06]"
             >
-              <span aria-hidden className="text-[15px]">📍</span>
+              <PinIcon className="h-[17px] w-[17px] shrink-0 text-header-fg" />
               <span className="min-w-0">
                 <span className="block text-[10px] leading-none text-header-muted">Deliver to</span>
                 <span className="flex items-center gap-1 text-body font-bold leading-tight text-header-fg">
@@ -293,7 +293,7 @@ export function Header() {
               {count > 0 ? (
                 <span
                   key={count}
-                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-header-action px-1 text-[10px] font-semibold text-white"
+                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-header-badge px-1 text-[10px] font-semibold text-white"
                 >
                   {count}
                 </span>
