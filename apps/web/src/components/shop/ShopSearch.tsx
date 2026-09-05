@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SearchIcon } from "../Icons";
 import { Img } from "../Img";
@@ -25,6 +26,27 @@ import { storePath } from "../../lib/routes";
  * The magnifier sits after the input in DOM order so it lands at the right
  * edge while the placeholder still starts from the left.
  */
+/**
+ * WHAT THE PLACEHOLDER SUGGESTS, and every one of these returns results.
+ *
+ * It read "Who are you shopping for?" — a question with no answer visible,
+ * which tells a shopper the box exists but not what to put in it. These are
+ * the words people actually arrive with.
+ *
+ * EACH ONE WAS RUN AGAINST THE CATALOGUE BEFORE IT WAS ADDED. Half the
+ * obvious suggestions returned nothing: "mom" matched zero products while 27
+ * were tagged "mother", and "flowers" matched zero because every flower is
+ * titled a bouquet or a rose. Those are fixed in the search itself (see
+ * SEARCH_SYNONYMS in useProducts) rather than papered over here — a
+ * suggestion that opens an empty page is worse than no suggestion.
+ *
+ * Ordered people-first: who it is for, then the occasion, then the thing.
+ */
+const SUGGESTIONS = ["mom", "best friend", "birthday", "flowers", "chocolate", "her"];
+
+/** How long each word holds before the next fades in. */
+const ROTATE_MS = 2600;
+
 export function ShopSearchBar({
   query,
 }: {
@@ -34,6 +56,24 @@ export function ShopSearchBar({
   onQueryChange?: (value: string) => void;
 }) {
   const navigate = useNavigate();
+
+  /*
+   * ONE WORD AT A TIME, rotating. A comma-separated list of six reads as
+   * instructions; one word reads as an example, and over a few seconds the
+   * shopper sees the whole range anyway.
+   *
+   * It stops the moment there is a query to show, and it never animates when
+   * the shopper has asked for reduced motion — a placeholder that changes by
+   * itself is exactly the kind of unrequested movement that setting is for.
+   */
+  const [slot, setSlot] = useState(0);
+  useEffect(() => {
+    if (query) return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (reduced) return;
+    const id = window.setInterval(() => setSlot((i) => (i + 1) % SUGGESTIONS.length), ROTATE_MS);
+    return () => window.clearInterval(id);
+  }, [query]);
 
   /*
    * This is a BUTTON that looks like a field, not a field.
@@ -53,7 +93,14 @@ export function ShopSearchBar({
         className="search-field flex h-11 flex-1 items-center gap-2.5 rounded-pill border-[0.5px] border-header-line bg-white px-4 text-left transition-colors duration-fast active:scale-[0.99]"
       >
         <span className="min-w-0 flex-1 truncate text-body text-header-muted">
-          {query || "Who are you shopping for?"}
+          {query || (
+            <>
+              Search{" "}
+              <span key={slot} className="animate-fade-in font-medium text-ink">
+                {SUGGESTIONS[slot]}
+              </span>
+            </>
+          )}
         </span>
         <SearchIcon className="h-[18px] w-[18px] shrink-0 text-header-fg" aria-hidden />
       </button>

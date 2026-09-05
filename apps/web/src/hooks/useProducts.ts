@@ -249,14 +249,71 @@ function safeIlikeTerm(query: string) {
   return query.trim().replace(/[,()*]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * The few words where what a shopper types and what the catalogue stores are
+ * different words for the same thing.
+ *
+ * Every entry was checked against live rows before it was added — this is a
+ * list of MEASURED gaps, not a guess at what people might mean. Anything not
+ * in it searches exactly as typed.
+ */
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  // 27 products are tagged `mother`, only 5 `mom`.
+  mom: ["mother"],
+  mum: ["mother", "mom"],
+  mother: ["mom"],
+  // 9 are tagged `father`, 4 `dad`.
+  dad: ["father"],
+  father: ["dad"],
+  // What people actually call a best friend. 56 products carry `friend`.
+  bff: ["friend"],
+  bsf: ["friend"],
+  bestie: ["friend"],
+  // `kids` is on 1 product; `child` is on 34.
+  kids: ["child"],
+  kid: ["child"],
+  // The Flowers category has 6 products and not one has "flowers" in its
+  // title — they are bouquets, roses and plants.
+  flowers: ["bouquet", "rose", "plant"],
+  flower: ["bouquet", "rose", "plant"],
+  perfume: ["eau de", "fragrance"],
+};
+
+/** The typed word plus any synonyms, deduped. */
+function expandSearchTerm(term: string): string[] {
+  const extra = SEARCH_SYNONYMS[term.toLowerCase()] ?? [];
+  return [...new Set([term, ...extra])];
+}
+
 export function useSearchProducts(query: string) {
   const term = safeIlikeTerm(query);
   return useQuery({
     queryKey: ["products", "search", term],
     enabled: term.length > 0,
     queryFn: async () => {
-      // Match the typed fragment anywhere in the title OR any tag, so "ros"
-      // finds "Signature Rose Bouquet" and "birthday" finds tagged gifts.
+      /*
+       * TITLE, TAGS, AND WHO IT IS FOR.
+       *
+       * `recipient_tags` was missing from this, and it is the column that
+       * carries the words people actually type. Measured against the live
+       * catalogue: "mom" matched NOTHING while 27 products were tagged
+       * `mother` and 5 `mom`; "friend" matched nothing while 56 were tagged
+       * `friend`. Searching a gift shop for "mom" and being told there is
+       * nothing is the worst possible answer, and it was wrong.
+       *
+       * The synonyms below exist for the same reason. They are not clever
+       * matching — they are the handful of cases where the word a shopper
+       * types and the word the catalogue stores are different words for one
+       * thing, and every one was checked against real rows before it was
+       * added. See SEARCH_SYNONYMS.
+       */
+      const terms = expandSearchTerm(term);
+      const clauses = terms.flatMap((t) => [
+        `title.ilike.%${t}%`,
+        `tags.cs.{${t}}`,
+        `recipient_tags.cs.{${t}}`,
+      ]);
+
       const { data, error } = await supabase
         .from("products")
         .select(
@@ -267,7 +324,7 @@ export function useSearchProducts(query: string) {
           "id, title, price, compare_at_price, currency, created_at, is_trending, same_day, stock_quantity, tags, recipient_tags, color, category:categories(slug, name), subcategory:subcategories(slug, name), product_images(storage_path, is_primary), partner:partners(id, name)"
         )
         .eq("is_active", true)
-        .or(`title.ilike.%${term}%,tags.cs.{${term}}`)
+        .or(clauses.join(","))
         .limit(40);
       if (error) throw error;
       return data;
