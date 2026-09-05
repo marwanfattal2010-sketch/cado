@@ -103,10 +103,10 @@ export function categoryTileArt(cat: string, key: string): string | null {
  */
 const TYPE_TILE_ART: Record<string, Record<string, string>> = {
   fashion: {
-    // A clear white polo on a hanger against a pale wall — the classic cut
-    // Marwan asked for, unbranded. Replaces both the black tee and the folded
-    // stack; both are still in storage if he wants either back.
-    tops: "art/type/fashion--tops.jpg",
+    // Marwans own file: a navy polo carrying the Ralph Lauren pony. Same
+    // decision he made for the adidas cap and the Dior belt — flagged, and
+    // instructed anyway. The unbranded white polo stays at fashion--tops.jpg.
+    tops: "art/type/fashion--tops-supplied.webp",
     // Marwans own file, supplied Sep 5: a coordinated linen shirt-and-trouser
     // set on a model — which is literally what this tile means.
     sets: "art/type/fashion--sets.jpg",
@@ -165,7 +165,7 @@ const TILE_ART: Record<TileId, string> = {
    * above. Pointing them at the same files keeps this map total rather than
    * inventing a picture that nothing renders.
    */
-  tops: "art/type/fashion--tops.jpg",
+  tops: "art/type/fashion--tops-supplied.webp",
   sets: "art/type/fashion--sets.jpg",
   bottoms: "art/type/fashion--bottoms.jpg",
 };
