@@ -6,15 +6,17 @@ import { formatMoney } from "../../../lib/money";
 /**
  * The category hero — three slides, and the colour comes from the PHOTOGRAPH.
  *
- * It used to be a flat panel painted in the category's own accent with the
- * product washed into it: purple on Jewels, rose on Flowers, terracotta on
- * Fashion. That is what made eleven tabs look like eleven different shops,
- * and it dimmed the one thing worth looking at to make room for a colour.
+ * THE TINT IS THE TAB'S ACCENT, and it is the first thing that tells you
+ * which category you are standing in. Purple on Jewels, brown on Chocolate,
+ * deep green on Sport.
  *
- * Now the photo is full-bleed and untinted. The only overlay is a dark scrim
- * in the bottom-left corner — black at 55% fading to nothing by 60% across —
- * which is there purely so white type stays readable on a pale photo. It adds
- * no hue of its own, so a green bouquet still looks green.
+ * It is a GRADIENT, not a wash: the accent at 82% on the left where the type
+ * sits, thinning to 20% by 70% across so the photograph is still a
+ * photograph on the right-hand side. A flat panel of colour was the version
+ * that dimmed the product to make room for the hue; this one keeps both.
+ *
+ * A pure black scrim would be safer for contrast and says nothing. The point
+ * of the hero is to be unmistakably this tab and no other.
  *
  * Slide 1 sells the category. Slides 2 and 3 each show a real product with
  * its real price, and both the slide and the price chip open that product.
@@ -31,15 +33,27 @@ export type HeroSlide = {
   currency?: string;
 };
 
-const SCRIM =
-  "linear-gradient(to top right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.42) 28%, rgba(0,0,0,0.12) 48%, rgba(0,0,0,0) 60%)";
+/**
+ * The accent at 82% where the type sits, thinning to 20% by 70% across so
+ * the right-hand side of the photograph is still a photograph.
+ *
+ * Takes the CHANNEL TRIPLE ("107 63 160"), not a formatted colour: the
+ * space-separated form is the only one that can carry a slash alpha, and
+ * building `rgba(107 63 160, .8)` by string surgery on an rgb() produces a
+ * colour every browser silently drops.
+ */
+const scrimFor = (t: string) =>
+  `linear-gradient(to right, rgb(${t} / 0.82) 0%, rgb(${t} / 0.55) 38%, rgb(${t} / 0.20) 70%)`;
 
 export function CategoryHero({
   slides,
   shopAllHref,
   onShopAll,
+  accentTriple,
 }: {
   slides: HeroSlide[];
+  /** The tab's hue as a channel triple. Tints the scrim and the active dot. */
+  accentTriple: string;
   /** Slide 1 opens the whole category on the results page. */
   shopAllHref: string;
   /**
@@ -76,7 +90,7 @@ export function CategoryHero({
             {s.photo ? (
               <Img src={s.photo} eager className="absolute inset-0 h-full w-full object-cover" />
             ) : null}
-            <span aria-hidden className="absolute inset-0" style={{ background: SCRIM }} />
+            <span aria-hidden className="absolute inset-0" style={{ background: scrimFor(accentTriple) }} />
 
             <div className="absolute inset-x-0 bottom-0 p-4">
               <h2 className="max-w-[15ch] font-display text-[24px] leading-[1.08] text-white">
@@ -122,7 +136,7 @@ export function CategoryHero({
               className="h-1.5 rounded-pill transition-all"
               style={{
                 width: i === active ? 18 : 6,
-                background: i === active ? "rgb(var(--persimmon))" : "#d6cfc5",
+                background: i === active ? `rgb(${accentTriple})` : "#d6cfc5",
               }}
             />
           ))}

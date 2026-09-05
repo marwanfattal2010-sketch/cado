@@ -45,6 +45,8 @@ export type CategoryTheme = {
    * is still that product's own picture, just chosen rather than stumbled on.
    * Falls back to the old behaviour when the slug is missing or has no photo.
    */
+  /** The tab-s own hue, as a channel triple. See accent() at the bottom. */
+  accent: string;
   heroProduct?: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -54,6 +56,7 @@ export type CategoryTheme = {
 
 /** Falls back to persimmon for a category nobody has skinned yet. */
 export const DEFAULT_THEME: CategoryTheme = {
+  accent: "249 78 51", // persimmon, for a category nobody has skinned yet
   heroTitle: "Gifts they will actually keep",
   heroSubtitle: "Chosen from Lebanese shops, at their door tonight",
   tiles: [
@@ -67,6 +70,7 @@ export const DEFAULT_THEME: CategoryTheme = {
 
 export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   "jewelry-accessories": {
+    accent: "107 63 160", // deep purple — Marwans choice
     heroProduct: "layered-chain-necklace",
     heroTitle: "Something that lasts longer than the day",
     heroSubtitle: "Gold, silver and stones from Lebanese ateliers",
@@ -80,6 +84,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   fashion: {
+    accent: "196 85 31", // orange — Marwans choice
     heroTitle: "Wear it the day it arrives",
     heroSubtitle: "Pieces from Beirut boutiques, wrapped and delivered",
     tiles: [
@@ -92,6 +97,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   "flowers-gifts": {
+    accent: "180 74 110", // rose
     heroTitle: "Cut this morning, at their door tonight",
     heroSubtitle: "Bouquets and plants from Lebanese florists",
     tiles: [
@@ -104,6 +110,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   perfumes: {
+    accent: "46 125 107", // teal
     heroTitle: "A scent they will be asked about",
     heroSubtitle: "Perfume, skincare and beauty sets, boxed to give",
     tiles: [
@@ -116,6 +123,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   chocolate: {
+    accent: "122 74 34", // cocoa brown
     heroTitle: "Never turn up empty-handed",
     heroSubtitle: "Boxes, pralines and sweets from Lebanese makers",
     tiles: [
@@ -128,6 +136,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   shoes: {
+    accent: "168 80 48", // terracotta
     heroTitle: "The pair they keep reaching for",
     heroSubtitle: "Heels, sneakers and boots, delivered the same day",
     tiles: [
@@ -140,6 +149,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   toys: {
+    accent: "42 100 196", // blue
     heroTitle: "The one they open first",
     heroSubtitle: "Toys and games for every age, wrapped and ready",
     tiles: [
@@ -152,6 +162,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   "gift-sets": {
+    accent: "142 62 104", // plum
     heroTitle: "Everything chosen, boxed and tied",
     heroSubtitle: "Nothing left to do but sign the card",
     tiles: [
@@ -164,6 +175,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   electronics: {
+    accent: "59 66 146", // indigo — deliberately not Toys blue
     heroTitle: "The upgrade they keep putting off",
     heroSubtitle: "Audio, gadgets and smart watches, delivered tonight",
     tiles: [
@@ -176,6 +188,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   "home-appliances": {
+    accent: "70 84 104", // slate blue-grey
     heroTitle: "For the home they are still filling",
     heroSubtitle: "Kitchen, coffee and linen worth unwrapping",
     tiles: [
@@ -188,6 +201,7 @@ export const CATEGORY_THEMES: Record<string, CategoryTheme> = {
   },
 
   sport: {
+    accent: "30 122 82", // deep green
     heroTitle: "For the one who never sits still",
     heroSubtitle: "Kit and equipment, not another gym t-shirt",
     tiles: [
@@ -239,20 +253,24 @@ export function themeFor(categorySlug: string | undefined): CategoryTheme {
 
 /** `rgb(...)`, optionally with alpha, from a stored channel triple. */
 /**
- * PERSIMMON, ON EVERY TAB. The theme argument is ignored.
+ * THE TAB'S OWN HUE, and it is back on purpose.
  *
- * Each category used to carry its own hue — terracotta Fashion, purple
- * Jewels, rose Flowers — and eleven tabs in eleven colours read as eleven
- * different shops rather than one. The values are DELETED, not merely
- * unused: there is no per-category accent left in the data for a future
- * edit to read, so a hue cannot quietly come back.
+ * These values were deleted in September on the reasoning that eleven tabs in
+ * eleven colours read as eleven shops. Marwan restored them: a category tab is
+ * a destination, and the hue is how you know at a glance which one you are
+ * standing in. The colour is RATIONED to two places — the hero's tint and the
+ * entry-tile label bars — which is what keeps it a signpost rather than a
+ * repaint.
  *
- * The signature keeps its optional theme parameter so the two dozen call
- * sites did not all have to change at once — which is itself the point, as
- * a half-finished migration is exactly how one tab keeps its old colour.
+ * PERSIMMON IS UNTOUCHED BY THIS. Prices, discount badges, the quick-add, the
+ * bottom nav and the active tab rule stay persimmon on every tab, because
+ * those say "press this" and that meaning must not move category to category.
+ *
+ * A theme with no accent falls back to persimmon rather than to nothing.
  */
-export function accent(_theme?: CategoryTheme, alpha?: number) {
-  return alpha == null ? "rgb(var(--persimmon))" : `rgb(var(--persimmon) / ${alpha})`;
+export function accent(theme?: CategoryTheme, alpha?: number) {
+  const value = theme?.accent ?? "var(--persimmon)";
+  return alpha == null ? `rgb(${value})` : `rgb(${value} / ${alpha})`;
 }
 
 /** The filter a tile applies when tapped. */

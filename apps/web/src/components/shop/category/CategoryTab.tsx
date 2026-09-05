@@ -8,7 +8,6 @@ import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
 import { CategoryHero, type HeroSlide } from "./CategoryHero";
 import { TallTiles, type ResolvedTile } from "./TallTiles";
 import {
-  GiftForRow,
   OccasionChips,
   ProductStrip,
   StoresRow,
@@ -392,6 +391,7 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
       {/* 1 — hero: three slides, full-bleed photography. */}
       <CategoryHero
         slides={art.heroSlides}
+        accentTriple={theme.accent}
         shopAllHref={browseHref(cat)}
         onShopAll={filtered ? () => filters.push(filters.state) : undefined}
       />
@@ -405,20 +405,18 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
         {/* 1b — the gift finder, offered once, directly under the hero. */}
         {filtered ? <AiLine accent={ROSE} /> : null}
 
-        {/* 2 — Gift for… */}
-        <GiftForRow
-          sections={sections}
-          theme={theme}
-          cat={cat}
-          photoFor={(v) => art.recipientPhoto.get(v) ?? null}
-          apply={apply}
-        />
+        {/* 2 — the entry tiles come STRAIGHT after the hero.
+            "Gift for…" used to sit here: five flat circles reading Her, Him,
+            Mom, Dad, Partner, directly above five photo tiles whose first two
+            are For Her and For Him. Two rows asking the same question in the
+            same screen, one of them without pictures. The tiles win — they
+            carry a real photograph of the thing they lead to. */}
 
         {/*
           3 — entry tiles. On a tab that filters its own grid the tiles narrow
           it in place; everywhere else they still link to the results page.
         */}
-        <TallTiles tiles={filtered ? flowerTiles(cat, filters) : art.tiles} />
+        <TallTiles tiles={filtered ? flowerTiles(cat, filters) : art.tiles} theme={theme} />
 
         {/* 4 — shop by category */}
         <SubcategoryCircles circles={art.circles} theme={theme} cat={cat} apply={apply} />

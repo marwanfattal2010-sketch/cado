@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Img } from "../../Img";
-import type { CategoryTheme } from "../../../lib/categoryTheme";
+import { accent, type CategoryTheme } from "../../../lib/categoryTheme";
 
 export type ResolvedTile = {
   label: string;
@@ -31,7 +31,7 @@ export type ResolvedTile = {
  * is always of the thing the tile says. Nothing here falls back to stock
  * imagery or a neutral swatch with a hopeful caption.
  */
-export function TallTiles({ tiles }: { tiles: ResolvedTile[]; theme?: CategoryTheme }) {
+export function TallTiles({ tiles, theme }: { tiles: ResolvedTile[]; theme?: CategoryTheme }) {
   if (tiles.length === 0) return null;
 
   return (
@@ -84,12 +84,15 @@ export function TallTiles({ tiles }: { tiles: ResolvedTile[]; theme?: CategoryTh
             </span>
           )}
           <span
-            /* NEAR-BLACK, not the accent. These bands were solid orange,
-               purple or rose — a whole row of filled colour, which is what
-               made persimmon stop meaning anything. Persimmon is reserved
-               for discount badges and buttons now. */
+            /* THE TAB'S ACCENT, and this row is one of only two places it
+               appears — the other is the hero tint above. Near-black was
+               safe and said nothing; the bar is what makes a row of five
+               photographs read as belonging to THIS category.
+               It is not persimmon and never becomes persimmon: persimmon
+               means "press this" and is reserved for prices, discount
+               badges, the quick-add and the nav. */
             className="absolute inset-x-0 bottom-0 flex h-[32px] items-center justify-center px-1.5 text-[12px] font-bold leading-none text-white"
-            style={{ background: "rgb(var(--ink) / 0.85)" }}
+            style={{ background: accent(theme) }}
           >
             {t.label}
           </span>
