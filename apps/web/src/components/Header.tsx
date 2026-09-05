@@ -362,14 +362,26 @@ export function Header() {
             )}
           </div>
 
-          {/* 8px between the three, and they are the same three on every
-              header — see HeaderActions. The points pill is dropped on a tab
-              page only when the row would otherwise overflow at 390px. */}
-          <div className="flex shrink-0 items-center gap-2">
-            {!isTabPage ? <PointsPill /> : null}
-            <NotificationBell />
-            <CartButton storeId={onStorePage ? storeId : undefined} />
-          </div>
+          {/*
+            NOTHING ON THE RIGHT OF A TAB PAGE.
+
+            Account, Orders, Favorites and Gift Cards carry their name and
+            nothing else. The bell and the bag are shopping furniture: they
+            belong where you are shopping, and on the four tab screens they
+            were three controls competing with the page's own content for a
+            row that only needed to say which screen you are on.
+
+            They stay on Home and on every shop screen — product, store,
+            browse, checkout — because that is where a cart you cannot see is
+            a cart you forget you have.
+          */}
+          {!isTabPage ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <PointsPill />
+              <NotificationBell />
+              <CartButton storeId={onStorePage ? storeId : undefined} />
+            </div>
+          ) : null}
             </div>
           </div>
         </div>
