@@ -122,7 +122,9 @@ const TYPE_TILE_ART: Record<string, Record<string, string>> = {
     bags: "art/type/fashion--bags.jpg",
     caps: "art/type/fashion--caps.webp",
     belts: "art/type/fashion--belts.webp",
-    scarves: "art/type/fashion--scarves.webp",
+    // Marwans own file, supplied Sep 5: a blue cashmere scarf worn, street
+    // light, no branding in frame.
+    scarves: "art/type/fashion--scarves.jpg",
   },
 };
 
