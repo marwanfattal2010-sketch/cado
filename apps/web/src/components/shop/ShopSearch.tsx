@@ -50,12 +50,12 @@ export function ShopSearchBar({
         type="button"
         onClick={() => navigate("/search")}
         aria-label="Search gifts or stores"
-        className="search-field flex h-10 flex-1 items-center gap-2.5 rounded-pill border border-line bg-surface px-4 text-left shadow-rest transition-colors duration-fast active:scale-[0.99]"
+        className="search-field flex h-11 flex-1 items-center gap-2.5 rounded-pill bg-white px-4 text-left transition-colors duration-fast active:scale-[0.99]"
       >
         <span className="min-w-0 flex-1 truncate text-body text-muted">
           {query || "Who are you shopping for?"}
         </span>
-        <SearchIcon className="h-[18px] w-[18px] shrink-0 text-muted" aria-hidden />
+        <SearchIcon className="h-[18px] w-[18px] shrink-0 text-ink" aria-hidden />
       </button>
     </div>
   );

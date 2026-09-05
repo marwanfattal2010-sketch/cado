@@ -212,7 +212,12 @@ export function Header() {
         once means collapsing it moves nothing but the header.
       */}
       <div aria-hidden style={{ height: expandedH }} />
-      <header className="fixed inset-x-0 top-0 z-20 border-b border-line bg-canvas/95 backdrop-blur">
+      {/* THE FRAME. Navy, not white: the header, the tab strip and the search
+          field are one block of colour that the white content sheet sits
+          inside. That is what makes the app feel like a place rather than a
+          document — and it is why persimmon can stay rare enough to mean
+          "press this". */}
+      <header className="fixed inset-x-0 top-0 z-20 bg-gradient-to-b from-navy to-navy-deep">
         {/*
           grid-template-rows 1fr -> 0fr, which is the one way to transition to
           and from an auto height. The inner div must own the overflow-hidden
@@ -242,7 +247,7 @@ export function Header() {
                    to 64px, so h-8 w-8 built a 64px button that pushed the
                    whole header from 61px to 89px on every inner page — and
                    with it every sticky bar measured from the header. */
-                className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-muted transition hover:bg-surface-sunk hover:text-ink"
+                className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-white/80 transition hover:bg-white/10 hover:text-white"
               >
                 <ChevronLeftIcon className="h-5 w-5" />
               </button>
@@ -258,14 +263,14 @@ export function Header() {
             */}
             <button
               onClick={openAreaSheet}
-              className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-surface-sunk"
+              className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-white/10"
             >
               <span aria-hidden className="text-[15px] text-persimmon">📍</span>
               <span className="min-w-0">
-                <span className="block text-[10px] leading-none text-muted">Deliver to</span>
-                <span className="flex items-center gap-1 text-body font-bold leading-tight text-ink">
+                <span className="block text-[10px] leading-none text-white/70">Deliver to</span>
+                <span className="flex items-center gap-1 text-body font-bold leading-tight text-white">
                   <span className="truncate">{area}</span>
-                  <span aria-hidden className="text-[10px] font-normal text-muted">▾</span>
+                  <span aria-hidden className="text-[10px] font-normal text-white/70">▾</span>
                 </span>
               </span>
             </button>
@@ -282,7 +287,7 @@ export function Header() {
                   ? `Cart, ${count} item${count === 1 ? "" : "s"}`
                   : `Your carts, ${count} cart${count === 1 ? "" : "s"}`
               }
-              className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted transition-all duration-fast hover:bg-surface-sunk hover:text-ink active:scale-90"
+              className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-white transition-all duration-fast hover:bg-white/10 active:scale-90"
             >
               <GiftBagIcon className="h-[22px] w-[22px]" />
               {count > 0 ? (

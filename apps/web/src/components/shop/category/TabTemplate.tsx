@@ -350,7 +350,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">
             Stores in {categoryName}
           </h2>
-          <Link to={`/stores/${slug}`} className="shrink-0 text-[15px] font-semibold text-coral">
+          <Link to={`/stores/${slug}`} className="shrink-0 text-[15px] font-semibold text-navy">
             See all {stores.length}
           </Link>
         </div>
@@ -384,7 +384,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           becoming a second colour. White is still the base; these bands and
           the deals band are the only three places it is broken. */}
       {circles.length ? (
-        <section className="mt-5 pb-5 pt-5" style={{ background: "var(--accent-tint)" }}>
+        <section className="mt-5 pb-5 pt-5" style={{ background: "rgb(var(--page))" }}>
           <h2 className="px-[var(--page-x)] pb-3 text-[22px] font-bold tracking-[-0.01em] text-ink">
             Shop for
           </h2>
@@ -409,13 +409,13 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               >
                 <span
                   className="block aspect-square w-full overflow-hidden rounded-pill bg-photo-bed"
-                  style={{ boxShadow: "0 0 0 3px var(--accent)" }}
+                  style={{ boxShadow: "0 0 0 1px rgb(var(--line))" }}
                 >
                   {c.photo ? <Img src={c.photo} className="h-full w-full object-cover" /> : null}
                 </span>
                 <span
                   className="mt-2 block truncate text-[12px] font-semibold"
-                  style={{ color: "var(--accent-dark)" }}
+                  style={{ color: "rgb(var(--ink))" }}
                 >
                   {c.name}
                 </span>
@@ -453,10 +453,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
                 className="absolute inset-0 z-[1]"
                 /* The accent, not black: the type row is the tab’s own shelf,
                    and a black scrim on every tab made all eleven look alike. */
-                style={{
-                  background:
-                    "linear-gradient(to top, color-mix(in srgb, var(--accent-dark) 88%, transparent) 0%, transparent 62%)",
-                }}
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,.66) 0%, transparent 62%)" }}
               />
               <span className="absolute bottom-[12px] left-[12px] right-[12px] z-[2] text-[15px] font-semibold leading-tight text-white">
                 {t.label}
@@ -470,7 +467,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           They were tall tiles in a swipe row, which hid two of the four behind
           a drag. All four are on screen at once now, at one size, and the row
           cannot scroll sideways. */}
-      <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "var(--accent-tint-soft)" }}>
+      <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "rgb(var(--page))" }}>
         <div className="grid grid-cols-2 gap-2">
           {tiles
             .filter((t) => t.show)
@@ -509,14 +506,14 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       {claimed.dealRow.length >= MIN_RAIL ? (
         <section
           className="mt-5 px-[var(--page-x)] pb-[18px] pt-4"
-          style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))" }}
+          style={{ background: "rgb(var(--tint))" }}
         >
           <div className="flex items-baseline justify-between gap-3 pb-3">
-            <h2 className="text-[22px] font-bold tracking-[-0.01em] text-white">Super deals</h2>
+            <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">Super deals</h2>
             {/* White here, not coral: coral on the accent gradient is two
                 warm colours fighting, and this is the one block where the
                 accent already carries the emphasis. */}
-            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-semibold text-white">
+            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-semibold text-navy">
               See all
             </Link>
           </div>
@@ -540,7 +537,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       {/* Best picks sits on WHITE — the section above it is now the dark
           punch block, and a band straight after it would fight for the eye
           the punch just won. */}
-      <div className="mt-5 pb-5" style={{ background: "var(--accent-tint-soft)" }}>
+      <div className="mt-5 pb-5" style={{ background: "rgb(var(--page))" }}>
         <Strip
           title="Best picks"
           products={claimed.picks}
@@ -554,7 +551,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           one above the other and made them read as two unusually smart product
           cards rather than as a pair. */}
       {collections.length ? (
-        <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "var(--accent-tint-soft)" }}>
+        <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "rgb(var(--page))" }}>
           <div className="grid grid-cols-2 gap-2">
             {collections.map((c) => (
               <CollectionTile key={c.key} card={c} />
@@ -567,7 +564,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       <section className="pt-4">
         <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-2">
           <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">All {categoryName.toLowerCase()}</h2>
-          <Link to={browseHref(slug)} className="shrink-0 text-[15px] font-semibold text-coral">
+          <Link to={browseHref(slug)} className="shrink-0 text-[15px] font-semibold text-navy">
             See all {all.length} →
           </Link>
         </div>
@@ -662,7 +659,7 @@ function Hero({ cat }: { cat: string }) {
               className="absolute inset-0"
               style={{
                 background:
-                  "linear-gradient(to right, color-mix(in srgb, var(--accent-dark) 70%, transparent) 0%, color-mix(in srgb, var(--accent-dark) 34%, transparent) 45%, transparent 82%)",
+                  "linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.22) 45%, transparent 78%)",
               }}
             />
             <div className="absolute inset-x-0 bottom-0 px-[18px] pb-4">
@@ -804,7 +801,7 @@ function Strip({
     <section className="pt-5">
       <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
         <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">{title}</h2>
-        <Link to={seeAll} className="shrink-0 text-[15px] font-semibold text-coral">
+        <Link to={seeAll} className="shrink-0 text-[15px] font-semibold text-navy">
           See all
         </Link>
       </div>
@@ -825,7 +822,7 @@ function Strip({
             {/* Regular prices are ink; a SALE price is coral with the old one
                 struck through beside it. The colour is the discount signal, so
                 a full-price product must never wear it. */}
-            <span className={`block text-[14px] font-extrabold ${off(p) ? "text-coral" : "text-ink"}`}>
+            <span className={`block text-[14px] font-extrabold ${off(p) ? "text-accent" : "text-ink"}`}>
               {formatMoney(p.price)}
               {off(p) ? (
                 <s className="ml-1.5 text-[11px] font-normal text-muted">

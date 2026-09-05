@@ -33,7 +33,7 @@ const CHIP = {
   pending: "bg-persimmon/10 text-persimmon",
   confirmed: "bg-persimmon/20 text-persimmon",
   onTheWay: "bg-persimmon text-white",
-  delivered: "bg-tint-sage text-deep-sage",
+  delivered: "bg-tint text-navy",
   cancelled: "bg-surface-sunk text-muted",
 } as const;
 

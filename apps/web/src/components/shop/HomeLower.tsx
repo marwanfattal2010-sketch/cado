@@ -156,13 +156,13 @@ export function HomeLower() {
             <Link
               key={b.slug}
               to={browseHref("", { budget: b.slug })}
-              className="flex h-[76px] w-[132px] shrink-0 flex-col justify-center rounded-card bg-tint-sand px-4 transition-transform duration-press ease-out active:scale-[0.96]"
+              className="flex h-[76px] w-[132px] shrink-0 flex-col justify-center rounded-card bg-tint px-4 transition-transform duration-press ease-out active:scale-[0.96]"
             >
               {/* Inter, not the display serif. Fraunces is built for words —
                   its numerals are the wonky part of it, and "$25" set in it
                   read as a novelty sticker rather than a price. Section
                   TITLES keep the serif; the money does not. */}
-              <span className="font-body text-[22px] font-semibold leading-none tracking-[-0.01em] text-deep-sand">
+              <span className="font-body text-[22px] font-semibold leading-none tracking-[-0.01em] text-navy">
                 {b.label}
               </span>
               <span className="mt-0.5 text-[11px] text-muted">Gifts that fit</span>
@@ -180,11 +180,11 @@ export function HomeLower() {
             <Link
               key={r.value}
               to={browseHref("", { for: [r.value] })}
-              className="flex h-[76px] w-[104px] shrink-0 flex-col items-center justify-center gap-1 rounded-card bg-tint-sage transition-transform duration-press ease-out active:scale-[0.96]"
+              className="flex h-[76px] w-[104px] shrink-0 flex-col items-center justify-center gap-1 rounded-card bg-tint transition-transform duration-press ease-out active:scale-[0.96]"
             >
               {/* Matched to the budget tiles above: these two rows sit next
                   to each other and one serif + one sans read as a mistake. */}
-              <span className="font-body text-[17px] font-semibold leading-none text-deep-sage">
+              <span className="font-body text-[17px] font-semibold leading-none text-navy">
                 {r.label}
               </span>
             </Link>

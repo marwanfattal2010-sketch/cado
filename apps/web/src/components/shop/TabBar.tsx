@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { accentFor } from "../../lib/categoryAccent";
+import { useEffect, useRef } from "react";
 import { type BrowseTab } from "../../lib/browse";
 
 /**
@@ -43,8 +42,6 @@ export function TabBar({
    * Measured from the DOM rather than computed from an assumed tab width,
    * because these labels are full category names of very different lengths.
    */
-  const [marker, setMarker] = useState<{ x: number; w: number } | null>(null);
-
   useEffect(() => {
     const strip = stripRef.current;
     const item = itemRefs.current[activeIndex];
@@ -56,23 +53,19 @@ export function TabBar({
     const left = item.offsetLeft - (strip.clientWidth - item.clientWidth) / 2;
     strip.scrollTo({ left, behavior: mounted.current && !reduced ? "smooth" : "auto" });
 
-    // Inset a little from the label so the underline reads as belonging to
-    // the word rather than to the button's padding.
-    const inset = 10;
-    setMarker({ x: item.offsetLeft + inset, w: Math.max(16, item.offsetWidth - inset * 2) });
     mounted.current = true;
   }, [activeIndex, tabs]);
 
   return (
     /* z-20 so the strip stays above anything in the panel that scrolls under
        it, and an opaque canvas behind it so nothing shows through. */
-    <div className="relative z-20 shrink-0 border-b border-line bg-canvas">
+    <div className="relative z-20 shrink-0 bg-navy-deep">
       <div
         ref={stripRef}
         /* scroll-padding-inline keeps a tab from resting half-cut against the
            left edge when the strip scrolls — "Accessories" was arriving as
            "sories". */
-        className="tab-strip h-10 items-stretch pl-[var(--page-x)] pr-12"
+        className="tab-strip h-12 items-center pl-[var(--page-x)] pr-12"
         style={{ scrollPaddingInline: "var(--page-x)" }}
       >
         {tabs.map((tab, i) => {
@@ -86,9 +79,12 @@ export function TabBar({
               type="button"
               onClick={() => onSelect(i)}
               aria-current={active ? "true" : undefined}
-              style={active ? { color: accentFor(tab.slug).base } : undefined}
-              className={`relative flex shrink-0 items-center whitespace-nowrap px-3 text-[14px] transition-colors ${
-                active ? "font-bold" : "font-medium text-muted"
+              /* A PILL, not an underline. On the navy an underline reads as a
+                 scratch; a filled pill reads as a switch, which is what this
+                 is. Active inverts to white-on-navy so the selected tab is the
+                 brightest thing in the frame. */
+              className={`relative flex shrink-0 items-center whitespace-nowrap rounded-pill px-3.5 py-1.5 text-[14px] transition-colors ${
+                active ? "bg-white font-bold text-navy" : "bg-white/[0.22] font-medium text-white"
               }`}
             >
               {tab.label}
@@ -96,25 +92,6 @@ export function TabBar({
           );
         })}
 
-        {/* The travelling underline. Inside the scroller, so it stays with
-            its tab while the strip scrolls, and transformed rather than
-            positioned so the movement is composited. */}
-        {marker ? (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute bottom-0 left-0 h-[3px] rounded-full transition-[transform,width] duration-base ease-ease"
-            style={{
-              // The underline wears the active category's accent, so the
-              // tab bar and the page below it are visibly the same place.
-              // Per-category now. The underline is the one place the accent
-              // appears above the fold, so it is what tells you the page
-              // changed colour on purpose rather than by accident.
-              background: accentFor(tabs[activeIndex]?.slug).base,
-              width: marker.w,
-              transform: `translateX(${marker.x}px)`,
-            }}
-          />
-        ) : null}
       </div>
 
       {/* The fade is 18px of canvas so tabs vanish under the button instead of
@@ -122,19 +99,19 @@ export function TabBar({
           taps. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-10 w-[18px] bg-gradient-to-r from-transparent to-canvas"
+        className="pointer-events-none absolute inset-y-0 right-10 w-[18px] bg-gradient-to-r from-transparent to-navy-deep"
       />
       {/* The same on the left, so a scrolled-past tab fades out instead of
           ending mid-word against the screen edge. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-[14px] bg-gradient-to-l from-transparent to-canvas"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[14px] bg-gradient-to-l from-transparent to-navy-deep"
       />
       <button
         type="button"
         onClick={onOpenAll}
         aria-label="All categories"
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center bg-canvas text-ink"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center bg-navy-deep text-white"
       >
         <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden>
           <path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />

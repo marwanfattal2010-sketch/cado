@@ -57,60 +57,68 @@
    now an invalid colour and silently falls back — grep before adding one.
    --------------------------------------------------------------------- */
 :root {
-  /*
-   * Surfaces.
-   *
-   * THE PAGE IS WHITE AND CREAM IS NOW A BAND, not the ground. Cream
-   * everywhere meant no section ever separated from the one above it, so a
-   * category tab read as one continuous scroll of stuff. White page, cream
-   * band, alternating — the band is what makes a section look like a section.
-   *
-   * Flowers is the deliberate exception and paints its own cream ground; it
-   * is a different tab on purpose.
-   */
-  --canvas: 255 255 255;
-  /* #F7F2EA — alternating section bands ONLY. Never a page background. */
-  --band: 247 242 234;
+  /* ====================================================================
+     COLOUR SYSTEM v2 — 60 / 30 / 10.
+
+       60%  white and near-white. Pages, cards, and every product photo.
+       30%  NAVY. The frame: header, tab strip, the app's interior.
+       10%  PERSIMMON. Actions only, and nothing that is not an action.
+
+     Colour comes from PHOTOGRAPHY and from one controlled tile set per page.
+     It never comes from decorative UI fills — that is what made the previous
+     passes drift into cream, plum, gold and a spread of pastels, and why the
+     shop stopped reading as one shop.
+
+     Blue frame with an orange action is the highest-contrast pairing there
+     is, and it separates "where you are" from "what you can press". Two warm
+     colours would compete for the same job; that is why the frame is not
+     persimmon even though persimmon is the brand.
+     ==================================================================== */
+
+  /* --- 60%: pages and cards ---------------------------------------- */
+  --canvas: 255 255 255; /* #FFFFFF the sheet content sits on */
+  --page: 245 246 250; /* #F5F6FA cool grey behind white cards */
+  --tint: 234 240 255; /* #EAF0FF pale blue: Super Deals band, chips, pills */
   --surface: 255 255 255;
-  --surface-sunk: 239 233 224;
-  /* #ECE6DB — the hairline on a card. */
-  --card-line: 236 230 219;
-  /* #F3EFE8 — behind a product photo, so mixed shots sit on one neutral. */
-  --photo-bed: 243 239 232;
-  --ink: 26 23 20;
+  --surface-sunk: 245 246 250;
+  --photo-bed: 245 246 250;
 
-  /* Text */
-  --text: 26 23 20;
-  --text-muted: 111 104 94;
-  --text-inverse: 247 243 237;
+  /* --- 30%: the frame ---------------------------------------------- */
+  --navy: 11 30 122; /* #0B1E7A header, tab strip, links, New badge */
+  --navy-deep: 7 19 86; /* #071356 the gradient's bottom */
 
-  /* Brand */
-  --primary: 28 24 21;
-  --primary-deep: 11 9 8;
-  --primary-tint: 236 229 219;
-  --gold: 201 162 39;
-  --gold-deep: 138 107 20;
+  /* --- 10%: action -------------------------------------------------- */
+  /* #F94E33. Buttons, the + quick-add, sale prices, discount badges, the
+     active bottom-nav item, the wordmark. NEVER a section ground. */
+  --persimmon: 249 78 51;
+  --accent: 249 78 51;
+  /* Kept as an alias so un-migrated `text-coral` renders persimmon rather
+     than the plum-era coral it used to point at. */
+  --coral: 249 78 51;
 
-  /* The hero accent, and nothing else so far. Defined once on purpose: the
-     final brand orange is not chosen yet, so swapping it must stay a
-     one-line change. Never hardcode #E8542A at a usage site. */
-  --accent-brand: 232 84 42;
+  /* Delivery promises and a free-delivery badge. Nothing else is green. */
+  --today: 18 161 80; /* #12A150 */
+  --success: 18 161 80;
 
-  /*
-   * CORAL — #E8552F. The one accent, and it is now RATIONED.
-   *
-   * It earns its place on: primary CTA buttons, the active tab underline,
-   * discount badges, sale prices, and "See all" links. Nothing else. Section
-   * headings in particular are INK — when every heading was coral the colour
-   * stopped meaning "act on this" and became decoration, which is how a page
-   * ends up with no hierarchy at all.
-   *
-   * `--persimmon` is the old name for this token and is kept pointing at the
-   * same value: dozens of components already say `text-persimmon`, and one
-   * definition is what stops the app drifting into two oranges.
-   */
-  --coral: 232 85 47;
-  --persimmon: 232 85 47;
+  /* --- text and lines ----------------------------------------------- */
+  --ink: 17 17 17; /* #111111 */
+  --text: 17 17 17;
+  --text-muted: 95 102 115; /* #5F6673 */
+  --text-3: 154 161 173; /* #9AA1AD */
+  --line: 230 232 239; /* #E6E8EF */
+  --card-line: 230 232 239;
+  --band: 245 246 250; /* legacy name -> --page, so no cream survives it */
+  --text-inverse: 255 255 255;
+
+  /* Retired hues, repointed rather than deleted so any class still naming
+     them renders inside the system instead of reintroducing cream or gold.
+     Grep for these names before using one: they are not new colours. */
+  --primary: 11 30 122;
+  --primary-deep: 7 19 86;
+  --primary-tint: 234 240 255;
+  --gold: 11 30 122;
+  --gold-deep: 7 19 86;
+  --accent-brand: 249 78 51;
 
   /* ------------------------------------------------------------------
      /shop tab accents. One colour per tab, all in one place so they can be
@@ -710,4 +718,29 @@ button:active:not(:disabled),
   );
   background-size: 200% 100%;
   animation: card-shimmer 1.4s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------
+   THE CONTENT SHEET (colour system v2)
+
+   White content sits INSIDE the navy frame with its top corners rounded
+   over it. That one detail is what makes the frame read as deliberate
+   rather than as a coloured bar someone left at the top: the sheet looks
+   tucked under the header, so the navy is the app and the white is the
+   page you are reading.
+
+   The negative top margin pulls the sheet up under the tab strip by its own
+   corner radius, so the curve overlaps the navy instead of leaving a seam.
+   --------------------------------------------------------------------- */
+.panel {
+  background: rgb(var(--canvas));
+}
+.panel > :first-child {
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+}
+.content-sheet {
+  background: rgb(var(--canvas));
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
 }

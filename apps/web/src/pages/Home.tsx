@@ -148,7 +148,10 @@ export function Home() {
         sticky block was trying to achieve by hand, and could only manage by
         chasing the header's measured height through a transition.
       */}
-      <div className="shrink-0">
+      {/* On the navy, with the header and the tab strip: the three of them
+          are one frame, and the white sheet below starts beneath the last of
+          them. */}
+      <div className="shrink-0 bg-navy-deep pb-1">
         <ShopSearchBar query={query} onQueryChange={setQuery} />
       </div>
 

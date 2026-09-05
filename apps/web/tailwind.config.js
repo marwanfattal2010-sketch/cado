@@ -26,6 +26,14 @@ export default {
       // Adding a colour here without `token()` silently reintroduces the bug.
       colors: {
         canvas: token("--canvas"),
+        // 60/30/10 v2. See the block at the top of index.css.
+        page: token("--page"),
+        tint: token("--tint"),
+        navy: { DEFAULT: token("--navy"), deep: token("--navy-deep") },
+        accent: token("--accent"),
+        success: token("--success"),
+        line: token("--line"),
+        "text-3": token("--text-3"),
         // Cream, and ONLY as an alternating section band — see index.css.
         band: token("--band"),
         // The hairline on a card, and the neutral bed behind a product photo.
@@ -65,22 +73,9 @@ export default {
         },
         // --alert is an alias of --gold-deep, so it is already a triple.
         alert: token("--alert"),
-        line: token("--border"),
+        // Retired name. Points at white so any un-migrated class cannot bring
+        // cream back.
         cream: token("--canvas"),
-        // Soft section tints. Backgrounds only — see the note in index.css.
-        // Not an accent set: nothing tappable is ever filled with these.
-        tint: {
-          sage: token("--tint-sage"),
-          blush: token("--tint-blush"),
-          sand: token("--tint-sand"),
-        },
-        // Text for the tints above, one per hue, ONLY on its own tint —
-        // see the measured contrast note in index.css.
-        deep: {
-          sage: token("--deep-sage"),
-          blush: token("--deep-blush"),
-          sand: token("--deep-sand"),
-        },
         // The store name on a card: its own colour, so "who is this from"
         // is scannable without reading the title.
         "store-name": token("--store-name"),

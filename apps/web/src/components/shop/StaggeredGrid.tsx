@@ -161,7 +161,7 @@ function StaggerCard({ product: p }: { product: FeedProduct }) {
         </Link>
         {/* Ink at full price, coral on sale. The colour IS the discount
             signal, so wearing it at full price spends it for nothing. */}
-        <p className={`mt-1 text-[15px] font-extrabold leading-none ${onSale ? "text-coral" : "text-ink"}`}>
+        <p className={`mt-1 text-[15px] font-extrabold leading-none ${onSale ? "text-accent" : "text-ink"}`}>
           {formatMoney(p.price)}
           {onSale ? (
             <s className="ml-1.5 text-[11px] font-normal text-muted">

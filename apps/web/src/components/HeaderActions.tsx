@@ -20,7 +20,7 @@ export function PointsPill() {
     return (
       <Link
         to="/login"
-        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-tint-blush px-2.5 py-1.5 text-caption font-semibold text-persimmon"
+        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-white/[0.18] px-2.5 py-1.5 text-caption font-semibold text-white"
       >
         <span aria-hidden>★</span>
         Earn points
@@ -32,7 +32,7 @@ export function PointsPill() {
     <Link
       to="/points"
       aria-label={`${points.data ?? 0} points`}
-      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-tint-blush px-2.5 py-1.5 text-caption font-semibold text-persimmon"
+      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-white/[0.18] px-2.5 py-1.5 text-caption font-semibold text-white"
     >
       <span aria-hidden>★</span>
       {points.data ?? 0} pts
@@ -48,7 +48,7 @@ export function NotificationBell() {
     <Link
       to={session ? "/notifications" : "/login"}
       aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
-      className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-muted transition hover:bg-surface-sunk hover:text-ink"
+      className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-white transition hover:bg-white/10"
     >
       <svg viewBox="0 0 24 24" className="h-[21px] w-[21px]" fill="none" stroke="currentColor" strokeWidth="1.7">
         <path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9Z" strokeLinejoin="round" />
