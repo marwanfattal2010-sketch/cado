@@ -86,7 +86,18 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
     [subcategoriesQuery.data, directory.data, signals.data]
   );
 
-  /** Only occasions this tab can actually serve, in the brief's order. */
+  /**
+   * ALL EIGHT OCCASIONS, WHETHER OR NOT THEY HAVE STOCK.
+   *
+   * This used to show only the ones the catalogue could serve, which rendered
+   * six and hid Engagement and Graduation. Marwan wants the full set: the row
+   * is the shop's menu of what CADO does, and a gap in it reads as CADO not
+   * doing weddings rather than as a florist not having tagged anything yet.
+   *
+   * The cost, stated plainly: those two currently open a results page with no
+   * products. They fill themselves the moment any florist tags a bouquet for
+   * either — nothing here needs changing again.
+   */
   const occasions = useMemo(() => {
     const ORDER = [
       "birthday",
@@ -98,9 +109,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
       "engagement",
       "graduation",
     ];
-    const counts = new Map<string, number>();
-    for (const p of all) for (const o of p.occasion_tags ?? []) counts.set(o, (counts.get(o) ?? 0) + 1);
-    return ORDER.filter((v) => (counts.get(v) ?? 0) > 0).map((v) => ({
+    return ORDER.map((v) => ({
       value: v,
       // "Visiting", not "Visiting someone" — the full label truncated to
       // "Visiting some…" in a 70px circle, which reads as broken.
@@ -213,13 +222,8 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
               </Link>
             ))}
           </div>
-          <Link
-            to={`${browseHref(slug)}&facet=occasion`}
-            className="mt-3 block text-center text-[13px] font-semibold"
-            style={{ color: ROSE }}
-          >
-            See all occasions →
-          </Link>
+          {/* No "See all occasions" any more: the row IS all of them, so a
+              link promising more had nothing behind it. */}
         </section>
       ) : null}
 
