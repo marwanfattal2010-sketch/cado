@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useCategories } from "../../../hooks/useCategories";
 import { useSubcategories } from "../../../hooks/useStores";
@@ -13,6 +13,7 @@ import { storePath } from "../../../lib/routes";
 import { productImageUrl } from "../../../lib/images";
 import { formatMoney } from "../../../lib/money";
 import { circleArt, heroArt, typeTileArt } from "../../../lib/tabArt";
+import { TabHero, SectionHeader } from "./TabHero";
 import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
 import { inBudgetRange, type Budget } from "../../../lib/filters";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
@@ -530,7 +531,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
 
   return (
     <div className="bg-white">
-      <Hero cat={slug} />
+      <TabHero slides={heroArt(slug)} title={FASHION_TITLES[0]!} shopHref={browseHref(slug)} />
 
       {/* 2 — POPULAR BRANDS: one rail, two rows, everything in the category.
           Not rendered at all with nothing to show: a heading and a "See all 0"
@@ -543,12 +544,11 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
             the section: the rail has to be able to run its last column off the
             right edge, and a padded section would stop it short of the screen
             and kill the peek that says it scrolls. */}
-        <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
-          <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">Popular brands</h2>
-          <Link to={`/stores/${slug}`} className="shrink-0 text-[15px] font-semibold text-ink">
-            See all {stores.length}
-          </Link>
-        </div>
+        <SectionHeader
+          className="px-[var(--page-x)] pb-3"
+          title="Popular brands"
+          link={{ label: `See all ${stores.length}`, to: `/stores/${slug}` }}
+        />
         {/* No line of copy between the heading and the tiles. "Shop Lebanon's
             boutiques and brands in one order" was explaining a distinction the
             row no longer draws — the two kinds are interleaved into one rail
@@ -583,9 +583,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           like an aside. */}
       {circles.length ? (
         <section className="mt-5 bg-white pb-5 pt-5">
-          <h2 className="px-[var(--page-x)] pb-3 text-[22px] font-bold tracking-[-0.01em] text-ink">
-            Shop for
-          </h2>
+          <SectionHeader className="px-[var(--page-x)] pb-3" title="Shop for" />
           {/* FOUR ACROSS, WRAPPING — not a swipe row. Seven values fit in two
               rows at 375px, and a row you have to drag hides half of what the
               tab sells behind a gesture nobody is told about. The last row is
@@ -729,9 +727,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           it is the natural follow-on question. Seven of them, so this one IS a
           swipe row — four across would make each tile 88px wide. */}
       <section className="pt-5">
-        <h2 className="px-[var(--page-x)] pb-3 text-[22px] font-bold tracking-[-0.01em] text-ink">
-          What are you looking for?
-        </h2>
+        <SectionHeader className="px-[var(--page-x)] pb-3" title="What are you looking for?" />
         <div className="scroll-row" style={{ ["--row-gap" as string]: "10px" }}>
           {TYPE_TILES.map((t) => (
             <Link
@@ -802,12 +798,11 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
 
       {/* 8 — the staggered grid, directly beneath them. */}
       <section className="pt-4">
-        <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-2">
-          <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">All {categoryName.toLowerCase()}</h2>
-          <Link to={browseHref(slug)} className="shrink-0 text-[15px] font-semibold text-ink">
-            See all {all.length} →
-          </Link>
-        </div>
+        <SectionHeader
+          className="px-[var(--page-x)] pb-2"
+          title={`All ${categoryName.toLowerCase()}`}
+          link={{ label: `See all ${all.length} →`, to: browseHref(slug) }}
+        />
         {/* Whatever the rails above did not claim. The count in "See all"
             still speaks for the whole category, because that is what the
             results page behind it shows. */}
@@ -846,109 +841,15 @@ function photoOf(p: FeedProduct) {
  * Side by side on one row they cost one line instead of two, which is the
  * whole hundred pixels.
  */
-function Hero({ cat }: { cat: string }) {
-  const slides = heroArt(cat);
-  const [active, setActive] = useState(0);
-
-  const COPY = [
-    { a: "Dressed for", b: "the occasion" },
-    { a: "Something he", b: "will actually wear" },
-    { a: "New season,", b: "new wardrobe" },
-  ];
-
-  /*
-   * A CROSSFADE, NOT A SWIPE RAIL.
-   *
-   * The hero used to be a horizontal scroller: it only moved if you dragged
-   * it, so most people saw slide one and never learned the other two existed.
-   * Now it fades on its own every five seconds — and only when there is more
-   * than one slide, because a lone banner animating to itself is a repaint
-   * nobody asked for.
-   *
-   * Stacked and opacity-crossfaded rather than translated: a transform on an
-   * ancestor breaks position:fixed for every descendant, which is a trap this
-   * codebase has already been caught by once.
-   */
-  useEffect(() => {
-    if (slides.length < 2) return;
-    const id = window.setInterval(
-      () => setActive((i) => (i + 1) % slides.length),
-      5000
-    );
-    return () => window.clearInterval(id);
-  }, [slides.length]);
-
-  if (slides.length === 0) return null;
-
-  return (
-    <section>
-      <div className="relative h-[200px] w-full overflow-hidden bg-[#8E8474]">
-        {slides.map((src, i) => (
-          <div
-            key={src}
-            className="absolute inset-0 transition-opacity duration-700 ease-out"
-            style={{ opacity: i === active ? 1 : 0 }}
-            aria-hidden={i !== active}
-          >
-            <Img src={src} eager className="absolute inset-0 h-full w-full object-cover" />
-            {/* Bottom-up scrim, per the brief. Deep enough at the foot to hold
-                white type over any photograph, gone by two-thirds up so the
-                picture is still a picture. */}
-            <span
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.22) 45%, transparent 78%)",
-              }}
-            />
-            <div className="absolute inset-x-0 bottom-0 px-[18px] pb-4">
-              <h2 className="max-w-[240px] text-[25px] font-bold leading-[1.1] tracking-[-0.4px] text-white">
-                {COPY[i % COPY.length].a}
-                <br />
-                {COPY[i % COPY.length].b}
-              </h2>
-              <div className="mt-3 flex items-center gap-3.5">
-                <Link
-                  to={browseHref(cat)}
-                  className="card-press bg-coral px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-white"
-                >
-                  Shop now
-                </Link>
-                <Link
-                  to="/assistant"
-                  className="border-b border-white/60 pb-0.5 text-[12.5px] font-semibold text-white"
-                >
-                  ✨ Let AI help me choose
-                </Link>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      {/* One slide has nothing to page between, so the dots would be a single
-          dead dot under the photograph. Not rendered rather than `hidden`:
-          the row own `flex` class beats the UA `[hidden]{display:none}`. */}
-      {slides.length > 1 ? (
-        <div className="flex justify-center gap-1.5 pb-0.5 pt-2">
-          {slides.map((sl, i) => (
-            <button
-              key={sl}
-              type="button"
-              aria-label={`Slide ${i + 1}`}
-              onClick={() => setActive(i)}
-              className="h-[5px] rounded-pill transition-all duration-300"
-              style={{
-                width: i === active ? 14 : 5,
-                background: i === active ? "rgb(var(--coral))" : "#E3DCD3",
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-    </section>
-  );
-}
+/**
+ * Fashion’s hero titles, one per slide. The only per-tab input the shared
+ * TabHero takes besides the photographs and where SHOP NOW goes.
+ */
+const FASHION_TITLES = [
+  "Dressed for the occasion",
+  "Something he will actually wear",
+  "New season, new wardrobe",
+];
 
 
 /**
@@ -1040,12 +941,7 @@ function Strip({
   if (products.length < MIN_STRIP) return null;
   return (
     <section className="pt-5">
-      <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
-        <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">{title}</h2>
-        <Link to={seeAll} className="shrink-0 text-[15px] font-semibold text-ink">
-          See all
-        </Link>
-      </div>
+      <SectionHeader className="px-[var(--page-x)] pb-3" title={title} link={{ label: "See all", to: seeAll }} />
       <div className="scroll-row" style={{ ["--row-gap" as string]: "10px" }}>
         {products.slice(0, 10).map((p) => (
           <Link key={p.id} to={`/product/${p.id}`} className="card-press w-[134px] shrink-0">

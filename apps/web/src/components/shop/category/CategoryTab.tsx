@@ -5,7 +5,7 @@ import { useSubcategories } from "../../../hooks/useStores";
 import { useStoreDirectory } from "../../../hooks/useCatalogue";
 import { useTabSections } from "../../../hooks/useCategoryTab";
 import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
-import { CategoryHero, type HeroSlide } from "./CategoryHero";
+import { TabHero } from "./TabHero";
 import { TallTiles, type ResolvedTile } from "./TallTiles";
 import {
   OccasionChips,
@@ -172,23 +172,18 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
     const heroPool = named.length
       ? [...named, ...all.filter((p) => p.slug !== theme.heroProduct)]
       : [...all].sort((a, b) => Number(!!b.is_pick) - Number(!!a.is_pick));
-    const heroSlides: HeroSlide[] = [];
+    /*
+     * PHOTOGRAPHS ONLY. The hero used to carry a headline and a price per
+     * slide — slide 2 sold a product, slide 3 another — which meant three
+     * different sets of words fading over each other while the title above
+     * them stayed put. The shared hero shows one title over a crossfade, so
+     * all this has to produce now is up to three pictures.
+     */
+    const heroSlides: string[] = [];
     for (let i = 0; i < 3; i++) {
       const photo = take(heroPool, "hero");
       if (!photo) break;
-      const product = heroPool.find((x) => primaryPhoto(x) === photo);
-      heroSlides.push(
-        i === 0
-          ? { key: "lead", photo, headline: theme.heroTitle, subline: theme.heroSubtitle }
-          : {
-              key: product?.id ?? String(i),
-              photo,
-              headline: product?.title ?? theme.heroTitle,
-              subline: product?.partner?.name ?? theme.heroSubtitle,
-              productId: product?.id,
-              price: product?.price,
-            }
-      );
+      heroSlides.push(photo);
     }
 
     /*
@@ -426,10 +421,14 @@ function LegacyCategoryTab({ tab }: { tab: BrowseTab }) {
   return (
     <>
       {/* 1 — hero: three slides, full-bleed photography. */}
-      <CategoryHero
+      {/* THE SHARED HERO. Three per-tab inputs and no more: photographs,
+          title, destination. The accent no longer reaches it — an
+          accent-tinted scrim made a green bouquet olive and a gold
+          necklace brown, and every tab was a different height. */}
+      <TabHero
         slides={art.heroSlides}
-        accentTriple={theme.accent}
-        shopAllHref={browseHref(cat)}
+        title={theme.heroTitle}
+        shopHref={browseHref(cat)}
         onShopAll={filtered ? () => filters.push(filters.state) : undefined}
       />
 

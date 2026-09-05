@@ -40,16 +40,29 @@ export function TabSectionHead({
   onSeeAll?: () => void;
   to?: string;
 }) {
-  const seeAll = "shrink-0 text-[12px] font-semibold underline underline-offset-4";
+  /*
+   * FASHION'S HEADING, EXACTLY — 22px / 700 / near-black, with a 15px
+   * semibold ink link. It was 16px / 800 with a 12px UNDERLINED "See all" in
+   * the tab's accent, which meant nine tabs carried headings a third smaller
+   * than Fashion's and each in a different colour. Swiping across the tab
+   * strip, the section titles changed size and hue every time.
+   *
+   * `theme` is still taken and still ignored, for the same reason `accent()`
+   * kept its parameter through the last migration: a signature change here
+   * touches every call site at once, and a half-finished migration is exactly
+   * how one tab keeps its old look.
+   */
+  void theme;
+  const seeAll = "shrink-0 text-[15px] font-semibold text-ink";
   return (
     <div className="flex items-baseline justify-between gap-3 pb-2.5">
-      <h2 className="font-hero text-[16px] font-extrabold leading-tight text-ink">{title}</h2>
+      <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">{title}</h2>
       {onSeeAll ? (
-        <button type="button" onClick={onSeeAll} className={seeAll} style={{ color: accent(theme) }}>
+        <button type="button" onClick={onSeeAll} className={seeAll}>
           See all
         </button>
       ) : to ? (
-        <Link to={to} className={seeAll} style={{ color: accent(theme) }}>
+        <Link to={to} className={seeAll}>
           See all
         </Link>
       ) : null}

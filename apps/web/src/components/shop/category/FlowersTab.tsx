@@ -14,6 +14,7 @@ import { formatMoney } from "../../../lib/money";
 import { productImageUrl } from "../../../lib/images";
 import { deliveryWord } from "../../../lib/deliveryPromise";
 import { circleArt, flowerArt, heroArt, occasionArt, tileArt } from "../../../lib/tabArt";
+import { TabHero } from "./TabHero";
 import { FLOWER_TYPES, type TileId } from "../../../lib/facets";
 import { OCCASIONS } from "../../../lib/filters";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
@@ -24,8 +25,8 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
  *
  * Fashion is white and leads with store logos, because people recognise
  * brands. Nobody in Beirut picks a florist; they pick the bouquet. So this tab
- * keeps its cream ground, its serif headings and its rose accent, leads with
- * occasions, and puts the florists last and small.
+ * leads with occasions and puts the florists last and small. Its TYPOGRAPHY is
+ * the app’s — see TabHero — and only the section order is its own.
  *
  * NO FILTERS ON THIS PAGE. Every circle, pill, tile and "See all" opens the
  * results page, which is the only place a filter lives.
@@ -35,17 +36,6 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
    rose — a second design system inside one app, which is exactly what the
    colour reset exists to end. The sections, the occasion row and the florists
    are untouched; only the colours and the typeface change. */
-/**
- * FLOWERS IS ROSE, and its card headings are the one place that shows.
- *
- * This was rose, then briefly navy, then black when navy was purged from the
- * palette — and black turned "Under $50", "Under $100" and "Best picks" into
- * the same heading every other section on the app already has. The tab's whole
- * point is that it does not look like the others.
- *
- * #B44A6E, the same value the Flowers accent carries in categoryTheme.
- */
-const ROSE = "rgb(180 74 110)";
 
 /**
  * A SHORT ROW SITS ACROSS THE CARD, NOT BUNCHED AT ITS LEFT.
@@ -210,7 +200,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
 
   return (
     <div className="bg-canvas">
-      <Hero cat={slug} />
+      <TabHero slides={heroArt(slug)} title="Flowers that arrive fresh" shopHref={browseHref(slug)} />
 
       {/* 2 — Flowers for…, the main event */}
       {occasions.length ? (
@@ -283,7 +273,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                 />
                 <span
                   className="relative z-[2] w-full py-2.5 text-center text-[15px] font-semibold text-white"
-                  style={{ background: ROSE }}
+                  style={{ background: "rgb(var(--persimmon))" }}
                 >
                   {t.label}
                 </span>
@@ -337,7 +327,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
         <Card>
           <div className="flex items-baseline justify-between gap-3 pb-3.5">
             <CardH inline>Super deals</CardH>
-            <Link to={browseHref(slug, { tile: "deals" })} className="text-[13px] font-semibold" style={{ color: ROSE }}>
+            <Link to={browseHref(slug, { tile: "deals" })} className="text-[13px] font-semibold" style={{ color: "rgb(var(--ink))" }}>
               See all
             </Link>
           </div>
@@ -376,7 +366,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
       <section className="pt-5">
         <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)]">
           <H inline>Most popular</H>
-          <Link to={browseHref(slug, { tile: "best-picks" })} className="text-[13px] font-semibold" style={{ color: ROSE }}>
+          <Link to={browseHref(slug, { tile: "best-picks" })} className="text-[13px] font-semibold" style={{ color: "rgb(var(--ink))" }}>
             See all
           </Link>
         </div>
@@ -422,7 +412,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
         <section className="pt-5">
           <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-3">
             <H inline>Florists on CADO</H>
-            <Link to={`/stores/${slug}`} className="text-[13px] font-semibold" style={{ color: ROSE }}>
+            <Link to={`/stores/${slug}`} className="text-[13px] font-semibold" style={{ color: "rgb(var(--ink))" }}>
               See all {florists.length}
             </Link>
           </div>
@@ -461,7 +451,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
       <section className="pt-5">
         <div className="flex items-baseline justify-between gap-3 px-[var(--page-x)] pb-2">
           <H inline>All flowers</H>
-          <Link to={browseHref(slug)} className="text-[13px] font-semibold" style={{ color: ROSE }}>
+          <Link to={browseHref(slug)} className="text-[13px] font-semibold" style={{ color: "rgb(var(--ink))" }}>
             See all {all.length} →
           </Link>
         </div>
@@ -492,24 +482,29 @@ function tileHref(cat: string, id: TileId) {
   return browseHref(cat, { tile: id });
 }
 
-/** Serif, on the cream. */
+/**
+ * FLOWERS HAS NO TYPOGRAPHY OF ITS OWN ANY MORE.
+ *
+ * It had a serif at 24px in a light weight, on cream, with rose headings —
+ * its own little brand inside the app. Swiping from Fashion to Flowers
+ * rebuilt the whole page: different font, different weight, different
+ * ground, different accent. The section ORDER and the content are still
+ * its own; the letters are the app’s.
+ */
 function H({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
   return (
     <h2
-      className={`text-[24px] font-normal text-ink ${inline ? "" : "px-[var(--page-x)] pb-3.5"}`}
+      className={`text-[22px] font-bold tracking-[-0.01em] text-ink ${inline ? "" : "px-[var(--page-x)] pb-3.5"}`}
     >
       {children}
     </h2>
   );
 }
 
-/** Serif in rose, inside a white card. */
+/** Same heading, inside a white card. No rose. */
 function CardH({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
   return (
-    <h2
-      className={`text-[22px] font-normal ${inline ? "" : "pb-3.5"}`}
-      style={{ color: ROSE }}
-    >
+    <h2 className={`text-[22px] font-bold tracking-[-0.01em] text-ink ${inline ? "" : "pb-3.5"}`}>
       {children}
     </h2>
   );
@@ -523,42 +518,3 @@ function Card({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Hero({ cat }: { cat: string }) {
-  const [src] = heroArt(cat);
-  if (!src) return null;
-  return (
-    <section className="relative h-[230px] overflow-hidden bg-page">
-      <Img src={src} eager className="absolute inset-0 h-full w-full object-cover" />
-      <span
-        aria-hidden
-        className="absolute inset-0"
-        style={{ background: "linear-gradient(to right, rgba(0,0,0,.45), rgba(0,0,0,0) 72%)" }}
-      />
-      <div className="absolute inset-y-0 left-0 flex flex-col justify-center px-5">
-        <h1 className="mb-1.5 max-w-[250px] text-[30px] font-normal leading-[1.08] text-white">
-          Flowers that
-          <br />
-          arrive fresh
-        </h1>
-        <p className="mb-4 max-w-[230px] text-[13.5px] text-white/90">
-          Bouquets and plants, delivered the same day.
-        </p>
-        <div className="flex items-center gap-3.5">
-          <Link
-            to={browseHref(cat)}
-            className="bg-white px-[22px] py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-ink"
-          >
-            Shop now
-          </Link>
-          {/* No box, no fill — just the words and a hairline under them. */}
-          <Link
-            to="/assistant"
-            className="border-b border-white/60 pb-0.5 text-[12.5px] font-semibold text-white"
-          >
-            ✨ Let AI help me choose
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
