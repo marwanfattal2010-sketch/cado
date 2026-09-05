@@ -15,7 +15,7 @@ import { LocationSheet } from "./location/LocationSheet";
 import {
   chipLabel,
   hasLocation,
-  locationFromPin,
+  locationFromAddress,
   setLocation,
   useDeliveryLocation,
 } from "../lib/deliveryLocation";
@@ -62,17 +62,15 @@ export function Header() {
   useEffect(() => {
     if (!session || hasLocation()) return;
     const fallback = book.data?.find((a) => a.is_default) ?? book.data?.[0];
-    if (!fallback || fallback.latitude == null || fallback.longitude == null) return;
-    const { location } = locationFromPin({
-      lat: fallback.latitude,
-      lng: fallback.longitude,
-      geocodedCity: fallback.city,
+    if (!fallback) return;
+    // Same helper the sheet uses, so a missing pin falls back to the city
+    // centre here too. This guard used to bail on a null latitude, which meant
+    // a default saved before the pin flow never preloaded either.
+    const location = locationFromAddress(fallback, {
+      title: addressTitle(fallback),
       line: addressLine(fallback),
-      kind: (fallback.label as "home" | "work" | "other") ?? "other",
-      label: addressTitle(fallback),
-      addressId: fallback.id,
     });
-    setLocation(location);
+    if (location) setLocation(location);
   }, [session, book.data]);
   const [details, setDetails] = useState<AddressDetails>(() => getAddressDetails());
 

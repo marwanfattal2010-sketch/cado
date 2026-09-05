@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  locationFromPin,
+  locationFromAddress,
   setLocation,
   useDeliveryLocation,
 } from "../../lib/deliveryLocation";
@@ -90,18 +90,22 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
     );
   }
 
-  function selectSaved(a: SavedAddress) {
-    if (a.latitude == null || a.longitude == null) return;
-    const { location } = locationFromPin({
-      lat: a.latitude,
-      lng: a.longitude,
-      geocodedCity: a.city,
+  /**
+   * Returns whether anything was actually selected.
+   *
+   * This used to open with `if (a.latitude == null) return;` and every address
+   * saved before the pin flow existed has null coordinates — so tapping "Home"
+   * closed the sheet and changed nothing, with no error to explain it. The
+   * fallback now lives in `locationFromAddress`; the boolean is so the sheet
+   * cannot close on a no-op again.
+   */
+  function selectSaved(a: SavedAddress): boolean {
+    const location = locationFromAddress(a, {
+      title: addressTitle(a),
       line: addressLine(a),
-      kind: (a.label as "home" | "work" | "other") ?? "other",
-      label: addressTitle(a),
-      addressId: a.id,
     });
-    setLocation(location);
+    if (location) setLocation(location);
+    return !!location;
   }
 
   function useCurrentLocation() {
@@ -168,9 +172,10 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
                   subtitle={addressLine(a)}
                   selected={selected}
                   badge={a.is_default ? "Default" : undefined}
+                  // Only close when something was actually selected. Closing
+                  // on a no-op is precisely what made this look broken.
                   onClick={() => {
-                    selectSaved(a);
-                    onClose();
+                    if (selectSaved(a)) onClose();
                   }}
                   onMenu={() => setMenuFor(menuFor === a.id ? null : a.id)}
                 />

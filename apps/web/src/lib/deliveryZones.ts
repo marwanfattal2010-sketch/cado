@@ -81,3 +81,23 @@ export const DEFAULT_CENTER = DELIVERY_ZONES[0]!.center;
 
 /** The one line under the sheet title. Derived, so a new city updates it. */
 export const ZONES_SUMMARY = `${DELIVERY_ZONES.map((z) => z.city).join(" & ")} tonight · more cities soon`;
+
+/**
+ * The centre of the zone a city names, or null for one we do not serve.
+ *
+ * For ADDRESSES SAVED BEFORE THE PIN FLOW EXISTED, which have a city and a
+ * street but no coordinates. Selecting one has to put something on the map
+ * and something through the zone check, and the city centre is the honest
+ * answer: it is accurate to the city, which is exactly as precise as the row
+ * itself is.
+ *
+ * It is NOT written back to the address. The row keeps its null coordinates,
+ * so nothing in the database starts claiming to know which building this is —
+ * the driver still gets the street and the notes, and the shopper can pin it
+ * properly whenever they next edit it.
+ */
+export function centerForCity(city: string | null | undefined): { lat: number; lng: number } | null {
+  if (!city) return null;
+  const zone = DELIVERY_ZONES.find((z) => z.city.toLowerCase() === city.trim().toLowerCase());
+  return zone ? { ...zone.center } : null;
+}

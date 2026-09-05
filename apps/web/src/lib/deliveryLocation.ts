@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AREAS, type Area } from "./area";
-import { resolveCity } from "./deliveryZones";
+import { centerForCity, resolveCity } from "./deliveryZones";
 
 /**
  * WHERE THE ORDER IS GOING — one value, one place, one event.
@@ -169,6 +169,53 @@ export function locationFromPin(args: {
       lng: args.lng,
       line: args.line,
     },
+  };
+}
+
+/**
+ * ONE SAVED ADDRESS -> ONE HEADER LOCATION, and every caller goes through
+ * here.
+ *
+ * THE BUG THIS FIXES: selecting a saved address did nothing at all. Both
+ * call sites — the sheet row and the header preload — began with
+ *
+ *   if (a.latitude == null || a.longitude == null) return;
+ *
+ * and every address saved before the pin flow existed has null coordinates.
+ * So tapping "Home" closed the sheet and changed nothing, with no error to
+ * explain it. A guard that silently drops the whole action is worse than no
+ * guard.
+ *
+ * Now a missing pin falls back to the CITY CENTRE. That is enough to put the
+ * address in a delivery zone and on the map, and it is exactly as precise as
+ * the row itself. Nothing is written back — see centerForCity.
+ *
+ * Returns null only when the address has neither coordinates nor a city we
+ * serve, which is the one case where there is genuinely nothing to select.
+ */
+export function locationFromAddress(a: {
+  id: string;
+  label: string;
+  label_custom?: string | null;
+  city: string;
+  latitude: number | null;
+  longitude: number | null;
+}, opts: { title: string; line: string | null }): DeliveryLocation | null {
+  const pin =
+    a.latitude != null && a.longitude != null
+      ? { lat: a.latitude, lng: a.longitude }
+      : centerForCity(a.city);
+  if (!pin) return null;
+
+  const { city } = resolveCity(pin.lat, pin.lng);
+  return {
+    addressId: a.id,
+    kind: (a.label as "home" | "work" | "other") ?? "other",
+    label: opts.title,
+    city: city ?? a.city,
+    lat: pin.lat,
+    lng: pin.lng,
+    line: opts.line,
   };
 }
 
