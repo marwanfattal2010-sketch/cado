@@ -17,7 +17,7 @@ import { Img } from "../../Img";
  *   height     200px          scrim      black 55% -> 22% at 45% -> clear 78%
  *   title      25px / 700     max-width  240px, two lines
  *   leading    1.1            tracking   -0.4px
- *   SHOP NOW   12px / 700 uppercase, 0.1em tracking, WHITE fill / ink text
+ *   SHOP NOW   12px / 700 uppercase, 0.1em tracking; white, or persimmon
  *   AI link    12.5px / 600, underlined white
  *
  * NO SUBTITLES. Fashion had none and the others did, so they went — a hero
@@ -39,6 +39,7 @@ export function TabHero({
   slides,
   title,
   shopHref,
+  shopTone = "white",
   onShopAll,
 }: {
   /** One or more photographs. Two or more crossfade; one sits still. */
@@ -47,12 +48,27 @@ export function TabHero({
   title: string;
   shopHref: string;
   /**
+   * THE ONE THING A TAB MAY STILL CHOOSE, and only because Marwan asked.
+   *
+   * White everywhere: on a black-at-55% scrim it is the strongest contrast
+   * available on any photograph. Fashion keeps PERSIMMON, which is the
+   * button it has always had and the one he signed off — its hero photos
+   * are pale studio grounds where a white button on a white wall is the
+   * weaker pairing, and the tab is the shop’s front page.
+   */
+  shopTone?: "white" | "persimmon";
+  /**
    * On a tab that filters its own grid, SHOP NOW scrolls to that grid instead
    * of navigating. Same button, same box — it just stays on the page.
    */
   onShopAll?: () => void;
 }) {
   const [active, setActive] = useState(0);
+
+  const shopClass =
+    shopTone === "persimmon"
+      ? "card-press bg-persimmon px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-white"
+      : "card-press bg-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-ink";
 
   /*
    * A CROSSFADE, NOT A SWIPE RAIL.
@@ -112,14 +128,14 @@ export function TabHero({
               <button
                 type="button"
                 onClick={onShopAll}
-                className="card-press bg-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-ink"
+                className={shopClass}
               >
                 Shop now
               </button>
             ) : (
               <Link
                 to={shopHref}
-                className="card-press bg-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-ink"
+                className={shopClass}
               >
                 Shop now
               </Link>

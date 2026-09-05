@@ -19,7 +19,7 @@ export function GiftCardBanner() {
   return (
     <Link
       to="/gift-cards"
-      className="relative flex min-h-[168px] items-center overflow-hidden rounded-card bg-gradient-to-br from-tint via-tint to-tint shadow-rest"
+      className="relative flex min-h-[168px] items-center overflow-hidden rounded-card bg-gradient-to-br from-tint-blush via-tint-sand to-tint-sage shadow-rest"
     >
       {/* Photograph, fading in from the right edge. aria-hidden via the
           empty alt inside Img — it is decoration, the link text carries the

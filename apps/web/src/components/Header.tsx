@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
 import { useStore } from "../hooks/useStores";
 import { useAuth } from "../lib/auth";
-import { GiftBagIcon, ChevronLeftIcon, PinIcon } from "./Icons";
+import { GiftBagIcon, ChevronLeftIcon } from "./Icons";
 import { PointsPill, NotificationBell } from "./HeaderActions";
 import {
   useArea,
@@ -284,7 +284,15 @@ export function Header() {
                   beside it — it read as the primary button on a header whose
                   primary action is the search field. 32px at 12% is a chip. */}
               <span className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-pill bg-persimmon/[0.12]">
-                <PinIcon className="h-[20px] w-[20px] text-persimmon" />
+                {/* THE EMOJI, on Marwan's instruction, and it went round in a
+                    circle before landing back here: it was 📍, then an SVG
+                    when a spec asked for an ink-coloured pin (an emoji cannot
+                    be recoloured), and now 📍 again because its own red-orange
+                    is the colour he wanted all along. `aria-hidden` because
+                    the button already says "Deliver to". */}
+                <span aria-hidden className="text-[17px] leading-none">
+                  📍
+                </span>
               </span>
               <span className="min-w-0">
                 <span className="block text-[12px] leading-none text-header-muted">Deliver to</span>

@@ -57,10 +57,19 @@ const CATEGORY_TILE_ART: Record<string, Record<string, string>> = {
   // empty clothes. Identical 600x800 for all four, so the row is uniform
   // before the browser gets a say. The paths are unchanged, so this file did
   // not have to move; the bytes behind them did.
-  // FASHION HAS NO TILE ART ANY MORE. Its four saved-view tiles are flat
-  // colour with a real product cutout in the corner (see TabTemplate), so the
-  // four editorial model photographs that used to live here were deleted from
-  // storage rather than left orphaned. Nothing else referenced them.
+  /*
+   * Fashion's four, and they went away and came back inside one day: the
+   * colour-tile round deleted them from storage, Marwan rejected that round,
+   * and the same four files were re-uploaded to the same paths. Byte-identical
+   * — they were pulled down before the delete, so nothing was re-sourced and
+   * nothing needed re-reviewing.
+   */
+  fashion: {
+    "new-in": "art/tile/fashion--new-in.webp",
+    "most-gifted": "art/tile/fashion--most-gifted.webp",
+    "under-75": "art/tile/fashion--under-75.webp",
+    deals: "art/tile/fashion--deals.webp",
+  },
   // Flowers' four are WebP and cropped 3:4 in the file, for the same reason
   // Fashion's are — and here the crop is exact rather than approximate: a
   // Flowers tile renders at 152x200, which IS 3:4, so a 600x800 file arrives

@@ -29,6 +29,10 @@ export default {
         // 60/30/10 v2. See the block at the top of index.css.
         page: token("--page"),
         tint: token("--tint"),
+        // The gift-card banner only. See index.css.
+        "tint-sage": token("--tint-sage"),
+        "tint-blush": token("--tint-blush"),
+        "tint-sand": token("--tint-sand"),
         frame: { DEFAULT: token("--frame"), deep: token("--frame-deep") },
         // The header's own palette, deliberately separate from the brand
         // colour so one can change without the other. See index.css.
