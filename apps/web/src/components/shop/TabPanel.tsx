@@ -27,7 +27,6 @@ import { TabStoreCircles, TabStoreBanners } from "./blocks/TabStores";
 import { ProductFeed } from "./blocks/ProductFeed";
 import { GiftCardSection, OccasionRail } from "./HomeSections";
 import { CategoryTab } from "./category/CategoryTab";
-import { accentVars } from "../../lib/categoryAccent";
 
 /**
  * One tab's page: its own scroll container, its own filter state.
@@ -145,7 +144,6 @@ export function TabPanel(props: PanelProps) {
         aria-hidden={!active}
         data-tab={tab.slug}
         data-category={tab.filter.category_slug ?? tab.slug}
-        style={accentVars(tab.slug)}
       >
         <CategoryTab tab={tab} />
       </section>
@@ -236,7 +234,6 @@ function PrimaryPanel({
         aria-hidden={!active}
         data-tab={tab.slug}
         data-category={tab.filter.category_slug ?? tab.slug}
-        style={accentVars(tab.slug)}
       >
       {blocks.map((block) => {
         switch (block.type) {

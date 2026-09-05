@@ -9,11 +9,12 @@ import { ProductGridSkeleton, Skeleton } from "../../Skeleton";
 import { Img } from "../../Img";
 import { StaggeredGrid, CollectionTile, type CollectionCard } from "../StaggeredGrid";
 import { StoreLogoCircle } from "../StoreLogoCircle";
+import { ColourTiles } from "../ColourTiles";
 import { storePath } from "../../../lib/routes";
 import { formatMoney } from "../../../lib/money";
 import { productImageUrl } from "../../../lib/images";
 import { circleArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
-import { UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
+import { RECIPIENTS, UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
 import { categoryStores, storeDisplayName } from "../../../lib/browse";
 import type { BrowseTab, FeedProduct } from "../../../lib/browse";
@@ -85,24 +86,16 @@ const CIRCLE_ORDER = ["men", "women", "kids-fashion"];
  * results page with the same sort row and facet chips.
  */
 /**
- * THE FOUR QUICK CARDS ARE THE SAME FOUR COLOURS ON EVERY TAB.
+ * THE FOUR QUICK CARDS ARE WHITE, and that is the point.
  *
- * Deliberately outside the accent system. These four mean the same thing
- * wherever you are — what is new, what people buy, what is cheap, what is
- * discounted — so they are learned once and then recognised by colour alone.
- * If they took the category accent they would be four shades of one hue on
- * each tab and tell you nothing.
+ * They were four pastel grounds — green, pink, blue, amber. Under the colour
+ * system exactly ONE row per page may be colourful, and on a category tab that
+ * row is "Gift for…" above. Two colourful rows and the page is a patchwork
+ * again, which is the thing being fixed.
  *
- * Title colours are the dark partner of each ground; the subtitle stays
- * #6B6460 on all four, because a second coloured line turns a card into a
- * label rather than a shortcut.
+ * So these carry a photo thumbnail and a hairline instead. The photograph is
+ * where their colour comes from now, which is the rule for the whole app.
  */
-const QUICK_CARD: Record<string, { bg: string; title: string }> = {
-  "new-in": { bg: "#E3F4EA", title: "#1F6B3A" },
-  "most-gifted": { bg: "#FBE4EA", title: "#B32D52" },
-  "under-75": { bg: "#E2EEFA", title: "#1F5A9E" },
-  deals: { bg: "#FDF0D5", title: "#B5620A" },
-};
 
 const TYPE_TILES: { key: string; label: string; kind: "type" | "tile" }[] = [
   { key: "tops", label: "Tops", kind: "tile" },
@@ -425,6 +418,19 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         </section>
       ) : null}
 
+      {/* THE ONE COLOURFUL ROW ON THIS PAGE. Seven recipients, seven fixed
+          hues, no photographs. Nothing else on a category tab is allowed a
+          coloured fill — see ColourTiles. */}
+      <ColourTiles
+        title="Gift for…"
+        columns={3}
+        tiles={RECIPIENTS.map((r) => ({
+          key: r.value,
+          label: r.short,
+          href: browseHref(slug, { for: [r.value] }),
+        }))}
+      />
+
       {/* 4 — "What are you looking for?", the same tall tile the four
           shortcuts used to be. Directly under the department circles, because
           it is the natural follow-on question. Seven of them, so this one IS a
@@ -467,7 +473,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           They were tall tiles in a swipe row, which hid two of the four behind
           a drag. All four are on screen at once now, at one size, and the row
           cannot scroll sideways. */}
-      <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "rgb(var(--page))" }}>
+      <section className="mt-5 px-[var(--page-x)] pb-5 pt-5">
         <div className="grid grid-cols-2 gap-2">
           {tiles
             .filter((t) => t.show)
@@ -475,20 +481,16 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               <Link
                 key={t.id}
                 to={browseHref(slug, { tile: t.id })}
-                className="card-press flex items-center gap-2.5 overflow-hidden rounded-[16px] p-2 shadow-card"
-                style={{ background: QUICK_CARD[t.id]?.bg ?? "#FFFFFF" }}
+                className="card-press flex items-center gap-2.5 overflow-hidden rounded-[16px] border border-line bg-white p-2"
               >
-                <span className="block h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[12px] bg-white">
+                <span className="block h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[12px] bg-page">
                   <Img src={tileArt(t.id, slug) ?? ""} className="h-full w-full object-cover" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span
-                    className="block truncate text-[13.5px] font-bold leading-tight"
-                    style={{ color: QUICK_CARD[t.id]?.title ?? "#1C1917" }}
-                  >
+                  <span className="block truncate text-[13.5px] font-bold leading-tight text-ink">
                     {t.label}
                   </span>
-                  <span className="mt-0.5 block truncate text-[11.5px] leading-tight" style={{ color: "#6B6460" }}>
+                  <span className="mt-0.5 block truncate text-[11.5px] leading-tight text-muted">
                     {t.note}
                   </span>
                 </span>

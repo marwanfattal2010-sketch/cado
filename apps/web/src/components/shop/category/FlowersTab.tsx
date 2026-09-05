@@ -31,7 +31,11 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
  * results page, which is the only place a filter lives.
  */
 
-const ROSE = "#A64E62";
+/* Flowers keeps its LAYOUT and gives up its palette. It was cream, serif and
+   rose — a second design system inside one app, which is exactly what the
+   colour reset exists to end. The sections, the occasion row and the florists
+   are untouched; only the colours and the typeface change. */
+const ROSE = "rgb(var(--navy))";
 
 /**
  * A SHORT ROW SITS ACROSS THE CARD, NOT BUNCHED AT ITS LEFT.
@@ -195,7 +199,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
   ];
 
   return (
-    <div style={{ background: "#F6F2EA" }}>
+    <div className="bg-canvas">
       <Hero cat={slug} />
 
       {/* 2 — Flowers for…, the main event */}
@@ -212,7 +216,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                 to={browseHref(slug, { occasion: [o.value] })}
                 className="w-[70px] shrink-0 text-center transition-transform duration-press ease-out active:scale-[0.96]"
               >
-                <span className="block h-[70px] w-[70px] overflow-hidden rounded-pill bg-[#E7D8DB]">
+                <span className="block h-[70px] w-[70px] overflow-hidden rounded-pill bg-page">
                   {o.photo ? <Img src={o.photo} className="h-full w-full object-cover" /> : null}
                 </span>
                 {/* Two lines before ellipsis, and the row is tall enough for
@@ -242,7 +246,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                 to={browseHref(slug, { flower: [f.value] })}
                 className="flex shrink-0 items-center gap-2 rounded-pill bg-white py-1.5 pl-1.5 pr-3.5 transition-transform duration-press ease-out active:scale-[0.97]"
               >
-                <span className="block h-8 w-8 overflow-hidden rounded-pill bg-[#E7D8DB]">
+                <span className="block h-8 w-8 overflow-hidden rounded-pill bg-page">
                   {f.photo ? <Img src={f.photo} className="h-full w-full object-cover" /> : null}
                 </span>
                 <span className="text-[13px] font-semibold text-ink">{f.label}</span>
@@ -261,7 +265,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
               <Link
                 key={t.id}
                 to={tileHref(slug, t.id)}
-                className="relative flex h-[200px] w-[152px] shrink-0 items-end overflow-hidden rounded-[14px] bg-[#E7D8DB] transition-transform duration-press ease-out active:scale-[0.97]"
+                className="relative flex h-[200px] w-[152px] shrink-0 items-end overflow-hidden rounded-[14px] bg-page transition-transform duration-press ease-out active:scale-[0.97]"
               >
                 <Img
                   src={tileArt(t.id, slug) ?? ""}
@@ -306,7 +310,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                 to={browseHref(slug, { type: [c.slug] })}
                 className="w-[66px] shrink-0 text-center transition-transform duration-press ease-out active:scale-[0.96]"
               >
-                <span className="block h-[66px] w-[66px] overflow-hidden rounded-pill bg-[#EFE3E5]">
+                <span className="block h-[66px] w-[66px] overflow-hidden rounded-pill bg-page">
                   {c.photo ? <Img src={c.photo} className="h-full w-full object-cover" /> : null}
                 </span>
                 <span className="mt-1.5 line-clamp-2 block min-h-[28px] text-[11.5px] font-semibold leading-tight text-ink">
@@ -337,7 +341,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
           >
             {deals.map((p) => (
               <Link key={p.id} to={`/product/${p.id}`} className="w-[142px] shrink-0">
-                <span className="relative block aspect-[1/1.15] overflow-hidden rounded-[12px] bg-[#EFE3E5]">
+                <span className="relative block aspect-[1/1.15] overflow-hidden rounded-[12px] bg-page">
                   <Img src={photoOf(p)} className="h-full w-full object-cover" />
                   <span className="absolute left-0 top-0 rounded-br-[10px] bg-persimmon px-2 py-1 text-[11px] font-extrabold leading-none text-white">
                     -{off(p)}%
@@ -369,7 +373,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
         <div className="scroll-row pt-3.5" style={{ ["--row-gap" as string]: "11px" }}>
           {popular.map((p) => (
             <Link key={p.id} to={`/product/${p.id}`} className="w-[142px] shrink-0">
-              <span className="relative block aspect-[1/1.2] overflow-hidden rounded-[12px] bg-[#EFE3E5]">
+              <span className="relative block aspect-[1/1.2] overflow-hidden rounded-[12px] bg-page">
                 <Img src={photoOf(p)} className="h-full w-full object-cover" />
                 {off(p) ? (
                   <span className="absolute left-1.5 top-1.5 rounded-[5px] bg-persimmon px-1.5 py-0.5 text-[10px] font-bold text-white">
@@ -391,7 +395,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                   </s>
                 ) : null}
               </span>
-              <span className="mt-0.5 block text-[11.5px] text-[#1C7A46]">{deliveryWord()}</span>
+              <span className="mt-0.5 block text-[11.5px] text-today">{deliveryWord()}</span>
             </Link>
           ))}
         </div>
@@ -434,7 +438,7 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                 className="min-w-0 text-center"
               >
                 <StoreLogoCircle name={f.name} logoUrl={f.logoUrl} photoUrl={f.photoUrl} />
-                <span className="mt-1.5 line-clamp-2 block min-h-[26px] break-words text-[10.5px] leading-tight text-[#5a544e]">
+                <span className="mt-1.5 line-clamp-2 block min-h-[26px] break-words text-[10.5px] leading-tight text-muted">
                   {f.name}
                 </span>
               </Link>
@@ -482,7 +486,7 @@ function tileHref(cat: string, id: TileId) {
 function H({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
   return (
     <h2
-      className={`font-hero text-[24px] font-normal text-ink ${inline ? "" : "px-[var(--page-x)] pb-3.5"}`}
+      className={`text-[24px] font-normal text-ink ${inline ? "" : "px-[var(--page-x)] pb-3.5"}`}
     >
       {children}
     </h2>
@@ -493,7 +497,7 @@ function H({ children, inline = false }: { children: React.ReactNode; inline?: b
 function CardH({ children, inline = false }: { children: React.ReactNode; inline?: boolean }) {
   return (
     <h2
-      className={`font-hero text-[22px] font-normal ${inline ? "" : "pb-3.5"}`}
+      className={`text-[22px] font-normal ${inline ? "" : "pb-3.5"}`}
       style={{ color: ROSE }}
     >
       {children}
@@ -513,7 +517,7 @@ function Hero({ cat }: { cat: string }) {
   const [src] = heroArt(cat);
   if (!src) return null;
   return (
-    <section className="relative h-[230px] overflow-hidden bg-[#B08B95]">
+    <section className="relative h-[230px] overflow-hidden bg-page">
       <Img src={src} eager className="absolute inset-0 h-full w-full object-cover" />
       <span
         aria-hidden
@@ -521,7 +525,7 @@ function Hero({ cat }: { cat: string }) {
         style={{ background: "linear-gradient(to right, rgba(0,0,0,.45), rgba(0,0,0,0) 72%)" }}
       />
       <div className="absolute inset-y-0 left-0 flex flex-col justify-center px-5">
-        <h1 className="mb-1.5 max-w-[250px] font-hero text-[30px] font-normal leading-[1.08] text-white">
+        <h1 className="mb-1.5 max-w-[250px] text-[30px] font-normal leading-[1.08] text-white">
           Flowers that
           <br />
           arrive fresh
