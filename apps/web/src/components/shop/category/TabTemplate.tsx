@@ -84,6 +84,26 @@ const CIRCLE_ORDER = ["men", "women", "kids-fashion"];
  * `kind` is what decides which URL a tile writes. Both land on the same
  * results page with the same sort row and facet chips.
  */
+/**
+ * THE FOUR QUICK CARDS ARE THE SAME FOUR COLOURS ON EVERY TAB.
+ *
+ * Deliberately outside the accent system. These four mean the same thing
+ * wherever you are — what is new, what people buy, what is cheap, what is
+ * discounted — so they are learned once and then recognised by colour alone.
+ * If they took the category accent they would be four shades of one hue on
+ * each tab and tell you nothing.
+ *
+ * Title colours are the dark partner of each ground; the subtitle stays
+ * #6B6460 on all four, because a second coloured line turns a card into a
+ * label rather than a shortcut.
+ */
+const QUICK_CARD: Record<string, { bg: string; title: string }> = {
+  "new-in": { bg: "#E3F4EA", title: "#1F6B3A" },
+  "most-gifted": { bg: "#FBE4EA", title: "#B32D52" },
+  "under-75": { bg: "#E2EEFA", title: "#1F5A9E" },
+  deals: { bg: "#FDF0D5", title: "#B5620A" },
+};
+
 const TYPE_TILES: { key: string; label: string; kind: "type" | "tile" }[] = [
   { key: "tops", label: "Tops", kind: "tile" },
   { key: "bottoms", label: "Bottoms", kind: "tile" },
@@ -364,7 +384,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           becoming a second colour. White is still the base; these bands and
           the deals band are the only three places it is broken. */}
       {circles.length ? (
-        <section className="mt-5 bg-band pb-5 pt-5">
+        <section className="mt-5 pb-5 pt-5" style={{ background: "var(--accent-tint)" }}>
           <h2 className="px-[var(--page-x)] pb-3 text-[22px] font-bold tracking-[-0.01em] text-ink">
             Shop for
           </h2>
@@ -387,10 +407,16 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
                 style={{ width: 104 }}
                 className="min-w-0 text-center transition-transform duration-press ease-out active:scale-[0.96]"
               >
-                <span className="block aspect-square w-full overflow-hidden rounded-pill bg-[#EEEAE4]">
+                <span
+                  className="block aspect-square w-full overflow-hidden rounded-pill bg-photo-bed"
+                  style={{ boxShadow: "0 0 0 3px var(--accent)" }}
+                >
                   {c.photo ? <Img src={c.photo} className="h-full w-full object-cover" /> : null}
                 </span>
-                <span className="mt-1.5 block truncate text-[12px] font-semibold text-ink">
+                <span
+                  className="mt-2 block truncate text-[12px] font-semibold"
+                  style={{ color: "var(--accent-dark)" }}
+                >
                   {c.name}
                 </span>
               </Link>
@@ -425,7 +451,12 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               <span
                 aria-hidden
                 className="absolute inset-0 z-[1]"
-                style={{ background: "linear-gradient(to top, rgba(0,0,0,.62) 0%, rgba(0,0,0,0) 55%)" }}
+                /* The accent, not black: the type row is the tab’s own shelf,
+                   and a black scrim on every tab made all eleven look alike. */
+                style={{
+                  background:
+                    "linear-gradient(to top, color-mix(in srgb, var(--accent-dark) 88%, transparent) 0%, transparent 62%)",
+                }}
               />
               <span className="absolute bottom-[12px] left-[12px] right-[12px] z-[2] text-[15px] font-semibold leading-tight text-white">
                 {t.label}
@@ -439,7 +470,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           They were tall tiles in a swipe row, which hid two of the four behind
           a drag. All four are on screen at once now, at one size, and the row
           cannot scroll sideways. */}
-      <section className="mt-5 bg-band px-[var(--page-x)] pb-5 pt-5">
+      <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "var(--accent-tint-soft)" }}>
         <div className="grid grid-cols-2 gap-2">
           {tiles
             .filter((t) => t.show)
@@ -447,16 +478,20 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
               <Link
                 key={t.id}
                 to={browseHref(slug, { tile: t.id })}
-                className="card-press flex items-center gap-2.5 overflow-hidden rounded-[16px] border border-card-line bg-white p-2 shadow-card"
+                className="card-press flex items-center gap-2.5 overflow-hidden rounded-[16px] p-2 shadow-card"
+                style={{ background: QUICK_CARD[t.id]?.bg ?? "#FFFFFF" }}
               >
-                <span className="block h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[12px] bg-photo-bed">
+                <span className="block h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[12px] bg-white">
                   <Img src={tileArt(t.id, slug) ?? ""} className="h-full w-full object-cover" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px] font-bold leading-tight text-ink">
+                  <span
+                    className="block truncate text-[13.5px] font-bold leading-tight"
+                    style={{ color: QUICK_CARD[t.id]?.title ?? "#1C1917" }}
+                  >
                     {t.label}
                   </span>
-                  <span className="mt-0.5 block truncate text-[11.5px] leading-tight text-muted">
+                  <span className="mt-0.5 block truncate text-[11.5px] leading-tight" style={{ color: "#6B6460" }}>
                     {t.note}
                   </span>
                 </span>
@@ -472,10 +507,16 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           one block on the page gets this treatment; a second would cancel the
           first. */}
       {claimed.dealRow.length >= MIN_RAIL ? (
-        <section className="mt-5 bg-ink px-[var(--page-x)] pb-[18px] pt-4">
+        <section
+          className="mt-5 px-[var(--page-x)] pb-[18px] pt-4"
+          style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-dark))" }}
+        >
           <div className="flex items-baseline justify-between gap-3 pb-3">
             <h2 className="text-[22px] font-bold tracking-[-0.01em] text-white">Super deals</h2>
-            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-semibold text-coral">
+            {/* White here, not coral: coral on the accent gradient is two
+                warm colours fighting, and this is the one block where the
+                accent already carries the emphasis. */}
+            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-semibold text-white">
               See all
             </Link>
           </div>
@@ -499,7 +540,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
       {/* Best picks sits on WHITE — the section above it is now the dark
           punch block, and a band straight after it would fight for the eye
           the punch just won. */}
-      <div className="mt-5 pb-5">
+      <div className="mt-5 pb-5" style={{ background: "var(--accent-tint-soft)" }}>
         <Strip
           title="Best picks"
           products={claimed.picks}
@@ -513,7 +554,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           one above the other and made them read as two unusually smart product
           cards rather than as a pair. */}
       {collections.length ? (
-        <section className="mt-5 bg-band px-[var(--page-x)] pb-5 pt-5">
+        <section className="mt-5 px-[var(--page-x)] pb-5 pt-5" style={{ background: "var(--accent-tint-soft)" }}>
           <div className="grid grid-cols-2 gap-2">
             {collections.map((c) => (
               <CollectionTile key={c.key} card={c} />
@@ -621,7 +662,7 @@ function Hero({ cat }: { cat: string }) {
               className="absolute inset-0"
               style={{
                 background:
-                  "linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.28) 38%, rgba(0,0,0,0) 72%)",
+                  "linear-gradient(to right, color-mix(in srgb, var(--accent-dark) 70%, transparent) 0%, color-mix(in srgb, var(--accent-dark) 34%, transparent) 45%, transparent 82%)",
               }}
             />
             <div className="absolute inset-x-0 bottom-0 px-[18px] pb-4">

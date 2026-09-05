@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { accentFor } from "../../lib/categoryAccent";
 import { type BrowseTab } from "../../lib/browse";
-import { accent, themeFor } from "../../lib/categoryTheme";
 
 /**
  * The horizontally scrolling tab strip.
@@ -86,8 +86,9 @@ export function TabBar({
               type="button"
               onClick={() => onSelect(i)}
               aria-current={active ? "true" : undefined}
+              style={active ? { color: accentFor(tab.slug).base } : undefined}
               className={`relative flex shrink-0 items-center whitespace-nowrap px-3 text-[14px] transition-colors ${
-                active ? "font-bold text-ink" : "font-medium text-muted"
+                active ? "font-bold" : "font-medium text-muted"
               }`}
             >
               {tab.label}
@@ -105,7 +106,10 @@ export function TabBar({
             style={{
               // The underline wears the active category's accent, so the
               // tab bar and the page below it are visibly the same place.
-              background: accent(themeFor(tabs[activeIndex]?.filter.category_slug)),
+              // Per-category now. The underline is the one place the accent
+              // appears above the fold, so it is what tells you the page
+              // changed colour on purpose rather than by accident.
+              background: accentFor(tabs[activeIndex]?.slug).base,
               width: marker.w,
               transform: `translateX(${marker.x}px)`,
             }}
