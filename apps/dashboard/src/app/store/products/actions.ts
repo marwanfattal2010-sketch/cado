@@ -18,12 +18,28 @@ const stockSchema = z.coerce.number().int().min(0).max(100000);
 
 export async function updateProduct(
   productId: string,
-  input: { price?: number | string; stock_quantity?: number | string }
+  input: {
+    price?: number | string;
+    stock_quantity?: number | string;
+    /**
+     * The "was" price, and the ONLY thing that puts a product on sale.
+     *
+     * The storefront reads these two numbers and nothing else to decide the
+     * discount badge, the struck-through price, and who appears in Super
+     * Deals — there is no separate "featured" list to curate. Set it above the
+     * price and the product goes on sale; clear it and it comes off.
+     */
+    compare_at_price?: number | string | null;
+  }
 ): Promise<{ ok: boolean; message?: string }> {
   const user = await requireStoreOwner();
   const supabase = await createServerClient();
 
-  const patch: { price?: number; stock_quantity?: number } = {};
+  const patch: {
+    price?: number;
+    stock_quantity?: number;
+    compare_at_price?: number | null;
+  } = {};
   if (input.price !== undefined && input.price !== "") {
     const parsed = priceSchema.safeParse(input.price);
     if (!parsed.success) return { ok: false, message: "Price must be between $0.50 and $100,000." };
@@ -34,6 +50,44 @@ export async function updateProduct(
     if (!parsed.success) return { ok: false, message: "Stock must be a whole number, 0 or more." };
     patch.stock_quantity = parsed.data;
   }
+
+  /*
+   * Emptying the box is a real action, not a no-op: it is how a shop ENDS a
+   * promotion without touching what it charges.
+   *
+   * A value that is not above the price is refused rather than stored. The
+   * storefront ignores such a row, so saving it would leave the owner looking
+   * at a field that accepted their number and visibly did nothing — worse than
+   * being told why.
+   */
+  if (input.compare_at_price !== undefined) {
+    if (input.compare_at_price === "" || input.compare_at_price === null) {
+      patch.compare_at_price = null;
+    } else {
+      const parsed = priceSchema.safeParse(input.compare_at_price);
+      if (!parsed.success) {
+        return { ok: false, message: "Was-price must be between $0.50 and $100,000." };
+      }
+      const { data: current } = await supabase
+        .from("products")
+        .select("price")
+        .eq("id", productId)
+        .eq("partner_id", user.partnerId)
+        .maybeSingle();
+      const priceNow =
+        input.price !== undefined && input.price !== ""
+          ? Number(input.price)
+          : Number(current?.price ?? 0);
+      if (parsed.data <= priceNow) {
+        return {
+          ok: false,
+          message: "The was-price has to be higher than the price, or it isn't a discount.",
+        };
+      }
+      patch.compare_at_price = parsed.data;
+    }
+  }
+
   if (Object.keys(patch).length === 0) return { ok: true };
 
   const { data, error } = await supabase

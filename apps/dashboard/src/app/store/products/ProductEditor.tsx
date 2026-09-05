@@ -19,6 +19,7 @@ interface Variant {
 export function ProductEditor({
   id,
   price,
+  compareAtPrice,
   stock,
   isActive,
   isPick: initialIsPick,
@@ -27,6 +28,8 @@ export function ProductEditor({
 }: {
   id: string;
   price: number;
+  /** products.compare_at_price — null when the product is not on sale. */
+  compareAtPrice: number | null;
   stock: number;
   isActive: boolean;
   isPick: boolean;
@@ -62,6 +65,21 @@ export function ProductEditor({
           prefix="$"
           disabled={pending}
           onCommit={(v) => run(() => updateProduct(id, { price: v }))}
+        />
+        {/*
+          THIS FIELD IS THE SALE. Putting a number here above the price is what
+          shows the discount badge on the storefront, strikes through the old
+          price, and puts the product into Super Deals. Emptying it ends the
+          promotion. There is no separate list to curate anywhere — the shop
+          window is decided here.
+        */}
+        <Field
+          label="Was (sale)"
+          defaultValue={compareAtPrice != null ? compareAtPrice.toFixed(2) : ""}
+          prefix="$"
+          placeholder="—"
+          disabled={pending}
+          onCommit={(v) => run(() => updateProduct(id, { compare_at_price: v }))}
         />
         <Field
           label={t("prodedit.stock")}
@@ -156,12 +174,14 @@ function Field({
   onCommit,
   disabled,
   prefix,
+  placeholder,
 }: {
   label: string;
   defaultValue: string;
   onCommit: (value: string) => void;
   disabled: boolean;
   prefix?: string;
+  placeholder?: string;
 }) {
   const [value, setValue] = useState(defaultValue);
   const commit = () => {
@@ -175,6 +195,7 @@ function Field({
         {prefix ? <span className="text-sm text-muted">{prefix}</span> : null}
         <input
           value={value}
+          placeholder={placeholder}
           onChange={(e) => setValue(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
