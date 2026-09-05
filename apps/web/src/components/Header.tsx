@@ -212,12 +212,12 @@ export function Header() {
         once means collapsing it moves nothing but the header.
       */}
       <div aria-hidden style={{ height: expandedH }} />
-      {/* THE FRAME. Persimmon, not white: the header, the tab strip and the search
+      {/* THE HEADER. Cream, not persimmon: the header, the tab strip and the search
           field are one block of colour that the white content sheet sits
           inside. That is what makes the app feel like a place rather than a
           document — and it is why persimmon can stay rare enough to mean
           "press this". */}
-      <header className="fixed inset-x-0 top-0 z-20 bg-gradient-to-b from-frame to-frame-deep">
+      <header className="fixed inset-x-0 top-0 z-20 bg-header-bg">
         {/*
           grid-template-rows 1fr -> 0fr, which is the one way to transition to
           and from an auto height. The inner div must own the overflow-hidden
@@ -247,7 +247,7 @@ export function Header() {
                    to 64px, so h-8 w-8 built a 64px button that pushed the
                    whole header from 61px to 89px on every inner page — and
                    with it every sticky bar measured from the header. */
-                className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-white/80 transition hover:bg-white/10 hover:text-white"
+                className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-header-fg/80 transition hover:bg-header-fg/[0.06] hover:text-header-fg"
               >
                 <ChevronLeftIcon className="h-5 w-5" />
               </button>
@@ -263,14 +263,14 @@ export function Header() {
             */}
             <button
               onClick={openAreaSheet}
-              className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-white/10"
+              className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-header-fg/[0.06]"
             >
-              <span aria-hidden className="text-[15px] text-white/80">📍</span>
+              <span aria-hidden className="text-[15px]">📍</span>
               <span className="min-w-0">
-                <span className="block text-[10px] leading-none text-white/70">Deliver to</span>
-                <span className="flex items-center gap-1 text-body font-bold leading-tight text-white">
+                <span className="block text-[10px] leading-none text-header-muted">Deliver to</span>
+                <span className="flex items-center gap-1 text-body font-bold leading-tight text-header-fg">
                   <span className="truncate">{area}</span>
-                  <span aria-hidden className="text-[10px] font-normal text-white/70">▾</span>
+                  <span aria-hidden className="text-[10px] font-normal text-header-fg">▾</span>
                 </span>
               </span>
             </button>
@@ -287,13 +287,13 @@ export function Header() {
                   ? `Cart, ${count} item${count === 1 ? "" : "s"}`
                   : `Your carts, ${count} cart${count === 1 ? "" : "s"}`
               }
-              className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-white transition-all duration-fast hover:bg-white/10 active:scale-90"
+              className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-header-fg transition-all duration-fast hover:bg-header-fg/[0.06] active:scale-90"
             >
               <GiftBagIcon className="h-[22px] w-[22px]" />
               {count > 0 ? (
                 <span
                   key={count}
-                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-white px-1 text-[10px] font-semibold text-frame"
+                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-header-action px-1 text-[10px] font-semibold text-white"
                 >
                   {count}
                 </span>

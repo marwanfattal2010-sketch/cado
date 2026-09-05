@@ -30,6 +30,21 @@ export default {
         page: token("--page"),
         tint: token("--tint"),
         frame: { DEFAULT: token("--frame"), deep: token("--frame-deep") },
+        // The header's own palette, deliberately separate from the brand
+        // colour so one can change without the other. See index.css.
+        header: {
+          bg: token("--header-bg"),
+          fg: token("--header-fg"),
+          muted: token("--header-muted"),
+          line: token("--header-line"),
+          action: token("--header-action"),
+        },
+        tab: {
+          active: token("--tab-active"),
+          inactive: token("--tab-inactive"),
+          line: token("--tab-line"),
+        },
+        deals: { bg: token("--deals-bg"), link: token("--deals-link") },
         accent: token("--accent"),
         success: token("--success"),
         line: token("--line"),

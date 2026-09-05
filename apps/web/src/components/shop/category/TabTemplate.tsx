@@ -536,15 +536,14 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
           first. */}
       {claimed.dealRow.length >= MIN_RAIL ? (
         <section
-          className="mt-5 px-[var(--page-x)] pb-[18px] pt-4"
-          style={{ background: "rgb(var(--tint))" }}
+          className="mt-5 bg-deals-bg px-[var(--page-x)] pb-[18px] pt-4"
         >
           <div className="flex items-baseline justify-between gap-3 pb-3">
             <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">Super deals</h2>
             {/* White here, not coral: coral on the accent gradient is two
                 warm colours fighting, and this is the one block where the
                 accent already carries the emphasis. */}
-            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-semibold text-ink">
+            <Link to={browseHref(slug, { tile: "deals" })} className="text-[15px] font-medium text-deals-link">
               See all
             </Link>
           </div>

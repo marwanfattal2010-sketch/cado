@@ -86,6 +86,38 @@
   --frame: 249 78 51; /* #F94E33 header + category tab strip */
   --frame-deep: 226 63 38; /* #E23F26 the gradient's bottom */
 
+  /* ------------------------------------------------------------------
+     THE HEADER IS ITS OWN SET OF TOKENS, and that is the point of it.
+
+     It used to paint straight from --frame, so the top of the app could
+     only ever be whatever the brand colour was. These six names decouple
+     the two: the header is cream now and persimmon is still the brand
+     everywhere it means "press this" — prices, badges, the Home tab, the
+     Earn-points pill sitting on this very cream.
+
+     Change the brand colour and the header does not move. Change the
+     header and no price changes with it. That separation is the reason
+     these exist at all, so nothing outside the header, the tab strip and
+     the Super Deals band may read them.
+     ------------------------------------------------------------------ */
+  --header-bg: 255 244 239; /* #FFF4EF cream behind the address + search */
+  --header-fg: 27 31 59; /* #1B1F3B address, chevron, bell, bag, search icon */
+  --header-muted: 138 143 168; /* #8A8FA8 the "Deliver to" label + placeholder */
+  --header-line: 245 196 179; /* #F5C4B3 the search field's hairline */
+  --header-action: 232 83 47; /* #E8532F the Earn-points pill, the only fill */
+
+  /* The tab strip below the header: plain text on white, underlined. */
+  --tab-active: 232 83 47; /* #E8532F active label + its 2px rule */
+  --tab-inactive: 74 79 107; /* #4A4F6B every other label */
+  --tab-line: 230 231 238; /* #E6E7EE the hairline under the whole row */
+
+  /* SUPER DEALS IS DECOUPLED FROM THE HEADER. It used to take --tint, so
+     warming the header warmed the deals band with it and the two ran
+     together as one peach column. Cool blue against a cream top is what
+     makes the band read as a separate block again. */
+  --deals-bg: 238 240 250; /* #EEF0FA */
+  --deals-link: 27 42 107; /* #1B2A6B the "See all" on that band */
+
   /* --- 10%: action -------------------------------------------------- */
   /* #F94E33. Buttons, the + quick-add, sale prices, discount badges, the
      active bottom-nav item, the wordmark. NEVER a section ground. */

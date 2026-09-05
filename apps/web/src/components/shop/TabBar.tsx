@@ -59,7 +59,12 @@ export function TabBar({
   return (
     /* z-20 so the strip stays above anything in the panel that scrolls under
        it, and an opaque canvas behind it so nothing shows through. */
-    <div className="relative z-20 shrink-0 bg-frame-deep">
+    /* WHITE, AND THE HAIRLINE IS THE ONLY EDGE. The strip used to be a band
+       of frame colour carrying filled pills, which is two separations doing
+       one job: the band said "this row is not the page" and the pills said
+       "these are switches". On white the row IS the page, and a 0.5px rule
+       under the whole width is all that divides it from the panel below. */
+    <div className="relative z-20 shrink-0 border-b-[0.5px] border-tab-line bg-white">
       <div
         ref={stripRef}
         /* scroll-padding-inline keeps a tab from resting half-cut against the
@@ -79,15 +84,25 @@ export function TabBar({
               type="button"
               onClick={() => onSelect(i)}
               aria-current={active ? "true" : undefined}
-              /* A PILL, not an underline. On the frame an underline reads as a
-                 scratch; a filled pill reads as a switch, which is what this
-                 is. Active inverts to persimmon-on-white so the selected tab is the
-                 brightest thing in the frame. */
-              className={`relative flex shrink-0 items-center whitespace-nowrap rounded-pill px-3.5 py-1.5 text-[14px] transition-colors ${
-                active ? "bg-white font-bold text-frame" : "bg-white/[0.22] font-medium text-white"
+              /* AN UNDERLINE, not a pill. Eleven filled pills in a scrolling
+                 row read as eleven buttons of equal weight — the selected one
+                 was a shape among shapes. A rule under one word is the
+                 quietest possible way to say "you are here", and it is drawn
+                 as a child of the button so its width is the TEXT's width
+                 rather than the tap target's. */
+              className={`relative flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[14px] transition-colors ${
+                active ? "font-medium text-tab-active" : "font-medium text-tab-inactive"
               }`}
             >
               {tab.label}
+              {active ? (
+                <span
+                  aria-hidden
+                  /* Square-ended and flush to the bottom of the strip, so it
+                     sits on the hairline instead of floating above it. */
+                  className="pointer-events-none absolute inset-x-3 bottom-0 h-[2px] bg-tab-active"
+                />
+              ) : null}
             </button>
           );
         })}
@@ -99,19 +114,19 @@ export function TabBar({
           taps. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-10 w-[18px] bg-gradient-to-r from-transparent to-frame-deep"
+        className="pointer-events-none absolute inset-y-0 right-10 w-[18px] bg-gradient-to-r from-transparent to-white"
       />
       {/* The same on the left, so a scrolled-past tab fades out instead of
           ending mid-word against the screen edge. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-[14px] bg-gradient-to-l from-transparent to-frame-deep"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[14px] bg-gradient-to-l from-transparent to-white"
       />
       <button
         type="button"
         onClick={onOpenAll}
         aria-label="All categories"
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center bg-frame-deep text-white"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center bg-white text-header-fg"
       >
         <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden>
           <path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
