@@ -267,10 +267,25 @@ export function FlowersTab({ tab }: { tab: BrowseTab }) {
                   src={tileArt(t.id, slug) ?? ""}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
+                {/*
+                  A SCRIM, NOT A BAND.
+                  The label used to sit on a solid rose block that cut the
+                  bottom fifth off every bouquet and put the same flat slab on
+                  all four tiles, so the row read as four labels rather than
+                  four photographs. This is the same rose, deepened for
+                  contrast and faded to nothing by two-thirds up: the flower
+                  keeps its whole frame, the white stays readable, and each
+                  tile now takes its character from its own picture.
+                */}
                 <span
-                  className="relative z-[2] w-full py-2.5 text-center text-[15px] font-semibold text-white"
-                  style={{ background: ROSE }}
-                >
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-[62%]"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(103,36,49,0.92) 0%, rgba(103,36,49,0.62) 38%, rgba(103,36,49,0) 100%)",
+                  }}
+                />
+                <span className="relative z-[2] w-full px-3 pb-3 text-left text-[15px] font-semibold leading-tight text-white">
                   {t.label}
                 </span>
               </Link>
