@@ -62,6 +62,25 @@ const SHOTS = [
     photographer: "Valna Studio",
     file: "crewneck-plain.jpg",
   },
+  {
+    title: "Leather Weekend Bag",
+    /*
+     * Found on a later pass, after four rounds had turned up nothing usable.
+     * Cognac leather, twin rolled handles, two buckled straps and a detachable
+     * shoulder strap, lit on pure white with a soft reflection — the register a
+     * bag seller actually shoots in, which is what was asked for. Checked at
+     * full size for a maker's mark: there is none.
+     *
+     * Honest note on the item: it is a structured barrel bag rather than a
+     * large soft holdall. It is a leather travel bag with a shoulder strap, so
+     * the listing is not misdescribed, but it reads smaller than "weekend"
+     * might suggest. That is a far smaller gap than the photograph it replaces,
+     * which was a duffel lying on a road at sunset.
+     */
+    unsplashId: "1691480150204-66dd1eb77391",
+    photographer: "Unsplash",
+    file: "weekender-white.jpg",
+  },
 ];
 
 /** Square, generous, and cropped in the file rather than left to object-fit. */
@@ -100,8 +119,8 @@ async function main() {
       continue;
     }
 
-    // Demote whatever was primary, then add this one as primary. The old row
-    // is kept: a product is allowed more than one photograph, and deleting
+    // Demote whatever was primary, then make THIS path primary. The old rows
+    // are kept: a product is allowed more than one photograph, and deleting
     // history is not this script's job.
     await rest(`product_images?product_id=eq.${product.id}&is_primary=eq.true`, {
       method: "PATCH",
@@ -109,21 +128,40 @@ async function main() {
       body: JSON.stringify({ is_primary: false }),
     });
 
-    const ins = await rest("product_images", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Prefer: "return=representation" },
-      body: JSON.stringify({
-        product_id: product.id,
-        partner_id: product.partner_id,
-        storage_path: storagePath,
-        is_primary: true,
-      }),
-    });
+    /*
+     * RE-RUNNABLE. The first version of this always INSERTED, so running it
+     * twice left two rows pointing at the same file and a dedupe afterwards
+     * deleted the wrong one — the crewneck briefly ended up with no primary
+     * image at all. Now an existing row for this exact path is promoted, and
+     * a row is only created when there isn't one.
+     */
+    const existing = await (
+      await rest(
+        `product_images?select=id&product_id=eq.${product.id}&storage_path=eq.${encodeURIComponent(storagePath)}`
+      )
+    ).json();
+
+    const write = existing.length
+      ? await rest(`product_images?id=eq.${existing[0].id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Prefer: "return=minimal" },
+          body: JSON.stringify({ is_primary: true }),
+        })
+      : await rest("product_images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Prefer: "return=minimal" },
+          body: JSON.stringify({
+            product_id: product.id,
+            partner_id: product.partner_id,
+            storage_path: storagePath,
+            is_primary: true,
+          }),
+        });
 
     console.log(
-      ins.ok
+      write.ok
         ? `OK    ${shot.title} -> ${storagePath}  (${(bytes.length / 1024) | 0}KB, ${shot.photographer}, Unsplash)`
-        : `FAIL  ${shot.title} — row insert ${ins.status} ${await ins.text()}`
+        : `FAIL  ${shot.title} — ${write.status} ${await write.text()}`
     );
   }
 }
