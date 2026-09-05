@@ -115,18 +115,35 @@ export function useDeliveryLocation(): [DeliveryLocation | null, (l: DeliveryLoc
 }
 
 /**
- * The chip's second line.
+ * THE HEADER’S ONE LINE.
  *
- * Deliberately NOT "Beirut" on its own when nothing is set. A default city
- * printed as if it were a choice is how someone ends up ordering to the wrong
- * end of the country — the chip has to say plainly that nothing is set yet.
+ * LABEL PLUS STREET, not label plus city. "Home · Beirut" is true of every
+ * address this shopper has; "Home · Main St" is the one they picked. The city
+ * still drives availability everywhere else — it is just not what belongs in
+ * eight characters of header.
+ *
+ * A GPS fix has no label, so it shows its reverse-geocoded street when one
+ * came back and the words "Current location" when none did. It never shows a
+ * bare city, which would read as a saved address that is not one.
+ *
+ * "Set your location" appears ONLY when nothing is selected. A default city
+ * printed as though it were a choice is how an order ends up at the wrong end
+ * of the country.
  */
 export function chipLabel(loc: DeliveryLocation | null): {
   text: string;
   unset: boolean;
 } {
   if (!loc) return { text: "Set your location", unset: true };
-  return { text: `${loc.label} · ${loc.city}`, unset: false };
+
+  const detail = loc.line?.trim();
+  if (loc.kind === "current" || loc.kind === "pin") {
+    return { text: detail || loc.label, unset: false };
+  }
+  return {
+    text: detail ? `${loc.label} · ${detail}` : `${loc.label} · ${loc.city}`,
+    unset: false,
+  };
 }
 
 /**
@@ -158,6 +175,19 @@ export function locationFromPin(args: {
       line: args.line,
     },
   };
+}
+
+/**
+ * True when nothing has been chosen yet, so a caller can decide whether to
+ * preload a saved default. Kept as a function rather than a bare null check
+ * so the "is anything set" question has one answer in one place.
+ */
+export function hasLocation(): boolean {
+  try {
+    return getLocation() !== null;
+  } catch {
+    return false;
+  }
 }
 
 /** The legacy type, for the handful of props still typed as `Area`. */

@@ -12,6 +12,7 @@ import {
   useSetDefaultAddress,
   type SavedAddress,
 } from "../../hooks/useAddressBook";
+import { PinIcon } from "../Icons";
 import { PinScreen, type PinResult } from "./PinScreen";
 import { AddressForm } from "./AddressForm";
 
@@ -34,8 +35,6 @@ type Screen =
   | { name: "sheet" }
   | { name: "pin"; initial: { lat: number; lng: number } | null; editing: SavedAddress | null }
   | { name: "form"; pin: PinResult; editing: SavedAddress | null };
-
-const ICONS: Record<string, string> = { home: "🏠", work: "💼" };
 
 export function LocationSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [loc] = useDeliveryLocation();
@@ -150,7 +149,6 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
               want the delivery, and giving it a different treatment made it
               look like a setting rather than a choice. */}
           <Row
-            icon="📍"
             title="Current location"
             subtitle="We'll pin it on the map"
             onClick={useCurrentLocation}
@@ -166,7 +164,6 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
             return (
               <div key={a.id}>
                 <Row
-                  icon={ICONS[a.label] ?? "📍"}
                   title={addressTitle(a)}
                   subtitle={addressLine(a)}
                   selected={selected}
@@ -264,7 +261,6 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
  * from arm's length a 1px outline is invisible and a tinted band is not.
  */
 function Row({
-  icon,
   title,
   subtitle,
   selected = false,
@@ -272,7 +268,6 @@ function Row({
   onClick,
   onMenu,
 }: {
-  icon: string;
   title: string;
   subtitle: string;
   selected?: boolean;
@@ -286,9 +281,11 @@ function Row({
       style={selected ? { background: "rgb(var(--persimmon) / 0.06)" } : undefined}
     >
       <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-        <span aria-hidden className="w-6 shrink-0 text-center text-[20px] leading-none">
-          {icon}
-        </span>
+        {/* ONE OUTLINE PIN for every row. The emoji set was three
+            different drawing styles in one list — a 3D pushpin, a flat
+            house, a briefcase — and the label beside each row already
+            says which kind it is. */}
+        <PinIcon className="h-6 w-6 shrink-0 text-ink" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
             <span className="truncate text-[16px] font-bold text-ink">{title}</span>

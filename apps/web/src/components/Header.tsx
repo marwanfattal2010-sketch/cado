@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useAddresses, useCart, useUpdateAddress } from "../hooks/useCart";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useAddresses, useUpdateAddress } from "../hooks/useCart";
 import { useStore } from "../hooks/useStores";
 import { useAuth } from "../lib/auth";
-import { GiftBagIcon, ChevronLeftIcon } from "./Icons";
-import { PointsPill, NotificationBell } from "./HeaderActions";
+import { ChevronLeftIcon, PinIcon } from "./Icons";
+import { PointsPill, NotificationBell, CartButton } from "./HeaderActions";
 import {
   useArea,
   getAddressDetails,
@@ -12,7 +12,14 @@ import {
   type AddressDetails,
 } from "../lib/area";
 import { LocationSheet } from "./location/LocationSheet";
-import { chipLabel, useDeliveryLocation } from "../lib/deliveryLocation";
+import {
+  chipLabel,
+  hasLocation,
+  locationFromPin,
+  setLocation,
+  useDeliveryLocation,
+} from "../lib/deliveryLocation";
+import { useAddressBook, addressLine, addressTitle } from "../hooks/useAddressBook";
 
 /**
  * Collapse-on-scroll thresholds.
@@ -34,7 +41,6 @@ export function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { slug: storeSlug } = useParams<{ slug: string }>();
-  const cart = useCart();
   const { session } = useAuth();
   const addresses = useAddresses();
   const updateAddress = useUpdateAddress();
@@ -42,6 +48,32 @@ export function Header() {
   const [deliveryLocation] = useDeliveryLocation();
   const chip = chipLabel(deliveryLocation);
   const [areaOpen, setAreaOpen] = useState(false);
+
+  /**
+   * A SIGNED-IN SHOPPER WITH A DEFAULT ADDRESS NEVER SEES "Set your
+   * location".
+   *
+   * They already told us where they live; making them say it again on every
+   * new device is asking a question we have the answer to. This runs once,
+   * only when NOTHING is stored — a choice made this session always wins, and
+   * a guest is untouched.
+   */
+  const book = useAddressBook();
+  useEffect(() => {
+    if (!session || hasLocation()) return;
+    const fallback = book.data?.find((a) => a.is_default) ?? book.data?.[0];
+    if (!fallback || fallback.latitude == null || fallback.longitude == null) return;
+    const { location } = locationFromPin({
+      lat: fallback.latitude,
+      lng: fallback.longitude,
+      geocodedCity: fallback.city,
+      line: addressLine(fallback),
+      kind: (fallback.label as "home" | "work" | "other") ?? "other",
+      label: addressTitle(fallback),
+      addressId: fallback.id,
+    });
+    setLocation(location);
+  }, [session, book.data]);
   const [details, setDetails] = useState<AddressDetails>(() => getAddressDetails());
 
   const openAreaSheet = () => {
@@ -72,6 +104,29 @@ export function Header() {
   };
 
   const isHome = pathname === "/";
+
+  /**
+   * THE FOUR TAB PAGES, and what makes them different is that none of them
+   * is filtered by where you are. Nothing on Account, Orders, Favorites or
+   * Gift Cards changes when the delivery address does, so offering to change
+   * it there is a control with nothing behind it — and the search field is
+   * for the shop, not for a list of your own orders.
+   *
+   * Matched by PREFIX, so /orders/:id and /gift-cards/send are covered too:
+   * an order detail page reached from the Orders tab should not suddenly
+   * grow a location picker.
+   */
+  const TAB_PAGES: { prefix: string; title: string }[] = [
+    { prefix: "/account", title: "Account" },
+    { prefix: "/orders", title: "Orders" },
+    { prefix: "/wishlist", title: "Favorites" },
+    { prefix: "/gift-cards", title: "Gift Cards" },
+  ];
+  const tabPage = TAB_PAGES.find(
+    (t) => pathname === t.prefix || pathname.startsWith(t.prefix + "/")
+  );
+  const isTabPage = !!tabPage;
+  const tabTitle = tabPage?.title ?? "";
   const onStorePage = pathname.startsWith("/store/");
 
   /**
@@ -83,20 +138,6 @@ export function Header() {
   const storePartner = useStore(onStorePage ? storeSlug : undefined);
   const storeId = storePartner.data?.id;
 
-  /**
-   * Inside a store the basket shows that store's items; everywhere else it
-   * shows how many CARTS there are, not how many things are in them.
-   *
-   * That is the whole point of separate carts: a driver goes to one shop, so
-   * three items from one shop is one journey and one number worth knowing,
-   * while one item each from three shops is three separate deliveries to
-   * check out one at a time.
-   */
-  const items = cart.data ?? [];
-  const relevant = onStorePage ? items.filter((i) => i.product?.partner?.id === storeId) : items;
-  const count = onStorePage
-    ? relevant.reduce((sum, i) => sum + (i.quantity ?? 0), 0)
-    : new Set(items.map((i) => i.product?.partner?.id).filter(Boolean)).size;
 
   /**
    * COLLAPSE ON SCROLL DOWN, REAPPEAR ON SCROLL UP.
@@ -242,7 +283,7 @@ export function Header() {
           className="mx-auto flex min-h-[56px] max-w-6xl items-center justify-between gap-3 px-4 py-2"
         >
           <div className="flex min-w-0 items-center gap-2">
-            {!isHome ? (
+            {!isHome && !isTabPage ? (
               <button
                 onClick={() => navigate(-1)}
                 aria-label="Go back"
@@ -255,91 +296,58 @@ export function Header() {
                 <ChevronLeftIcon className="h-5 w-5" />
               </button>
             ) : null}
-            {/*
-              NO LOGO IN THE HEADER (spec 1.11). Toters, Trendyol and Amazon
-              all spend this row on what a shopper needs — where it is going
-              and what is waiting for them — not on reminding them which app
-              they opened. The brand lives on the splash screen and Account.
 
-              Its place is taken by the address, which is the single most
-              consequential thing on a same-day delivery app.
-            */}
-            {/*
-              THE CHIP. A filled persimmon disc, because this is the one
-              control in the header whose value changes what the whole app
-              shows — where the order is going. It read as a grey label
-              before, which is how someone browses a whole session without
-              noticing the city is wrong.
-
-              "Set your location" in persimmon when nothing is set. NOT a
-              default city printed as though it were a choice: that is how an
-              order ends up at the wrong end of the country.
-            */}
-            <button
-              onClick={openAreaSheet}
-              className="tap-44 flex min-w-0 items-center gap-2 rounded-pill px-1 py-1 text-left transition-transform duration-press ease-out active:scale-[0.97]"
-            >
-              {/* A PALE WELL, not a filled disc. Solid persimmon at 28px was
-                  the heaviest thing in the row and taller than everything
-                  beside it — it read as the primary button on a header whose
-                  primary action is the search field. 32px at 12% is a chip. */}
-              <span className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-pill bg-persimmon/[0.12]">
-                {/* THE EMOJI, on Marwan's instruction, and it went round in a
-                    circle before landing back here: it was 📍, then an SVG
-                    when a spec asked for an ink-coloured pin (an emoji cannot
-                    be recoloured), and now 📍 again because its own red-orange
-                    is the colour he wanted all along. `aria-hidden` because
-                    the button already says "Deliver to". */}
-                <span aria-hidden className="text-[17px] leading-none">
-                  📍
+            {isTabPage ? (
+              /*
+               * A TAB PAGE GETS ITS NAME, NOT A LOCATION.
+               *
+               * Account, Orders, Favorites and Gift Cards are not places you
+               * shop from — nothing on them is filtered by where you are, and
+               * offering to change the delivery address on the Account screen
+               * is a control with nothing behind it. No back arrow either:
+               * they are tabs, and the bottom nav is how you leave.
+               */
+              <h1 className="truncate text-[20px] font-bold tracking-[-0.01em] text-header-fg">
+                {tabTitle}
+              </h1>
+            ) : (
+              /*
+               * ONE LINE, NOT TWO. It was a "Deliver to" label stacked over
+               * the address, which cost the header a whole second row for a
+               * word nobody needs twice — the pin already says what this is.
+               *
+               * "Set your location" only appears when nothing is selected AND
+               * the shopper has no default address. A default city printed as
+               * though it were a choice is how an order ends up at the wrong
+               * end of the country; an address they already saved is not a
+               * guess, so it is preloaded instead.
+               */
+              <button
+                onClick={openAreaSheet}
+                className="flex min-w-0 items-center gap-1.5 py-1 text-left transition-transform duration-press ease-out active:scale-[0.98]"
+              >
+                <PinIcon className="h-[18px] w-[18px] shrink-0 text-header-fg" />
+                <span
+                  className={`truncate text-[16px] font-semibold ${
+                    chip.unset ? "text-persimmon" : "text-header-fg"
+                  }`}
+                >
+                  {chip.text}
                 </span>
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[12px] leading-none text-header-muted">Deliver to</span>
-                <span className="flex items-center gap-1 leading-tight">
-                  {/*
-                    "Set your location" NEVER TRUNCATES. It was arriving as
-                    "Set your loca…", which is the one string here that has to
-                    survive whole — it is the instruction. A saved label can
-                    ellipsis instead, because "Home · Beirut" still reads when
-                    it is clipped and the prompt does not.
-                  */}
-                  <span
-                    className={`text-[16px] font-bold ${
-                      chip.unset ? "whitespace-nowrap text-persimmon" : "truncate text-header-fg"
-                    }`}
-                  >
-                    {chip.text}
-                  </span>
-                  <span aria-hidden className="text-[12px] font-normal text-header-muted">▾</span>
+                <span aria-hidden className="shrink-0 text-[11px] text-header-muted">
+                  ▾
                 </span>
-              </span>
-            </button>
+              </button>
+            )}
           </div>
 
-          <div className="flex min-w-0 items-center gap-3">
-            <PointsPill />
+          {/* 8px between the three, and they are the same three on every
+              header — see HeaderActions. The points pill is dropped on a tab
+              page only when the row would otherwise overflow at 390px. */}
+          <div className="flex shrink-0 items-center gap-2">
+            {!isTabPage ? <PointsPill /> : null}
             <NotificationBell />
-
-            <Link
-              to={onStorePage ? `/cart?store=${storeId}` : "/cart"}
-              aria-label={
-                onStorePage
-                  ? `Cart, ${count} item${count === 1 ? "" : "s"}`
-                  : `Your carts, ${count} cart${count === 1 ? "" : "s"}`
-              }
-              className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-header-fg transition-all duration-fast hover:bg-header-fg/[0.06] active:scale-90"
-            >
-              <GiftBagIcon className="h-[22px] w-[22px]" />
-              {count > 0 ? (
-                <span
-                  key={count}
-                  className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 animate-bump items-center justify-center rounded-pill bg-header-badge px-1 text-[10px] font-semibold text-white"
-                >
-                  {count}
-                </span>
-              ) : null}
-            </Link>
+            <CartButton storeId={onStorePage ? storeId : undefined} />
           </div>
             </div>
           </div>
