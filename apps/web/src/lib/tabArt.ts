@@ -145,6 +145,30 @@ export function typeTileArt(cat: string, key: string): string | null {
   return path ? productImageUrl(path) : null;
 }
 
+/**
+ * COLLECTION-TILE ART — the poster at the head of a product row.
+ *
+ * A separate map because a collection tile must NOT share a photograph with
+ * the quick card of the same name. They sit on one screen: Super deals had the
+ * deals thumbnail twice and Best picks the most-gifted thumbnail twice, which
+ * reads as the page repeating itself.
+ *
+ * These are lifestyle photographs, not packshots. The tile is the poster for a
+ * section, so it wants people and light; the card below it wants the product
+ * on white.
+ */
+const COLLECTION_ART: Record<string, Record<string, string>> = {
+  fashion: {
+    deals: "art/collection/fashion--super-deals.jpg",
+    "most-gifted": "art/collection/fashion--best-picks.jpg",
+  },
+};
+
+/** A section poster, or null where a category has none. */
+export function collectionArt(cat: string, key: string): string | null {
+  const path = COLLECTION_ART[cat]?.[key];
+  return path ? productImageUrl(path) : null;
+}
 const TILE_ART: Record<TileId, string> = {
   "new-in": "art/tile/new-in.jpg",
   "most-gifted": "art/tile/most-gifted.jpg",

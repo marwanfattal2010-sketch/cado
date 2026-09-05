@@ -13,7 +13,7 @@ import { ColourTiles } from "../ColourTiles";
 import { CollectionSection } from "../CollectionSection";
 import { storePath } from "../../../lib/routes";
 import { productImageUrl } from "../../../lib/images";
-import { circleArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
+import { circleArt, collectionArt, heroArt, tileArt, typeTileArt } from "../../../lib/tabArt";
 import { RECIPIENTS, UNDER_TILE_MAX, type TileId } from "../../../lib/facets";
 import { browseHref, type Lookup } from "../../../lib/browseParams";
 import { categoryStores, storeDisplayName } from "../../../lib/browse";
@@ -506,7 +506,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         title="Super deals"
         products={claimed.dealRow}
         href={browseHref(slug, { tile: "deals" })}
-        tilePhoto={tileArt("deals" as TileId, slug)}
+        tilePhoto={collectionArt(slug, "deals")}
         tone="tint"
         minItems={MIN_RAIL}
       />
@@ -518,7 +518,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
         title="Best picks"
         products={claimed.picks}
         href={browseHref(slug, { tile: "most-gifted" })}
-        tilePhoto={tileArt("most-gifted" as TileId, slug)}
+        tilePhoto={collectionArt(slug, "most-gifted")}
         minItems={MIN_RAIL}
       />
 
