@@ -322,7 +322,7 @@ export function Header() {
               }
               className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-header-fg transition-all duration-fast hover:bg-header-fg/[0.06] active:scale-90"
             >
-              <GiftBagIcon className="h-6 w-6" />
+              <GiftBagIcon className="h-[22px] w-[22px]" />
               {count > 0 ? (
                 <span
                   key={count}

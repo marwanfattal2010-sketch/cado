@@ -51,7 +51,7 @@ export function NotificationBell() {
       aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
       className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-header-fg transition hover:bg-header-fg/[0.06]"
     >
-      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+      <svg viewBox="0 0 24 24" className="h-[21px] w-[21px]" fill="none" stroke="currentColor" strokeWidth="1.7">
         <path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9Z" strokeLinejoin="round" />
         <path d="M10 20a2.2 2.2 0 0 0 4 0" strokeLinecap="round" />
       </svg>
