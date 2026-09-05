@@ -239,7 +239,7 @@ export function Header() {
             never jumps on navigation. */}
         <div
           ref={rowRef}
-          className="mx-auto flex min-h-[68px] max-w-6xl items-center justify-between gap-3 px-4 py-3"
+          className="mx-auto flex min-h-[56px] max-w-6xl items-center justify-between gap-3 px-4 py-2"
         >
           <div className="flex min-w-0 items-center gap-2">
             {!isHome ? (
@@ -279,24 +279,37 @@ export function Header() {
               onClick={openAreaSheet}
               className="tap-44 flex min-w-0 items-center gap-2 rounded-pill px-1 py-1 text-left transition-transform duration-press ease-out active:scale-[0.97]"
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-persimmon">
-                <PinIcon className="h-[15px] w-[15px] text-white" />
+              {/* A PALE WELL, not a filled disc. Solid persimmon at 28px was
+                  the heaviest thing in the row and taller than everything
+                  beside it — it read as the primary button on a header whose
+                  primary action is the search field. 32px at 12% is a chip. */}
+              <span className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-pill bg-persimmon/[0.12]">
+                <PinIcon className="h-[20px] w-[20px] text-persimmon" />
               </span>
               <span className="min-w-0">
-                <span className="block text-[10px] leading-none text-header-muted">Deliver to</span>
-                <span className="flex items-center gap-1 text-body font-bold leading-tight">
+                <span className="block text-[12px] leading-none text-header-muted">Deliver to</span>
+                <span className="flex items-center gap-1 leading-tight">
+                  {/*
+                    "Set your location" NEVER TRUNCATES. It was arriving as
+                    "Set your loca…", which is the one string here that has to
+                    survive whole — it is the instruction. A saved label can
+                    ellipsis instead, because "Home · Beirut" still reads when
+                    it is clipped and the prompt does not.
+                  */}
                   <span
-                    className={`truncate ${chip.unset ? "text-persimmon" : "text-header-fg"}`}
+                    className={`text-[16px] font-bold ${
+                      chip.unset ? "whitespace-nowrap text-persimmon" : "truncate text-header-fg"
+                    }`}
                   >
                     {chip.text}
                   </span>
-                  <span aria-hidden className="text-[10px] font-normal text-header-fg">▾</span>
+                  <span aria-hidden className="text-[12px] font-normal text-header-muted">▾</span>
                 </span>
               </span>
             </button>
           </div>
 
-          <div className="flex min-w-0 items-center gap-1">
+          <div className="flex min-w-0 items-center gap-3">
             <PointsPill />
             <NotificationBell />
 
@@ -309,7 +322,7 @@ export function Header() {
               }
               className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-header-fg transition-all duration-fast hover:bg-header-fg/[0.06] active:scale-90"
             >
-              <GiftBagIcon className="h-[22px] w-[22px]" />
+              <GiftBagIcon className="h-6 w-6" />
               {count > 0 ? (
                 <span
                   key={count}

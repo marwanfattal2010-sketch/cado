@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { geo } from "../../lib/geo";
+import { geo, type GeoResult } from "../../lib/geo";
 import { DEFAULT_CENTER, resolveCity } from "../../lib/deliveryZones";
 
 /**
@@ -58,6 +58,14 @@ export function PinScreen({
   const [loading, setLoading] = useState(true);
   const [hint, setHint] = useState(true);
   const [settling, setSettling] = useState(false);
+  /*
+   * SEARCH LIVES HERE, NOT IN THE SHEET. It was in the sheet, where it made
+   * that sheet do two unrelated jobs — pick a saved address, or find a new
+   * place. Searching only means anything next to the map it moves, and here
+   * a result pans the map so the fixed pin lands on it.
+   */
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<GeoResult[]>([]);
 
   const zone = resolveCity(center.lat, center.lng);
 
@@ -101,6 +109,28 @@ export function PinScreen({
     const t = setTimeout(() => setHint(false), 2000);
     return () => clearTimeout(t);
   }, []);
+
+  /** Autocomplete: 400ms after typing stops, 3 characters minimum. */
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 3) {
+      setResults([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const r = await geo.search(q, center);
+      if (!cancelled) setResults(r);
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // `center` is deliberately not a dependency: it changes on every pin move,
+    // and re-running the search each time would fire a request per frame of a
+    // drag. The bias only has to be roughly right.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   /**
    * Reverse geocode, debounced 500ms after the map settles.
@@ -156,9 +186,45 @@ export function PinScreen({
       >
         ←
       </button>
-      <span className="pointer-events-none absolute inset-x-0 top-4 z-[1000] text-center text-[15px] font-bold text-ink">
-        <span className="rounded-pill bg-white/90 px-3 py-1">Pin your location</span>
-      </span>
+      {/* The field sits over the map, clear of the back button. Picking a
+          result pans the map rather than dropping a marker — the pin is fixed
+          to the centre, so moving the map IS moving the pin. */}
+      <div className="absolute inset-x-3 top-3 z-[1000] pl-12">
+        <div className="relative">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search street, building or landmark"
+            className="h-11 w-full rounded-pill bg-white pl-4 pr-10 text-[15px] text-ink shadow-lift outline-none"
+          />
+          <span aria-hidden className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[15px] text-ink">
+            ⌕
+          </span>
+        </div>
+
+        {results.length ? (
+          <ul className="mt-2 max-h-[240px] overflow-y-auto rounded-[12px] bg-white shadow-lift">
+            {results.map((r) => (
+              <li key={r.id} className="border-b border-line last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    mapRef.current?.setView([r.lat, r.lng], 17);
+                    setQuery("");
+                    setResults([]);
+                  }}
+                  className="block w-full px-3 py-2.5 text-left"
+                >
+                  <span className="block truncate text-[15px] font-medium text-ink">{r.name}</span>
+                  {r.locality ? (
+                    <span className="block truncate text-[13px] text-muted">{r.locality}</span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
 
       {/* THE PIN. Centred on the map viewport, not the screen: the bottom card
           takes real height, and a pin centred on the screen would sit below

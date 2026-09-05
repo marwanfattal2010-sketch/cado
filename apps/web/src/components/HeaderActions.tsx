@@ -5,8 +5,9 @@ import { usePoints, useUnreadCount } from "../hooks/useHeaderData";
 /**
  * The points pill and the bell (spec 1.11).
  *
- * Both show real numbers or nothing. A signed-out shopper sees "Earn points",
- * which is an invitation rather than a balance; a new account sees "0 pts",
+ * Both show REAL NUMBERS or nothing. A signed-out shopper sees "0 pts",
+ * which is true — they have none — rather than "Earn points", which was an
+ * invitation dressed up as a balance;
  * because zero is what they have and a welcome balance nobody earned would be
  * the first thing the app lies about. The bell's badge is hidden at zero
  * rather than showing a 0 — a badge means "something is waiting".
@@ -20,10 +21,10 @@ export function PointsPill() {
     return (
       <Link
         to="/login"
-        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-header-action px-2.5 py-1.5 text-caption font-semibold text-white"
+        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill border border-line bg-white px-2.5 py-1.5 text-[13px] font-semibold text-header-fg"
       >
-        <span aria-hidden>★</span>
-        Earn points
+        <span aria-hidden className="text-persimmon">★</span>
+        0 pts
       </Link>
     );
   }
@@ -32,9 +33,9 @@ export function PointsPill() {
     <Link
       to="/points"
       aria-label={`${points.data ?? 0} points`}
-      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-header-action px-2.5 py-1.5 text-caption font-semibold text-white"
+      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill border border-line bg-white px-2.5 py-1.5 text-[13px] font-semibold text-header-fg"
     >
-      <span aria-hidden>★</span>
+      <span aria-hidden className="text-persimmon">★</span>
       {points.data ?? 0} pts
     </Link>
   );
@@ -50,7 +51,7 @@ export function NotificationBell() {
       aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
       className="tap-44 relative flex h-9 w-9 shrink-0 items-center justify-center rounded-pill text-header-fg transition hover:bg-header-fg/[0.06]"
     >
-      <svg viewBox="0 0 24 24" className="h-[21px] w-[21px]" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9Z" strokeLinejoin="round" />
         <path d="M10 20a2.2 2.2 0 0 0 4 0" strokeLinecap="round" />
       </svg>

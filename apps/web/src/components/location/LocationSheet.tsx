@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { geo, type GeoResult } from "../../lib/geo";
-import { DEFAULT_CENTER, ZONES_SUMMARY } from "../../lib/deliveryZones";
+import { useEffect, useState } from "react";
 import {
   locationFromPin,
   setLocation,
@@ -18,23 +16,26 @@ import { PinScreen, type PinResult } from "./PinScreen";
 import { AddressForm } from "./AddressForm";
 
 /**
- * WHERE SHOULD WE DELIVER? — the sheet the header chip and checkout both open.
+ * DELIVERY ADDRESS — a list of places, and nothing else.
  *
- * There is no "Choose a city" here and there is not one anywhere else either.
- * The city is DERIVED from the pin, every time, by `resolveCity`. A picker let
- * someone select Beirut and then pin a building in Jounieh, and the two
- * answers disagreed with nobody to arbitrate.
+ * THERE IS NO SEARCH FIELD HERE, deliberately. The first build had one, and it
+ * made the sheet do two unrelated jobs: pick a saved address, or find a new
+ * place on a map. Searching only makes sense next to the map it moves, so it
+ * moved to the Pin screen. What is left is a list you choose from and one
+ * button — which is all this sheet was ever for.
  *
- * THREE SCREENS, ONE COMPONENT. Sheet → pin → details is a single flow with a
- * back button at every step, so it is one piece of state (`screen`) rather
- * than three routes. Routing it would put the map in the history stack, and
- * "back" out of a half-finished address would land on a map with no context.
+ * THREE SCREENS, ONE COMPONENT. Sheet -> pin -> details is a single flow with
+ * a back button at every step, so it is one piece of state rather than three
+ * routes. Routing it would put the map in the history stack, and "back" out of
+ * a half-finished address would land on a map with no context.
  */
 
 type Screen =
   | { name: "sheet" }
   | { name: "pin"; initial: { lat: number; lng: number } | null; editing: SavedAddress | null }
   | { name: "form"; pin: PinResult; editing: SavedAddress | null };
+
+const ICONS: Record<string, string> = { home: "🏠", work: "💼" };
 
 export function LocationSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [loc] = useDeliveryLocation();
@@ -43,43 +44,19 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
   const setDefault = useSetDefaultAddress();
 
   const [screen, setScreen] = useState<Screen>({ name: "sheet" });
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GeoResult[]>([]);
   const [geoDenied, setGeoDenied] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
-  const near = useMemo(
-    () => (loc ? { lat: loc.lat, lng: loc.lng } : DEFAULT_CENTER),
-    [loc]
-  );
-
-  // Reset to the first screen whenever the sheet is reopened, or a user who
+  // Reset to the first screen whenever the sheet reopens, or someone who
   // backed out mid-address returns to a form for a pin they cannot see.
   useEffect(() => {
-    if (open) setScreen({ name: "sheet" });
-  }, [open]);
-
-  /** Autocomplete: 400ms after typing stops, 3 characters minimum. */
-  const timer = useRef<number | null>(null);
-  useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    const q = query.trim();
-    if (q.length < 3) {
-      setResults([]);
-      return;
+    if (open) {
+      setScreen({ name: "sheet" });
+      setMenuFor(null);
+      setConfirmDelete(null);
     }
-    let cancelled = false;
-    timer.current = window.setTimeout(async () => {
-      const r = await geo.search(q, near);
-      if (!cancelled) setResults(r);
-    }, 400);
-    return () => {
-      cancelled = true;
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [query, near]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -108,7 +85,6 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
         }
         onSaved={(a) => {
           selectSaved(a);
-          setToast("Address saved");
           onClose();
         }}
       />
@@ -152,185 +128,115 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
     <div className="fixed inset-0 z-50 flex items-end" role="dialog" aria-modal="true">
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
 
-      <div className="relative max-h-[88vh] w-full overflow-y-auto rounded-t-[24px] bg-white pb-[calc(16px+env(safe-area-inset-bottom))]">
-        <div className="sticky top-0 z-[1] bg-white pt-2">
-          <span aria-hidden className="mx-auto mb-3 block h-1 w-10 rounded-pill bg-line" />
-        </div>
-
-        <div className="px-4">
-          <h2 className="text-[22px] font-bold tracking-[-0.01em] text-ink">
-            Where should we deliver?
-          </h2>
-          <p className="mt-1 text-[13px] text-muted">{ZONES_SUMMARY}</p>
-
-          {/* MAGNIFIER ON THE RIGHT, matching every other search field in the
-              app. */}
-          <div className="relative mt-3">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search for a street, building or landmark"
-              className="w-full rounded-pill border border-line bg-white py-2.5 pl-4 pr-10 text-[15px] text-ink outline-none focus:border-persimmon"
-            />
-            <span aria-hidden className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[15px] text-ink">
-              ⌕
-            </span>
-          </div>
-
-          {results.length ? (
-            <ul className="mt-2 overflow-hidden rounded-[12px] border border-line">
-              {results.map((r) => (
-                <li key={r.id}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setScreen({ name: "pin", initial: { lat: r.lat, lng: r.lng }, editing: null })
-                    }
-                    className="block w-full px-3 py-2.5 text-left"
-                  >
-                    <span className="block truncate text-[15px] font-medium text-ink">{r.name}</span>
-                    {r.locality ? (
-                      <span className="block truncate text-[13px] text-muted">{r.locality}</span>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
+      {/* Fits its content up to 70% of the screen; the LIST is what scrolls,
+          so the title and the button stay put however many addresses there
+          are. */}
+      <div className="relative flex max-h-[70vh] w-full flex-col rounded-t-[24px] bg-white">
+        <div className="flex shrink-0 items-center gap-3 px-4 pb-3 pt-4">
           <button
             type="button"
-            onClick={useCurrentLocation}
-            className="card-press mt-3 flex w-full items-center gap-3 rounded-[12px] px-1 py-2.5 text-left"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-page text-[16px] leading-none text-ink"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-tint text-persimmon">
-              ◎
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[15px] font-bold text-ink">Use my current location</span>
-              <span className="block text-[13px] text-muted">We&rsquo;ll pin it on the map</span>
-            </span>
+            ×
           </button>
+          <h2 className="text-[20px] font-bold tracking-[-0.01em] text-ink">Delivery address</h2>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* CURRENT LOCATION SITS ABOVE THE SAVED ONES and wears the same row
+              shape. It is the fastest answer for someone standing where they
+              want the delivery, and giving it a different treatment made it
+              look like a setting rather than a choice. */}
+          <Row
+            icon="📍"
+            title="Current location"
+            subtitle="We'll pin it on the map"
+            onClick={useCurrentLocation}
+          />
           {geoDenied ? (
-            <p className="mt-1 text-[13px] text-muted">
-              Location is off — search for your address instead
+            <p className="px-4 pb-2 text-[13px] text-muted">
+              Location is off — add an address instead
             </p>
           ) : null}
 
-          {addresses.length ? (
-            <>
-              <h3 className="mb-2 mt-5 text-[13px] font-semibold uppercase tracking-[0.04em] text-muted">
-                Saved addresses
-              </h3>
-              <ul className="space-y-2">
-                {addresses.map((a) => {
-                  const selected = loc?.addressId === a.id;
-                  return (
-                    <li key={a.id}>
-                      <div
-                        className={`rounded-[12px] border bg-white p-3 ${
-                          selected ? "border-persimmon" : "border-line"
-                        }`}
+          {addresses.map((a) => {
+            const selected = loc?.addressId === a.id;
+            return (
+              <div key={a.id}>
+                <Row
+                  icon={ICONS[a.label] ?? "📍"}
+                  title={addressTitle(a)}
+                  subtitle={addressLine(a)}
+                  selected={selected}
+                  badge={a.is_default ? "Default" : undefined}
+                  onClick={() => {
+                    selectSaved(a);
+                    onClose();
+                  }}
+                  onMenu={() => setMenuFor(menuFor === a.id ? null : a.id)}
+                />
+
+                {menuFor === a.id ? (
+                  <div className="flex flex-wrap gap-2 border-b border-line px-4 pb-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setScreen({
+                          name: "pin",
+                          initial:
+                            a.latitude != null && a.longitude != null
+                              ? { lat: a.latitude, lng: a.longitude }
+                              : null,
+                          editing: a,
+                        })
+                      }
+                      className="rounded-pill border border-line px-3 py-1.5 text-[13px] font-semibold text-ink"
+                    >
+                      Edit
+                    </button>
+                    {!a.is_default ? (
+                      <button
+                        type="button"
+                        onClick={() => void setDefault.mutateAsync(a.id)}
+                        className="rounded-pill border border-line px-3 py-1.5 text-[13px] font-semibold text-ink"
                       >
-                        <div className="flex items-start gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              selectSaved(a);
-                              onClose();
-                            }}
-                            className="min-w-0 flex-1 text-left"
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <span aria-hidden>
-                                {a.label === "home" ? "🏠" : a.label === "work" ? "💼" : "📍"}
-                              </span>
-                              <span className="truncate text-[15px] font-bold text-ink">
-                                {addressTitle(a)}
-                              </span>
-                              {a.is_default ? (
-                                <span className="shrink-0 rounded-pill bg-tint px-1.5 py-0.5 text-[10px] font-semibold text-ink">
-                                  Default
-                                </span>
-                              ) : null}
-                            </span>
-                            <span className="mt-0.5 block truncate text-[13px] text-ink">
-                              {addressLine(a)}
-                            </span>
-                            <span className="block text-[13px] text-muted">{a.city}</span>
-                          </button>
+                        Set as default
+                      </button>
+                    ) : null}
+                    {/* Inline confirm, never a browser confirm(): it cannot be
+                        styled, it blocks the thread, and inside a WebView it
+                        looks like the app has crashed. */}
+                    {confirmDelete === a.id ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await del.mutateAsync(a);
+                          setConfirmDelete(null);
+                          setMenuFor(null);
+                        }}
+                        className="rounded-pill bg-persimmon px-3 py-1.5 text-[13px] font-semibold text-white"
+                      >
+                        Tap again to delete
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(a.id)}
+                        className="rounded-pill border border-line px-3 py-1.5 text-[13px] font-semibold text-persimmon"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
 
-                          {selected ? (
-                            <span aria-hidden className="shrink-0 text-persimmon">✓</span>
-                          ) : null}
-                          <button
-                            type="button"
-                            aria-label="Address options"
-                            onClick={() => setMenuFor(menuFor === a.id ? null : a.id)}
-                            className="shrink-0 px-1 text-[18px] leading-none text-muted"
-                          >
-                            ⋯
-                          </button>
-                        </div>
-
-                        {menuFor === a.id ? (
-                          <div className="mt-2 flex flex-wrap gap-2 border-t border-line pt-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setScreen({
-                                  name: "pin",
-                                  initial:
-                                    a.latitude != null && a.longitude != null
-                                      ? { lat: a.latitude, lng: a.longitude }
-                                      : null,
-                                  editing: a,
-                                })
-                              }
-                              className="rounded-pill border border-line px-3 py-1.5 text-[13px] font-semibold text-ink"
-                            >
-                              Edit
-                            </button>
-                            {!a.is_default ? (
-                              <button
-                                type="button"
-                                onClick={() => void setDefault.mutateAsync(a.id)}
-                                className="rounded-pill border border-line px-3 py-1.5 text-[13px] font-semibold text-ink"
-                              >
-                                Set as default
-                              </button>
-                            ) : null}
-                            {confirmDelete === a.id ? (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  await del.mutateAsync(a);
-                                  setConfirmDelete(null);
-                                  setMenuFor(null);
-                                }}
-                                className="rounded-pill bg-persimmon px-3 py-1.5 text-[13px] font-semibold text-white"
-                              >
-                                Tap again to delete
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setConfirmDelete(a.id)}
-                                className="rounded-pill border border-line px-3 py-1.5 text-[13px] font-semibold text-persimmon"
-                              >
-                                Delete
-                              </button>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
-          ) : null}
-
+        <div className="shrink-0 p-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() =>
@@ -340,16 +246,77 @@ export function LocationSheet({ open, onClose }: { open: boolean; onClose: () =>
                 editing: null,
               })
             }
-            className="card-press mt-4 w-full rounded-[12px] border border-persimmon py-3 text-[15px] font-bold text-persimmon"
+            className="card-press h-[52px] w-full rounded-[12px] bg-persimmon text-[16px] font-bold text-white"
           >
             + Add new address
           </button>
         </div>
-
-        {toast ? (
-          <p className="px-4 pt-3 text-center text-[13px] font-medium text-success">{toast}</p>
-        ) : null}
       </div>
+    </div>
+  );
+}
+
+/**
+ * ONE ROW SHAPE for every entry, saved or not.
+ *
+ * 72px, full-bleed, hairline-separated. The selected one takes a persimmon
+ * wash across the WHOLE row rather than a border or a tick alone — at a glance
+ * from arm's length a 1px outline is invisible and a tinted band is not.
+ */
+function Row({
+  icon,
+  title,
+  subtitle,
+  selected = false,
+  badge,
+  onClick,
+  onMenu,
+}: {
+  icon: string;
+  title: string;
+  subtitle: string;
+  selected?: boolean;
+  badge?: string;
+  onClick: () => void;
+  onMenu?: () => void;
+}) {
+  return (
+    <div
+      className="flex h-[72px] items-center gap-3 border-b border-line px-4"
+      style={selected ? { background: "rgb(var(--persimmon) / 0.06)" } : undefined}
+    >
+      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        <span aria-hidden className="w-6 shrink-0 text-center text-[20px] leading-none">
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[16px] font-bold text-ink">{title}</span>
+            {badge ? (
+              <span className="shrink-0 rounded-pill bg-page px-1.5 py-0.5 text-[10px] font-semibold text-muted">
+                {badge}
+              </span>
+            ) : null}
+          </span>
+          <span className="mt-0.5 block truncate text-[14px] text-muted">{subtitle}</span>
+        </span>
+      </button>
+
+      {selected ? (
+        <span aria-hidden className="shrink-0 text-[15px] text-persimmon">
+          ✓
+        </span>
+      ) : null}
+      {onMenu ? (
+        <button
+          type="button"
+          aria-label="Address options"
+          onClick={onMenu}
+          className="shrink-0 px-1 text-[18px] leading-none text-muted"
+        >
+          ⋮
+        </button>
+      ) : null}
     </div>
   );
 }
