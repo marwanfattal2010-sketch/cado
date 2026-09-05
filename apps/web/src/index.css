@@ -828,3 +828,34 @@ button:active:not(:disabled),
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
 }
+
+/* ---------------------------------------------------------------------
+   LEAFLET, dressed to match the app.
+
+   Three defaults have to go. The container ships a serif-ish system font
+   and a blue focus ring that appears on every drag; the attribution is a
+   9px white box that fights the pin card; and the tile pane can show a
+   1px seam between tiles on fractional device pixel ratios, which on a
+   phone reads as a grid drawn over the map.
+   --------------------------------------------------------------------- */
+.leaflet-container {
+  font-family: Inter, system-ui, sans-serif;
+  background: rgb(var(--page));
+  outline: none;
+}
+.leaflet-container:focus,
+.leaflet-container *:focus {
+  outline: none;
+}
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 10px;
+  padding: 1px 5px;
+}
+.leaflet-control-attribution a {
+  color: rgb(var(--text-muted));
+}
+.leaflet-tile {
+  /* Kills the hairline seam between adjacent tiles. */
+  will-change: transform;
+}

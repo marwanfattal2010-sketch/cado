@@ -41,6 +41,11 @@ export type Database = {
     Tables: {
       addresses: {
         Row: {
+          label_custom: string | null
+          photo_paths: string[]
+          updated_at: string
+          voice_path: string | null
+          voice_seconds: number | null
           apartment: string | null
           area: string
           building: string | null
@@ -60,6 +65,11 @@ export type Database = {
           street: string
         }
         Insert: {
+          label_custom?: string | null
+          photo_paths?: string[]
+          updated_at?: string
+          voice_path?: string | null
+          voice_seconds?: number | null
           apartment?: string | null
           area: string
           building?: string | null
@@ -75,10 +85,15 @@ export type Database = {
           notes?: string | null
           phone: string
           profile_id: string
-          recipient_name: string
+          recipient_name?: string
           street: string
         }
         Update: {
+          label_custom?: string | null
+          photo_paths?: string[]
+          updated_at?: string
+          voice_path?: string | null
+          voice_seconds?: number | null
           apartment?: string | null
           area?: string
           building?: string | null
@@ -1367,6 +1382,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          delivery_voice_path: string | null
+          delivery_photo_paths: string[]
           address_source: string
           created_at: string
           customer_id: string
@@ -1390,6 +1407,8 @@ export type Database = {
           wallet_amount: number | null
         }
         Insert: {
+          delivery_voice_path?: string | null
+          delivery_photo_paths?: string[]
           address_source?: string
           created_at?: string
           customer_id: string
@@ -1413,6 +1432,8 @@ export type Database = {
           wallet_amount?: number | null
         }
         Update: {
+          delivery_voice_path?: string | null
+          delivery_photo_paths?: string[]
           address_source?: string
           created_at?: string
           customer_id?: string

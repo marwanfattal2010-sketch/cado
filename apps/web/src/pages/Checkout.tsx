@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { LocationSheet } from "../components/location/LocationSheet";
+import { useDeliveryLocation } from "../lib/deliveryLocation";
 import { useAddresses, useCart, useCreateAddress, usePlaceOrder, usePlaceGiftCardOrder, type PaymentMethod } from "../hooks/useCart";
 import { checkGiftCardBalance, normalizeGiftCardCode } from "../hooks/useGiftCards";
 import { useWallet } from "../hooks/useWallet";
@@ -74,6 +76,7 @@ function Field({
 
 export function Checkout() {
   const { session } = useAuth();
+  const [deliveryLocation] = useDeliveryLocation();
   const navigate = useNavigate();
   const cart = useCart();
   const addresses = useAddresses();
@@ -229,7 +232,15 @@ export function Checkout() {
   const dueAfterBalance = Math.max(total - balanceApplied, 0);
   /** Covered in full means there is no second payment to choose. */
   const fullyCovered = useBalance && dueAfterBalance === 0;
-  const savedAddress = addresses.data?.[0];
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false);
+  /*
+   * The address the LOCATION SHEET selected, not simply the first row.
+   * Taking the first was "whichever is default, else newest" — fine when
+   * there was one address, wrong the moment there are three and the shopper
+   * has just picked one of them.
+   */
+  const savedAddress =
+    addresses.data?.find((a) => a.id === deliveryLocation?.addressId) ?? addresses.data?.[0];
   // Going straight to the recipient means their address, so the saved one is
   // not offered — it is the wrong address by definition.
   const showSaved = !!savedAddress && useSaved && !toThem;
@@ -468,25 +479,42 @@ export function Checkout() {
         </div>
 
         {showSaved ? (
-          /* A repeat order is two taps: this, then Place order. */
+          /*
+           * THE ADDRESS IS NOT RE-TYPED AT CHECKOUT. It was chosen in the
+           * location sheet, with a pin and a zone check behind it, and asking
+           * for it again here would be asking a question that already has a
+           * better answer — one with coordinates attached.
+           *
+           * "Change" opens that same sheet rather than a second form, so
+           * there is exactly one place in the app where an address is edited.
+           */
           <div className="mt-3 rounded-card border border-line bg-surface p-3">
-            <p className="text-body font-medium">{savedAddress!.recipient_name}</p>
-            <p className="text-caption text-muted">
-              {[savedAddress!.street, savedAddress!.area, savedAddress!.city].filter(Boolean).join(", ")}
-            </p>
-            {savedAddress!.phone ? (
-              <p className="text-caption text-muted">{savedAddress!.phone}</p>
-            ) : null}
-            <div className="mt-3 flex items-center gap-3">
-              <span className="inline-flex h-11 items-center rounded-pill bg-primary px-5 text-caption font-medium text-inverse">
-                Deliver here
+            <div className="flex items-start gap-2.5">
+              <span aria-hidden className="text-[15px]">
+                {savedAddress!.label === "work" ? "💼" : savedAddress!.label === "other" ? "📍" : "🏠"}
               </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-body font-medium">
+                  {savedAddress!.label === "other"
+                    ? (savedAddress!.label_custom ?? "Other")
+                    : (savedAddress!.label ?? "Home").replace(/^./, (c) => c.toUpperCase())}
+                </p>
+                <p className="text-caption text-muted">
+                  {[savedAddress!.street, savedAddress!.building, savedAddress!.area]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+                <p className="text-caption text-muted">{savedAddress!.city}</p>
+                {savedAddress!.phone ? (
+                  <p className="text-caption text-muted">{savedAddress!.phone}</p>
+                ) : null}
+              </div>
               <button
                 type="button"
-                onClick={() => setUseSaved(false)}
-                className="tap-44 text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
+                onClick={() => setLocationSheetOpen(true)}
+                className="tap-44 shrink-0 text-caption font-semibold text-persimmon"
               >
-                New address
+                Change
               </button>
             </div>
           </div>
@@ -804,6 +832,8 @@ export function Checkout() {
           </button>
         </div>
       </div>
+
+      <LocationSheet open={locationSheetOpen} onClose={() => setLocationSheetOpen(false)} />
     </div>
   );
 }

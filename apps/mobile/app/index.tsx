@@ -124,6 +124,26 @@ export default function Home() {
           allowsBackForwardNavigationGestures
           pullToRefreshEnabled
           setSupportMultipleWindows={false}
+          /*
+           * THE ADDRESS FLOW NEEDS ALL THREE OF THESE OR IT FAILS SILENTLY.
+           *
+           * A WebView does not inherit the app's permissions. Without
+           * `geolocationEnabled` the "Use my current location" row does
+           * nothing at all — no error, no prompt — and without
+           * `onPermissionRequest` granting audio and video, Android resolves
+           * getUserMedia by simply never calling back, so the record button
+           * looks broken rather than blocked.
+           *
+           * The grant below is unconditional because the only page loaded
+           * here is CADO's own origin. If this WebView is ever allowed to
+           * navigate off-site, this has to check the request's origin first.
+           */
+          geolocationEnabled
+          mediaCapturePermissionGrantType="grant"
+          allowsInlineMediaPlayback
+          onPermissionRequest={(event: {
+            nativeEvent: { grant: () => void; deny: () => void };
+          }) => event.nativeEvent.grant()}
           style={styles.web}
         />
       </SafeAreaView>

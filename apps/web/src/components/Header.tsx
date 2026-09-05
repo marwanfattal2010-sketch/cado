@@ -11,7 +11,8 @@ import {
   setAddressDetails,
   type AddressDetails,
 } from "../lib/area";
-import { DeliverySheet } from "./DeliverySheet";
+import { LocationSheet } from "./location/LocationSheet";
+import { chipLabel, useDeliveryLocation } from "../lib/deliveryLocation";
 
 /**
  * Collapse-on-scroll thresholds.
@@ -37,7 +38,9 @@ export function Header() {
   const { session } = useAuth();
   const addresses = useAddresses();
   const updateAddress = useUpdateAddress();
-  const [area, setArea] = useArea();
+  const [area] = useArea();
+  const [deliveryLocation] = useDeliveryLocation();
+  const chip = chipLabel(deliveryLocation);
   const [areaOpen, setAreaOpen] = useState(false);
   const [details, setDetails] = useState<AddressDetails>(() => getAddressDetails());
 
@@ -261,15 +264,32 @@ export function Header() {
               Its place is taken by the address, which is the single most
               consequential thing on a same-day delivery app.
             */}
+            {/*
+              THE CHIP. A filled persimmon disc, because this is the one
+              control in the header whose value changes what the whole app
+              shows — where the order is going. It read as a grey label
+              before, which is how someone browses a whole session without
+              noticing the city is wrong.
+
+              "Set your location" in persimmon when nothing is set. NOT a
+              default city printed as though it were a choice: that is how an
+              order ends up at the wrong end of the country.
+            */}
             <button
               onClick={openAreaSheet}
-              className="tap-44 flex min-w-0 items-center gap-1.5 rounded-pill px-1 py-1 text-left transition hover:bg-header-fg/[0.06]"
+              className="tap-44 flex min-w-0 items-center gap-2 rounded-pill px-1 py-1 text-left transition-transform duration-press ease-out active:scale-[0.97]"
             >
-              <PinIcon className="h-[17px] w-[17px] shrink-0 text-header-fg" />
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-persimmon">
+                <PinIcon className="h-[15px] w-[15px] text-white" />
+              </span>
               <span className="min-w-0">
                 <span className="block text-[10px] leading-none text-header-muted">Deliver to</span>
-                <span className="flex items-center gap-1 text-body font-bold leading-tight text-header-fg">
-                  <span className="truncate">{area}</span>
+                <span className="flex items-center gap-1 text-body font-bold leading-tight">
+                  <span
+                    className={`truncate ${chip.unset ? "text-persimmon" : "text-header-fg"}`}
+                  >
+                    {chip.text}
+                  </span>
                   <span aria-hidden className="text-[10px] font-normal text-header-fg">▾</span>
                 </span>
               </span>
@@ -305,7 +325,7 @@ export function Header() {
         </div>
       </header>
 
-      <DeliverySheet open={areaOpen} onClose={closeAreaSheet} area={area} setArea={setArea} />
+      <LocationSheet open={areaOpen} onClose={closeAreaSheet} />
     </>
   );
 }
