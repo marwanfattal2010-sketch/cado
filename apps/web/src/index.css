@@ -104,6 +104,12 @@
   --header-fg: 27 31 59; /* #1B1F3B address, chevron, bell, bag, search icon */
   --header-muted: 138 143 168; /* #8A8FA8 the "Deliver to" label + placeholder */
   --header-line: 230 231 238; /* #E6E7EE the search field + points-pill hairline */
+  /* THE ONE FILL ON THE WHITE HEADER. Everything else up here is ink on
+     white, so a solid orange pill is the only thing the eye lands on first —
+     which is the point, since it is the only thing up here worth pressing
+     before you have searched for anything. */
+  --header-action: 232 83 47; /* #E8532F the Earn-points pill */
+
   /* Badges in the header — the cart count, the unread bell. NOT persimmon:
      above the hairline the app is white and ink, and orange is reserved for
      the content below it (the active tab rule, prices, discount badges, the

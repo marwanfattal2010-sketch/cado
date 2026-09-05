@@ -37,6 +37,7 @@ export default {
           fg: token("--header-fg"),
           muted: token("--header-muted"),
           line: token("--header-line"),
+          action: token("--header-action"),
           badge: token("--header-badge"),
         },
         tab: {

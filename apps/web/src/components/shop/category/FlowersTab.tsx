@@ -35,7 +35,17 @@ import type { BrowseTab, FeedProduct } from "../../../lib/browse";
    rose — a second design system inside one app, which is exactly what the
    colour reset exists to end. The sections, the occasion row and the florists
    are untouched; only the colours and the typeface change. */
-const ROSE = "rgb(var(--ink))";
+/**
+ * FLOWERS IS ROSE, and its card headings are the one place that shows.
+ *
+ * This was rose, then briefly navy, then black when navy was purged from the
+ * palette — and black turned "Under $50", "Under $100" and "Best picks" into
+ * the same heading every other section on the app already has. The tab's whole
+ * point is that it does not look like the others.
+ *
+ * #B44A6E, the same value the Flowers accent carries in categoryTheme.
+ */
+const ROSE = "rgb(180 74 110)";
 
 /**
  * A SHORT ROW SITS ACROSS THE CARD, NOT BUNCHED AT ITS LEFT.

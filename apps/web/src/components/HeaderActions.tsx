@@ -20,7 +20,7 @@ export function PointsPill() {
     return (
       <Link
         to="/login"
-        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill border-[0.5px] border-header-line bg-white px-2.5 py-1.5 text-caption font-semibold text-header-fg"
+        className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-header-action px-2.5 py-1.5 text-caption font-semibold text-white"
       >
         <span aria-hidden>★</span>
         Earn points
@@ -32,7 +32,7 @@ export function PointsPill() {
     <Link
       to="/points"
       aria-label={`${points.data ?? 0} points`}
-      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill border-[0.5px] border-header-line bg-white px-2.5 py-1.5 text-caption font-semibold text-header-fg"
+      className="tap-44 flex shrink-0 items-center gap-1 rounded-pill bg-header-action px-2.5 py-1.5 text-caption font-semibold text-white"
     >
       <span aria-hidden>★</span>
       {points.data ?? 0} pts
