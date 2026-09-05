@@ -85,7 +85,7 @@ const CIRCLE_ORDER = ["women", "men", "kids-fashion"];
  * results page with the same sort row and facet chips.
  */
 const TYPE_TILES: { key: string; label: string; kind: "type" | "tile" }[] = [
-  { key: "tops", label: "Tops", kind: "tile" },
+  { key: "tshirts", label: "T-shirts", kind: "tile" },
   { key: "sets", label: "Sets", kind: "tile" },
   { key: "shirts", label: "Shirts", kind: "tile" },
   { key: "bags", label: "Bags", kind: "type" },

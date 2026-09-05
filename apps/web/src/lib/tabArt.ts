@@ -103,8 +103,16 @@ export function categoryTileArt(cat: string, key: string): string | null {
  */
 const TYPE_TILE_ART: Record<string, Record<string, string>> = {
   fashion: {
-    tops: "art/type/fashion--tops.webp",
-    sets: "art/type/fashion--sets.webp",
+    // A stack of folded polos — green, slate, coral, grey on white. Marwan
+    // asked for a polo here rather than the plain black tee he first supplied
+    // (which is still in storage at fashion--tshirts.jpg if he wants it back).
+    // Every other polo in the free pool carried a legible collar label —
+    // VITO & WILLY, BLOOK PREMIUM BRAND, "SIMPLE" — so this is the one that
+    // could ship. It is greener than the rest of the row.
+    tshirts: "art/type/fashion--tshirts-polo.jpg",
+    // Marwans own file, supplied Sep 5: a coordinated linen shirt-and-trouser
+    // set on a model — which is literally what this tile means.
+    sets: "art/type/fashion--sets.jpg",
     shirts: "art/type/fashion--shirts.webp",
     // Marwan's own photograph, supplied Sep 5. It is a styled shot — the bag
     // worn, calm neutral interior — rather than a packshot, which is the
@@ -150,8 +158,8 @@ const TILE_ART: Record<TileId, string> = {
    * above. Pointing them at the same files keeps this map total rather than
    * inventing a picture that nothing renders.
    */
-  tops: "art/type/fashion--tops.webp",
-  sets: "art/type/fashion--sets.webp",
+  tshirts: "art/type/fashion--tshirts-polo.jpg",
+  sets: "art/type/fashion--sets.jpg",
   shirts: "art/type/fashion--shirts.webp",
 };
 
@@ -322,7 +330,17 @@ const CIRCLE_ART: Record<string, Record<string, string>> = {
   fashion: {
     women: "art/circle/fashion--women.webp",
     men: "art/circle/fashion--men.webp",
-    "kids-fashion": "art/circle/fashion--kids-fashion.webp",
+    /*
+     * Supplied by Marwan on Sep 5, who confirmed the model is cleared for use.
+     * A deliberate exception to the rule governing the other two circles: this
+     * is a portrait, so at 80px it reads as a child's face rather than as
+     * kidswear, where Women and Men both read as outfits. His call, recorded
+     * here so nobody "fixes" it back.
+     *
+     * Its own path, not the seeded one — re-running scripts/seed-tab-art.mjs
+     * would otherwise overwrite a file that did not come from the script.
+     */
+    "kids-fashion": "art/circle/fashion--kids-supplied.webp",
     bags: "art/circle/fashion--bags.webp",
     caps: "art/circle/fashion--caps.webp",
     belts: "art/circle/fashion--belts.webp",

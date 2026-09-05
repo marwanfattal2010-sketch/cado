@@ -184,7 +184,7 @@ export type TileId =
    * Merino Crewneck under a "tops" subcategory would take it out of "men" and
    * empty the Women / Men / Kids circles this row sits under.
    */
-  | "tops"
+  | "tshirts"
   | "sets"
   | "shirts";
 
@@ -199,7 +199,7 @@ export const TILE_LABEL: Record<TileId, string> = {
   "store-picks": "Store picks",
   "ready-to-gift": "Ready to gift",
   deals: "Deals",
-  tops: "Tops",
+  tshirts: "T-shirts",
   sets: "Sets",
   shirts: "Shirts",
 };
