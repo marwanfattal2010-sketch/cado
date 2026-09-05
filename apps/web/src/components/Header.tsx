@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAddresses, useUpdateAddress } from "../hooks/useCart";
 import { useStore } from "../hooks/useStores";
 import { useAuth } from "../lib/auth";
-import { ChevronLeftIcon, PinIcon } from "./Icons";
+import { ChevronLeftIcon } from "./Icons";
 import { PointsPill, NotificationBell, CartButton } from "./HeaderActions";
 import {
   useArea,
@@ -326,7 +326,14 @@ export function Header() {
                 onClick={openAreaSheet}
                 className="flex min-w-0 items-center gap-1.5 py-1 text-left transition-transform duration-press ease-out active:scale-[0.98]"
               >
-                <PinIcon className="h-[18px] w-[18px] shrink-0 text-header-fg" />
+                {/* THE EMOJI, and this is the third time it has been asked
+                    for. It keeps getting replaced by an outline SVG whenever
+                    a spec asks for an ink-coloured pin — an emoji cannot be
+                    recoloured — and Marwan keeps putting it back, because its
+                    own red-orange is the point. It stays. */}
+                <span aria-hidden className="shrink-0 text-[17px] leading-none">
+                  📍
+                </span>
                 <span
                   className={`truncate text-[16px] font-semibold ${
                     chip.unset ? "text-persimmon" : "text-header-fg"
