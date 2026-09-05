@@ -129,9 +129,9 @@ const TILES: TileId[] = [
   "store-picks",
   "ready-to-gift",
   "deals",
-  "tshirts",
+  "tops",
   "sets",
-  "shirts",
+  "bottoms",
 ];
 
 const list = (v: string | null) =>
@@ -280,9 +280,9 @@ function matchesTile(p: FeedProduct, tile: TileId, look: Lookup): boolean {
      * A product whose title never said what it was carries no type tag and
      * correctly appears behind none of these three.
      */
-    case "tshirts":
+    case "tops":
     case "sets":
-    case "shirts":
+    case "bottoms":
       return (p.tags ?? []).includes(`type:${tile}`);
     case "most-gifted":
     case "best-picks":

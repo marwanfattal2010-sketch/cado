@@ -103,17 +103,16 @@ export function categoryTileArt(cat: string, key: string): string | null {
  */
 const TYPE_TILE_ART: Record<string, Record<string, string>> = {
   fashion: {
-    // A stack of folded polos — green, slate, coral, grey on white. Marwan
-    // asked for a polo here rather than the plain black tee he first supplied
-    // (which is still in storage at fashion--tshirts.jpg if he wants it back).
-    // Every other polo in the free pool carried a legible collar label —
-    // VITO & WILLY, BLOOK PREMIUM BRAND, "SIMPLE" — so this is the one that
-    // could ship. It is greener than the rest of the row.
-    tshirts: "art/type/fashion--tshirts-polo.jpg",
+    // A clear white polo on a hanger against a pale wall — the classic cut
+    // Marwan asked for, unbranded. Replaces both the black tee and the folded
+    // stack; both are still in storage if he wants either back.
+    tops: "art/type/fashion--tops.jpg",
     // Marwans own file, supplied Sep 5: a coordinated linen shirt-and-trouser
     // set on a model — which is literally what this tile means.
     sets: "art/type/fashion--sets.jpg",
-    shirts: "art/type/fashion--shirts.webp",
+    // Marwans own file, supplied Sep 5: wide-leg jeans worn, street light.
+    // Converted from AVIF, which the bucket does not accept.
+    bottoms: "art/type/fashion--bottoms.jpg",
     // Marwan's own photograph, supplied Sep 5. It is a styled shot — the bag
     // worn, calm neutral interior — rather than a packshot, which is the
     // register he wants this row in. It sits here as ARTWORK, not on a product
@@ -160,9 +159,9 @@ const TILE_ART: Record<TileId, string> = {
    * above. Pointing them at the same files keeps this map total rather than
    * inventing a picture that nothing renders.
    */
-  tshirts: "art/type/fashion--tshirts-polo.jpg",
+  tops: "art/type/fashion--tops.jpg",
   sets: "art/type/fashion--sets.jpg",
-  shirts: "art/type/fashion--shirts.webp",
+  bottoms: "art/type/fashion--bottoms.jpg",
 };
 
 /**
@@ -330,7 +329,10 @@ const CIRCLE_ART: Record<string, Record<string, string>> = {
    * fashion frame is usually a knee.
    */
   fashion: {
-    women: "art/circle/fashion--women.webp",
+    // Marwans own file, supplied Sep 5: a navy pinstripe co-ord on a white
+    // studio ground, face cropped out so the outfit is what reads at 80px.
+    // Its own path, so re-running seed-tab-art.mjs cannot overwrite it.
+    women: "art/circle/fashion--women-supplied.webp",
     men: "art/circle/fashion--men.webp",
     /*
      * Supplied by Marwan on Sep 5, who confirmed the model is cleared for use.

@@ -184,9 +184,9 @@ export type TileId =
    * Merino Crewneck under a "tops" subcategory would take it out of "men" and
    * empty the Women / Men / Kids circles this row sits under.
    */
-  | "tshirts"
+  | "tops"
   | "sets"
-  | "shirts";
+  | "bottoms";
 
 export const TILE_LABEL: Record<TileId, string> = {
   "new-in": "New in",
@@ -199,9 +199,9 @@ export const TILE_LABEL: Record<TileId, string> = {
   "store-picks": "Store picks",
   "ready-to-gift": "Ready to gift",
   deals: "Deals",
-  tshirts: "T-shirts",
+  tops: "Tops",
   sets: "Sets",
-  shirts: "Shirts",
+  bottoms: "Bottoms",
 };
 
 /** The ceiling the "Under $75" tile filters on. */
