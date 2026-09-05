@@ -17,12 +17,18 @@ import { Img } from "../../Img";
  *   height     200px          scrim      black 55% -> 22% at 45% -> clear 78%
  *   title      25px / 700     max-width  240px, two lines
  *   leading    1.1            tracking   -0.4px
- *   SHOP NOW   12px / 700 uppercase, 0.1em tracking, persimmon fill
+ *   SHOP NOW   12px / 700 uppercase, 0.1em tracking, WHITE fill / ink text
  *   AI link    12.5px / 600, underlined white
  *
  * NO SUBTITLES. Fashion had none and the others did, so they went — a hero
  * with one line of type on one tab and three on the next is the same
  * inconsistency in miniature.
+ *
+ * SHOP NOW IS WHITE, on Marwan’s instruction, and it is the better button
+ * anyway: the scrim under it is black at 55%, so white gives the strongest
+ * contrast available on any photograph, where persimmon-on-dark-photo was
+ * the weakest pairing in the app. It is also the one place persimmon does not
+ * have to mean "press this" — there is nothing else to press up here.
  *
  * PER-TAB INPUTS ARE EXACTLY THREE: the photographs, the title, and where
  * SHOP NOW goes. A tab cannot reach anything else, which is what stops this
@@ -106,14 +112,14 @@ export function TabHero({
               <button
                 type="button"
                 onClick={onShopAll}
-                className="card-press bg-persimmon px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-white"
+                className="card-press bg-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-ink"
               >
                 Shop now
               </button>
             ) : (
               <Link
                 to={shopHref}
-                className="card-press bg-persimmon px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-white"
+                className="card-press bg-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-ink"
               >
                 Shop now
               </Link>
