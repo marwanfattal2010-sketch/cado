@@ -47,7 +47,7 @@ export function StoreLogoCircle({
 }) {
   if (!logoUrl && photoUrl) {
     return (
-      <span className="block aspect-square w-full overflow-hidden rounded-pill bg-[#EEEAE4]">
+      <span className="block aspect-square w-full overflow-hidden rounded-pill bg-page">
         <Img src={photoUrl} alt={name} className="h-full w-full object-cover" />
       </span>
     );
@@ -68,7 +68,7 @@ export function StoreLogoCircle({
 
   return (
     <span
-      className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-pill border border-[#EDE7DF] bg-white"
+      className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-pill border border-line bg-white"
       /*
        * 18% inset is what makes a wide wordmark and a round monogram read as
        * the same size: `object-contain` alone fits the long axis to the box,

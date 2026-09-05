@@ -448,7 +448,7 @@ export function TabTemplate({ tab }: { tab: BrowseTab }) {
                   ? browseHref(slug, { type: [t.key] })
                   : browseHref(slug, { tile: t.key as TileId })
               }
-              className="relative block h-[196px] w-[148px] shrink-0 overflow-hidden rounded-[12px] bg-[#EEEAE4] transition-transform duration-press ease-out active:scale-[0.97]"
+              className="relative block h-[196px] w-[148px] shrink-0 overflow-hidden rounded-[12px] bg-page transition-transform duration-press ease-out active:scale-[0.97]"
             >
               <Img
                 src={typeTileArt(slug, t.key) ?? ""}
@@ -735,7 +735,7 @@ function DealBig({ p }: { p: FeedProduct }) {
             indefinite, so the image falls back to its intrinsic height and
             becomes the card's max-content contribution — which is how a tall
             scarf photograph used to set the height of this whole row. */}
-        <span className="relative min-h-0 flex-1 overflow-hidden bg-[#EFEBE5]">
+        <span className="relative min-h-0 flex-1 overflow-hidden bg-page">
           <Img src={photoOf(p)} className="absolute inset-0 h-full w-full object-cover" />
         </span>
         <span className="block px-2.5 pb-3 pt-2">
@@ -761,7 +761,7 @@ function DealSmall({ p }: { p: FeedProduct }) {
       {/* Out of flow, for the reason spelled out in DealBig: an in-flow
           `h-full` image contributes its intrinsic height, and two of them
           stacked here were setting the height of the big card beside them. */}
-      <span className="relative min-h-0 flex-1 overflow-hidden bg-[#EFEBE5]">
+      <span className="relative min-h-0 flex-1 overflow-hidden bg-page">
         <Img src={photoOf(p)} className="absolute inset-0 h-full w-full object-cover" />
       </span>
       <span className="block px-2.5 pb-2 pt-1.5">

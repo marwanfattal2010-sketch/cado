@@ -33,18 +33,18 @@ type Slide = {
 const SLIDES: Slide[] = [
   {
     key: "gift",
-    bg: "#F94E33",
+    bg: "rgb(var(--persimmon))",
     fg: "#fff",
     headline: "Choose the gift. We do the rest.",
     subline: "Wrapped and at their door tonight.",
     cta: "Shop now",
-    ctaClass: "bg-white text-[#B8321C]",
+    ctaClass: "bg-white text-[rgb(var(--navy))]",
     to: "/assistant",
     art: "peachBox",
   },
   {
     key: "card",
-    bg: "#151210",
+    bg: "rgb(var(--ink))",
     fg: "#fff",
     headline: "One card. Any store.",
     subline: "The CADO gift card works at every partner store.",
@@ -56,11 +56,11 @@ const SLIDES: Slide[] = [
   {
     key: "group",
     bg: "#FFD9CC",
-    fg: "#151210",
+    fg: "rgb(var(--ink))",
     headline: "Big gift? Split it.",
     subline: "Friends chip in together for one gift.",
     cta: "Start a group gift",
-    ctaClass: "bg-[#151210] text-white",
+    ctaClass: "bg-[rgb(var(--ink))] text-white",
     to: "/gift-cards/group/new",
     art: "persimmonBox",
   },
@@ -104,10 +104,10 @@ function GiftBox({
 
 function Art({ kind }: { kind: Slide["art"] }) {
   if (kind === "peachBox") {
-    return <GiftBox size={120} lid="#FFE9DF" body="#FFD2C2" ribbon="#B8321C" rotate={-8} className="-bottom-3.5 -right-4" />;
+    return <GiftBox size={120} lid="#FFE9DF" body="#FFD2C2" ribbon="rgb(var(--navy))" rotate={-8} className="-bottom-3.5 -right-4" />;
   }
   if (kind === "persimmonBox") {
-    return <GiftBox size={110} lid="#F94E33" body="#B8321C" ribbon="#fff" rotate={9} className="-bottom-4 -right-2.5" />;
+    return <GiftBox size={110} lid="rgb(var(--persimmon))" body="rgb(var(--navy))" ribbon="#fff" rotate={9} className="-bottom-4 -right-2.5" />;
   }
   // The gift card: a tilted card with a masked number, per the mockup.
   return (
@@ -116,7 +116,7 @@ function Art({ kind }: { kind: Slide["art"] }) {
       className="pointer-events-none absolute -right-5 bottom-[18px] rounded-[14px] p-3.5 font-black"
       style={{
         width: 150, height: 96,
-        background: "linear-gradient(135deg,#F94E33,#FF8A6A)",
+        background: "linear-gradient(135deg,rgb(var(--persimmon)),#FF8A6A)",
         transform: "rotate(-10deg)",
         boxShadow: "0 12px 24px rgba(0,0,0,.35)",
         color: "#fff", fontSize: 20, letterSpacing: 2,
@@ -191,7 +191,7 @@ export function HeroBanners({ onAskAi }: { onAskAi?: () => void }) {
             className="h-1.5 rounded-pill transition-all"
             style={{
               width: i === active ? 18 : 6,
-              background: i === active ? "#F94E33" : "#d6cfc5",
+              background: i === active ? "rgb(var(--persimmon))" : "rgb(var(--line))",
             }}
           />
         ))}

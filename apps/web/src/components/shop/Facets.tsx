@@ -245,8 +245,8 @@ export function FacetChips({
   // Flowers is rose, everything else persimmon. Its chips are pills on white;
   // Fashion's are 6px grey blocks. Same component, one tone switch.
   const rose = cat === "flowers-gifts";
-  const onCls = rose ? "bg-[#A64E62] font-semibold text-white" : "bg-persimmon font-semibold text-white";
-  const offCls = rose ? "bg-white font-medium text-ink" : "bg-[#F5F5F5] font-medium text-ink";
+  const onCls = rose ? "bg-[rgb(var(--navy))] font-semibold text-white" : "bg-persimmon font-semibold text-white";
+  const offCls = rose ? "bg-white font-medium text-ink" : "bg-page font-medium text-ink";
   const shape = rose ? "rounded-pill" : "rounded-[6px]";
 
   useEffect(() => {
@@ -288,7 +288,7 @@ export function FacetChips({
                 to rose — so on Flowers a tile chip arrived half orange, half
                 rose, split down the middle. */}
             <span
-              className={`inline-flex h-9 items-center ${rose ? "rounded-l-pill bg-[#A64E62]" : "rounded-l-[6px] bg-persimmon"} pl-3 pr-1 text-[12.5px] font-semibold text-white`}
+              className={`inline-flex h-9 items-center ${rose ? "rounded-l-pill bg-[rgb(var(--navy))]" : "rounded-l-[6px] bg-persimmon"} pl-3 pr-1 text-[12.5px] font-semibold text-white`}
             >
               {e.label}
             </span>
@@ -296,7 +296,7 @@ export function FacetChips({
               type="button"
               aria-label={`Remove ${e.label}`}
               onClick={e.remove}
-              className={`flex h-9 items-center ${rose ? "rounded-r-pill bg-[#A64E62]" : "rounded-r-[6px] bg-persimmon"} pl-1 pr-2.5 text-[12px] text-white`}
+              className={`flex h-9 items-center ${rose ? "rounded-r-pill bg-[rgb(var(--navy))]" : "rounded-r-[6px] bg-persimmon"} pl-1 pr-2.5 text-[12px] text-white`}
             >
               ✕
             </button>
@@ -326,7 +326,7 @@ export function FacetChips({
                     type="button"
                     aria-label={`Remove ${GROUP_LABEL[g]}`}
                     onClick={() => onChange(clearGroup(state, g))}
-                    className={`-ml-1 flex h-9 shrink-0 items-center ${rose ? "rounded-r-pill bg-[#A64E62]" : "rounded-r-[6px] bg-persimmon"} pl-1 pr-2.5 text-[12px] text-white`}
+                    className={`-ml-1 flex h-9 shrink-0 items-center ${rose ? "rounded-r-pill bg-[rgb(var(--navy))]" : "rounded-r-[6px] bg-persimmon"} pl-1 pr-2.5 text-[12px] text-white`}
                   >
                     ✕
                   </button>
